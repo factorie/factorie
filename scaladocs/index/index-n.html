@@ -22,7 +22,7 @@
       <div class="occurrences"><a href="../cc/factorie/app/nlp/ner/StackedChainNer.html" class="extype" name="cc.factorie.app.nlp.ner.StackedChainNer">StackedChainNer</a> </div>
     </div><div class="entry">
       <div class="name">NEUTER</div>
-      <div class="occurrences"><a href="../cc/factorie/app/nlp/mention/MentionGenderDomain$.html" class="extype" name="cc.factorie.app.nlp.mention.MentionGenderDomain">MentionGenderDomain</a> <a href="../cc/factorie/app/nlp/phrase/NounPhraseGenderDomain$.html" class="extype" name="cc.factorie.app.nlp.phrase.NounPhraseGenderDomain">NounPhraseGenderDomain</a> </div>
+      <div class="occurrences"><a href="../cc/factorie/app/nlp/phrase/GenderDomain$.html" class="extype" name="cc.factorie.app.nlp.phrase.GenderDomain">GenderDomain</a> </div>
     </div><div class="entry">
       <div class="name">NEVER</div>
       <div class="occurrences"><a href="../cc/factorie/util/Logger$.html" class="extype" name="cc.factorie.util.Logger">Logger</a> </div>
@@ -36,11 +36,17 @@
       <div class="name">NO</div>
       <div class="occurrences"><a href="../cc/factorie/app/nlp/parse/TransitionBasedParser$ParserConstants$.html" class="extype" name="cc.factorie.app.nlp.parse.TransitionBasedParser.ParserConstants">ParserConstants</a> </div>
     </div><div class="entry">
+      <div class="name">NONE</div>
+      <div class="occurrences"><a href="../cc/factorie/app/nlp/load/AnnotationTypes$.html" class="extype" name="cc.factorie.app.nlp.load.AnnotationTypes">AnnotationTypes</a> </div>
+    </div><div class="entry">
       <div class="name">NOUN</div>
       <div class="occurrences"><a href="../cc/factorie/app/nlp/lemma/WordNetLemmatizer.html" class="extype" name="cc.factorie.app.nlp.lemma.WordNetLemmatizer">WordNetLemmatizer</a> </div>
     </div><div class="entry">
       <div class="name">NO_CONJUNCTIONS</div>
       <div class="occurrences"><a href="../cc/factorie/app/nlp/coref/ConjunctionOptions$.html" class="extype" name="cc.factorie.app.nlp.coref.ConjunctionOptions">ConjunctionOptions</a> </div>
+    </div><div class="entry">
+      <div class="name">NPChunkMentionFinder</div>
+      <div class="occurrences"><a href="../cc/factorie/app/nlp/coref/mention/package.html" class="extype" name="cc.factorie.app.nlp.coref.mention">mention</a> </div>
     </div><div class="entry">
       <div class="name">NULL_INDEX</div>
       <div class="occurrences"><a href="../cc/factorie/variable/CategoricalDomain$.html" class="extype" name="cc.factorie.variable.CategoricalDomain">CategoricalDomain</a> </div>
@@ -76,13 +82,13 @@
       <div class="occurrences"><a href="../cc/factorie/model/Factor4.html" class="extype" name="cc.factorie.model.Factor4">Factor4</a> <a href="../cc/factorie/model/Family4.html" class="extype" name="cc.factorie.model.Family4">Family4</a> </div>
     </div><div class="entry">
       <div class="name">NerAndPronounMentionFinder</div>
-      <div class="occurrences"><a href="../cc/factorie/app/nlp/mention/package.html" class="extype" name="cc.factorie.app.nlp.mention">mention</a> </div>
+      <div class="occurrences"><a href="../cc/factorie/app/nlp/coref/mention/package.html" class="extype" name="cc.factorie.app.nlp.coref.mention">mention</a> </div>
     </div><div class="entry">
       <div class="name">NerForwardCoref</div>
       <div class="occurrences"><a href="../cc/factorie/app/nlp/coref/package.html" class="extype" name="cc.factorie.app.nlp.coref">coref</a> </div>
     </div><div class="entry">
       <div class="name">NerMentionList</div>
-      <div class="occurrences"><a href="../cc/factorie/app/nlp/mention/package.html" class="extype" name="cc.factorie.app.nlp.mention">mention</a> </div>
+      <div class="occurrences"><a href="../cc/factorie/app/nlp/coref/mention/package.html" class="extype" name="cc.factorie.app.nlp.coref.mention">mention</a> </div>
     </div><div class="entry">
       <div class="name">NerSpan</div>
       <div class="occurrences"><a href="../cc/factorie/app/nlp/ner/package.html" class="extype" name="cc.factorie.app.nlp.ner">ner</a> </div>
@@ -92,6 +98,12 @@
     </div><div class="entry">
       <div class="name">NerTag</div>
       <div class="occurrences"><a href="../cc/factorie/app/nlp/ner/package.html" class="extype" name="cc.factorie.app.nlp.ner">ner</a> </div>
+    </div><div class="entry">
+      <div class="name">NestedChainChunker</div>
+      <div class="occurrences"><a href="../cc/factorie/app/nlp/phrase/package.html" class="extype" name="cc.factorie.app.nlp.phrase">phrase</a> </div>
+    </div><div class="entry">
+      <div class="name">NestedNPChunkMentionFinder</div>
+      <div class="occurrences"><a href="../cc/factorie/app/nlp/coref/mention/package.html" class="extype" name="cc.factorie.app.nlp.coref.mention">mention</a> </div>
     </div><div class="entry">
       <div class="name">Nil</div>
       <div class="occurrences"><a href="../scala/package.html" class="extype" name="scala">scala</a> </div>
@@ -177,22 +189,10 @@
       <div class="name">NounPhraseEntityTypeLabelerTrainer</div>
       <div class="occurrences"><a href="../cc/factorie/app/nlp/phrase/package.html" class="extype" name="cc.factorie.app.nlp.phrase">phrase</a> </div>
     </div><div class="entry">
-      <div class="name">NounPhraseGenderDomain</div>
-      <div class="occurrences"><a href="../cc/factorie/app/nlp/phrase/package.html" class="extype" name="cc.factorie.app.nlp.phrase">phrase</a> </div>
-    </div><div class="entry">
-      <div class="name">NounPhraseGenderLabel</div>
-      <div class="occurrences"><a href="../cc/factorie/app/nlp/phrase/package.html" class="extype" name="cc.factorie.app.nlp.phrase">phrase</a> </div>
-    </div><div class="entry">
       <div class="name">NounPhraseGenderLabeler</div>
       <div class="occurrences"><a href="../cc/factorie/app/nlp/phrase/package.html" class="extype" name="cc.factorie.app.nlp.phrase">phrase</a> </div>
     </div><div class="entry">
       <div class="name">NounPhraseList</div>
-      <div class="occurrences"><a href="../cc/factorie/app/nlp/phrase/package.html" class="extype" name="cc.factorie.app.nlp.phrase">phrase</a> </div>
-    </div><div class="entry">
-      <div class="name">NounPhraseNumberDomain</div>
-      <div class="occurrences"><a href="../cc/factorie/app/nlp/phrase/package.html" class="extype" name="cc.factorie.app.nlp.phrase">phrase</a> </div>
-    </div><div class="entry">
-      <div class="name">NounPhraseNumberLabel</div>
       <div class="occurrences"><a href="../cc/factorie/app/nlp/phrase/package.html" class="extype" name="cc.factorie.app.nlp.phrase">phrase</a> </div>
     </div><div class="entry">
       <div class="name">NounPhraseNumberLabeler</div>
@@ -204,38 +204,56 @@
       <div class="name">NullPointerException</div>
       <div class="occurrences"><a href="../scala/package.html" class="extype" name="scala">scala</a> </div>
     </div><div class="entry">
+      <div class="name">NumberDomain</div>
+      <div class="occurrences"><a href="../cc/factorie/app/nlp/phrase/package.html" class="extype" name="cc.factorie.app.nlp.phrase">phrase</a> </div>
+    </div><div class="entry">
       <div class="name">NumberFormatException</div>
       <div class="occurrences"><a href="../scala/package.html" class="extype" name="scala">scala</a> </div>
+    </div><div class="entry">
+      <div class="name">NumberLabel</div>
+      <div class="occurrences"><a href="../cc/factorie/app/nlp/phrase/package.html" class="extype" name="cc.factorie.app.nlp.phrase">phrase</a> </div>
+    </div><div class="entry">
+      <div class="name">NumberLabeler</div>
+      <div class="occurrences"><a href="../cc/factorie/app/nlp/phrase/package.html" class="extype" name="cc.factorie.app.nlp.phrase">phrase</a> </div>
     </div><div class="entry">
       <div class="name">NumberWords</div>
       <div class="occurrences"><a href="../cc/factorie/app/nlp/lexicon/package.html" class="extype" name="cc.factorie.app.nlp.lexicon">lexicon</a> </div>
     </div><div class="entry">
       <div class="name">Numeric</div>
-      <div class="occurrences"><a href="../scala/package.html" class="extype" name="scala">scala</a> </div>
+      <div class="occurrences"><a href="../cc/factorie/tutorial/ChainNERDemo$.html" class="extype" name="cc.factorie.tutorial.ChainNERDemo">ChainNERDemo</a> <a href="../scala/package.html" class="extype" name="scala">scala</a> </div>
     </div><div class="entry">
       <div class="name">n</div>
       <div class="occurrences"><a href="../cc/factorie/variable/MutableSeqVar$Remove1Diff.html" class="extype" name="cc.factorie.variable.MutableSeqVar.Remove1Diff">Remove1Diff</a> <a href="../cc/factorie/variable/MutableSeqVar$TrimEndDiff.html" class="extype" name="cc.factorie.variable.MutableSeqVar.TrimEndDiff">TrimEndDiff</a> <a href="../cc/factorie/variable/MutableSeqVar$TrimStartDiff.html" class="extype" name="cc.factorie.variable.MutableSeqVar.TrimStartDiff">TrimStartDiff</a> <a href="../cc/factorie/variable/MutableSpanVar$Append.html" class="extype" name="cc.factorie.variable.MutableSpanVar.Append">Append</a> <a href="../cc/factorie/variable/MutableSpanVar$Prepend.html" class="extype" name="cc.factorie.variable.MutableSpanVar.Prepend">Prepend</a> <a href="../cc/factorie/variable/MutableSpanVar$TrimEnd.html" class="extype" name="cc.factorie.variable.MutableSpanVar.TrimEnd">TrimEnd</a> <a href="../cc/factorie/variable/MutableSpanVar$TrimStart.html" class="extype" name="cc.factorie.variable.MutableSpanVar.TrimStart">TrimStart</a> </div>
     </div><div class="entry">
       <div class="name">nThreads</div>
-      <div class="occurrences"><a href="../cc/factorie/app/classify/OptimizingLinearVectorClassifierTrainer.html" class="extype" name="cc.factorie.app.classify.OptimizingLinearVectorClassifierTrainer">OptimizingLinearVectorClassifierTrainer</a> <a href="../cc/factorie/app/classify/backend/LinearMulticlassTrainer.html" class="extype" name="cc.factorie.app.classify.backend.LinearMulticlassTrainer">LinearMulticlassTrainer</a> <a href="../cc/factorie/app/classify/backend/OptimizingBaseLinearTrainer.html" class="extype" name="cc.factorie.app.classify.backend.OptimizingBaseLinearTrainer">OptimizingBaseLinearTrainer</a> <a href="../cc/factorie/app/nlp/parse/ProjectiveGraphBasedParserOpts$.html" class="extype" name="cc.factorie.app.nlp.parse.ProjectiveGraphBasedParserOpts">ProjectiveGraphBasedParserOpts</a> <a href="../cc/factorie/app/nlp/parse/TransitionBasedParserArgs.html" class="extype" name="cc.factorie.app.nlp.parse.TransitionBasedParserArgs">TransitionBasedParserArgs</a> <a href="../cc/factorie/optimize/HogwildTrainer.html" class="extype" name="cc.factorie.optimize.HogwildTrainer">HogwildTrainer</a> <a href="../cc/factorie/optimize/ParallelBatchTrainer.html" class="extype" name="cc.factorie.optimize.ParallelBatchTrainer">ParallelBatchTrainer</a> <a href="../cc/factorie/optimize/ParallelOnlineTrainer.html" class="extype" name="cc.factorie.optimize.ParallelOnlineTrainer">ParallelOnlineTrainer</a> <a href="../cc/factorie/optimize/SynchronizedOptimizerOnlineTrainer.html" class="extype" name="cc.factorie.optimize.SynchronizedOptimizerOnlineTrainer">SynchronizedOptimizerOnlineTrainer</a> </div>
+      <div class="occurrences"><a href="../cc/factorie/app/classify/OptimizingLinearVectorClassifierTrainer.html" class="extype" name="cc.factorie.app.classify.OptimizingLinearVectorClassifierTrainer">OptimizingLinearVectorClassifierTrainer</a> <a href="../cc/factorie/app/classify/backend/LinearMulticlassTrainer.html" class="extype" name="cc.factorie.app.classify.backend.LinearMulticlassTrainer">LinearMulticlassTrainer</a> <a href="../cc/factorie/app/classify/backend/OptimizingBaseLinearTrainer.html" class="extype" name="cc.factorie.app.classify.backend.OptimizingBaseLinearTrainer">OptimizingBaseLinearTrainer</a> <a href="../cc/factorie/app/nlp/embeddings/LiteHogwildTrainer.html" class="extype" name="cc.factorie.app.nlp.embeddings.LiteHogwildTrainer">LiteHogwildTrainer</a> <a href="../cc/factorie/app/nlp/parse/ProjectiveGraphBasedParserOpts$.html" class="extype" name="cc.factorie.app.nlp.parse.ProjectiveGraphBasedParserOpts">ProjectiveGraphBasedParserOpts</a> <a href="../cc/factorie/app/nlp/parse/TransitionBasedParserArgs.html" class="extype" name="cc.factorie.app.nlp.parse.TransitionBasedParserArgs">TransitionBasedParserArgs</a> <a href="../cc/factorie/optimize/HogwildTrainer.html" class="extype" name="cc.factorie.optimize.HogwildTrainer">HogwildTrainer</a> <a href="../cc/factorie/optimize/ParallelBatchTrainer.html" class="extype" name="cc.factorie.optimize.ParallelBatchTrainer">ParallelBatchTrainer</a> <a href="../cc/factorie/optimize/ParallelOnlineTrainer.html" class="extype" name="cc.factorie.optimize.ParallelOnlineTrainer">ParallelOnlineTrainer</a> <a href="../cc/factorie/optimize/SynchronizedOptimizerOnlineTrainer.html" class="extype" name="cc.factorie.optimize.SynchronizedOptimizerOnlineTrainer">SynchronizedOptimizerOnlineTrainer</a> </div>
     </div><div class="entry">
       <div class="name">namGender</div>
-      <div class="occurrences"><a href="../cc/factorie/app/nlp/coref/CorefFeatures$.html" class="extype" name="cc.factorie.app.nlp.coref.CorefFeatures">CorefFeatures</a> </div>
+      <div class="occurrences"><a href="../cc/factorie/app/nlp/coref/mention/CorefFeatures$.html" class="extype" name="cc.factorie.app.nlp.coref.mention.CorefFeatures">CorefFeatures</a> </div>
     </div><div class="entry">
       <div class="name">name</div>
-      <div class="occurrences"><a href="../cc/factorie/app/bib/EntityNamePenaltyTemplate.html" class="extype" name="cc.factorie.app.bib.EntityNamePenaltyTemplate">EntityNamePenaltyTemplate</a> <a href="../cc/factorie/app/bib/EntityNameTemplate.html" class="extype" name="cc.factorie.app.bib.EntityNameTemplate">EntityNameTemplate</a> <a href="../cc/factorie/app/bib/WeightedChildParentCosineDistance.html" class="extype" name="cc.factorie.app.bib.WeightedChildParentCosineDistance">WeightedChildParentCosineDistance</a> <a href="../cc/factorie/app/nlp/Document.html" class="extype" name="cc.factorie.app.nlp.Document">Document</a> <a href="../cc/factorie/app/nlp/DocumentCubbie.html" class="extype" name="cc.factorie.app.nlp.DocumentCubbie">DocumentCubbie</a> <a href="../cc/factorie/app/nlp/TokenSpan.html" class="extype" name="cc.factorie.app.nlp.TokenSpan">TokenSpan</a> <a href="../cc/factorie/app/nlp/coref/EntityKey.html" class="extype" name="cc.factorie.app.nlp.coref.EntityKey">EntityKey</a> <a href="../cc/factorie/app/nlp/hcoref/ChildParentCosineDistance.html" class="extype" name="cc.factorie.app.nlp.hcoref.ChildParentCosineDistance">ChildParentCosineDistance</a> <a href="../cc/factorie/app/nlp/hcoref/DebugableTemplate.html" class="extype" name="cc.factorie.app.nlp.hcoref.DebugableTemplate">DebugableTemplate</a> <a href="../cc/factorie/app/nlp/hcoref/DepthPenaltyTemplate.html" class="extype" name="cc.factorie.app.nlp.hcoref.DepthPenaltyTemplate">DepthPenaltyTemplate</a> <a href="../cc/factorie/app/nlp/hcoref/EntropyBagOfWordsPriorWithStatistics.html" class="extype" name="cc.factorie.app.nlp.hcoref.EntropyBagOfWordsPriorWithStatistics">EntropyBagOfWordsPriorWithStatistics</a> <a href="../cc/factorie/app/nlp/hcoref/MongoDBEntityCollection.html" class="extype" name="cc.factorie.app.nlp.hcoref.MongoDBEntityCollection">MongoDBEntityCollection</a> <a href="../cc/factorie/app/nlp/hcoref/NamedEntity.html" class="extype" name="cc.factorie.app.nlp.hcoref.NamedEntity">NamedEntity</a> <a href="../cc/factorie/app/nlp/hcoref/NamedEntityCubbie.html" class="extype" name="cc.factorie.app.nlp.hcoref.NamedEntityCubbie">NamedEntityCubbie</a> <a href="../cc/factorie/app/nlp/hcoref/StructuralPriorsTemplate.html" class="extype" name="cc.factorie.app.nlp.hcoref.StructuralPriorsTemplate">StructuralPriorsTemplate</a> <a href="../cc/factorie/app/nlp/lexicon/Lexicon.html" class="extype" name="cc.factorie.app.nlp.lexicon.Lexicon">Lexicon</a> <a href="../cc/factorie/app/nlp/lexicon/PhraseLexicon.html" class="extype" name="cc.factorie.app.nlp.lexicon.PhraseLexicon">PhraseLexicon</a> <a href="../cc/factorie/app/nlp/lexicon/UnionLexicon.html" class="extype" name="cc.factorie.app.nlp.lexicon.UnionLexicon">UnionLexicon</a> <a href="../cc/factorie/app/nlp/lexicon/WordLexicon.html" class="extype" name="cc.factorie.app.nlp.lexicon.WordLexicon">WordLexicon</a> <a href="../cc/factorie/app/nlp/mention/Entity.html" class="extype" name="cc.factorie.app.nlp.mention.Entity">Entity</a> <a href="../cc/factorie/app/topics/lda/Doc.html" class="extype" name="cc.factorie.app.topics.lda.Doc">Doc</a> <a href="../cc/factorie/app/topics/lda/Document.html" class="extype" name="cc.factorie.app.topics.lda.Document">Document</a> <a href="../cc/factorie/app/topics/lda/Tag.html" class="extype" name="cc.factorie.app.topics.lda.Tag">Tag</a> <a href="../cc/factorie/db/mongo/Indexer$SlotKey.html" class="extype" name="cc.factorie.db.mongo.Indexer.SlotKey">SlotKey</a> <a href="../cc/factorie/tutorial/Coref2$$MyEntity.html" class="extype" name="cc.factorie.tutorial.Coref2.MyEntity">MyEntity</a> <a href="../cc/factorie/tutorial/Coref2$$MyEntityCubbie.html" class="extype" name="cc.factorie.tutorial.Coref2.MyEntityCubbie">MyEntityCubbie</a> <a href="../cc/factorie/tutorial/CorefMentions$$Mention.html" class="extype" name="cc.factorie.tutorial.CorefMentions.Mention">Mention</a> <a href="../cc/factorie/util/CmdOption.html" class="extype" name="cc.factorie.util.CmdOption">CmdOption</a> <a href="../cc/factorie/util/CmdOptions$CmdOption.html" class="extype" name="cc.factorie.util.CmdOptions.CmdOption">CmdOption</a> <a href="../cc/factorie/util/Cubbie$AbstractInverseSlot.html" class="extype" name="cc.factorie.util.Cubbie.AbstractInverseSlot">AbstractInverseSlot</a> <a href="../cc/factorie/util/Cubbie$AbstractSlot.html" class="extype" name="cc.factorie.util.Cubbie.AbstractSlot">AbstractSlot</a> <a href="../cc/factorie/util/Cubbie$AnySlot.html" class="extype" name="cc.factorie.util.Cubbie.AnySlot">AnySlot</a> <a href="../cc/factorie/util/Cubbie$BooleanListSlot.html" class="extype" name="cc.factorie.util.Cubbie.BooleanListSlot">BooleanListSlot</a> <a href="../cc/factorie/util/Cubbie$BooleanSlot.html" class="extype" name="cc.factorie.util.Cubbie.BooleanSlot">BooleanSlot</a> <a href="../cc/factorie/util/Cubbie$CubbieListSlot.html" class="extype" name="cc.factorie.util.Cubbie.CubbieListSlot">CubbieListSlot</a> <a href="../cc/factorie/util/Cubbie$CubbieSlot.html" class="extype" name="cc.factorie.util.Cubbie.CubbieSlot">CubbieSlot</a> <a href="../cc/factorie/util/Cubbie$DateSlot.html" class="extype" name="cc.factorie.util.Cubbie.DateSlot">DateSlot</a> <a href="../cc/factorie/util/Cubbie$DoubleListSlot.html" class="extype" name="cc.factorie.util.Cubbie.DoubleListSlot">DoubleListSlot</a> <a href="../cc/factorie/util/Cubbie$DoubleSlot.html" class="extype" name="cc.factorie.util.Cubbie.DoubleSlot">DoubleSlot</a> <a href="../cc/factorie/util/Cubbie$Id$.html" class="extype" name="cc.factorie.util.Cubbie.Id">Id</a> <a href="../cc/factorie/util/Cubbie$IntListSlot.html" class="extype" name="cc.factorie.util.Cubbie.IntListSlot">IntListSlot</a> <a href="../cc/factorie/util/Cubbie$IntSlot.html" class="extype" name="cc.factorie.util.Cubbie.IntSlot">IntSlot</a> <a href="../cc/factorie/util/Cubbie$InverseSlot.html" class="extype" name="cc.factorie.util.Cubbie.InverseSlot">InverseSlot</a> <a href="../cc/factorie/util/Cubbie$RefSlot.html" class="extype" name="cc.factorie.util.Cubbie.RefSlot">RefSlot</a> <a href="../cc/factorie/util/Cubbie$Slot.html" class="extype" name="cc.factorie.util.Cubbie.Slot">Slot</a> <a href="../cc/factorie/util/Cubbie$StringListSlot.html" class="extype" name="cc.factorie.util.Cubbie.StringListSlot">StringListSlot</a> <a href="../cc/factorie/util/Cubbie$StringSlot.html" class="extype" name="cc.factorie.util.Cubbie.StringSlot">StringSlot</a> <a href="../cc/factorie/util/Cubbie$TensorListSlot.html" class="extype" name="cc.factorie.util.Cubbie.TensorListSlot">TensorListSlot</a> <a href="../cc/factorie/util/Cubbie$TensorSlot.html" class="extype" name="cc.factorie.util.Cubbie.TensorSlot">TensorSlot</a> <a href="../cc/factorie/util/Logger.html" class="extype" name="cc.factorie.util.Logger">Logger</a> </div>
+      <div class="occurrences"><a href="../cc/factorie/app/bib/EntityNamePenaltyTemplate.html" class="extype" name="cc.factorie.app.bib.EntityNamePenaltyTemplate">EntityNamePenaltyTemplate</a> <a href="../cc/factorie/app/bib/EntityNameTemplate.html" class="extype" name="cc.factorie.app.bib.EntityNameTemplate">EntityNameTemplate</a> <a href="../cc/factorie/app/bib/WeightedChildParentCosineDistance.html" class="extype" name="cc.factorie.app.bib.WeightedChildParentCosineDistance">WeightedChildParentCosineDistance</a> <a href="../cc/factorie/app/nlp/Document.html" class="extype" name="cc.factorie.app.nlp.Document">Document</a> <a href="../cc/factorie/app/nlp/DocumentCubbie.html" class="extype" name="cc.factorie.app.nlp.DocumentCubbie">DocumentCubbie</a> <a href="../cc/factorie/app/nlp/TokenSpan.html" class="extype" name="cc.factorie.app.nlp.TokenSpan">TokenSpan</a> <a href="../cc/factorie/app/nlp/coref/mention/Entity.html" class="extype" name="cc.factorie.app.nlp.coref.mention.Entity">Entity</a> <a href="../cc/factorie/app/nlp/hcoref/ChildParentCosineDistance.html" class="extype" name="cc.factorie.app.nlp.hcoref.ChildParentCosineDistance">ChildParentCosineDistance</a> <a href="../cc/factorie/app/nlp/hcoref/DebugableTemplate.html" class="extype" name="cc.factorie.app.nlp.hcoref.DebugableTemplate">DebugableTemplate</a> <a href="../cc/factorie/app/nlp/hcoref/DepthPenaltyTemplate.html" class="extype" name="cc.factorie.app.nlp.hcoref.DepthPenaltyTemplate">DepthPenaltyTemplate</a> <a href="../cc/factorie/app/nlp/hcoref/EntropyBagOfWordsPriorWithStatistics.html" class="extype" name="cc.factorie.app.nlp.hcoref.EntropyBagOfWordsPriorWithStatistics">EntropyBagOfWordsPriorWithStatistics</a> <a href="../cc/factorie/app/nlp/hcoref/MongoDBEntityCollection.html" class="extype" name="cc.factorie.app.nlp.hcoref.MongoDBEntityCollection">MongoDBEntityCollection</a> <a href="../cc/factorie/app/nlp/hcoref/NamedEntity.html" class="extype" name="cc.factorie.app.nlp.hcoref.NamedEntity">NamedEntity</a> <a href="../cc/factorie/app/nlp/hcoref/NamedEntityCubbie.html" class="extype" name="cc.factorie.app.nlp.hcoref.NamedEntityCubbie">NamedEntityCubbie</a> <a href="../cc/factorie/app/nlp/hcoref/StructuralPriorsTemplate.html" class="extype" name="cc.factorie.app.nlp.hcoref.StructuralPriorsTemplate">StructuralPriorsTemplate</a> <a href="../cc/factorie/app/nlp/lexicon/Lexicon.html" class="extype" name="cc.factorie.app.nlp.lexicon.Lexicon">Lexicon</a> <a href="../cc/factorie/app/nlp/lexicon/PhraseLexicon.html" class="extype" name="cc.factorie.app.nlp.lexicon.PhraseLexicon">PhraseLexicon</a> <a href="../cc/factorie/app/nlp/lexicon/UnionLexicon.html" class="extype" name="cc.factorie.app.nlp.lexicon.UnionLexicon">UnionLexicon</a> <a href="../cc/factorie/app/nlp/lexicon/WordLexicon.html" class="extype" name="cc.factorie.app.nlp.lexicon.WordLexicon">WordLexicon</a> <a href="../cc/factorie/app/nlp/load/EntityKey.html" class="extype" name="cc.factorie.app.nlp.load.EntityKey">EntityKey</a> <a href="../cc/factorie/app/topics/lda/Doc.html" class="extype" name="cc.factorie.app.topics.lda.Doc">Doc</a> <a href="../cc/factorie/app/topics/lda/Document.html" class="extype" name="cc.factorie.app.topics.lda.Document">Document</a> <a href="../cc/factorie/app/topics/lda/Tag.html" class="extype" name="cc.factorie.app.topics.lda.Tag">Tag</a> <a href="../cc/factorie/db/mongo/Indexer$SlotKey.html" class="extype" name="cc.factorie.db.mongo.Indexer.SlotKey">SlotKey</a> <a href="../cc/factorie/tutorial/Coref2$$MyEntity.html" class="extype" name="cc.factorie.tutorial.Coref2.MyEntity">MyEntity</a> <a href="../cc/factorie/tutorial/Coref2$$MyEntityCubbie.html" class="extype" name="cc.factorie.tutorial.Coref2.MyEntityCubbie">MyEntityCubbie</a> <a href="../cc/factorie/tutorial/CorefMentions$$Mention.html" class="extype" name="cc.factorie.tutorial.CorefMentions.Mention">Mention</a> <a href="../cc/factorie/util/CmdOption.html" class="extype" name="cc.factorie.util.CmdOption">CmdOption</a> <a href="../cc/factorie/util/CmdOptions$CmdOption.html" class="extype" name="cc.factorie.util.CmdOptions.CmdOption">CmdOption</a> <a href="../cc/factorie/util/Cubbie$AbstractInverseSlot.html" class="extype" name="cc.factorie.util.Cubbie.AbstractInverseSlot">AbstractInverseSlot</a> <a href="../cc/factorie/util/Cubbie$AbstractSlot.html" class="extype" name="cc.factorie.util.Cubbie.AbstractSlot">AbstractSlot</a> <a href="../cc/factorie/util/Cubbie$AnySlot.html" class="extype" name="cc.factorie.util.Cubbie.AnySlot">AnySlot</a> <a href="../cc/factorie/util/Cubbie$BooleanListSlot.html" class="extype" name="cc.factorie.util.Cubbie.BooleanListSlot">BooleanListSlot</a> <a href="../cc/factorie/util/Cubbie$BooleanSlot.html" class="extype" name="cc.factorie.util.Cubbie.BooleanSlot">BooleanSlot</a> <a href="../cc/factorie/util/Cubbie$CubbieListSlot.html" class="extype" name="cc.factorie.util.Cubbie.CubbieListSlot">CubbieListSlot</a> <a href="../cc/factorie/util/Cubbie$CubbieSlot.html" class="extype" name="cc.factorie.util.Cubbie.CubbieSlot">CubbieSlot</a> <a href="../cc/factorie/util/Cubbie$DateSlot.html" class="extype" name="cc.factorie.util.Cubbie.DateSlot">DateSlot</a> <a href="../cc/factorie/util/Cubbie$DoubleListSlot.html" class="extype" name="cc.factorie.util.Cubbie.DoubleListSlot">DoubleListSlot</a> <a href="../cc/factorie/util/Cubbie$DoubleSlot.html" class="extype" name="cc.factorie.util.Cubbie.DoubleSlot">DoubleSlot</a> <a href="../cc/factorie/util/Cubbie$Id$.html" class="extype" name="cc.factorie.util.Cubbie.Id">Id</a> <a href="../cc/factorie/util/Cubbie$IntListSlot.html" class="extype" name="cc.factorie.util.Cubbie.IntListSlot">IntListSlot</a> <a href="../cc/factorie/util/Cubbie$IntSlot.html" class="extype" name="cc.factorie.util.Cubbie.IntSlot">IntSlot</a> <a href="../cc/factorie/util/Cubbie$InverseSlot.html" class="extype" name="cc.factorie.util.Cubbie.InverseSlot">InverseSlot</a> <a href="../cc/factorie/util/Cubbie$RefSlot.html" class="extype" name="cc.factorie.util.Cubbie.RefSlot">RefSlot</a> <a href="../cc/factorie/util/Cubbie$Slot.html" class="extype" name="cc.factorie.util.Cubbie.Slot">Slot</a> <a href="../cc/factorie/util/Cubbie$StringListSlot.html" class="extype" name="cc.factorie.util.Cubbie.StringListSlot">StringListSlot</a> <a href="../cc/factorie/util/Cubbie$StringSlot.html" class="extype" name="cc.factorie.util.Cubbie.StringSlot">StringSlot</a> <a href="../cc/factorie/util/Cubbie$TensorListSlot.html" class="extype" name="cc.factorie.util.Cubbie.TensorListSlot">TensorListSlot</a> <a href="../cc/factorie/util/Cubbie$TensorSlot.html" class="extype" name="cc.factorie.util.Cubbie.TensorSlot">TensorSlot</a> <a href="../cc/factorie/util/Logger.html" class="extype" name="cc.factorie.util.Logger">Logger</a> </div>
     </div><div class="entry">
       <div class="name">nameDocumentMap</div>
       <div class="occurrences"><a href="../cc/factorie/app/topics/lda/LDA.html" class="extype" name="cc.factorie.app.topics.lda.LDA">LDA</a> </div>
     </div><div class="entry">
+      <div class="name">names</div>
+      <div class="occurrences"><a href="../cc/factorie/tutorial/TutorialDomain$.html" class="extype" name="cc.factorie.tutorial.TutorialDomain">TutorialDomain</a> </div>
+    </div><div class="entry">
       <div class="name">near</div>
       <div class="occurrences"><a href="../cc/factorie/infer/MPLP.html" class="extype" name="cc.factorie.infer.MPLP">MPLP</a> </div>
+    </div><div class="entry">
+      <div class="name">nearestNeighbours</div>
+      <div class="occurrences"><a href="../cc/factorie/app/nlp/embeddings/EmbeddingDistance$.html" class="extype" name="cc.factorie.app.nlp.embeddings.EmbeddingDistance">EmbeddingDistance</a> </div>
     </div><div class="entry">
       <div class="name">neg</div>
       <div class="occurrences"><a href="../cc/factorie/app/nlp/parse/ParseTreeLabelDomain$.html" class="extype" name="cc.factorie.app.nlp.parse.ParseTreeLabelDomain">ParseTreeLabelDomain</a> </div>
     </div><div class="entry">
+      <div class="name">negCost</div>
+      <div class="occurrences"><a href="../cc/factorie/optimize/OptimizableObjectives$$HingeScaledBinary.html" class="extype" name="cc.factorie.optimize.OptimizableObjectives.HingeScaledBinary">HingeScaledBinary</a> <a href="../cc/factorie/optimize/OptimizableObjectives$$SmoothHingeBinary.html" class="extype" name="cc.factorie.optimize.OptimizableObjectives.SmoothHingeBinary">SmoothHingeBinary</a> </div>
+    </div><div class="entry">
       <div class="name">negative</div>
-      <div class="occurrences"><a href="../cc/factorie/app/mf/WSabie$$WSabieExample.html" class="extype" name="cc.factorie.app.mf.WSabie.WSabieExample">WSabieExample</a> </div>
+      <div class="occurrences"><a href="../cc/factorie/app/mf/WSabie$$WSabieExample.html" class="extype" name="cc.factorie.app.mf.WSabie.WSabieExample">WSabieExample</a> <a href="../cc/factorie/app/nlp/embeddings/CBOWNegSamplingEmbeddingModel.html" class="extype" name="cc.factorie.app.nlp.embeddings.CBOWNegSamplingEmbeddingModel">CBOWNegSamplingEmbeddingModel</a> <a href="../cc/factorie/app/nlp/embeddings/EmbeddingOpts.html" class="extype" name="cc.factorie.app.nlp.embeddings.EmbeddingOpts">EmbeddingOpts</a> <a href="../cc/factorie/app/nlp/embeddings/SkipGramNegSamplingEmbeddingModel.html" class="extype" name="cc.factorie.app.nlp.embeddings.SkipGramNegSamplingEmbeddingModel">SkipGramNegSamplingEmbeddingModel</a> </div>
     </div><div class="entry">
       <div class="name">negativeExamples</div>
       <div class="occurrences"><a href="../cc/factorie/app/nlp/parse/ProjectiveGraphBasedParser$ProjectiveParser.html" class="extype" name="cc.factorie.app.nlp.parse.ProjectiveGraphBasedParser.ProjectiveParser">ProjectiveParser</a> </div>
@@ -280,10 +298,10 @@
       <div class="occurrences"><a href="../cc/factorie/app/nlp/Sentence.html" class="extype" name="cc.factorie.app.nlp.Sentence">Sentence</a> </div>
     </div><div class="entry">
       <div class="name">neuterPron</div>
-      <div class="occurrences"><a href="../cc/factorie/app/nlp/coref/CorefFeatures$.html" class="extype" name="cc.factorie.app.nlp.coref.CorefFeatures">CorefFeatures</a> </div>
+      <div class="occurrences"><a href="../cc/factorie/app/nlp/coref/mention/CorefFeatures$.html" class="extype" name="cc.factorie.app.nlp.coref.mention.CorefFeatures">CorefFeatures</a> </div>
     </div><div class="entry">
       <div class="name">neuterWN</div>
-      <div class="occurrences"><a href="../cc/factorie/app/nlp/coref/CorefFeatures$.html" class="extype" name="cc.factorie.app.nlp.coref.CorefFeatures">CorefFeatures</a> </div>
+      <div class="occurrences"><a href="../cc/factorie/app/nlp/coref/mention/CorefFeatures$.html" class="extype" name="cc.factorie.app.nlp.coref.mention.CorefFeatures">CorefFeatures</a> </div>
     </div><div class="entry">
       <div class="name">neverLogger</div>
       <div class="occurrences"><a href="../cc/factorie/util/Logger$.html" class="extype" name="cc.factorie.util.Logger">Logger</a> </div>
@@ -406,7 +424,7 @@
       <div class="occurrences"><a href="../cc/factorie/app/nlp/segment/DeterministicSentenceSegmenter.html" class="extype" name="cc.factorie.app.nlp.segment.DeterministicSentenceSegmenter">DeterministicSentenceSegmenter</a> </div>
     </div><div class="entry">
       <div class="name">next</div>
-      <div class="occurrences"><a href="../cc/factorie/app/nlp/lexicon/PhraseLexicon$LexiconPhraseToken.html" class="extype" name="cc.factorie.app.nlp.lexicon.PhraseLexicon.LexiconPhraseToken">LexiconPhraseToken</a> <a href="../cc/factorie/app/nlp/lexicon/PhraseLexicon$LexiconToken.html" class="extype" name="cc.factorie.app.nlp.lexicon.PhraseLexicon.LexiconToken">LexiconToken</a> <a href="../cc/factorie/db/mongo/MongoCubbieCollection$CursorIterator.html" class="extype" name="cc.factorie.db.mongo.MongoCubbieCollection.CursorIterator">CursorIterator</a> <a href="../cc/factorie/variable/AbstractChainLink.html" class="extype" name="cc.factorie.variable.AbstractChainLink">AbstractChainLink</a> <a href="../cc/factorie/variable/AssignmentStack.html" class="extype" name="cc.factorie.variable.AssignmentStack">AssignmentStack</a> <a href="../cc/factorie/variable/ChainLink.html" class="extype" name="cc.factorie.variable.ChainLink">ChainLink</a> <a href="../cc/factorie/variable/SettingIterator.html" class="extype" name="cc.factorie.variable.SettingIterator">SettingIterator</a> <a href="../cc/factorie/variable/Span.html" class="extype" name="cc.factorie.variable.Span">Span</a> </div>
+      <div class="occurrences"><a href="../cc/factorie/app/nlp/embeddings/FastLineReader.html" class="extype" name="cc.factorie.app.nlp.embeddings.FastLineReader">FastLineReader</a> <a href="../cc/factorie/app/nlp/embeddings/LineReader.html" class="extype" name="cc.factorie.app.nlp.embeddings.LineReader">LineReader</a> <a href="../cc/factorie/app/nlp/embeddings/WordReader.html" class="extype" name="cc.factorie.app.nlp.embeddings.WordReader">WordReader</a> <a href="../cc/factorie/app/nlp/lexicon/PhraseLexicon$LexiconPhraseToken.html" class="extype" name="cc.factorie.app.nlp.lexicon.PhraseLexicon.LexiconPhraseToken">LexiconPhraseToken</a> <a href="../cc/factorie/app/nlp/lexicon/PhraseLexicon$LexiconToken.html" class="extype" name="cc.factorie.app.nlp.lexicon.PhraseLexicon.LexiconToken">LexiconToken</a> <a href="../cc/factorie/db/mongo/MongoCubbieCollection$CursorIterator.html" class="extype" name="cc.factorie.db.mongo.MongoCubbieCollection.CursorIterator">CursorIterator</a> <a href="../cc/factorie/tutorial/ChainNERDemo$$Label.html" class="extype" name="cc.factorie.tutorial.ChainNERDemo.Label">Label</a> <a href="../cc/factorie/variable/AbstractChainLink.html" class="extype" name="cc.factorie.variable.AbstractChainLink">AbstractChainLink</a> <a href="../cc/factorie/variable/AssignmentStack.html" class="extype" name="cc.factorie.variable.AssignmentStack">AssignmentStack</a> <a href="../cc/factorie/variable/ChainLink.html" class="extype" name="cc.factorie.variable.ChainLink">ChainLink</a> <a href="../cc/factorie/variable/SettingIterator.html" class="extype" name="cc.factorie.variable.SettingIterator">SettingIterator</a> <a href="../cc/factorie/variable/Span.html" class="extype" name="cc.factorie.variable.Span">Span</a> </div>
     </div><div class="entry">
       <div class="name">nextBatch</div>
       <div class="occurrences"><a href="../cc/factorie/app/nlp/hcoref/EntityCollection.html" class="extype" name="cc.factorie.app.nlp.hcoref.EntityCollection">EntityCollection</a> <a href="../cc/factorie/app/nlp/hcoref/MongoDBEntityCollection.html" class="extype" name="cc.factorie.app.nlp.hcoref.MongoDBEntityCollection">MongoDBEntityCollection</a> </div>
@@ -493,13 +511,13 @@
       <div class="occurrences"><a href="../cc/factorie/app/nlp/parse/ParseTree$.html" class="extype" name="cc.factorie.app.nlp.parse.ParseTree">ParseTree</a> </div>
     </div><div class="entry">
       <div class="name">nomGender</div>
-      <div class="occurrences"><a href="../cc/factorie/app/nlp/coref/CorefFeatures$.html" class="extype" name="cc.factorie.app.nlp.coref.CorefFeatures">CorefFeatures</a> </div>
+      <div class="occurrences"><a href="../cc/factorie/app/nlp/coref/mention/CorefFeatures$.html" class="extype" name="cc.factorie.app.nlp.coref.mention.CorefFeatures">CorefFeatures</a> </div>
     </div><div class="entry">
       <div class="name">nonAssignedEntities</div>
       <div class="occurrences"><a href="../cc/factorie/app/bib/ParallelSampling.html" class="extype" name="cc.factorie.app.bib.ParallelSampling">ParallelSampling</a> </div>
     </div><div class="entry">
       <div class="name">nonDeterminerWords</div>
-      <div class="occurrences"><a href="../cc/factorie/app/nlp/coref/CorefMention.html" class="extype" name="cc.factorie.app.nlp.coref.CorefMention">CorefMention</a> <a href="../cc/factorie/app/nlp/coref/MentionCache.html" class="extype" name="cc.factorie.app.nlp.coref.MentionCache">MentionCache</a> </div>
+      <div class="occurrences"><a href="../cc/factorie/app/nlp/coref/mention/CorefMention.html" class="extype" name="cc.factorie.app.nlp.coref.mention.CorefMention">CorefMention</a> <a href="../cc/factorie/app/nlp/coref/mention/MentionCache.html" class="extype" name="cc.factorie.app.nlp.coref.mention.MentionCache">MentionCache</a> </div>
     </div><div class="entry">
       <div class="name">nonPunctuationRegex</div>
       <div class="occurrences"><a href="../cc/factorie/app/nlp/segment/PunktSentenceSegmenter$$Punkt$.html" class="extype" name="cc.factorie.app.nlp.segment.PunktSentenceSegmenter.Punkt">Punkt</a> </div>
@@ -577,7 +595,7 @@
       <div class="occurrences"><a href="../cc/factorie/app/nlp/load/ReACEWordAnnotations.html" class="extype" name="cc.factorie.app.nlp.load.ReACEWordAnnotations">ReACEWordAnnotations</a> </div>
     </div><div class="entry">
       <div class="name">nounSet</div>
-      <div class="occurrences"><a href="../cc/factorie/app/nlp/coref/CorefMention$.html" class="extype" name="cc.factorie.app.nlp.coref.CorefMention">CorefMention</a> </div>
+      <div class="occurrences"><a href="../cc/factorie/app/nlp/coref/mention/CorefMention$.html" class="extype" name="cc.factorie.app.nlp.coref.mention.CorefMention">CorefMention</a> </div>
     </div><div class="entry">
       <div class="name">nounSufx</div>
       <div class="occurrences"><a href="../cc/factorie/app/nlp/lemma/WordNetLemmatizer.html" class="extype" name="cc.factorie.app.nlp.lemma.WordNetLemmatizer">WordNetLemmatizer</a> </div>
@@ -586,7 +604,7 @@
       <div class="occurrences"><a href="../cc/factorie/app/nlp/morph/BasicMorphologicalAnalyzer.html" class="extype" name="cc.factorie.app.nlp.morph.BasicMorphologicalAnalyzer">BasicMorphologicalAnalyzer</a> </div>
     </div><div class="entry">
       <div class="name">nounWords</div>
-      <div class="occurrences"><a href="../cc/factorie/app/nlp/coref/CorefMention.html" class="extype" name="cc.factorie.app.nlp.coref.CorefMention">CorefMention</a> <a href="../cc/factorie/app/nlp/coref/MentionCache.html" class="extype" name="cc.factorie.app.nlp.coref.MentionCache">MentionCache</a> </div>
+      <div class="occurrences"><a href="../cc/factorie/app/nlp/coref/mention/CorefMention.html" class="extype" name="cc.factorie.app.nlp.coref.mention.CorefMention">CorefMention</a> <a href="../cc/factorie/app/nlp/coref/mention/MentionCache.html" class="extype" name="cc.factorie.app.nlp.coref.mention.MentionCache">MentionCache</a> </div>
     </div><div class="entry">
       <div class="name">npadvmod</div>
       <div class="occurrences"><a href="../cc/factorie/app/nlp/parse/ParseTreeLabelDomain$.html" class="extype" name="cc.factorie.app.nlp.parse.ParseTreeLabelDomain">ParseTreeLabelDomain</a> </div>
@@ -661,7 +679,7 @@
       <div class="occurrences"><a href="../cc/factorie/app/bib/BibKB.html" class="extype" name="cc.factorie.app.bib.BibKB">BibKB</a> </div>
     </div><div class="entry">
       <div class="name">numDetected</div>
-      <div class="occurrences"><a href="../cc/factorie/app/nlp/coref/MentionAlignment$$PrecRecReport.html" class="extype" name="cc.factorie.app.nlp.coref.MentionAlignment.PrecRecReport">PrecRecReport</a> </div>
+      <div class="occurrences"><a href="../cc/factorie/app/nlp/coref/mention/MentionAlignment$$PrecRecReport.html" class="extype" name="cc.factorie.app.nlp.coref.mention.MentionAlignment.PrecRecReport">PrecRecReport</a> </div>
     </div><div class="entry">
       <div class="name">numDiffVars</div>
       <div class="occurrences"><a href="../cc/factorie/app/bib/SamplingStatistics.html" class="extype" name="cc.factorie.app.bib.SamplingStatistics">SamplingStatistics</a> </div>
@@ -681,6 +699,9 @@
       <div class="name">numEmbeddings</div>
       <div class="occurrences"><a href="../cc/factorie/app/mf/WSabie$$WSabieModel.html" class="extype" name="cc.factorie.app.mf.WSabie.WSabieModel">WSabieModel</a> </div>
     </div><div class="entry">
+      <div class="name">numEmbeddingsToTake</div>
+      <div class="occurrences"><a href="../cc/factorie/app/nlp/embeddings/WordEmbeddingOptions.html" class="extype" name="cc.factorie.app.nlp.embeddings.WordEmbeddingOptions">WordEmbeddingOptions</a> </div>
+    </div><div class="entry">
       <div class="name">numEntities</div>
       <div class="occurrences"><a href="../cc/factorie/util/coref/GenericEntityMap.html" class="extype" name="cc.factorie.util.coref.GenericEntityMap">GenericEntityMap</a> </div>
     </div><div class="entry">
@@ -694,13 +715,13 @@
       <div class="occurrences"><a href="../cc/factorie/app/bib/experiments/EDBExpOpts.html" class="extype" name="cc.factorie.app.bib.experiments.EDBExpOpts">EDBExpOpts</a> </div>
     </div><div class="entry">
       <div class="name">numGT</div>
-      <div class="occurrences"><a href="../cc/factorie/app/nlp/coref/MentionAlignment$$PrecRecReport.html" class="extype" name="cc.factorie.app.nlp.coref.MentionAlignment.PrecRecReport">PrecRecReport</a> </div>
+      <div class="occurrences"><a href="../cc/factorie/app/nlp/coref/mention/MentionAlignment$$PrecRecReport.html" class="extype" name="cc.factorie.app.nlp.coref.mention.MentionAlignment.PrecRecReport">PrecRecReport</a> </div>
     </div><div class="entry">
       <div class="name">numIterations</div>
       <div class="occurrences"><a href="../cc/factorie/app/topics/lda/TaggedLDA$.html" class="extype" name="cc.factorie.app.topics.lda.TaggedLDA">TaggedLDA</a> <a href="../cc/factorie/optimize/LBFGS.html" class="extype" name="cc.factorie.optimize.LBFGS">LBFGS</a> </div>
     </div><div class="entry">
       <div class="name">numIters</div>
-      <div class="occurrences"><a href="../cc/factorie/app/nlp/pos/ForwardPosOptions.html" class="extype" name="cc.factorie.app.nlp.pos.ForwardPosOptions">ForwardPosOptions</a> </div>
+      <div class="occurrences"><a href="../cc/factorie/app/nlp/phrase/ChunkerOpts.html" class="extype" name="cc.factorie.app.nlp.phrase.ChunkerOpts">ChunkerOpts</a> <a href="../cc/factorie/app/nlp/pos/ForwardPosOptions.html" class="extype" name="cc.factorie.app.nlp.pos.ForwardPosOptions">ForwardPosOptions</a> </div>
     </div><div class="entry">
       <div class="name">numLabels</div>
       <div class="occurrences"><a href="../cc/factorie/app/classify/backend/BoostedMulticlassClassifier.html" class="extype" name="cc.factorie.app.classify.backend.BoostedMulticlassClassifier">BoostedMulticlassClassifier</a> <a href="../cc/factorie/app/classify/backend/BoostedTreeCubbie.html" class="extype" name="cc.factorie.app.classify.backend.BoostedTreeCubbie">BoostedTreeCubbie</a> </div>
@@ -799,7 +820,7 @@
       <div class="occurrences"><a href="../cc/factorie/app/bib/Foreman.html" class="extype" name="cc.factorie.app.bib.Foreman">Foreman</a> </div>
     </div><div class="entry">
       <div class="name">number</div>
-      <div class="occurrences"><a href="../cc/factorie/app/bib/PaperCubbie.html" class="extype" name="cc.factorie.app.bib.PaperCubbie">PaperCubbie</a> <a href="../cc/factorie/app/nlp/coref/CorefMention.html" class="extype" name="cc.factorie.app.nlp.coref.CorefMention">CorefMention</a> <a href="../cc/factorie/app/nlp/coref/ForwardCorefBase$CoarseMentionType.html" class="extype" name="cc.factorie.app.nlp.coref.ForwardCorefBase.CoarseMentionType">CoarseMentionType</a> <a href="../cc/factorie/app/nlp/coref/MentionCache.html" class="extype" name="cc.factorie.app.nlp.coref.MentionCache">MentionCache</a> <a href="../cc/factorie/app/nlp/parse/ParseTreeLabelDomain$.html" class="extype" name="cc.factorie.app.nlp.parse.ParseTreeLabelDomain">ParseTreeLabelDomain</a> <a href="../cc/factorie/app/nlp/segment/DeterministicTokenizer.html" class="extype" name="cc.factorie.app.nlp.segment.DeterministicTokenizer">DeterministicTokenizer</a> </div>
+      <div class="occurrences"><a href="../cc/factorie/app/bib/PaperCubbie.html" class="extype" name="cc.factorie.app.bib.PaperCubbie">PaperCubbie</a> <a href="../cc/factorie/app/nlp/coref/ForwardCorefBase$CoarseMentionType.html" class="extype" name="cc.factorie.app.nlp.coref.ForwardCorefBase.CoarseMentionType">CoarseMentionType</a> <a href="../cc/factorie/app/nlp/coref/mention/CorefMention.html" class="extype" name="cc.factorie.app.nlp.coref.mention.CorefMention">CorefMention</a> <a href="../cc/factorie/app/nlp/coref/mention/MentionCache.html" class="extype" name="cc.factorie.app.nlp.coref.mention.MentionCache">MentionCache</a> <a href="../cc/factorie/app/nlp/parse/ParseTreeLabelDomain$.html" class="extype" name="cc.factorie.app.nlp.parse.ParseTreeLabelDomain">ParseTreeLabelDomain</a> <a href="../cc/factorie/app/nlp/segment/DeterministicTokenizer.html" class="extype" name="cc.factorie.app.nlp.segment.DeterministicTokenizer">DeterministicTokenizer</a> </div>
     </div><div class="entry">
       <div class="name">number2</div>
       <div class="occurrences"><a href="../cc/factorie/app/nlp/segment/DeterministicTokenizer.html" class="extype" name="cc.factorie.app.nlp.segment.DeterministicTokenizer">DeterministicTokenizer</a> </div>
@@ -808,10 +829,10 @@
       <div class="occurrences"><a href="../cc/factorie/app/bib/DefaultSamplerWorker.html" class="extype" name="cc.factorie.app.bib.DefaultSamplerWorker">DefaultSamplerWorker</a> </div>
     </div><div class="entry">
       <div class="name">numbersMatch</div>
-      <div class="occurrences"><a href="../cc/factorie/app/nlp/coref/CorefFeatures$.html" class="extype" name="cc.factorie.app.nlp.coref.CorefFeatures">CorefFeatures</a> </div>
+      <div class="occurrences"><a href="../cc/factorie/app/nlp/coref/mention/CorefFeatures$.html" class="extype" name="cc.factorie.app.nlp.coref.mention.CorefFeatures">CorefFeatures</a> </div>
     </div><div class="entry">
       <div class="name">numcorrect</div>
-      <div class="occurrences"><a href="../cc/factorie/app/nlp/coref/MentionAlignment$$PrecRecReport.html" class="extype" name="cc.factorie.app.nlp.coref.MentionAlignment.PrecRecReport">PrecRecReport</a> </div>
+      <div class="occurrences"><a href="../cc/factorie/app/nlp/coref/mention/MentionAlignment$$PrecRecReport.html" class="extype" name="cc.factorie.app.nlp.coref.mention.MentionAlignment.PrecRecReport">PrecRecReport</a> </div>
     </div><div class="entry">
       <div class="name">numericRegex</div>
       <div class="occurrences"><a href="../cc/factorie/app/nlp/segment/PunktSentenceSegmenter$$Punkt$$PunktToken$.html" class="extype" name="cc.factorie.app.nlp.segment.PunktSentenceSegmenter.Punkt.PunktToken">PunktToken</a> </div>

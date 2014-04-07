@@ -2497,19 +2497,45 @@
       </span>
       </h4>
       <p class="comment cmt">A (non-mutable) variable whose value is a Span.</p>
-    </li><li name="cc.factorie.variable.SpanVarList" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="SpanVarList[S&lt;:cc.factorie.variable.SpanVar[C,E],C&lt;:cc.factorie.variable.Chain[C,E],E&lt;:cc.factorie.variable.ChainLink[E,C]]extendsArrayBuffer[S]"></a>
-      <a id="SpanVarList[S&lt;:SpanVar[C,E],C&lt;:Chain[C,E],E&lt;:ChainLink[E,C]]:SpanVarList[S,C,E]"></a>
+    </li><li name="cc.factorie.variable.SpanVarBuffer" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="SpanVarBuffer[S&lt;:cc.factorie.variable.SpanVar[C,E],C&lt;:cc.factorie.variable.Chain[C,E],E&lt;:cc.factorie.variable.ChainLink[E,C]]extendsArrayBuffer[S]withSpanVarCollection[S,C,E]"></a>
+      <a id="SpanVarBuffer[S&lt;:SpanVar[C,E],C&lt;:Chain[C,E],E&lt;:ChainLink[E,C]]:SpanVarBuffer[S,C,E]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">class</span>
       </span>
       <span class="symbol">
-        <a href="SpanVarList.html"><span class="name">SpanVarList</span></a><span class="tparams">[<span name="S">S &lt;: <a href="SpanVar.html" class="extype" name="cc.factorie.variable.SpanVar">SpanVar</a>[<span class="extype" name="cc.factorie.variable.SpanVarList.C">C</span>, <span class="extype" name="cc.factorie.variable.SpanVarList.E">E</span>]</span>, <span name="C">C &lt;: <a href="Chain.html" class="extype" name="cc.factorie.variable.Chain">Chain</a>[<span class="extype" name="cc.factorie.variable.SpanVarList.C">C</span>, <span class="extype" name="cc.factorie.variable.SpanVarList.E">E</span>]</span>, <span name="E">E &lt;: <a href="ChainLink.html" class="extype" name="cc.factorie.variable.ChainLink">ChainLink</a>[<span class="extype" name="cc.factorie.variable.SpanVarList.E">E</span>, <span class="extype" name="cc.factorie.variable.SpanVarList.C">C</span>]</span>]</span><span class="result"> extends <span class="extype" name="scala.collection.mutable.ArrayBuffer">ArrayBuffer</span>[<span class="extype" name="cc.factorie.variable.SpanVarList.S">S</span>]</span>
+        <a href="SpanVarBuffer.html"><span class="name">SpanVarBuffer</span></a><span class="tparams">[<span name="S">S &lt;: <a href="SpanVar.html" class="extype" name="cc.factorie.variable.SpanVar">SpanVar</a>[<span class="extype" name="cc.factorie.variable.SpanVarBuffer.C">C</span>, <span class="extype" name="cc.factorie.variable.SpanVarBuffer.E">E</span>]</span>, <span name="C">C &lt;: <a href="Chain.html" class="extype" name="cc.factorie.variable.Chain">Chain</a>[<span class="extype" name="cc.factorie.variable.SpanVarBuffer.C">C</span>, <span class="extype" name="cc.factorie.variable.SpanVarBuffer.E">E</span>]</span>, <span name="E">E &lt;: <a href="ChainLink.html" class="extype" name="cc.factorie.variable.ChainLink">ChainLink</a>[<span class="extype" name="cc.factorie.variable.SpanVarBuffer.E">E</span>, <span class="extype" name="cc.factorie.variable.SpanVarBuffer.C">C</span>]</span>]</span><span class="result"> extends <span class="extype" name="scala.collection.mutable.ArrayBuffer">ArrayBuffer</span>[<span class="extype" name="cc.factorie.variable.SpanVarBuffer.S">S</span>] with <a href="SpanVarCollection.html" class="extype" name="cc.factorie.variable.SpanVarCollection">SpanVarCollection</a>[<span class="extype" name="cc.factorie.variable.SpanVarBuffer.S">S</span>, <span class="extype" name="cc.factorie.variable.SpanVarBuffer.C">C</span>, <span class="extype" name="cc.factorie.variable.SpanVarBuffer.E">E</span>]</span>
       </span>
       </h4>
-      <p class="comment cmt">A collection of SpanVars, with various methods for retrieving subsets, and tracking additions and removals via DiffLists.</p>
+      <p class="comment cmt">A mutable concrete collection of SpanVars, with various methods for tracking additions and removals via DiffLists.</p>
+    </li><li name="cc.factorie.variable.SpanVarCollection" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="SpanVarCollection[+S&lt;:cc.factorie.variable.SpanVar[C,E],C&lt;:cc.factorie.variable.Chain[C,E],E&lt;:cc.factorie.variable.ChainLink[E,C]]extendsSeq[S]"></a>
+      <a id="SpanVarCollection[+S&lt;:SpanVar[C,E],C&lt;:Chain[C,E],E&lt;:ChainLink[E,C]]:SpanVarCollection[S,C,E]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="SpanVarCollection.html"><span class="name">SpanVarCollection</span></a><span class="tparams">[<span name="S">+S &lt;: <a href="SpanVar.html" class="extype" name="cc.factorie.variable.SpanVar">SpanVar</a>[<span class="extype" name="cc.factorie.variable.SpanVarCollection.C">C</span>, <span class="extype" name="cc.factorie.variable.SpanVarCollection.E">E</span>]</span>, <span name="C">C &lt;: <a href="Chain.html" class="extype" name="cc.factorie.variable.Chain">Chain</a>[<span class="extype" name="cc.factorie.variable.SpanVarCollection.C">C</span>, <span class="extype" name="cc.factorie.variable.SpanVarCollection.E">E</span>]</span>, <span name="E">E &lt;: <a href="ChainLink.html" class="extype" name="cc.factorie.variable.ChainLink">ChainLink</a>[<span class="extype" name="cc.factorie.variable.SpanVarCollection.E">E</span>, <span class="extype" name="cc.factorie.variable.SpanVarCollection.C">C</span>]</span>]</span><span class="result"> extends <a href="../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<span class="extype" name="cc.factorie.variable.SpanVarCollection.S">S</span>]</span>
+      </span>
+      </h4>
+      <p class="comment cmt">An abstract collection of SpanVars, with various methods for retrieving subsets.</p>
+    </li><li name="cc.factorie.variable.SpanVarList" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="SpanVarList[+S&lt;:cc.factorie.variable.SpanVar[C,E],C&lt;:cc.factorie.variable.Chain[C,E],E&lt;:cc.factorie.variable.ChainLink[E,C]]extendsSubclassableVector[S]withSpanVarCollection[S,C,E]"></a>
+      <a id="SpanVarList[+S&lt;:SpanVar[C,E],C&lt;:Chain[C,E],E&lt;:ChainLink[E,C]]:SpanVarList[S,C,E]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="SpanVarList.html"><span class="name">SpanVarList</span></a><span class="tparams">[<span name="S">+S &lt;: <a href="SpanVar.html" class="extype" name="cc.factorie.variable.SpanVar">SpanVar</a>[<span class="extype" name="cc.factorie.variable.SpanVarList.C">C</span>, <span class="extype" name="cc.factorie.variable.SpanVarList.E">E</span>]</span>, <span name="C">C &lt;: <a href="Chain.html" class="extype" name="cc.factorie.variable.Chain">Chain</a>[<span class="extype" name="cc.factorie.variable.SpanVarList.C">C</span>, <span class="extype" name="cc.factorie.variable.SpanVarList.E">E</span>]</span>, <span name="E">E &lt;: <a href="ChainLink.html" class="extype" name="cc.factorie.variable.ChainLink">ChainLink</a>[<span class="extype" name="cc.factorie.variable.SpanVarList.E">E</span>, <span class="extype" name="cc.factorie.variable.SpanVarList.C">C</span>]</span>]</span><span class="result"> extends <a href="../util/SubclassableVector.html" class="extype" name="cc.factorie.util.SubclassableVector">SubclassableVector</a>[<span class="extype" name="cc.factorie.variable.SpanVarList.S">S</span>] with <a href="SpanVarCollection.html" class="extype" name="cc.factorie.variable.SpanVarCollection">SpanVarCollection</a>[<span class="extype" name="cc.factorie.variable.SpanVarList.S">S</span>, <span class="extype" name="cc.factorie.variable.SpanVarList.C">C</span>, <span class="extype" name="cc.factorie.variable.SpanVarList.E">E</span>]</span>
+      </span>
+      </h4>
+      <p class="comment cmt">An immutable concrete collection of SpanVars.</p>
     </li><li name="cc.factorie.variable.SpanVariable" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="SpanVariable[C&lt;:cc.factorie.variable.Chain[C,E],E&lt;:cc.factorie.variable.ChainLink[E,C]]extendsMutableSpanVar[C,E]"></a>
       <a id="SpanVariable[C&lt;:Chain[C,E],E&lt;:ChainLink[E,C]]:SpanVariable[C,E]"></a>
@@ -2894,7 +2920,7 @@
         <span class="kind">object</span>
       </span>
       <span class="symbol">
-        <a href="BooleanValue$.html"><span class="name">BooleanValue</span></a>
+        <a href="BooleanValue$.html"><span class="name">BooleanValue</span></a><span class="result"> extends <span class="extype" name="scala.Serializable">Serializable</span></span>
       </span>
       </h4>
       
@@ -3051,7 +3077,7 @@
         <span class="kind">object</span>
       </span>
       <span class="symbol">
-        <a href="Proportions$.html"><span class="name">Proportions</span></a>
+        <a href="Proportions$.html"><span class="name">Proportions</span></a><span class="result"> extends <span class="extype" name="scala.Serializable">Serializable</span></span>
       </span>
       </h4>
       

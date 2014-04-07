@@ -283,7 +283,7 @@ Time: 12:25 PM
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
     </li><li name="cc.factorie.app.nlp.coref.ForwardCorefBase#assertSorted" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="assertSorted(ments:Seq[cc.factorie.app.nlp.mention.Mention]):Unit"></a>
+      <a id="assertSorted(ments:Seq[cc.factorie.app.nlp.coref.mention.Mention]):Unit"></a>
       <a id="assertSorted(Seq[Mention]):Unit"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -291,7 +291,7 @@ Time: 12:25 PM
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">assertSorted</span><span class="params">(<span name="ments">ments: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../mention/Mention.html" class="extype" name="cc.factorie.app.nlp.mention.Mention">Mention</a>]</span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+        <span class="name">assertSorted</span><span class="params">(<span name="ments">ments: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="mention/Mention.html" class="extype" name="cc.factorie.app.nlp.coref.mention.Mention">Mention</a>]</span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4>
       
@@ -341,7 +341,7 @@ Time: 12:25 PM
       </h4>
       
     </li><li name="cc.factorie.app.nlp.coref.ForwardCorefBase#doCorefOnPronounsUsingRules" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="doCorefOnPronounsUsingRules(predMap:cc.factorie.util.coref.GenericEntityMap[cc.factorie.app.nlp.coref.CorefMention],allMentions:Seq[cc.factorie.app.nlp.coref.CorefMention]):Unit"></a>
+      <a id="doCorefOnPronounsUsingRules(predMap:cc.factorie.util.coref.GenericEntityMap[cc.factorie.app.nlp.coref.mention.CorefMention],allMentions:Seq[cc.factorie.app.nlp.coref.mention.CorefMention]):Unit"></a>
       <a id="doCorefOnPronounsUsingRules(GenericEntityMap[CorefMention],Seq[CorefMention]):Unit"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -349,12 +349,12 @@ Time: 12:25 PM
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">doCorefOnPronounsUsingRules</span><span class="params">(<span name="predMap">predMap: <a href="../../../util/coref/GenericEntityMap.html" class="extype" name="cc.factorie.util.coref.GenericEntityMap">GenericEntityMap</a>[<a href="CorefMention.html" class="extype" name="cc.factorie.app.nlp.coref.CorefMention">CorefMention</a>]</span>, <span name="allMentions">allMentions: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="CorefMention.html" class="extype" name="cc.factorie.app.nlp.coref.CorefMention">CorefMention</a>]</span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+        <span class="name">doCorefOnPronounsUsingRules</span><span class="params">(<span name="predMap">predMap: <a href="../../../util/coref/GenericEntityMap.html" class="extype" name="cc.factorie.util.coref.GenericEntityMap">GenericEntityMap</a>[<a href="mention/CorefMention.html" class="extype" name="cc.factorie.app.nlp.coref.mention.CorefMention">CorefMention</a>]</span>, <span name="allMentions">allMentions: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="mention/CorefMention.html" class="extype" name="cc.factorie.app.nlp.coref.mention.CorefMention">CorefMention</a>]</span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4>
       
     </li><li name="cc.factorie.app.nlp.coref.ForwardCorefBase#doTest" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="doTest(testDocs:Seq[cc.factorie.app.nlp.Document],wn:cc.factorie.app.nlp.wordnet.WordNet,testTrueMaps:Map[String,cc.factorie.util.coref.GenericEntityMap[cc.factorie.app.nlp.mention.Mention]],name:String):Double"></a>
+      <a id="doTest(testDocs:Seq[cc.factorie.app.nlp.Document],wn:cc.factorie.app.nlp.wordnet.WordNet,testTrueMaps:Map[String,cc.factorie.util.coref.GenericEntityMap[cc.factorie.app.nlp.coref.mention.Mention]],name:String):Double"></a>
       <a id="doTest(Seq[Document],WordNet,Map[String,GenericEntityMap[Mention]],String):Double"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -362,7 +362,7 @@ Time: 12:25 PM
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">doTest</span><span class="params">(<span name="testDocs">testDocs: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../Document.html" class="extype" name="cc.factorie.app.nlp.Document">Document</a>]</span>, <span name="wn">wn: <a href="../wordnet/WordNet.html" class="extype" name="cc.factorie.app.nlp.wordnet.WordNet">WordNet</a></span>, <span name="testTrueMaps">testTrueMaps: <span class="extype" name="scala.Predef.Map">Map</span>[<span class="extype" name="scala.Predef.String">String</span>, <a href="../../../util/coref/GenericEntityMap.html" class="extype" name="cc.factorie.util.coref.GenericEntityMap">GenericEntityMap</a>[<a href="../mention/Mention.html" class="extype" name="cc.factorie.app.nlp.mention.Mention">Mention</a>]]</span>, <span name="name">name: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <span class="extype" name="scala.Double">Double</span></span>
+        <span class="name">doTest</span><span class="params">(<span name="testDocs">testDocs: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../Document.html" class="extype" name="cc.factorie.app.nlp.Document">Document</a>]</span>, <span name="wn">wn: <a href="../wordnet/WordNet.html" class="extype" name="cc.factorie.app.nlp.wordnet.WordNet">WordNet</a></span>, <span name="testTrueMaps">testTrueMaps: <span class="extype" name="scala.Predef.Map">Map</span>[<span class="extype" name="scala.Predef.String">String</span>, <a href="../../../util/coref/GenericEntityMap.html" class="extype" name="cc.factorie.util.coref.GenericEntityMap">GenericEntityMap</a>[<a href="mention/Mention.html" class="extype" name="cc.factorie.app.nlp.coref.mention.Mention">Mention</a>]]</span>, <span name="name">name: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <span class="extype" name="scala.Double">Double</span></span>
       </span>
       </h4>
       
@@ -426,7 +426,7 @@ Time: 12:25 PM
               
         </dd></dl></div>
     </li><li name="cc.factorie.app.nlp.coref.ForwardCorefBase#generateMentionPairLabels" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="generateMentionPairLabels(mentions:Seq[cc.factorie.app.nlp.coref.CorefMention],map:cc.factorie.util.coref.GenericEntityMap[cc.factorie.app.nlp.mention.Mention]):Seq[cc.factorie.app.nlp.coref.MentionPairLabel]"></a>
+      <a id="generateMentionPairLabels(mentions:Seq[cc.factorie.app.nlp.coref.mention.CorefMention],map:cc.factorie.util.coref.GenericEntityMap[cc.factorie.app.nlp.coref.mention.Mention]):Seq[cc.factorie.app.nlp.coref.MentionPairLabel]"></a>
       <a id="generateMentionPairLabels(Seq[CorefMention],GenericEntityMap[Mention]):Seq[MentionPairLabel]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -434,12 +434,12 @@ Time: 12:25 PM
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">generateMentionPairLabels</span><span class="params">(<span name="mentions">mentions: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="CorefMention.html" class="extype" name="cc.factorie.app.nlp.coref.CorefMention">CorefMention</a>]</span>, <span name="map">map: <a href="../../../util/coref/GenericEntityMap.html" class="extype" name="cc.factorie.util.coref.GenericEntityMap">GenericEntityMap</a>[<a href="../mention/Mention.html" class="extype" name="cc.factorie.app.nlp.mention.Mention">Mention</a>] = <span class="symbol">null</span></span>)</span><span class="result">: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="MentionPairLabel.html" class="extype" name="cc.factorie.app.nlp.coref.MentionPairLabel">MentionPairLabel</a>]</span>
+        <span class="name">generateMentionPairLabels</span><span class="params">(<span name="mentions">mentions: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="mention/CorefMention.html" class="extype" name="cc.factorie.app.nlp.coref.mention.CorefMention">CorefMention</a>]</span>, <span name="map">map: <a href="../../../util/coref/GenericEntityMap.html" class="extype" name="cc.factorie.util.coref.GenericEntityMap">GenericEntityMap</a>[<a href="mention/Mention.html" class="extype" name="cc.factorie.app.nlp.coref.mention.Mention">Mention</a>] = <span class="symbol">null</span></span>)</span><span class="result">: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="MentionPairLabel.html" class="extype" name="cc.factorie.app.nlp.coref.MentionPairLabel">MentionPairLabel</a>]</span>
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd></dl></div>
     </li><li name="cc.factorie.app.nlp.coref.ForwardCorefBase#generateMentionPairLabelsForOneAnaphor" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="generateMentionPairLabelsForOneAnaphor(orderedMentions:Seq[cc.factorie.app.nlp.coref.CorefMention],anaphorIndex:Int,map:cc.factorie.util.coref.GenericEntityMap[cc.factorie.app.nlp.mention.Mention]):Seq[cc.factorie.app.nlp.coref.MentionPairLabel]"></a>
+      <a id="generateMentionPairLabelsForOneAnaphor(orderedMentions:Seq[cc.factorie.app.nlp.coref.mention.CorefMention],anaphorIndex:Int,map:cc.factorie.util.coref.GenericEntityMap[cc.factorie.app.nlp.coref.mention.Mention]):Seq[cc.factorie.app.nlp.coref.MentionPairLabel]"></a>
       <a id="generateMentionPairLabelsForOneAnaphor(Seq[CorefMention],Int,GenericEntityMap[Mention]):Seq[MentionPairLabel]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -447,12 +447,12 @@ Time: 12:25 PM
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">generateMentionPairLabelsForOneAnaphor</span><span class="params">(<span name="orderedMentions">orderedMentions: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="CorefMention.html" class="extype" name="cc.factorie.app.nlp.coref.CorefMention">CorefMention</a>]</span>, <span name="anaphorIndex">anaphorIndex: <span class="extype" name="scala.Int">Int</span></span>, <span name="map">map: <a href="../../../util/coref/GenericEntityMap.html" class="extype" name="cc.factorie.util.coref.GenericEntityMap">GenericEntityMap</a>[<a href="../mention/Mention.html" class="extype" name="cc.factorie.app.nlp.mention.Mention">Mention</a>] = <span class="symbol">null</span></span>)</span><span class="result">: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="MentionPairLabel.html" class="extype" name="cc.factorie.app.nlp.coref.MentionPairLabel">MentionPairLabel</a>]</span>
+        <span class="name">generateMentionPairLabelsForOneAnaphor</span><span class="params">(<span name="orderedMentions">orderedMentions: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="mention/CorefMention.html" class="extype" name="cc.factorie.app.nlp.coref.mention.CorefMention">CorefMention</a>]</span>, <span name="anaphorIndex">anaphorIndex: <span class="extype" name="scala.Int">Int</span></span>, <span name="map">map: <a href="../../../util/coref/GenericEntityMap.html" class="extype" name="cc.factorie.util.coref.GenericEntityMap">GenericEntityMap</a>[<a href="mention/Mention.html" class="extype" name="cc.factorie.app.nlp.coref.mention.Mention">Mention</a>] = <span class="symbol">null</span></span>)</span><span class="result">: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="MentionPairLabel.html" class="extype" name="cc.factorie.app.nlp.coref.MentionPairLabel">MentionPairLabel</a>]</span>
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd></dl></div>
     </li><li name="cc.factorie.app.nlp.coref.ForwardCorefBase#generateTrainingInstances" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="generateTrainingInstances(d:cc.factorie.app.nlp.Document,map:cc.factorie.util.coref.GenericEntityMap[cc.factorie.app.nlp.mention.Mention]):Seq[cc.factorie.app.nlp.coref.MentionPairLabel]"></a>
+      <a id="generateTrainingInstances(d:cc.factorie.app.nlp.Document,map:cc.factorie.util.coref.GenericEntityMap[cc.factorie.app.nlp.coref.mention.Mention]):Seq[cc.factorie.app.nlp.coref.MentionPairLabel]"></a>
       <a id="generateTrainingInstances(Document,GenericEntityMap[Mention]):Seq[MentionPairLabel]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -460,7 +460,7 @@ Time: 12:25 PM
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">generateTrainingInstances</span><span class="params">(<span name="d">d: <a href="../Document.html" class="extype" name="cc.factorie.app.nlp.Document">Document</a></span>, <span name="map">map: <a href="../../../util/coref/GenericEntityMap.html" class="extype" name="cc.factorie.util.coref.GenericEntityMap">GenericEntityMap</a>[<a href="../mention/Mention.html" class="extype" name="cc.factorie.app.nlp.mention.Mention">Mention</a>]</span>)</span><span class="result">: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="MentionPairLabel.html" class="extype" name="cc.factorie.app.nlp.coref.MentionPairLabel">MentionPairLabel</a>]</span>
+        <span class="name">generateTrainingInstances</span><span class="params">(<span name="d">d: <a href="../Document.html" class="extype" name="cc.factorie.app.nlp.Document">Document</a></span>, <span name="map">map: <a href="../../../util/coref/GenericEntityMap.html" class="extype" name="cc.factorie.util.coref.GenericEntityMap">GenericEntityMap</a>[<a href="mention/Mention.html" class="extype" name="cc.factorie.app.nlp.coref.mention.Mention">Mention</a>]</span>)</span><span class="result">: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="MentionPairLabel.html" class="extype" name="cc.factorie.app.nlp.coref.MentionPairLabel">MentionPairLabel</a>]</span>
       </span>
       </h4>
       
@@ -504,7 +504,7 @@ Time: 12:25 PM
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
     </li><li name="cc.factorie.app.nlp.DocumentAnnotator#mentionAnnotationString" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="mentionAnnotationString(mention:cc.factorie.app.nlp.mention.Mention):String"></a>
+      <a id="mentionAnnotationString(mention:cc.factorie.app.nlp.coref.mention.Mention):String"></a>
       <a id="mentionAnnotationString(Mention):String"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -512,7 +512,7 @@ Time: 12:25 PM
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">mentionAnnotationString</span><span class="params">(<span name="mention">mention: <a href="../mention/Mention.html" class="extype" name="cc.factorie.app.nlp.mention.Mention">Mention</a></span>)</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
+        <span class="name">mentionAnnotationString</span><span class="params">(<span name="mention">mention: <a href="mention/Mention.html" class="extype" name="cc.factorie.app.nlp.coref.mention.Mention">Mention</a></span>)</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../DocumentAnnotator.html" class="extype" name="cc.factorie.app.nlp.DocumentAnnotator">DocumentAnnotator</a></dd></dl></div>
@@ -595,7 +595,7 @@ Time: 12:25 PM
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../DocumentAnnotator.html" class="extype" name="cc.factorie.app.nlp.DocumentAnnotator">DocumentAnnotator</a></dd></dl></div>
     </li><li name="cc.factorie.app.nlp.coref.ForwardCorefBase#postAttrs" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="postAttrs:Seq[Class[cc.factorie.util.coref.GenericEntityMap[cc.factorie.app.nlp.mention.Mention]]]"></a>
+      <a id="postAttrs:Seq[Class[cc.factorie.util.coref.GenericEntityMap[cc.factorie.app.nlp.coref.mention.Mention]]]"></a>
       <a id="postAttrs:Seq[Class[GenericEntityMap[Mention]]]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -603,7 +603,7 @@ Time: 12:25 PM
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">postAttrs</span><span class="result">: <span class="extype" name="scala.collection.Seq">Seq</span>[<span class="extype" name="java.lang.Class">Class</span>[<a href="../../../util/coref/GenericEntityMap.html" class="extype" name="cc.factorie.util.coref.GenericEntityMap">GenericEntityMap</a>[<a href="../mention/Mention.html" class="extype" name="cc.factorie.app.nlp.mention.Mention">Mention</a>]]]</span>
+        <span class="name">postAttrs</span><span class="result">: <span class="extype" name="scala.collection.Seq">Seq</span>[<span class="extype" name="java.lang.Class">Class</span>[<a href="../../../util/coref/GenericEntityMap.html" class="extype" name="cc.factorie.util.coref.GenericEntityMap">GenericEntityMap</a>[<a href="mention/Mention.html" class="extype" name="cc.factorie.app.nlp.coref.mention.Mention">Mention</a>]]]</span>
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="cc.factorie.app.nlp.coref.ForwardCorefBase">ForwardCorefBase</a> → <a href="../DocumentAnnotator.html" class="extype" name="cc.factorie.app.nlp.DocumentAnnotator">DocumentAnnotator</a></dd></dl></div>
@@ -634,7 +634,7 @@ Time: 12:25 PM
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="cc.factorie.app.nlp.coref.ForwardCorefBase">ForwardCorefBase</a> → <a href="../DocumentAnnotator.html" class="extype" name="cc.factorie.app.nlp.DocumentAnnotator">DocumentAnnotator</a></dd></dl></div>
     </li><li name="cc.factorie.app.nlp.coref.ForwardCorefBase#processDocumentOneModel" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="processDocumentOneModel(doc:cc.factorie.app.nlp.Document):cc.factorie.util.coref.GenericEntityMap[cc.factorie.app.nlp.mention.Mention]"></a>
+      <a id="processDocumentOneModel(doc:cc.factorie.app.nlp.Document):cc.factorie.util.coref.GenericEntityMap[cc.factorie.app.nlp.coref.mention.Mention]"></a>
       <a id="processDocumentOneModel(Document):GenericEntityMap[Mention]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -642,12 +642,12 @@ Time: 12:25 PM
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">processDocumentOneModel</span><span class="params">(<span name="doc">doc: <a href="../Document.html" class="extype" name="cc.factorie.app.nlp.Document">Document</a></span>)</span><span class="result">: <a href="../../../util/coref/GenericEntityMap.html" class="extype" name="cc.factorie.util.coref.GenericEntityMap">GenericEntityMap</a>[<a href="../mention/Mention.html" class="extype" name="cc.factorie.app.nlp.mention.Mention">Mention</a>]</span>
+        <span class="name">processDocumentOneModel</span><span class="params">(<span name="doc">doc: <a href="../Document.html" class="extype" name="cc.factorie.app.nlp.Document">Document</a></span>)</span><span class="result">: <a href="../../../util/coref/GenericEntityMap.html" class="extype" name="cc.factorie.util.coref.GenericEntityMap">GenericEntityMap</a>[<a href="mention/Mention.html" class="extype" name="cc.factorie.app.nlp.coref.mention.Mention">Mention</a>]</span>
       </span>
       </h4>
       
     </li><li name="cc.factorie.app.nlp.coref.ForwardCorefBase#processDocumentOneModelFromEntities" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="processDocumentOneModelFromEntities(doc:cc.factorie.app.nlp.Document):cc.factorie.util.coref.GenericEntityMap[cc.factorie.app.nlp.mention.Mention]"></a>
+      <a id="processDocumentOneModelFromEntities(doc:cc.factorie.app.nlp.Document):cc.factorie.util.coref.GenericEntityMap[cc.factorie.app.nlp.coref.mention.Mention]"></a>
       <a id="processDocumentOneModelFromEntities(Document):GenericEntityMap[Mention]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -655,12 +655,12 @@ Time: 12:25 PM
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">processDocumentOneModelFromEntities</span><span class="params">(<span name="doc">doc: <a href="../Document.html" class="extype" name="cc.factorie.app.nlp.Document">Document</a></span>)</span><span class="result">: <a href="../../../util/coref/GenericEntityMap.html" class="extype" name="cc.factorie.util.coref.GenericEntityMap">GenericEntityMap</a>[<a href="../mention/Mention.html" class="extype" name="cc.factorie.app.nlp.mention.Mention">Mention</a>]</span>
+        <span class="name">processDocumentOneModelFromEntities</span><span class="params">(<span name="doc">doc: <a href="../Document.html" class="extype" name="cc.factorie.app.nlp.Document">Document</a></span>)</span><span class="result">: <a href="../../../util/coref/GenericEntityMap.html" class="extype" name="cc.factorie.util.coref.GenericEntityMap">GenericEntityMap</a>[<a href="mention/Mention.html" class="extype" name="cc.factorie.app.nlp.coref.mention.Mention">Mention</a>]</span>
       </span>
       </h4>
       
     </li><li name="cc.factorie.app.nlp.coref.ForwardCorefBase#processDocumentOneModelFromEntitiesFromMentions" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="processDocumentOneModelFromEntitiesFromMentions(inputMentions:Seq[cc.factorie.app.nlp.mention.Mention]):cc.factorie.util.coref.GenericEntityMap[cc.factorie.app.nlp.mention.Mention]"></a>
+      <a id="processDocumentOneModelFromEntitiesFromMentions(inputMentions:Seq[cc.factorie.app.nlp.coref.mention.Mention]):cc.factorie.util.coref.GenericEntityMap[cc.factorie.app.nlp.coref.mention.Mention]"></a>
       <a id="processDocumentOneModelFromEntitiesFromMentions(Seq[Mention]):GenericEntityMap[Mention]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -668,12 +668,12 @@ Time: 12:25 PM
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">processDocumentOneModelFromEntitiesFromMentions</span><span class="params">(<span name="inputMentions">inputMentions: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../mention/Mention.html" class="extype" name="cc.factorie.app.nlp.mention.Mention">Mention</a>]</span>)</span><span class="result">: <a href="../../../util/coref/GenericEntityMap.html" class="extype" name="cc.factorie.util.coref.GenericEntityMap">GenericEntityMap</a>[<a href="../mention/Mention.html" class="extype" name="cc.factorie.app.nlp.mention.Mention">Mention</a>]</span>
+        <span class="name">processDocumentOneModelFromEntitiesFromMentions</span><span class="params">(<span name="inputMentions">inputMentions: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="mention/Mention.html" class="extype" name="cc.factorie.app.nlp.coref.mention.Mention">Mention</a>]</span>)</span><span class="result">: <a href="../../../util/coref/GenericEntityMap.html" class="extype" name="cc.factorie.util.coref.GenericEntityMap">GenericEntityMap</a>[<a href="mention/Mention.html" class="extype" name="cc.factorie.app.nlp.coref.mention.Mention">Mention</a>]</span>
       </span>
       </h4>
       
     </li><li name="cc.factorie.app.nlp.coref.ForwardCorefBase#processDocumentOneModelFromMentions" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="processDocumentOneModelFromMentions(ments:Seq[cc.factorie.app.nlp.coref.CorefMention]):cc.factorie.util.coref.GenericEntityMap[cc.factorie.app.nlp.mention.Mention]"></a>
+      <a id="processDocumentOneModelFromMentions(ments:Seq[cc.factorie.app.nlp.coref.mention.CorefMention]):cc.factorie.util.coref.GenericEntityMap[cc.factorie.app.nlp.coref.mention.Mention]"></a>
       <a id="processDocumentOneModelFromMentions(Seq[CorefMention]):GenericEntityMap[Mention]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -681,12 +681,12 @@ Time: 12:25 PM
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">processDocumentOneModelFromMentions</span><span class="params">(<span name="ments">ments: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="CorefMention.html" class="extype" name="cc.factorie.app.nlp.coref.CorefMention">CorefMention</a>]</span>)</span><span class="result">: <a href="../../../util/coref/GenericEntityMap.html" class="extype" name="cc.factorie.util.coref.GenericEntityMap">GenericEntityMap</a>[<a href="../mention/Mention.html" class="extype" name="cc.factorie.app.nlp.mention.Mention">Mention</a>]</span>
+        <span class="name">processDocumentOneModelFromMentions</span><span class="params">(<span name="ments">ments: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="mention/CorefMention.html" class="extype" name="cc.factorie.app.nlp.coref.mention.CorefMention">CorefMention</a>]</span>)</span><span class="result">: <a href="../../../util/coref/GenericEntityMap.html" class="extype" name="cc.factorie.util.coref.GenericEntityMap">GenericEntityMap</a>[<a href="mention/Mention.html" class="extype" name="cc.factorie.app.nlp.coref.mention.Mention">Mention</a>]</span>
       </span>
       </h4>
       
     </li><li name="cc.factorie.app.nlp.coref.ForwardCorefBase#processOneMention" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="processOneMention(orderedMentions:Seq[cc.factorie.app.nlp.coref.CorefMention],mentionIndex:Int,predMap:cc.factorie.util.coref.GenericEntityMap[cc.factorie.app.nlp.mention.Mention]):cc.factorie.app.nlp.coref.CorefMention"></a>
+      <a id="processOneMention(orderedMentions:Seq[cc.factorie.app.nlp.coref.mention.CorefMention],mentionIndex:Int,predMap:cc.factorie.util.coref.GenericEntityMap[cc.factorie.app.nlp.coref.mention.Mention]):cc.factorie.app.nlp.coref.mention.CorefMention"></a>
       <a id="processOneMention(Seq[CorefMention],Int,GenericEntityMap[Mention]):CorefMention"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -694,12 +694,12 @@ Time: 12:25 PM
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">processOneMention</span><span class="params">(<span name="orderedMentions">orderedMentions: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="CorefMention.html" class="extype" name="cc.factorie.app.nlp.coref.CorefMention">CorefMention</a>]</span>, <span name="mentionIndex">mentionIndex: <span class="extype" name="scala.Int">Int</span></span>, <span name="predMap">predMap: <a href="../../../util/coref/GenericEntityMap.html" class="extype" name="cc.factorie.util.coref.GenericEntityMap">GenericEntityMap</a>[<a href="../mention/Mention.html" class="extype" name="cc.factorie.app.nlp.mention.Mention">Mention</a>]</span>)</span><span class="result">: <a href="CorefMention.html" class="extype" name="cc.factorie.app.nlp.coref.CorefMention">CorefMention</a></span>
+        <span class="name">processOneMention</span><span class="params">(<span name="orderedMentions">orderedMentions: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="mention/CorefMention.html" class="extype" name="cc.factorie.app.nlp.coref.mention.CorefMention">CorefMention</a>]</span>, <span name="mentionIndex">mentionIndex: <span class="extype" name="scala.Int">Int</span></span>, <span name="predMap">predMap: <a href="../../../util/coref/GenericEntityMap.html" class="extype" name="cc.factorie.util.coref.GenericEntityMap">GenericEntityMap</a>[<a href="mention/Mention.html" class="extype" name="cc.factorie.app.nlp.coref.mention.Mention">Mention</a>]</span>)</span><span class="result">: <a href="mention/CorefMention.html" class="extype" name="cc.factorie.app.nlp.coref.mention.CorefMention">CorefMention</a></span>
       </span>
       </h4>
       
     </li><li name="cc.factorie.app.nlp.coref.ForwardCorefBase#processOneMentionByEntities" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="processOneMentionByEntities(orderedMentions:Seq[cc.factorie.app.nlp.coref.CorefMention],mentionIndex:Int,candidateMentionsToTheLeft:scala.collection.mutable.ArrayBuffer[cc.factorie.app.nlp.coref.CorefMention],predMap:cc.factorie.util.coref.GenericEntityMap[cc.factorie.app.nlp.coref.CorefMention]):cc.factorie.app.nlp.coref.CorefMention"></a>
+      <a id="processOneMentionByEntities(orderedMentions:Seq[cc.factorie.app.nlp.coref.mention.CorefMention],mentionIndex:Int,candidateMentionsToTheLeft:scala.collection.mutable.ArrayBuffer[cc.factorie.app.nlp.coref.mention.CorefMention],predMap:cc.factorie.util.coref.GenericEntityMap[cc.factorie.app.nlp.coref.mention.CorefMention]):cc.factorie.app.nlp.coref.mention.CorefMention"></a>
       <a id="processOneMentionByEntities(Seq[CorefMention],Int,ArrayBuffer[CorefMention],GenericEntityMap[CorefMention]):CorefMention"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -707,7 +707,7 @@ Time: 12:25 PM
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">processOneMentionByEntities</span><span class="params">(<span name="orderedMentions">orderedMentions: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="CorefMention.html" class="extype" name="cc.factorie.app.nlp.coref.CorefMention">CorefMention</a>]</span>, <span name="mentionIndex">mentionIndex: <span class="extype" name="scala.Int">Int</span></span>, <span name="candidateMentionsToTheLeft">candidateMentionsToTheLeft: <span class="extype" name="scala.collection.mutable.ArrayBuffer">ArrayBuffer</span>[<a href="CorefMention.html" class="extype" name="cc.factorie.app.nlp.coref.CorefMention">CorefMention</a>]</span>, <span name="predMap">predMap: <a href="../../../util/coref/GenericEntityMap.html" class="extype" name="cc.factorie.util.coref.GenericEntityMap">GenericEntityMap</a>[<a href="CorefMention.html" class="extype" name="cc.factorie.app.nlp.coref.CorefMention">CorefMention</a>]</span>)</span><span class="result">: <a href="CorefMention.html" class="extype" name="cc.factorie.app.nlp.coref.CorefMention">CorefMention</a></span>
+        <span class="name">processOneMentionByEntities</span><span class="params">(<span name="orderedMentions">orderedMentions: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="mention/CorefMention.html" class="extype" name="cc.factorie.app.nlp.coref.mention.CorefMention">CorefMention</a>]</span>, <span name="mentionIndex">mentionIndex: <span class="extype" name="scala.Int">Int</span></span>, <span name="candidateMentionsToTheLeft">candidateMentionsToTheLeft: <span class="extype" name="scala.collection.mutable.ArrayBuffer">ArrayBuffer</span>[<a href="mention/CorefMention.html" class="extype" name="cc.factorie.app.nlp.coref.mention.CorefMention">CorefMention</a>]</span>, <span name="predMap">predMap: <a href="../../../util/coref/GenericEntityMap.html" class="extype" name="cc.factorie.util.coref.GenericEntityMap">GenericEntityMap</a>[<a href="mention/CorefMention.html" class="extype" name="cc.factorie.app.nlp.coref.mention.CorefMention">CorefMention</a>]</span>)</span><span class="result">: <a href="mention/CorefMention.html" class="extype" name="cc.factorie.app.nlp.coref.mention.CorefMention">CorefMention</a></span>
       </span>
       </h4>
       
@@ -791,7 +791,7 @@ Time: 12:25 PM
       <p class="shortcomment cmt">How the annotation of this DocumentAnnotator should be printed in one-word-per-line (OWPL) format.</p><div class="fullcomment"><div class="comment cmt"><p>How the annotation of this DocumentAnnotator should be printed in one-word-per-line (OWPL) format.
       If there is no per-token annotation, return null.  Used in Document.owplString.</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="cc.factorie.app.nlp.coref.ForwardCorefBase">ForwardCorefBase</a> → <a href="../DocumentAnnotator.html" class="extype" name="cc.factorie.app.nlp.DocumentAnnotator">DocumentAnnotator</a></dd></dl></div>
     </li><li name="cc.factorie.app.nlp.coref.ForwardCorefBase#train" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="train(trainDocs:Seq[cc.factorie.app.nlp.Document],testDocs:Seq[cc.factorie.app.nlp.Document],wn:cc.factorie.app.nlp.wordnet.WordNet,rng:scala.util.Random,trainTrueMaps:Map[String,cc.factorie.util.coref.GenericEntityMap[cc.factorie.app.nlp.mention.Mention]],testTrueMaps:Map[String,cc.factorie.util.coref.GenericEntityMap[cc.factorie.app.nlp.mention.Mention]],saveModelBetweenEpochs:Boolean,saveFrequency:Int,filename:String,learningRate:Double):Double"></a>
+      <a id="train(trainDocs:Seq[cc.factorie.app.nlp.Document],testDocs:Seq[cc.factorie.app.nlp.Document],wn:cc.factorie.app.nlp.wordnet.WordNet,rng:scala.util.Random,trainTrueMaps:Map[String,cc.factorie.util.coref.GenericEntityMap[cc.factorie.app.nlp.coref.mention.Mention]],testTrueMaps:Map[String,cc.factorie.util.coref.GenericEntityMap[cc.factorie.app.nlp.coref.mention.Mention]],saveModelBetweenEpochs:Boolean,saveFrequency:Int,filename:String,learningRate:Double):Double"></a>
       <a id="train(Seq[Document],Seq[Document],WordNet,Random,Map[String,GenericEntityMap[Mention]],Map[String,GenericEntityMap[Mention]],Boolean,Int,String,Double):Double"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -799,7 +799,7 @@ Time: 12:25 PM
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">train</span><span class="params">(<span name="trainDocs">trainDocs: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../Document.html" class="extype" name="cc.factorie.app.nlp.Document">Document</a>]</span>, <span name="testDocs">testDocs: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../Document.html" class="extype" name="cc.factorie.app.nlp.Document">Document</a>]</span>, <span name="wn">wn: <a href="../wordnet/WordNet.html" class="extype" name="cc.factorie.app.nlp.wordnet.WordNet">WordNet</a></span>, <span name="rng">rng: <span class="extype" name="scala.util.Random">Random</span></span>, <span name="trainTrueMaps">trainTrueMaps: <span class="extype" name="scala.Predef.Map">Map</span>[<span class="extype" name="scala.Predef.String">String</span>, <a href="../../../util/coref/GenericEntityMap.html" class="extype" name="cc.factorie.util.coref.GenericEntityMap">GenericEntityMap</a>[<a href="../mention/Mention.html" class="extype" name="cc.factorie.app.nlp.mention.Mention">Mention</a>]]</span>, <span name="testTrueMaps">testTrueMaps: <span class="extype" name="scala.Predef.Map">Map</span>[<span class="extype" name="scala.Predef.String">String</span>, <a href="../../../util/coref/GenericEntityMap.html" class="extype" name="cc.factorie.util.coref.GenericEntityMap">GenericEntityMap</a>[<a href="../mention/Mention.html" class="extype" name="cc.factorie.app.nlp.mention.Mention">Mention</a>]]</span>, <span name="saveModelBetweenEpochs">saveModelBetweenEpochs: <span class="extype" name="scala.Boolean">Boolean</span></span>, <span name="saveFrequency">saveFrequency: <span class="extype" name="scala.Int">Int</span></span>, <span name="filename">filename: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="learningRate">learningRate: <span class="extype" name="scala.Double">Double</span> = <span class="symbol">1.0</span></span>)</span><span class="result">: <span class="extype" name="scala.Double">Double</span></span>
+        <span class="name">train</span><span class="params">(<span name="trainDocs">trainDocs: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../Document.html" class="extype" name="cc.factorie.app.nlp.Document">Document</a>]</span>, <span name="testDocs">testDocs: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../Document.html" class="extype" name="cc.factorie.app.nlp.Document">Document</a>]</span>, <span name="wn">wn: <a href="../wordnet/WordNet.html" class="extype" name="cc.factorie.app.nlp.wordnet.WordNet">WordNet</a></span>, <span name="rng">rng: <span class="extype" name="scala.util.Random">Random</span></span>, <span name="trainTrueMaps">trainTrueMaps: <span class="extype" name="scala.Predef.Map">Map</span>[<span class="extype" name="scala.Predef.String">String</span>, <a href="../../../util/coref/GenericEntityMap.html" class="extype" name="cc.factorie.util.coref.GenericEntityMap">GenericEntityMap</a>[<a href="mention/Mention.html" class="extype" name="cc.factorie.app.nlp.coref.mention.Mention">Mention</a>]]</span>, <span name="testTrueMaps">testTrueMaps: <span class="extype" name="scala.Predef.Map">Map</span>[<span class="extype" name="scala.Predef.String">String</span>, <a href="../../../util/coref/GenericEntityMap.html" class="extype" name="cc.factorie.util.coref.GenericEntityMap">GenericEntityMap</a>[<a href="mention/Mention.html" class="extype" name="cc.factorie.app.nlp.coref.mention.Mention">Mention</a>]]</span>, <span name="saveModelBetweenEpochs">saveModelBetweenEpochs: <span class="extype" name="scala.Boolean">Boolean</span></span>, <span name="saveFrequency">saveFrequency: <span class="extype" name="scala.Int">Int</span></span>, <span name="filename">filename: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="learningRate">learningRate: <span class="extype" name="scala.Double">Double</span> = <span class="symbol">1.0</span></span>)</span><span class="result">: <span class="extype" name="scala.Double">Double</span></span>
       </span>
       </h4>
       

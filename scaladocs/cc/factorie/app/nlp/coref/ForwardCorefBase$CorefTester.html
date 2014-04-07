@@ -80,7 +80,7 @@
         <div id="constructors" class="members">
               <h3>Instance Constructors</h3>
               <ol><li name="cc.factorie.app.nlp.coref.ForwardCorefBase.CorefTester#&lt;init&gt;" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="&lt;init&gt;(model:cc.factorie.app.nlp.coref.PairwiseCorefModel,scorer:cc.factorie.app.nlp.coref.CorefScorer[cc.factorie.app.nlp.mention.Mention],scorerMutex:Object,testTrueMaps:Map[String,cc.factorie.util.coref.GenericEntityMap[cc.factorie.app.nlp.mention.Mention]],pool:java.util.concurrent.ExecutorService):ForwardCorefBase.this.CorefTester"></a>
+      <a id="&lt;init&gt;(model:cc.factorie.app.nlp.coref.PairwiseCorefModel,scorer:cc.factorie.app.nlp.coref.CorefScorer[cc.factorie.app.nlp.coref.mention.Mention],scorerMutex:Object,testTrueMaps:Map[String,cc.factorie.util.coref.GenericEntityMap[cc.factorie.app.nlp.coref.mention.Mention]],pool:java.util.concurrent.ExecutorService):ForwardCorefBase.this.CorefTester"></a>
       <a id="&lt;init&gt;:CorefTester"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -88,7 +88,7 @@
         <span class="kind">new</span>
       </span>
       <span class="symbol">
-        <span class="name">CorefTester</span><span class="params">(<span name="model">model: <a href="PairwiseCorefModel.html" class="extype" name="cc.factorie.app.nlp.coref.PairwiseCorefModel">PairwiseCorefModel</a></span>, <span name="scorer">scorer: <a href="CorefScorer.html" class="extype" name="cc.factorie.app.nlp.coref.CorefScorer">CorefScorer</a>[<a href="../mention/Mention.html" class="extype" name="cc.factorie.app.nlp.mention.Mention">Mention</a>]</span>, <span name="scorerMutex">scorerMutex: <a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>, <span name="testTrueMaps">testTrueMaps: <span class="extype" name="scala.Predef.Map">Map</span>[<span class="extype" name="scala.Predef.String">String</span>, <a href="../../../util/coref/GenericEntityMap.html" class="extype" name="cc.factorie.util.coref.GenericEntityMap">GenericEntityMap</a>[<a href="../mention/Mention.html" class="extype" name="cc.factorie.app.nlp.mention.Mention">Mention</a>]]</span>, <span name="pool">pool: <span class="extype" name="java.util.concurrent.ExecutorService">ExecutorService</span></span>)</span>
+        <span class="name">CorefTester</span><span class="params">(<span name="model">model: <a href="PairwiseCorefModel.html" class="extype" name="cc.factorie.app.nlp.coref.PairwiseCorefModel">PairwiseCorefModel</a></span>, <span name="scorer">scorer: <a href="CorefScorer.html" class="extype" name="cc.factorie.app.nlp.coref.CorefScorer">CorefScorer</a>[<a href="mention/Mention.html" class="extype" name="cc.factorie.app.nlp.coref.mention.Mention">Mention</a>]</span>, <span name="scorerMutex">scorerMutex: <a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>, <span name="testTrueMaps">testTrueMaps: <span class="extype" name="scala.Predef.Map">Map</span>[<span class="extype" name="scala.Predef.String">String</span>, <a href="../../../util/coref/GenericEntityMap.html" class="extype" name="cc.factorie.util.coref.GenericEntityMap">GenericEntityMap</a>[<a href="mention/Mention.html" class="extype" name="cc.factorie.app.nlp.coref.mention.Mention">Mention</a>]]</span>, <span name="pool">pool: <span class="extype" name="java.util.concurrent.ExecutorService">ExecutorService</span></span>)</span>
       </span>
       </h4>
       
@@ -100,7 +100,7 @@
         <div id="values" class="values members">
               <h3>Abstract Value Members</h3>
               <ol><li name="cc.factorie.app.nlp.coref.ForwardCorefBase.CorefTester#getPredMap" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
-      <a id="getPredMap(doc:cc.factorie.app.nlp.Document,model:cc.factorie.app.nlp.coref.PairwiseCorefModel):cc.factorie.util.coref.GenericEntityMap[cc.factorie.app.nlp.mention.Mention]"></a>
+      <a id="getPredMap(doc:cc.factorie.app.nlp.Document,model:cc.factorie.app.nlp.coref.PairwiseCorefModel):cc.factorie.util.coref.GenericEntityMap[cc.factorie.app.nlp.coref.mention.Mention]"></a>
       <a id="getPredMap(Document,PairwiseCorefModel):GenericEntityMap[Mention]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -108,7 +108,7 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">getPredMap</span><span class="params">(<span name="doc">doc: <a href="../Document.html" class="extype" name="cc.factorie.app.nlp.Document">Document</a></span>, <span name="model">model: <a href="PairwiseCorefModel.html" class="extype" name="cc.factorie.app.nlp.coref.PairwiseCorefModel">PairwiseCorefModel</a></span>)</span><span class="result">: <a href="../../../util/coref/GenericEntityMap.html" class="extype" name="cc.factorie.util.coref.GenericEntityMap">GenericEntityMap</a>[<a href="../mention/Mention.html" class="extype" name="cc.factorie.app.nlp.mention.Mention">Mention</a>]</span>
+        <span class="name">getPredMap</span><span class="params">(<span name="doc">doc: <a href="../Document.html" class="extype" name="cc.factorie.app.nlp.Document">Document</a></span>, <span name="model">model: <a href="PairwiseCorefModel.html" class="extype" name="cc.factorie.app.nlp.coref.PairwiseCorefModel">PairwiseCorefModel</a></span>)</span><span class="result">: <a href="../../../util/coref/GenericEntityMap.html" class="extype" name="cc.factorie.util.coref.GenericEntityMap">GenericEntityMap</a>[<a href="mention/Mention.html" class="extype" name="cc.factorie.app.nlp.coref.mention.Mention">Mention</a>]</span>
       </span>
       </h4>
       

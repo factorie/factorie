@@ -241,28 +241,28 @@
               
         </dd></dl></div>
     </li><li name="cc.factorie.app.nlp.load.LoadOntonotes5#fromFilename" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="fromFilename(filename:String,loadLemma:Boolean,loadPos:Boolean,loadNer:Boolean,nerBilou:Boolean):Seq[cc.factorie.app.nlp.Document]"></a>
-      <a id="fromFilename(String,Boolean,Boolean,Boolean,Boolean):Seq[Document]"></a>
+      <a id="fromFilename(filename:String,loadLemma:Int,loadPos:Int,loadParse:Int,loadNer:Boolean,nerBilou:Boolean):Seq[cc.factorie.app.nlp.Document]"></a>
+      <a id="fromFilename(String,Int,Int,Int,Boolean,Boolean):Seq[Document]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">fromFilename</span><span class="params">(<span name="filename">filename: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="loadLemma">loadLemma: <span class="extype" name="scala.Boolean">Boolean</span> = <span class="symbol">true</span></span>, <span name="loadPos">loadPos: <span class="extype" name="scala.Boolean">Boolean</span> = <span class="symbol">true</span></span>, <span name="loadNer">loadNer: <span class="extype" name="scala.Boolean">Boolean</span> = <span class="symbol">true</span></span>, <span name="nerBilou">nerBilou: <span class="extype" name="scala.Boolean">Boolean</span> = <span class="symbol">false</span></span>)</span><span class="result">: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../Document.html" class="extype" name="cc.factorie.app.nlp.Document">Document</a>]</span>
+        <span class="name">fromFilename</span><span class="params">(<span name="filename">filename: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="loadLemma">loadLemma: <span class="extype" name="scala.Int">Int</span> = <span class="symbol"><span class="name"><a href="AnnotationTypes$.html">AnnotationTypes.GOLD</a></span></span></span>, <span name="loadPos">loadPos: <span class="extype" name="scala.Int">Int</span> = <span class="symbol"><span class="name"><a href="AnnotationTypes$.html">AnnotationTypes.GOLD</a></span></span></span>, <span name="loadParse">loadParse: <span class="extype" name="scala.Int">Int</span> = <span class="symbol"><span class="name"><a href="AnnotationTypes$.html">AnnotationTypes.GOLD</a></span></span></span>, <span name="loadNer">loadNer: <span class="extype" name="scala.Boolean">Boolean</span> = <span class="symbol">true</span></span>, <span name="nerBilou">nerBilou: <span class="extype" name="scala.Boolean">Boolean</span> = <span class="symbol">true</span></span>)</span><span class="result">: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../Document.html" class="extype" name="cc.factorie.app.nlp.Document">Document</a>]</span>
       </span>
       </h4>
       
     </li><li name="cc.factorie.app.nlp.load.LoadOntonotes5#fromLines" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="fromLines(lines:Iterator[String],filename:String,loadLemma:Boolean,loadPos:Boolean,loadNer:Boolean,nerBilou:Boolean):Seq[cc.factorie.app.nlp.Document]"></a>
-      <a id="fromLines(Iterator[String],String,Boolean,Boolean,Boolean,Boolean):Seq[Document]"></a>
+      <a id="fromLines(lines:Iterator[String],filename:String,loadLemma:Int,loadPos:Int,loadParse:Int,loadNer:Boolean,nerBilou:Boolean):Seq[cc.factorie.app.nlp.Document]"></a>
+      <a id="fromLines(Iterator[String],String,Int,Int,Int,Boolean,Boolean):Seq[Document]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">fromLines</span><span class="params">(<span name="lines">lines: <a href="../../../../../scala/package.html#Iterator[+A]=Iterator[A]" class="extmbr" name="scala.Iterator">Iterator</a>[<span class="extype" name="scala.Predef.String">String</span>]</span>, <span name="filename">filename: <span class="extype" name="scala.Predef.String">String</span> = <span class="symbol">&quot;?UNKNOWN?&quot;</span></span>, <span name="loadLemma">loadLemma: <span class="extype" name="scala.Boolean">Boolean</span> = <span class="symbol">true</span></span>, <span name="loadPos">loadPos: <span class="extype" name="scala.Boolean">Boolean</span> = <span class="symbol">true</span></span>, <span name="loadNer">loadNer: <span class="extype" name="scala.Boolean">Boolean</span> = <span class="symbol">true</span></span>, <span name="nerBilou">nerBilou: <span class="extype" name="scala.Boolean">Boolean</span> = <span class="symbol">false</span></span>)</span><span class="result">: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../Document.html" class="extype" name="cc.factorie.app.nlp.Document">Document</a>]</span>
+        <span class="name">fromLines</span><span class="params">(<span name="lines">lines: <a href="../../../../../scala/package.html#Iterator[+A]=Iterator[A]" class="extmbr" name="scala.Iterator">Iterator</a>[<span class="extype" name="scala.Predef.String">String</span>]</span>, <span name="filename">filename: <span class="extype" name="scala.Predef.String">String</span> = <span class="symbol">&quot;?UNKNOWN?&quot;</span></span>, <span name="loadLemma">loadLemma: <span class="extype" name="scala.Int">Int</span> = <span class="symbol"><span class="name"><a href="AnnotationTypes$.html">AnnotationTypes.GOLD</a></span></span></span>, <span name="loadPos">loadPos: <span class="extype" name="scala.Int">Int</span> = <span class="symbol"><span class="name"><a href="AnnotationTypes$.html">AnnotationTypes.GOLD</a></span></span></span>, <span name="loadParse">loadParse: <span class="extype" name="scala.Int">Int</span> = <span class="symbol"><span class="name"><a href="AnnotationTypes$.html">AnnotationTypes.GOLD</a></span></span></span>, <span name="loadNer">loadNer: <span class="extype" name="scala.Boolean">Boolean</span> = <span class="symbol">true</span></span>, <span name="nerBilou">nerBilou: <span class="extype" name="scala.Boolean">Boolean</span> = <span class="symbol">true</span></span>)</span><span class="result">: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../Document.html" class="extype" name="cc.factorie.app.nlp.Document">Document</a>]</span>
       </span>
       </h4>
       

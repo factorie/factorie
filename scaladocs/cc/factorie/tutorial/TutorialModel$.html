@@ -35,13 +35,13 @@
         <span class="kind">object</span>
       </span>
       <span class="symbol">
-        <span class="name">TutorialModel</span>
+        <span class="name">TutorialModel</span><span class="result"> extends <span class="extype" name="scala.App">App</span></span>
       </span>
       </h4>
       
           <div id="comment" class="fullcommenttop"><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
-          <div class="superTypes hiddenContent"><a href="../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <span class="extype" name="scala.Any">Any</span></div>
+          <div class="superTypes hiddenContent"><span class="extype" name="scala.App">App</span>, <span class="extype" name="scala.DelayedInit">DelayedInit</span>, <a href="../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <span class="extype" name="scala.Any">Any</span></div>
         </div></div>
         
 
@@ -59,7 +59,7 @@
                 <span class="filtertype">Inherited<br />
                 </span>
                 <ol id="linearization">
-                  <li class="in" name="cc.factorie.tutorial.TutorialModel"><span>TutorialModel</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
+                  <li class="in" name="cc.factorie.tutorial.TutorialModel"><span>TutorialModel</span></li><li class="in" name="scala.App"><span>App</span></li><li class="in" name="scala.DelayedInit"><span>DelayedInit</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
                 </ol>
               </div><div id="ancestors">
             <span class="filtertype"></span>
@@ -79,7 +79,36 @@
         <div id="allMembers">
         
 
-        
+        <div id="types" class="types members">
+              <h3>Type Members</h3>
+              <ol><li name="cc.factorie.tutorial.TutorialModel.InputFactor" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="InputFactorextendsDotFactorWithStatistics2[cc.factorie.variable.BooleanVariable,cc.factorie.variable.BooleanVariable]"></a>
+      <a id="InputFactor:InputFactor"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="TutorialModel$$InputFactor.html"><span class="name">InputFactor</span></a><span class="result"> extends <a href="../model/DotFactorWithStatistics2.html" class="extype" name="cc.factorie.model.DotFactorWithStatistics2">DotFactorWithStatistics2</a>[<a href="../variable/BooleanVariable.html" class="extype" name="cc.factorie.variable.BooleanVariable">variable.BooleanVariable</a>, <a href="../variable/BooleanVariable.html" class="extype" name="cc.factorie.variable.BooleanVariable">variable.BooleanVariable</a>]</span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.tutorial.TutorialModel.MarkovFactor" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="MarkovFactorextendsDotFactorWithStatistics2[cc.factorie.variable.BooleanVariable,cc.factorie.variable.BooleanVariable]"></a>
+      <a id="MarkovFactor:MarkovFactor"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="TutorialModel$$MarkovFactor.html"><span class="name">MarkovFactor</span></a><span class="result"> extends <a href="../model/DotFactorWithStatistics2.html" class="extype" name="cc.factorie.model.DotFactorWithStatistics2">DotFactorWithStatistics2</a>[<a href="../variable/BooleanVariable.html" class="extype" name="cc.factorie.variable.BooleanVariable">variable.BooleanVariable</a>, <a href="../variable/BooleanVariable.html" class="extype" name="cc.factorie.variable.BooleanVariable">variable.BooleanVariable</a>]</span>
+      </span>
+      </h4>
+      
+    </li></ol>
+            </div>
 
         
 
@@ -150,6 +179,19 @@
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
+    </li><li name="scala.App#args" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="args:Array[String]"></a>
+      <a id="args:Array[String]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">args</span><span class="result">: <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="scala.Predef.String">String</span>]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd>App</dd></dl></div>
     </li><li name="scala.Any#asInstanceOf" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="asInstanceOf[T0]:T0"></a>
       <a id="asInstanceOf[T0]:T0"></a>
@@ -182,6 +224,19 @@
     </span>)</span>
               
         </dd></dl></div>
+    </li><li name="scala.App#delayedInit" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="delayedInit(body:=&gt;Unit):Unit"></a>
+      <a id="delayedInit(⇒Unit):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">delayedInit</span><span class="params">(<span name="body">body: ⇒ <span class="extype" name="scala.Unit">Unit</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>App → DelayedInit</dd></dl></div>
     </li><li name="scala.AnyRef#eq" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="eq(x$1:AnyRef):Boolean"></a>
       <a id="eq(AnyRef):Boolean"></a>
@@ -208,6 +263,32 @@
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="scala.App#executionStart" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="executionStart:Long"></a>
+      <a id="executionStart:Long"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">executionStart</span><span class="result">: <span class="extype" name="scala.Long">Long</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>App</dd></dl></div>
+    </li><li name="cc.factorie.tutorial.TutorialModel#f1" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="f1:Iterable[cc.factorie.model.Factor]"></a>
+      <a id="f1:Iterable[model.Factor]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">f1</span><span class="result">: <a href="../../../scala/package.html#Iterable[+A]=Iterable[A]" class="extmbr" name="scala.Iterable">Iterable</a>[<a href="../model/Factor.html" class="extype" name="cc.factorie.model.Factor">model.Factor</a>]</span>
+      </span>
+      </h4>
+      
     </li><li name="scala.AnyRef#finalize" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="finalize():Unit"></a>
       <a id="finalize():Unit"></a>
@@ -253,6 +334,32 @@
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="cc.factorie.tutorial.TutorialModel#inputWeights" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="inputWeights:cc.factorie.la.DenseTensor2"></a>
+      <a id="inputWeights:la.DenseTensor2"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">inputWeights</span><span class="result">: <a href="../la/DenseTensor2.html" class="extype" name="cc.factorie.la.DenseTensor2">la.DenseTensor2</a></span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.tutorial.TutorialModel#inputs" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="inputs:Seq[cc.factorie.variable.BooleanVariable]"></a>
+      <a id="inputs:Seq[variable.BooleanVariable]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">inputs</span><span class="result">: <a href="../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../variable/BooleanVariable.html" class="extype" name="cc.factorie.variable.BooleanVariable">variable.BooleanVariable</a>]</span>
+      </span>
+      </h4>
+      
     </li><li name="scala.Any#isInstanceOf" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="isInstanceOf[T0]:Boolean"></a>
       <a id="isInstanceOf[T0]:Boolean"></a>
@@ -266,7 +373,20 @@
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
-    </li><li name="cc.factorie.tutorial.TutorialModel#main" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+    </li><li name="cc.factorie.tutorial.TutorialModel#m1" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="m1:cc.factorie.model.ItemizedModel"></a>
+      <a id="m1:ItemizedModel"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">m1</span><span class="result">: <a href="../model/ItemizedModel.html" class="extype" name="cc.factorie.model.ItemizedModel">ItemizedModel</a></span>
+      </span>
+      </h4>
+      
+    </li><li name="scala.App#main" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="main(args:Array[String]):Unit"></a>
       <a id="main(Array[String]):Unit"></a>
       <h4 class="signature">
@@ -276,6 +396,19 @@
       </span>
       <span class="symbol">
         <span class="name">main</span><span class="params">(<span name="args">args: <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="scala.Predef.String">String</span>]</span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>App</dd></dl></div>
+    </li><li name="cc.factorie.tutorial.TutorialModel#markovWeights" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="markovWeights:cc.factorie.la.DenseTensor2"></a>
+      <a id="markovWeights:la.DenseTensor2"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">markovWeights</span><span class="result">: <a href="../la/DenseTensor2.html" class="extype" name="cc.factorie.la.DenseTensor2">la.DenseTensor2</a></span>
       </span>
       </h4>
       
@@ -318,6 +451,19 @@
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li name="cc.factorie.tutorial.TutorialModel#outputs" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="outputs:Seq[cc.factorie.variable.BooleanVariable]"></a>
+      <a id="outputs:Seq[variable.BooleanVariable]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">outputs</span><span class="result">: <a href="../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../variable/BooleanVariable.html" class="extype" name="cc.factorie.variable.BooleanVariable">variable.BooleanVariable</a>]</span>
+      </span>
+      </h4>
+      
     </li><li name="scala.AnyRef#synchronized" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="synchronized[T0](x$1:=&gt;T0):T0"></a>
       <a id="synchronized[T0](⇒T0):T0"></a>
@@ -410,7 +556,11 @@
         </div>
 
         <div id="inheritedMembers">
-        <div class="parent" name="scala.AnyRef">
+        <div class="parent" name="scala.App">
+              <h3>Inherited from <span class="extype" name="scala.App">App</span></h3>
+            </div><div class="parent" name="scala.DelayedInit">
+              <h3>Inherited from <span class="extype" name="scala.DelayedInit">DelayedInit</span></h3>
+            </div><div class="parent" name="scala.AnyRef">
               <h3>Inherited from <a href="../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></h3>
             </div><div class="parent" name="scala.Any">
               <h3>Inherited from <span class="extype" name="scala.Any">Any</span></h3>

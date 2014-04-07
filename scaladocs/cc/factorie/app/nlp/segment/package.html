@@ -74,6 +74,32 @@
 Date: 8/19/13
 Time: 2:00 PM
 </p>
+    </li><li name="cc.factorie.app.nlp.segment.CUHChainChineseWordSegmenter" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="CUHChainChineseWordSegmenterextendsChainChineseWordSegmenter"></a>
+      <a id="CUHChainChineseWordSegmenter:CUHChainChineseWordSegmenter"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="CUHChainChineseWordSegmenter.html"><span class="name">CUHChainChineseWordSegmenter</span></a><span class="result"> extends <a href="ChainChineseWordSegmenter.html" class="extype" name="cc.factorie.app.nlp.segment.ChainChineseWordSegmenter">ChainChineseWordSegmenter</a></span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.app.nlp.segment.ChainChineseWordSegmenter" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="ChainChineseWordSegmenterextendsDocumentAnnotator"></a>
+      <a id="ChainChineseWordSegmenter:ChainChineseWordSegmenter"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="ChainChineseWordSegmenter.html"><span class="name">ChainChineseWordSegmenter</span></a><span class="result"> extends <a href="../DocumentAnnotator.html" class="extype" name="cc.factorie.app.nlp.DocumentAnnotator">DocumentAnnotator</a></span>
+      </span>
+      </h4>
+      
     </li><li name="cc.factorie.app.nlp.segment.DehyphenatingTokenizer" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="DehyphenatingTokenizer[T&lt;:cc.factorie.app.nlp.DocumentAnnotator]extendsDocumentAnnotator"></a>
       <a id="DehyphenatingTokenizer[T&lt;:DocumentAnnotator]:DehyphenatingTokenizer[T]"></a>
@@ -114,6 +140,21 @@ or other words in the same document.</p>
       </span>
       </h4>
       <p class="comment cmt">Split a String into a sequence of Tokens.</p>
+    </li><li name="cc.factorie.app.nlp.segment.MSRChainChineseWordSegmenter" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="MSRChainChineseWordSegmenterextendsChainChineseWordSegmenter"></a>
+      <a id="MSRChainChineseWordSegmenter:MSRChainChineseWordSegmenter"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="MSRChainChineseWordSegmenter.html"><span class="name">MSRChainChineseWordSegmenter</span></a><span class="result"> extends <a href="ChainChineseWordSegmenter.html" class="extype" name="cc.factorie.app.nlp.segment.ChainChineseWordSegmenter">ChainChineseWordSegmenter</a></span>
+      </span>
+      </h4>
+      <p class="comment cmt">A linear-chain CRF model for Chinese word segmentation with four companion
+    objects, each pre-trained on a different corpus that corresponds to a
+    different variety of written Mandarin.</p>
     </li><li name="cc.factorie.app.nlp.segment.OntonotesNormalizedTokenString" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="OntonotesNormalizedTokenStringextendsPlainNormalizedTokenString"></a>
       <a id="OntonotesNormalizedTokenString:OntonotesNormalizedTokenString"></a>
@@ -192,6 +233,32 @@ or other words in the same document.</p>
       </span>
       </h4>
       
+    </li><li name="cc.factorie.app.nlp.segment.SegmentationLabelDomain" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="SegmentationLabelDomainextendsCategoricalDomain[String]withSegmentedCorpusLabeling"></a>
+      <a id="SegmentationLabelDomain:SegmentationLabelDomain"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="SegmentationLabelDomain.html"><span class="name">SegmentationLabelDomain</span></a><span class="result"> extends <a href="../../../variable/CategoricalDomain.html" class="extype" name="cc.factorie.variable.CategoricalDomain">CategoricalDomain</a>[<span class="extype" name="scala.Predef.String">String</span>] with <a href="SegmentedCorpusLabeling.html" class="extype" name="cc.factorie.app.nlp.segment.SegmentedCorpusLabeling">SegmentedCorpusLabeling</a></span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.app.nlp.segment.SegmentedCorpusLabeling" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="SegmentedCorpusLabelingextendsAnyRef"></a>
+      <a id="SegmentedCorpusLabeling:SegmentedCorpusLabeling"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="SegmentedCorpusLabeling.html"><span class="name">SegmentedCorpusLabeling</span></a><span class="result"> extends <a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>
+      </span>
+      </h4>
+      
     </li><li name="cc.factorie.app.nlp.segment.SentenceBoundaryInference" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
       <a id="SentenceBoundaryInferenceextendsAnyRef"></a>
       <a id="SentenceBoundaryInference:SentenceBoundaryInference"></a>
@@ -264,6 +331,19 @@ or other words in the same document.</p>
       </span>
       </h4>
       
+    </li><li name="cc.factorie.app.nlp.segment.BIOSegmentationDomain" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="BIOSegmentationDomain"></a>
+      <a id="BIOSegmentationDomain:BIOSegmentationDomain"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="BIOSegmentationDomain$.html"><span class="name">BIOSegmentationDomain</span></a><span class="result"> extends <a href="SegmentationLabelDomain.html" class="extype" name="cc.factorie.app.nlp.segment.SegmentationLabelDomain">SegmentationLabelDomain</a></span>
+      </span>
+      </h4>
+      
     </li><li name="cc.factorie.app.nlp.segment.BritishToAmerican" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="BritishToAmerican"></a>
       <a id="BritishToAmerican:BritishToAmerican"></a>
@@ -274,6 +354,19 @@ or other words in the same document.</p>
       </span>
       <span class="symbol">
         <a href="BritishToAmerican$.html"><span class="name">BritishToAmerican</span></a><span class="result"> extends <span class="extype" name="scala.collection.mutable.HashMap">HashMap</span>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Predef.String">String</span>]</span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.app.nlp.segment.CUHChainChineseWordSegmenter" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="CUHChainChineseWordSegmenter"></a>
+      <a id="CUHChainChineseWordSegmenter:CUHChainChineseWordSegmenter"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="CUHChainChineseWordSegmenter$.html"><span class="name">CUHChainChineseWordSegmenter</span></a><span class="result"> extends <a href="CUHChainChineseWordSegmenter.html" class="extype" name="cc.factorie.app.nlp.segment.CUHChainChineseWordSegmenter">CUHChainChineseWordSegmenter</a></span>
       </span>
       </h4>
       
@@ -326,6 +419,19 @@ or other words in the same document.</p>
       </span>
       <span class="symbol">
         <a href="JointlyAcrossDocuments$.html"><span class="name">JointlyAcrossDocuments</span></a><span class="result"> extends <a href="SentenceBoundaryInference.html" class="extype" name="cc.factorie.app.nlp.segment.SentenceBoundaryInference">SentenceBoundaryInference</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.app.nlp.segment.MSRChainChineseWordSegmenter" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="MSRChainChineseWordSegmenter"></a>
+      <a id="MSRChainChineseWordSegmenter:MSRChainChineseWordSegmenter"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="MSRChainChineseWordSegmenter$.html"><span class="name">MSRChainChineseWordSegmenter</span></a><span class="result"> extends <a href="MSRChainChineseWordSegmenter.html" class="extype" name="cc.factorie.app.nlp.segment.MSRChainChineseWordSegmenter">MSRChainChineseWordSegmenter</a></span>
       </span>
       </h4>
       

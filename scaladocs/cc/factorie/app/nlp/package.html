@@ -356,6 +356,32 @@
       </span>
       </h4>
       <p class="comment cmt">A sub-sequence of Tokens within a Section (which is in turn part of a Document).</p>
+    </li><li name="cc.factorie.app.nlp.TokenSpanBuffer" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="TokenSpanBuffer[S&lt;:cc.factorie.app.nlp.TokenSpan]extendsSpanVarBuffer[S,cc.factorie.app.nlp.Section,cc.factorie.app.nlp.Token]withTokenSpanCollection[S]"></a>
+      <a id="TokenSpanBuffer[S&lt;:TokenSpan]:TokenSpanBuffer[S]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="TokenSpanBuffer.html"><span class="name">TokenSpanBuffer</span></a><span class="tparams">[<span name="S">S &lt;: <a href="TokenSpan.html" class="extype" name="cc.factorie.app.nlp.TokenSpan">TokenSpan</a></span>]</span><span class="result"> extends <a href="../../variable/SpanVarBuffer.html" class="extype" name="cc.factorie.variable.SpanVarBuffer">SpanVarBuffer</a>[<span class="extype" name="cc.factorie.app.nlp.TokenSpanBuffer.S">S</span>, <a href="Section.html" class="extype" name="cc.factorie.app.nlp.Section">Section</a>, <a href="Token.html" class="extype" name="cc.factorie.app.nlp.Token">Token</a>] with <a href="TokenSpanCollection.html" class="extype" name="cc.factorie.app.nlp.TokenSpanCollection">TokenSpanCollection</a>[<span class="extype" name="cc.factorie.app.nlp.TokenSpanBuffer.S">S</span>]</span>
+      </span>
+      </h4>
+      <p class="comment cmt">A mutable collection of TokenSpans, with various methods to returns filtered sub-sets of spans based on position and class.</p>
+    </li><li name="cc.factorie.app.nlp.TokenSpanCollection" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="TokenSpanCollection[S&lt;:cc.factorie.app.nlp.TokenSpan]extendsSpanVarCollection[S,cc.factorie.app.nlp.Section,cc.factorie.app.nlp.Token]"></a>
+      <a id="TokenSpanCollection[S&lt;:TokenSpan]:TokenSpanCollection[S]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="TokenSpanCollection.html"><span class="name">TokenSpanCollection</span></a><span class="tparams">[<span name="S">S &lt;: <a href="TokenSpan.html" class="extype" name="cc.factorie.app.nlp.TokenSpan">TokenSpan</a></span>]</span><span class="result"> extends <a href="../../variable/SpanVarCollection.html" class="extype" name="cc.factorie.variable.SpanVarCollection">SpanVarCollection</a>[<span class="extype" name="cc.factorie.app.nlp.TokenSpanCollection.S">S</span>, <a href="Section.html" class="extype" name="cc.factorie.app.nlp.Section">Section</a>, <a href="Token.html" class="extype" name="cc.factorie.app.nlp.Token">Token</a>]</span>
+      </span>
+      </h4>
+      
     </li><li name="cc.factorie.app.nlp.TokenSpanCubbie" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="TokenSpanCubbieextendsCubbie"></a>
       <a id="TokenSpanCubbie:TokenSpanCubbie"></a>
@@ -370,7 +396,7 @@
       </h4>
       
     </li><li name="cc.factorie.app.nlp.TokenSpanList" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="TokenSpanList[S&lt;:cc.factorie.app.nlp.TokenSpan]extendsSpanVarList[S,cc.factorie.app.nlp.Section,cc.factorie.app.nlp.Token]"></a>
+      <a id="TokenSpanList[S&lt;:cc.factorie.app.nlp.TokenSpan]extendsSpanVarList[S,cc.factorie.app.nlp.Section,cc.factorie.app.nlp.Token]withTokenSpanCollection[S]"></a>
       <a id="TokenSpanList[S&lt;:TokenSpan]:TokenSpanList[S]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -378,10 +404,10 @@
         <span class="kind">class</span>
       </span>
       <span class="symbol">
-        <a href="TokenSpanList.html"><span class="name">TokenSpanList</span></a><span class="tparams">[<span name="S">S &lt;: <a href="TokenSpan.html" class="extype" name="cc.factorie.app.nlp.TokenSpan">TokenSpan</a></span>]</span><span class="result"> extends <a href="../../variable/SpanVarList.html" class="extype" name="cc.factorie.variable.SpanVarList">SpanVarList</a>[<span class="extype" name="cc.factorie.app.nlp.TokenSpanList.S">S</span>, <a href="Section.html" class="extype" name="cc.factorie.app.nlp.Section">Section</a>, <a href="Token.html" class="extype" name="cc.factorie.app.nlp.Token">Token</a>]</span>
+        <a href="TokenSpanList.html"><span class="name">TokenSpanList</span></a><span class="tparams">[<span name="S">S &lt;: <a href="TokenSpan.html" class="extype" name="cc.factorie.app.nlp.TokenSpan">TokenSpan</a></span>]</span><span class="result"> extends <a href="../../variable/SpanVarList.html" class="extype" name="cc.factorie.variable.SpanVarList">SpanVarList</a>[<span class="extype" name="cc.factorie.app.nlp.TokenSpanList.S">S</span>, <a href="Section.html" class="extype" name="cc.factorie.app.nlp.Section">Section</a>, <a href="Token.html" class="extype" name="cc.factorie.app.nlp.Token">Token</a>] with <a href="TokenSpanCollection.html" class="extype" name="cc.factorie.app.nlp.TokenSpanCollection">TokenSpanCollection</a>[<span class="extype" name="cc.factorie.app.nlp.TokenSpanList.S">S</span>]</span>
       </span>
       </h4>
-      <p class="comment cmt">A collection of TokenSpans, with various methods to returns filtered sub-sets of spans based on position and class.</p>
+      <p class="comment cmt">An immutable collection of TokenSpans, with various methods to returns filtered sub-sets of spans based on position and class.</p>
     </li><li name="cc.factorie.app.nlp.TokenSpanNerLabelCubbieSlot" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
       <a id="TokenSpanNerLabelCubbieSlotextendsTokenSpanCubbie"></a>
       <a id="TokenSpanNerLabelCubbieSlot:TokenSpanNerLabelCubbieSlot"></a>
@@ -635,19 +661,6 @@
       </span>
       <span class="symbol">
         <a href="load/package.html"><span class="name">load</span></a>
-      </span>
-      </h4>
-      
-    </li><li name="cc.factorie.app.nlp.mention" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="mention"></a>
-      <a id="mention:mention"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">package</span>
-      </span>
-      <span class="symbol">
-        <a href="mention/package.html"><span class="name">mention</span></a>
       </span>
       </h4>
       

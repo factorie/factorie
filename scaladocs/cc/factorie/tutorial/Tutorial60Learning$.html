@@ -35,13 +35,13 @@
         <span class="kind">object</span>
       </span>
       <span class="symbol">
-        <span class="name">Tutorial60Learning</span>
+        <span class="name">Tutorial60Learning</span><span class="result"> extends <span class="extype" name="scala.App">App</span></span>
       </span>
       </h4>
       
           <div id="comment" class="fullcommenttop"><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
-          <div class="superTypes hiddenContent"><a href="../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <span class="extype" name="scala.Any">Any</span></div>
+          <div class="superTypes hiddenContent"><span class="extype" name="scala.App">App</span>, <span class="extype" name="scala.DelayedInit">DelayedInit</span>, <a href="../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <span class="extype" name="scala.Any">Any</span></div>
         </div></div>
         
 
@@ -59,7 +59,7 @@
                 <span class="filtertype">Inherited<br />
                 </span>
                 <ol id="linearization">
-                  <li class="in" name="cc.factorie.tutorial.Tutorial60Learning"><span>Tutorial60Learning</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
+                  <li class="in" name="cc.factorie.tutorial.Tutorial60Learning"><span>Tutorial60Learning</span></li><li class="in" name="scala.App"><span>App</span></li><li class="in" name="scala.DelayedInit"><span>DelayedInit</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
                 </ol>
               </div><div id="ancestors">
             <span class="filtertype"></span>
@@ -79,7 +79,36 @@
         <div id="allMembers">
         
 
-        
+        <div id="types" class="types members">
+              <h3>Type Members</h3>
+              <ol><li name="cc.factorie.tutorial.Tutorial60Learning.Features" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="FeaturesextendsBinaryFeatureVectorVariable[String]"></a>
+      <a id="Features:Features"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="Tutorial60Learning$$Features.html"><span class="name">Features</span></a><span class="result"> extends <a href="../variable/BinaryFeatureVectorVariable.html" class="extype" name="cc.factorie.variable.BinaryFeatureVectorVariable">BinaryFeatureVectorVariable</a>[<span class="extype" name="scala.Predef.String">String</span>]</span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.tutorial.Tutorial60Learning.Label" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="LabelextendsLabeledCategoricalVariable[String]"></a>
+      <a id="Label:Label"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="Tutorial60Learning$$Label.html"><span class="name">Label</span></a><span class="result"> extends <a href="../variable/LabeledCategoricalVariable.html" class="extype" name="cc.factorie.variable.LabeledCategoricalVariable">LabeledCategoricalVariable</a>[<span class="extype" name="scala.Predef.String">String</span>]</span>
+      </span>
+      </h4>
+      
+    </li></ol>
+            </div>
 
         
 
@@ -150,6 +179,45 @@
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
+    </li><li name="cc.factorie.tutorial.Tutorial60Learning.FeaturesDomain" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="FeaturesDomain"></a>
+      <a id="FeaturesDomain:FeaturesDomain"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="Tutorial60Learning$$FeaturesDomain$.html"><span class="name">FeaturesDomain</span></a><span class="result"> extends <a href="../variable/CategoricalVectorDomain.html" class="extype" name="cc.factorie.variable.CategoricalVectorDomain">CategoricalVectorDomain</a>[<span class="extype" name="scala.Predef.String">String</span>]</span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.tutorial.Tutorial60Learning.LabelDomain" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="LabelDomain"></a>
+      <a id="LabelDomain:LabelDomain"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="Tutorial60Learning$$LabelDomain$.html"><span class="name">LabelDomain</span></a><span class="result"> extends <a href="../variable/CategoricalDomain.html" class="extype" name="cc.factorie.variable.CategoricalDomain">CategoricalDomain</a>[<span class="extype" name="scala.Predef.String">String</span>]</span>
+      </span>
+      </h4>
+      
+    </li><li name="scala.App#args" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="args:Array[String]"></a>
+      <a id="args:Array[String]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">args</span><span class="result">: <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="scala.Predef.String">String</span>]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd>App</dd></dl></div>
     </li><li name="scala.Any#asInstanceOf" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="asInstanceOf[T0]:T0"></a>
       <a id="asInstanceOf[T0]:T0"></a>
@@ -182,6 +250,32 @@
     </span>)</span>
               
         </dd></dl></div>
+    </li><li name="scala.App#delayedInit" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="delayedInit(body:=&gt;Unit):Unit"></a>
+      <a id="delayedInit(⇒Unit):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">delayedInit</span><span class="params">(<span name="body">body: ⇒ <span class="extype" name="scala.Unit">Unit</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>App → DelayedInit</dd></dl></div>
+    </li><li name="cc.factorie.tutorial.Tutorial60Learning#document" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="document:cc.factorie.app.nlp.Document"></a>
+      <a id="document:Document"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">document</span><span class="result">: <a href="../app/nlp/Document.html" class="extype" name="cc.factorie.app.nlp.Document">Document</a></span>
+      </span>
+      </h4>
+      
     </li><li name="scala.AnyRef#eq" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="eq(x$1:AnyRef):Boolean"></a>
       <a id="eq(AnyRef):Boolean"></a>
@@ -208,6 +302,32 @@
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="cc.factorie.tutorial.Tutorial60Learning#example" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="example:cc.factorie.optimize.LikelihoodExample[Seq[cc.factorie.tutorial.Tutorial60Learning.Label],cc.factorie.tutorial.Tutorial60Learning.model.type]"></a>
+      <a id="example:LikelihoodExample[Seq[Label],model.type]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">example</span><span class="result">: <a href="../optimize/LikelihoodExample.html" class="extype" name="cc.factorie.optimize.LikelihoodExample">LikelihoodExample</a>[<span class="extype" name="scala.collection.Seq">Seq</span>[<a href="Tutorial60Learning$$Label.html" class="extype" name="cc.factorie.tutorial.Tutorial60Learning.Label">Label</a>], <a href="Tutorial60Learning$$model$.html" class="extype" name="cc.factorie.tutorial.Tutorial60Learning.model">model</a>.type]</span>
+      </span>
+      </h4>
+      
+    </li><li name="scala.App#executionStart" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="executionStart:Long"></a>
+      <a id="executionStart:Long"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">executionStart</span><span class="result">: <span class="extype" name="scala.Long">Long</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>App</dd></dl></div>
     </li><li name="scala.AnyRef#finalize" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="finalize():Unit"></a>
       <a id="finalize():Unit"></a>
@@ -266,7 +386,7 @@
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
-    </li><li name="cc.factorie.tutorial.Tutorial60Learning#main" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+    </li><li name="scala.App#main" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="main(args:Array[String]):Unit"></a>
       <a id="main(Array[String]):Unit"></a>
       <h4 class="signature">
@@ -276,6 +396,19 @@
       </span>
       <span class="symbol">
         <span class="name">main</span><span class="params">(<span name="args">args: <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="scala.Predef.String">String</span>]</span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>App</dd></dl></div>
+    </li><li name="cc.factorie.tutorial.Tutorial60Learning.model" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="model"></a>
+      <a id="model:model"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="Tutorial60Learning$$model$.html"><span class="name">model</span></a><span class="result"> extends <a href="../app/chain/ChainModel.html" class="extype" name="cc.factorie.app.chain.ChainModel">ChainModel</a>[<a href="Tutorial60Learning$$Label.html" class="extype" name="cc.factorie.tutorial.Tutorial60Learning.Label">Label</a>, <a href="Tutorial60Learning$$Features.html" class="extype" name="cc.factorie.tutorial.Tutorial60Learning.Features">Features</a>, <a href="../app/nlp/Token.html" class="extype" name="cc.factorie.app.nlp.Token">Token</a>]</span>
       </span>
       </h4>
       
@@ -318,6 +451,110 @@
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li name="cc.factorie.tutorial.Tutorial60Learning#optimizer0" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="optimizer0:cc.factorie.optimize.AdaGrad"></a>
+      <a id="optimizer0:AdaGrad"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">optimizer0</span><span class="result">: <a href="../optimize/AdaGrad.html" class="extype" name="cc.factorie.optimize.AdaGrad">AdaGrad</a></span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.tutorial.Tutorial60Learning#optimizer1" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="optimizer1:cc.factorie.optimize.LBFGSwithcc.factorie.optimize.L2Regularization"></a>
+      <a id="optimizer1:LBFGSwithL2Regularization"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">optimizer1</span><span class="result">: <a href="../optimize/LBFGS.html" class="extype" name="cc.factorie.optimize.LBFGS">LBFGS</a> with <a href="../optimize/L2Regularization.html" class="extype" name="cc.factorie.optimize.L2Regularization">L2Regularization</a></span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.tutorial.Tutorial60Learning#random" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="random:scala.util.Random"></a>
+      <a id="random:Random"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">implicit </span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">random</span><span class="result">: <span class="extype" name="scala.util.Random">Random</span></span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.tutorial.Tutorial60Learning#sampleRankExamples" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="sampleRankExamples:Seq[cc.factorie.optimize.SampleRankExample[cc.factorie.Var]]"></a>
+      <a id="sampleRankExamples:Seq[SampleRankExample[Var]]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">sampleRankExamples</span><span class="result">: <span class="extype" name="scala.collection.Seq">Seq</span>[<a href="../optimize/SampleRankExample.html" class="extype" name="cc.factorie.optimize.SampleRankExample">SampleRankExample</a>[<a href="../package.html#Var=cc.factorie.variable.Var" class="extmbr" name="cc.factorie.Var">Var</a>]]</span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.tutorial.Tutorial60Learning#sampler" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="sampler:cc.factorie.infer.GibbsSampler"></a>
+      <a id="sampler:infer.GibbsSampler"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">sampler</span><span class="result">: <a href="../infer/GibbsSampler.html" class="extype" name="cc.factorie.infer.GibbsSampler">infer.GibbsSampler</a></span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.tutorial.Tutorial60Learning#segmenter" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="segmenter:cc.factorie.app.nlp.segment.DeterministicSentenceSegmenter"></a>
+      <a id="segmenter:DeterministicSentenceSegmenter"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">segmenter</span><span class="result">: <a href="../app/nlp/segment/DeterministicSentenceSegmenter.html" class="extype" name="cc.factorie.app.nlp.segment.DeterministicSentenceSegmenter">DeterministicSentenceSegmenter</a></span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.tutorial.Tutorial60Learning#summary" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="summary:cc.factorie.infer.BPSummary"></a>
+      <a id="summary:BPSummary"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">summary</span><span class="result">: <a href="../infer/BPSummary.html" class="extype" name="cc.factorie.infer.BPSummary">BPSummary</a></span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.tutorial.Tutorial60Learning#summary2" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="summary2:cc.factorie.infer.BPSummary"></a>
+      <a id="summary2:BPSummary"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">summary2</span><span class="result">: <a href="../infer/BPSummary.html" class="extype" name="cc.factorie.infer.BPSummary">BPSummary</a></span>
+      </span>
+      </h4>
+      
     </li><li name="scala.AnyRef#synchronized" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="synchronized[T0](x$1:=&gt;T0):T0"></a>
       <a id="synchronized[T0](⇒T0):T0"></a>
@@ -344,6 +581,45 @@
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="cc.factorie.tutorial.Tutorial60Learning#tokenizer" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="tokenizer:cc.factorie.app.nlp.segment.DeterministicTokenizer"></a>
+      <a id="tokenizer:DeterministicTokenizer"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">tokenizer</span><span class="result">: <a href="../app/nlp/segment/DeterministicTokenizer.html" class="extype" name="cc.factorie.app.nlp.segment.DeterministicTokenizer">DeterministicTokenizer</a></span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.tutorial.Tutorial60Learning#trainer" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="trainer:cc.factorie.optimize.SynchronizedOptimizerOnlineTrainer"></a>
+      <a id="trainer:SynchronizedOptimizerOnlineTrainer"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">trainer</span><span class="result">: <a href="../optimize/SynchronizedOptimizerOnlineTrainer.html" class="extype" name="cc.factorie.optimize.SynchronizedOptimizerOnlineTrainer">SynchronizedOptimizerOnlineTrainer</a></span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.tutorial.Tutorial60Learning#trainer2" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="trainer2:cc.factorie.optimize.SampleRankTrainer[cc.factorie.Var]"></a>
+      <a id="trainer2:SampleRankTrainer[Var]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">trainer2</span><span class="result">: <a href="../optimize/SampleRankTrainer.html" class="extype" name="cc.factorie.optimize.SampleRankTrainer">SampleRankTrainer</a>[<a href="../package.html#Var=cc.factorie.variable.Var" class="extmbr" name="cc.factorie.Var">Var</a>]</span>
+      </span>
+      </h4>
+      
     </li><li name="scala.AnyRef#wait" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="wait():Unit"></a>
       <a id="wait():Unit"></a>
@@ -410,7 +686,11 @@
         </div>
 
         <div id="inheritedMembers">
-        <div class="parent" name="scala.AnyRef">
+        <div class="parent" name="scala.App">
+              <h3>Inherited from <span class="extype" name="scala.App">App</span></h3>
+            </div><div class="parent" name="scala.DelayedInit">
+              <h3>Inherited from <span class="extype" name="scala.DelayedInit">DelayedInit</span></h3>
+            </div><div class="parent" name="scala.AnyRef">
               <h3>Inherited from <a href="../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></h3>
             </div><div class="parent" name="scala.Any">
               <h3>Inherited from <span class="extype" name="scala.Any">Any</span></h3>

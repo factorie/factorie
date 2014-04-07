@@ -44,18 +44,22 @@
     a sequence of Sections, each of which is delineated by character offsets
     into the Document's string, and each of which contains a sequence of Tokens,
     Sentences and other TokenSpans which may be annotated.</p><p>    Documents may be constructed with their full string contents, or they may
-    have their string contents added to by the appendString method.</p><p>    Documents also have an optional &quot;name&quot; which can be set by Document.setName.</p><p>    The Document.stringLength method may be a faster alternative to Document.string.length
-    when you are in the middle of multiple appendString calls.</p><p>    The canonical sequence of Sections in the Document is available through
+    have their string contents augmented by the appendString method.</p><p>    Documents also have an optional &quot;name&quot; which can be set by Document.setName.
+    This is typically used to hold a filename in the file system, or some other similar identifier.</p><p>    The Document.stringLength method may be a faster alternative to Document.string.length
+    when you are in the middle of multiple appendString calls because it will
+    efficiently use the underlying string buffer length, rather than flushing the buffer
+    to create a string.</p><p>    The canonical sequence of Sections in the Document is available through
     the Document.sections method.</p><p>    By default the canonical sequence of Sections holds a single Section that covers the
     entire string contents of the Document (even as the Document grows).  This canonical sequence
     of Sections may be modified by the user, but this special all-encompassing Section
     instance will always be available as Document.asSection.</p><p>    Even though Tokens, Sentences and TokenSpans are really stored in the Sections,
     Document has basic convenience methods for obtaining iterable collections of these
-    by concatenating them from the canonical sequence of Sections.  If, for example,
-    you need the Tokens as a Seq[Token] rather than an Iterable[Token], or you need
+    by concatenating them from the canonical sequence of Sections.  These iterable
+    collections are of type Iterable[Token], not Seq[Token], however.
+    If you need the Tokens as a Seq[Token] rather than an Iterable[Token], or you need
     more advanced queries for TokenSpan types, you should use methods on a Section,
     not on the Document.  In this case typical processing looks like:
-    &quot;for (section &lt;- document.sections) ...&quot;.
+    &quot;for (section &lt;- document.sections) section.tokens.someMethodOnSeq()...&quot;.
 </p></div><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
           <div class="superTypes hiddenContent"><a href="../../util/Attr.html" class="extype" name="cc.factorie.util.Attr">Attr</a>, <a href="DocumentSubstring.html" class="extype" name="cc.factorie.app.nlp.DocumentSubstring">DocumentSubstring</a>, <a href="../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <span class="extype" name="scala.Any">Any</span></div>
@@ -108,7 +112,7 @@
         <span class="name">Document</span><span class="params">(<span name="stringContents">stringContents: <span class="extype" name="scala.Predef.String">String</span></span>)</span>
       </span>
       </h4>
-      
+      <p class="shortcomment cmt">Create a new Document, initializing it to have contents given by the argument.</p>
     </li><li name="cc.factorie.app.nlp.Document#&lt;init&gt;" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="&lt;init&gt;():cc.factorie.app.nlp.Document"></a>
       <a id="&lt;init&gt;:Document"></a>
@@ -195,7 +199,7 @@
         <span title="gt4s: $minus$eq" class="name">-=</span><span class="params">(<span name="s">s: <a href="Section.html" class="extype" name="cc.factorie.app.nlp.Section">Section</a></span>)</span><span class="result">: <span class="extype" name="scala.collection.mutable.Buffer">Buffer</span>[<a href="Section.html" class="extype" name="cc.factorie.app.nlp.Section">Section</a>]</span>
       </span>
       </h4>
-      <p class="shortcomment cmt">Remove a Section to this Document's canonical list of Sections.</p>
+      <p class="shortcomment cmt">Remove a Section from this Document's canonical list of Sections.</p>
     </li><li name="scala.AnyRef#==" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="==(x$1:AnyRef):Boolean"></a>
       <a id="==(AnyRef):Boolean"></a>
@@ -222,7 +226,7 @@
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
-    </li><li name="cc.factorie.app.nlp.Document#annotatorFor" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+    </li><li name="cc.factorie.app.nlp.Document#annotatorFor" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="annotatorFor(c:Class[_]):Option[Class[_]]"></a>
       <a id="annotatorFor(Class[_]):Option[Class[_]]"></a>
       <h4 class="signature">
@@ -234,7 +238,7 @@
         <span class="name">annotatorFor</span><span class="params">(<span name="c">c: <span class="extype" name="scala.Predef.Class">Class</span>[_]</span>)</span><span class="result">: <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="scala.Predef.Class">Class</span>[_]]</span>
       </span>
       </h4>
-      <p class="shortcomment cmt">Which DocumentAnnotator produced the annotation of class 'c' within this Document.</p><div class="fullcomment"><div class="comment cmt"><p>Which DocumentAnnotator produced the annotation of class 'c' within this Document.  If</p></div></div>
+      <p class="shortcomment cmt">Optionally return the DocumentAnnotator that produced the annotation of class 'c' within this Document.</p>
     </li><li name="cc.factorie.app.nlp.Document#annotators" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="annotators:scala.collection.mutable.LinkedHashMap[Class[_],Class[_]]"></a>
       <a id="annotators:LinkedHashMap[Class[_],Class[_]]"></a>
@@ -250,9 +254,10 @@
       <p class="shortcomment cmt">The collection of DocumentAnnotators that have been run on this Document,
       For keeping records of which DocumentAnnotators have been run on this document, producing which annotations.</p><div class="fullcomment"><div class="comment cmt"><p>The collection of DocumentAnnotators that have been run on this Document,
       For keeping records of which DocumentAnnotators have been run on this document, producing which annotations.
-      A Map from the annotation class to the DocumentAnnotator that produced it.
+      A Map from the annotation class to the DocumentAnnotator that produced it,
+      for example from classOf[cc.factorie.app.nlp.pos.PennPos] to classOf[cc.factorie.app.nlp.pos.ChainPosTagger].
       Note that this map records annotations placed not just on the Document itself, but also its constituents,
-      such as TokenSpan, Token, Sentence, etc.</p></div></div>
+      such as NounPhraseNumberLabel on NounPhrase, PennPos on Token, ParseTree on Sentence, etc.</p></div></div>
     </li><li name="cc.factorie.app.nlp.Document#appendString" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="appendString(s:String):Int"></a>
       <a id="appendString(String):Int"></a>
@@ -292,7 +297,7 @@
       </span>
       </h4>
       <p class="shortcomment cmt">A predefined Section that covers the entirety of the Document string, and even grows as the length of this Document may grow.</p><div class="fullcomment"><div class="comment cmt"><p>A predefined Section that covers the entirety of the Document string, and even grows as the length of this Document may grow.
-      If the user does not explicitly add Sections to the document, this Section is returned by the &quot;sections&quot; method.</p></div></div>
+      If the user does not explicitly add Sections to the document, this Section is the only one returned by the &quot;sections&quot; method.</p></div></div>
     </li><li name="cc.factorie.util.Attr.attr" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="attr"></a>
       <a id="attr:attr"></a>
@@ -318,7 +323,7 @@
         <span class="name">clearSections</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4>
-      <p class="shortcomment cmt">Remove all Section to this Document's canonical list of Sections.</p>
+      <p class="shortcomment cmt">Remove all Section from this Document's canonical list of Sections.</p>
     </li><li name="scala.AnyRef#clone" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="clone():Object"></a>
       <a id="clone():AnyRef"></a>
@@ -421,7 +426,7 @@
         <span class="name">hasAnnotation</span><span class="params">(<span name="c">c: <span class="extype" name="scala.Predef.Class">Class</span>[_]</span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
       </span>
       </h4>
-      <p class="shortcomment cmt">Has an annotation of class 'c' been placed somewhere within this Document?</p>
+      <p class="shortcomment cmt">Return true if an annotation of class 'c' been placed somewhere within this Document.</p>
     </li><li name="scala.AnyRef#hashCode" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="hashCode():Int"></a>
       <a id="hashCode():Int"></a>
@@ -448,7 +453,7 @@
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
-    </li><li name="cc.factorie.app.nlp.Document#name" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+    </li><li name="cc.factorie.app.nlp.Document#name" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="name:String"></a>
       <a id="name:String"></a>
       <h4 class="signature">
@@ -460,7 +465,8 @@
         <span class="name">name</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
       </span>
       </h4>
-      
+      <p class="shortcomment cmt">Return the &quot;name&quot; assigned to this Document by the 'setName' method.</p><div class="fullcomment"><div class="comment cmt"><p>Return the &quot;name&quot; assigned to this Document by the 'setName' method.
+      This may be any String, but is typically a filename or other similar identifier.</p></div></div>
     </li><li name="scala.AnyRef#ne" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="ne(x$1:AnyRef):Boolean"></a>
       <a id="ne(AnyRef):Boolean"></a>
@@ -500,7 +506,7 @@
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
-    </li><li name="cc.factorie.app.nlp.Document#owplString" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+    </li><li name="cc.factorie.app.nlp.Document#owplString" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="owplString(annotator:cc.factorie.app.nlp.DocumentAnnotator):String"></a>
       <a id="owplString(DocumentAnnotator):String"></a>
       <h4 class="signature">
@@ -512,7 +518,9 @@
         <span class="name">owplString</span><span class="params">(<span name="annotator">annotator: <a href="DocumentAnnotator.html" class="extype" name="cc.factorie.app.nlp.DocumentAnnotator">DocumentAnnotator</a></span>)</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
       </span>
       </h4>
-      
+      <p class="shortcomment cmt">Return a String containing the Token strings in the document, formatted with one-word-per-line
+      and various tab-separated attributes appended on each line, generated from the 'annotator.</p><div class="fullcomment"><div class="comment cmt"><p>Return a String containing the Token strings in the document, formatted with one-word-per-line
+      and various tab-separated attributes appended on each line, generated from the 'annotator.tokenAnnotationString' method.</p></div></div>
     </li><li name="cc.factorie.app.nlp.Document#owplString" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="owplString(attributes:Iterable[cc.factorie.app.nlp.Token=&gt;Any]):String"></a>
       <a id="owplString(Iterable[(Token)⇒Any]):String"></a>
@@ -525,8 +533,8 @@
         <span class="name">owplString</span><span class="params">(<span name="attributes">attributes: <a href="../../../../scala/package.html#Iterable[+A]=Iterable[A]" class="extmbr" name="scala.Iterable">Iterable</a>[(<a href="Token.html" class="extype" name="cc.factorie.app.nlp.Token">Token</a>) ⇒ <span class="extype" name="scala.Any">Any</span>]</span>)</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
       </span>
       </h4>
-      <p class="shortcomment cmt">Return a String containing the Token strings in the document, with one-word-per-line
-      and various tab-separated attributes appended on each line.</p>
+      <p class="shortcomment cmt">Return a String containing the Token strings in the document, formatted with one-word-per-line
+      and various tab-separated attributes appended on each line, generated as specified by the argument.</p>
     </li><li name="cc.factorie.app.nlp.Document#sections" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="sections:Seq[cc.factorie.app.nlp.Section]"></a>
       <a id="sections:Seq[Section]"></a>
@@ -569,7 +577,7 @@
         <span class="name">sentences</span><span class="result">: <a href="../../../../scala/package.html#Iterable[+A]=Iterable[A]" class="extmbr" name="scala.Iterable">Iterable</a>[<a href="Sentence.html" class="extype" name="cc.factorie.app.nlp.Sentence">Sentence</a>]</span>
       </span>
       </h4>
-      
+      <p class="shortcomment cmt">Return an Iterable collection of all Sentences in all canonical Sections of this Document.</p>
     </li><li name="cc.factorie.app.nlp.Document#setName" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="setName(s:String):Document.this.type"></a>
       <a id="setName(String):Document.this.type"></a>
@@ -582,7 +590,9 @@
         <span class="name">setName</span><span class="params">(<span name="s">s: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <a href="" class="extype" name="cc.factorie.app.nlp.Document">Document</a>.this.type</span>
       </span>
       </h4>
-      <p class="shortcomment cmt">Set DocumentName attr on Document.</p><div class="fullcomment"><div class="comment cmt"><p>Set DocumentName attr on Document.  If String argument is null, remove DocumentName attr if present.</p></div></div>
+      <p class="shortcomment cmt">Set the value that will be returned by the 'name' method.</p><div class="fullcomment"><div class="comment cmt"><p>Set the value that will be returned by the 'name' method.
+      It accomplishes this by setting the DocumentName attr on Document.
+      If the String argument is null, it will remove DocumentName attr if present.</p></div></div>
     </li><li name="cc.factorie.app.nlp.Document#string" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="string:String"></a>
       <a id="string:String"></a>
@@ -687,7 +697,7 @@
         <span class="name">tokens</span><span class="result">: <a href="../../../../scala/package.html#Iterable[+A]=Iterable[A]" class="extmbr" name="scala.Iterable">Iterable</a>[<a href="Token.html" class="extype" name="cc.factorie.app.nlp.Token">Token</a>]</span>
       </span>
       </h4>
-      
+      <p class="shortcomment cmt">Return an Iterable collection of all Tokens in all canonical Sections of this Document.</p>
     </li><li name="scala.AnyRef#wait" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="wait():Unit"></a>
       <a id="wait():Unit"></a>

@@ -35,13 +35,13 @@
         <span class="kind">object</span>
       </span>
       <span class="symbol">
-        <span class="name">TutorialFactors</span>
+        <span class="name">TutorialFactors</span><span class="result"> extends <span class="extype" name="scala.App">App</span></span>
       </span>
       </h4>
       
           <div id="comment" class="fullcommenttop"><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
-          <div class="superTypes hiddenContent"><a href="../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <span class="extype" name="scala.Any">Any</span></div>
+          <div class="superTypes hiddenContent"><span class="extype" name="scala.App">App</span>, <span class="extype" name="scala.DelayedInit">DelayedInit</span>, <a href="../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <span class="extype" name="scala.Any">Any</span></div>
         </div></div>
         
 
@@ -59,7 +59,7 @@
                 <span class="filtertype">Inherited<br />
                 </span>
                 <ol id="linearization">
-                  <li class="in" name="cc.factorie.tutorial.TutorialFactors"><span>TutorialFactors</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
+                  <li class="in" name="cc.factorie.tutorial.TutorialFactors"><span>TutorialFactors</span></li><li class="in" name="scala.App"><span>App</span></li><li class="in" name="scala.DelayedInit"><span>DelayedInit</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
                 </ol>
               </div><div id="ancestors">
             <span class="filtertype"></span>
@@ -79,7 +79,62 @@
         <div id="allMembers">
         
 
-        
+        <div id="types" class="types members">
+              <h3>Type Members</h3>
+              <ol><li name="cc.factorie.tutorial.TutorialFactors.Article" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="ArticleextendsBinaryFeatureVectorVariable[String]"></a>
+      <a id="Article:Article"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="TutorialFactors$$Article.html"><span class="name">Article</span></a><span class="result"> extends <a href="../variable/BinaryFeatureVectorVariable.html" class="extype" name="cc.factorie.variable.BinaryFeatureVectorVariable">BinaryFeatureVectorVariable</a>[<span class="extype" name="scala.Predef.String">String</span>]</span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.tutorial.TutorialFactors.Label" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="LabelextendsCategoricalVariable[String]"></a>
+      <a id="Label:Label"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="TutorialFactors$$Label.html"><span class="name">Label</span></a><span class="result"> extends <a href="../variable/CategoricalVariable.html" class="extype" name="cc.factorie.variable.CategoricalVariable">CategoricalVariable</a>[<span class="extype" name="scala.Predef.String">String</span>]</span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.tutorial.TutorialFactors.MyClassifier" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="MyClassifierextendsDotFactorWithStatistics2[cc.factorie.tutorial.TutorialFactors.Label,cc.factorie.tutorial.TutorialFactors.Article]"></a>
+      <a id="MyClassifier:MyClassifier"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="TutorialFactors$$MyClassifier.html"><span class="name">MyClassifier</span></a><span class="result"> extends <a href="../model/DotFactorWithStatistics2.html" class="extype" name="cc.factorie.model.DotFactorWithStatistics2">DotFactorWithStatistics2</a>[<a href="TutorialFactors$$Label.html" class="extype" name="cc.factorie.tutorial.TutorialFactors.Label">Label</a>, <a href="TutorialFactors$$Article.html" class="extype" name="cc.factorie.tutorial.TutorialFactors.Article">Article</a>]</span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.tutorial.TutorialFactors.MyFactor" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="MyFactorextendsFactor2[cc.factorie.variable.IntegerVariable,cc.factorie.variable.IntegerVariable]"></a>
+      <a id="MyFactor:MyFactor"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="TutorialFactors$$MyFactor.html"><span class="name">MyFactor</span></a><span class="result"> extends <a href="../model/Factor2.html" class="extype" name="cc.factorie.model.Factor2">Factor2</a>[<a href="../variable/IntegerVariable.html" class="extype" name="cc.factorie.variable.IntegerVariable">IntegerVariable</a>, <a href="../variable/IntegerVariable.html" class="extype" name="cc.factorie.variable.IntegerVariable">IntegerVariable</a>]</span>
+      </span>
+      </h4>
+      
+    </li></ol>
+            </div>
 
         
 
@@ -150,6 +205,97 @@
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
+    </li><li name="cc.factorie.tutorial.TutorialFactors.ArticleDomain" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="ArticleDomain"></a>
+      <a id="ArticleDomain:ArticleDomain"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="TutorialFactors$$ArticleDomain$.html"><span class="name">ArticleDomain</span></a><span class="result"> extends <a href="../variable/CategoricalVectorDomain.html" class="extype" name="cc.factorie.variable.CategoricalVectorDomain">CategoricalVectorDomain</a>[<span class="extype" name="scala.Predef.String">String</span>]</span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.tutorial.TutorialFactors.LabelDomain" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="LabelDomain"></a>
+      <a id="LabelDomain:LabelDomain"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="TutorialFactors$$LabelDomain$.html"><span class="name">LabelDomain</span></a><span class="result"> extends <a href="../variable/CategoricalDomain.html" class="extype" name="cc.factorie.variable.CategoricalDomain">CategoricalDomain</a>[<span class="extype" name="java.lang.String">String</span>]</span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.tutorial.TutorialFactors.WordDomain" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="WordDomain"></a>
+      <a id="WordDomain:WordDomain"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="TutorialFactors$$WordDomain$.html"><span class="name">WordDomain</span></a><span class="result"> extends <a href="../variable/CategoricalDomain.html" class="extype" name="cc.factorie.variable.CategoricalDomain">CategoricalDomain</a>[<span class="extype" name="java.lang.String">String</span>]</span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.tutorial.TutorialFactors#a1" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="a1:cc.factorie.tutorial.TutorialFactors.Article"></a>
+      <a id="a1:Article"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">a1</span><span class="result">: <a href="TutorialFactors$$Article.html" class="extype" name="cc.factorie.tutorial.TutorialFactors.Article">Article</a></span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.tutorial.TutorialFactors#a2" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="a2:cc.factorie.variable.Assignment2[cc.factorie.variable.IntegerVariable,cc.factorie.variable.DoubleVariable]"></a>
+      <a id="a2:Assignment2[IntegerVariable,DoubleVariable]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">a2</span><span class="result">: <a href="../variable/Assignment2.html" class="extype" name="cc.factorie.variable.Assignment2">Assignment2</a>[<a href="../variable/IntegerVariable.html" class="extype" name="cc.factorie.variable.IntegerVariable">IntegerVariable</a>, <a href="../variable/DoubleVariable.html" class="extype" name="cc.factorie.variable.DoubleVariable">DoubleVariable</a>]</span>
+      </span>
+      </h4>
+      
+    </li><li name="scala.App#args" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="args:Array[String]"></a>
+      <a id="args:Array[String]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">args</span><span class="result">: <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="scala.Predef.String">String</span>]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd>App</dd></dl></div>
+    </li><li name="cc.factorie.tutorial.TutorialFactors#as" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="as:cc.factorie.variable.HashMapAssignment"></a>
+      <a id="as:variable.HashMapAssignment"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">as</span><span class="result">: <a href="../variable/HashMapAssignment.html" class="extype" name="cc.factorie.variable.HashMapAssignment">variable.HashMapAssignment</a></span>
+      </span>
+      </h4>
+      
     </li><li name="scala.Any#asInstanceOf" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="asInstanceOf[T0]:T0"></a>
       <a id="asInstanceOf[T0]:T0"></a>
@@ -163,6 +309,19 @@
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
+    </li><li name="cc.factorie.tutorial.TutorialFactors#cf" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="cf:cc.factorie.tutorial.TutorialFactors.MyClassifier"></a>
+      <a id="cf:MyClassifier"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">cf</span><span class="result">: <a href="TutorialFactors$$MyClassifier.html" class="extype" name="cc.factorie.tutorial.TutorialFactors.MyClassifier">MyClassifier</a></span>
+      </span>
+      </h4>
+      
     </li><li name="scala.AnyRef#clone" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="clone():Object"></a>
       <a id="clone():AnyRef"></a>
@@ -182,6 +341,19 @@
     </span>)</span>
               
         </dd></dl></div>
+    </li><li name="scala.App#delayedInit" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="delayedInit(body:=&gt;Unit):Unit"></a>
+      <a id="delayedInit(⇒Unit):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">delayedInit</span><span class="params">(<span name="body">body: ⇒ <span class="extype" name="scala.Unit">Unit</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>App → DelayedInit</dd></dl></div>
     </li><li name="scala.AnyRef#eq" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="eq(x$1:AnyRef):Boolean"></a>
       <a id="eq(AnyRef):Boolean"></a>
@@ -208,6 +380,162 @@
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="scala.App#executionStart" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="executionStart:Long"></a>
+      <a id="executionStart:Long"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">executionStart</span><span class="result">: <span class="extype" name="scala.Long">Long</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>App</dd></dl></div>
+    </li><li name="cc.factorie.tutorial.TutorialFactors#f1" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="f1:cc.factorie.model.Factor1[cc.factorie.variable.IntegerVariable]"></a>
+      <a id="f1:Factor1[IntegerVariable]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">f1</span><span class="result">: <a href="../model/Factor1.html" class="extype" name="cc.factorie.model.Factor1">Factor1</a>[<a href="../variable/IntegerVariable.html" class="extype" name="cc.factorie.variable.IntegerVariable">IntegerVariable</a>]</span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.tutorial.TutorialFactors#f2" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="f2:cc.factorie.model.Factor2[cc.factorie.variable.IntegerVariable,cc.factorie.variable.DoubleVariable]"></a>
+      <a id="f2:Factor2[IntegerVariable,DoubleVariable]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">f2</span><span class="result">: <a href="../model/Factor2.html" class="extype" name="cc.factorie.model.Factor2">Factor2</a>[<a href="../variable/IntegerVariable.html" class="extype" name="cc.factorie.variable.IntegerVariable">IntegerVariable</a>, <a href="../variable/DoubleVariable.html" class="extype" name="cc.factorie.variable.DoubleVariable">DoubleVariable</a>]</span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.tutorial.TutorialFactors#f2b" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="f2b:cc.factorie.model.Factor2[cc.factorie.variable.IntegerVariable,cc.factorie.variable.DoubleVariable]"></a>
+      <a id="f2b:Factor2[IntegerVariable,DoubleVariable]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">f2b</span><span class="result">: <a href="../model/Factor2.html" class="extype" name="cc.factorie.model.Factor2">Factor2</a>[<a href="../variable/IntegerVariable.html" class="extype" name="cc.factorie.variable.IntegerVariable">IntegerVariable</a>, <a href="../variable/DoubleVariable.html" class="extype" name="cc.factorie.variable.DoubleVariable">DoubleVariable</a>]</span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.tutorial.TutorialFactors#f3" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="f3:cc.factorie.model.TupleFactorWithStatistics3[cc.factorie.variable.IntegerVariable,cc.factorie.variable.DoubleVariable,cc.factorie.variable.IntegerVariable]"></a>
+      <a id="f3:TupleFactorWithStatistics3[IntegerVariable,DoubleVariable,IntegerVariable]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">f3</span><span class="result">: <a href="../model/TupleFactorWithStatistics3.html" class="extype" name="cc.factorie.model.TupleFactorWithStatistics3">TupleFactorWithStatistics3</a>[<a href="../variable/IntegerVariable.html" class="extype" name="cc.factorie.variable.IntegerVariable">IntegerVariable</a>, <a href="../variable/DoubleVariable.html" class="extype" name="cc.factorie.variable.DoubleVariable">DoubleVariable</a>, <a href="../variable/IntegerVariable.html" class="extype" name="cc.factorie.variable.IntegerVariable">IntegerVariable</a>]</span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.tutorial.TutorialFactors#f3b" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="f3b:cc.factorie.model.TupleFactorWithStatistics3[cc.factorie.variable.IntegerVariable,cc.factorie.variable.DoubleVariable,cc.factorie.variable.IntegerVariable]"></a>
+      <a id="f3b:TupleFactorWithStatistics3[IntegerVariable,DoubleVariable,IntegerVariable]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">f3b</span><span class="result">: <a href="../model/TupleFactorWithStatistics3.html" class="extype" name="cc.factorie.model.TupleFactorWithStatistics3">TupleFactorWithStatistics3</a>[<a href="../variable/IntegerVariable.html" class="extype" name="cc.factorie.variable.IntegerVariable">IntegerVariable</a>, <a href="../variable/DoubleVariable.html" class="extype" name="cc.factorie.variable.DoubleVariable">DoubleVariable</a>, <a href="../variable/IntegerVariable.html" class="extype" name="cc.factorie.variable.IntegerVariable">IntegerVariable</a>]</span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.tutorial.TutorialFactors#f4" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="f4:cc.factorie.model.Factor2[cc.factorie.variable.IntegerVariable,cc.factorie.variable.IntegerVariable]{typeStatisticsType=Boolean}"></a>
+      <a id="f4:Factor2[IntegerVariable,IntegerVariable]{typeStatisticsType=Boolean}"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">f4</span><span class="result">: <a href="../model/Factor2.html" class="extype" name="cc.factorie.model.Factor2">Factor2</a>[<a href="../variable/IntegerVariable.html" class="extype" name="cc.factorie.variable.IntegerVariable">IntegerVariable</a>, <a href="../variable/IntegerVariable.html" class="extype" name="cc.factorie.variable.IntegerVariable">IntegerVariable</a>] { type StatisticsType = Boolean }</span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.tutorial.TutorialFactors#f5" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="f5:cc.factorie.model.Factor2[cc.factorie.tutorial.TutorialFactors.Label,cc.factorie.tutorial.TutorialFactors.Label]{typeStatisticsType=cc.factorie.la.Tensor;valweights:cc.factorie.la.DenseTensor2}"></a>
+      <a id="f5:Factor2[Label,Label]{.../*2definitionsintyperefinement*/}"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">f5</span><span class="result">: <a href="../model/Factor2.html" class="extype" name="cc.factorie.model.Factor2">Factor2</a>[<a href="TutorialFactors$$Label.html" class="extype" name="cc.factorie.tutorial.TutorialFactors.Label">Label</a>, <a href="TutorialFactors$$Label.html" class="extype" name="cc.factorie.tutorial.TutorialFactors.Label">Label</a>] { ... /* 2 definitions in type refinement */ }</span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.tutorial.TutorialFactors#f6" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="f6:cc.factorie.model.TensorFactor2[cc.factorie.variable.BooleanVariable,cc.factorie.variable.BooleanVariable]{valweights:cc.factorie.la.DenseTensor2}"></a>
+      <a id="f6:TensorFactor2[variable.BooleanVariable,variable.BooleanVariable]{valweights:cc.factorie.la.DenseTensor2}"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">f6</span><span class="result">: <a href="../model/TensorFactor2.html" class="extype" name="cc.factorie.model.TensorFactor2">TensorFactor2</a>[<a href="../variable/BooleanVariable.html" class="extype" name="cc.factorie.variable.BooleanVariable">variable.BooleanVariable</a>, <a href="../variable/BooleanVariable.html" class="extype" name="cc.factorie.variable.BooleanVariable">variable.BooleanVariable</a>] { val weights: cc.factorie.la.DenseTensor2 }</span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.tutorial.TutorialFactors#f7" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="f7:cc.factorie.model.TensorFactorWithStatistics2[cc.factorie.variable.BooleanVariable,cc.factorie.variable.BooleanVariable]{valweights:cc.factorie.la.DenseTensor2}"></a>
+      <a id="f7:TensorFactorWithStatistics2[variable.BooleanVariable,variable.BooleanVariable]{valweights:cc.factorie.la.DenseTensor2}"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">f7</span><span class="result">: <a href="../model/TensorFactorWithStatistics2.html" class="extype" name="cc.factorie.model.TensorFactorWithStatistics2">TensorFactorWithStatistics2</a>[<a href="../variable/BooleanVariable.html" class="extype" name="cc.factorie.variable.BooleanVariable">variable.BooleanVariable</a>, <a href="../variable/BooleanVariable.html" class="extype" name="cc.factorie.variable.BooleanVariable">variable.BooleanVariable</a>] { val weights: cc.factorie.la.DenseTensor2 }</span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.tutorial.TutorialFactors#f8" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="f8:cc.factorie.model.DotFactorWithStatistics2[cc.factorie.variable.BooleanVariable,cc.factorie.variable.BooleanVariable]{valweights:cc.factorie.la.DenseTensor2}"></a>
+      <a id="f8:DotFactorWithStatistics2[variable.BooleanVariable,variable.BooleanVariable]{valweights:cc.factorie.la.DenseTensor2}"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">f8</span><span class="result">: <a href="../model/DotFactorWithStatistics2.html" class="extype" name="cc.factorie.model.DotFactorWithStatistics2">DotFactorWithStatistics2</a>[<a href="../variable/BooleanVariable.html" class="extype" name="cc.factorie.variable.BooleanVariable">variable.BooleanVariable</a>, <a href="../variable/BooleanVariable.html" class="extype" name="cc.factorie.variable.BooleanVariable">variable.BooleanVariable</a>] { val weights: cc.factorie.la.DenseTensor2 }</span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.tutorial.TutorialFactors#f9" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="f9:cc.factorie.model.DotFactor4[cc.factorie.tutorial.TutorialFactors.Label,cc.factorie.tutorial.TutorialFactors.Label,cc.factorie.tutorial.TutorialFactors.Label,cc.factorie.variable.BooleanVariable]{valweights:cc.factorie.la.DenseTensor2}"></a>
+      <a id="f9:DotFactor4[Label,Label,Label,variable.BooleanVariable]{valweights:cc.factorie.la.DenseTensor2}"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">f9</span><span class="result">: <a href="../model/DotFactor4.html" class="extype" name="cc.factorie.model.DotFactor4">DotFactor4</a>[<a href="TutorialFactors$$Label.html" class="extype" name="cc.factorie.tutorial.TutorialFactors.Label">Label</a>, <a href="TutorialFactors$$Label.html" class="extype" name="cc.factorie.tutorial.TutorialFactors.Label">Label</a>, <a href="TutorialFactors$$Label.html" class="extype" name="cc.factorie.tutorial.TutorialFactors.Label">Label</a>, <a href="../variable/BooleanVariable.html" class="extype" name="cc.factorie.variable.BooleanVariable">variable.BooleanVariable</a>] { val weights: cc.factorie.la.DenseTensor2 }</span>
+      </span>
+      </h4>
+      
     </li><li name="scala.AnyRef#finalize" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="finalize():Unit"></a>
       <a id="finalize():Unit"></a>
@@ -227,6 +555,32 @@
     </span>)</span>
               
         </dd></dl></div>
+    </li><li name="cc.factorie.tutorial.TutorialFactors#flag1" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="flag1:cc.factorie.variable.BooleanVariable"></a>
+      <a id="flag1:variable.BooleanVariable"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">flag1</span><span class="result">: <a href="../variable/BooleanVariable.html" class="extype" name="cc.factorie.variable.BooleanVariable">variable.BooleanVariable</a></span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.tutorial.TutorialFactors#flag2" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="flag2:cc.factorie.variable.BooleanVariable"></a>
+      <a id="flag2:variable.BooleanVariable"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">flag2</span><span class="result">: <a href="../variable/BooleanVariable.html" class="extype" name="cc.factorie.variable.BooleanVariable">variable.BooleanVariable</a></span>
+      </span>
+      </h4>
+      
     </li><li name="scala.AnyRef#getClass" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="getClass():Class[_]"></a>
       <a id="getClass():Class[_]"></a>
@@ -266,7 +620,59 @@
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
-    </li><li name="cc.factorie.tutorial.TutorialFactors#main" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+    </li><li name="cc.factorie.tutorial.TutorialFactors#l1" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="l1:cc.factorie.tutorial.TutorialFactors.Label"></a>
+      <a id="l1:Label"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">l1</span><span class="result">: <a href="TutorialFactors$$Label.html" class="extype" name="cc.factorie.tutorial.TutorialFactors.Label">Label</a></span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.tutorial.TutorialFactors#label1" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="label1:cc.factorie.tutorial.TutorialFactors.Label"></a>
+      <a id="label1:Label"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">label1</span><span class="result">: <a href="TutorialFactors$$Label.html" class="extype" name="cc.factorie.tutorial.TutorialFactors.Label">Label</a></span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.tutorial.TutorialFactors#label2" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="label2:cc.factorie.tutorial.TutorialFactors.Label"></a>
+      <a id="label2:Label"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">label2</span><span class="result">: <a href="TutorialFactors$$Label.html" class="extype" name="cc.factorie.tutorial.TutorialFactors.Label">Label</a></span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.tutorial.TutorialFactors#label3" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="label3:cc.factorie.tutorial.TutorialFactors.Label"></a>
+      <a id="label3:Label"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">label3</span><span class="result">: <a href="TutorialFactors$$Label.html" class="extype" name="cc.factorie.tutorial.TutorialFactors.Label">Label</a></span>
+      </span>
+      </h4>
+      
+    </li><li name="scala.App#main" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="main(args:Array[String]):Unit"></a>
       <a id="main(Array[String]):Unit"></a>
       <h4 class="signature">
@@ -276,6 +682,58 @@
       </span>
       <span class="symbol">
         <span class="name">main</span><span class="params">(<span name="args">args: <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="scala.Predef.String">String</span>]</span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>App</dd></dl></div>
+    </li><li name="cc.factorie.tutorial.TutorialFactors#maxLabeling" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="maxLabeling:cc.factorie.variable.CategoricalValue[String]"></a>
+      <a id="maxLabeling:CategoricalValue[String]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">var</span>
+      </span>
+      <span class="symbol">
+        <span class="name">maxLabeling</span><span class="result">: <a href="../variable/CategoricalValue.html" class="extype" name="cc.factorie.variable.CategoricalValue">CategoricalValue</a>[<span class="extype" name="java.lang.String">String</span>]</span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.tutorial.TutorialFactors#maxScore" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="maxScore:Double"></a>
+      <a id="maxScore:Double"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">var</span>
+      </span>
+      <span class="symbol">
+        <span class="name">maxScore</span><span class="result">: <span class="extype" name="scala.Double">Double</span></span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.tutorial.TutorialFactors#mf1" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="mf1:cc.factorie.tutorial.TutorialFactors.MyFactor"></a>
+      <a id="mf1:MyFactor"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">mf1</span><span class="result">: <a href="TutorialFactors$$MyFactor.html" class="extype" name="cc.factorie.tutorial.TutorialFactors.MyFactor">MyFactor</a></span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.tutorial.TutorialFactors#mf2" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="mf2:cc.factorie.tutorial.TutorialFactors.MyFactor"></a>
+      <a id="mf2:MyFactor"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">mf2</span><span class="result">: <a href="TutorialFactors$$MyFactor.html" class="extype" name="cc.factorie.tutorial.TutorialFactors.MyFactor">MyFactor</a></span>
       </span>
       </h4>
       
@@ -318,6 +776,32 @@
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li name="cc.factorie.tutorial.TutorialFactors#s2" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="s2:cc.factorie.tutorial.TutorialFactors.f2.StatisticsType"></a>
+      <a id="s2:model.Factor2.StatisticsType"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">s2</span><span class="result">: <a href="../model/Factor2.html#StatisticsType" class="extmbr" name="cc.factorie.model.Factor2.StatisticsType">model.Factor2.StatisticsType</a></span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.tutorial.TutorialFactors#s2c" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="s2c:cc.factorie.tutorial.TutorialFactors.f2.StatisticsType"></a>
+      <a id="s2c:model.Factor2.StatisticsType"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">s2c</span><span class="result">: <a href="../model/Factor2.html#StatisticsType" class="extmbr" name="cc.factorie.model.Factor2.StatisticsType">model.Factor2.StatisticsType</a></span>
+      </span>
+      </h4>
+      
     </li><li name="scala.AnyRef#synchronized" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="synchronized[T0](x$1:=&gt;T0):T0"></a>
       <a id="synchronized[T0](⇒T0):T0"></a>
@@ -344,6 +828,45 @@
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="cc.factorie.tutorial.TutorialFactors#v1" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="v1:cc.factorie.variable.IntegerVariable"></a>
+      <a id="v1:IntegerVariable"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">v1</span><span class="result">: <a href="../variable/IntegerVariable.html" class="extype" name="cc.factorie.variable.IntegerVariable">IntegerVariable</a></span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.tutorial.TutorialFactors#v2" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="v2:cc.factorie.variable.DoubleVariable"></a>
+      <a id="v2:DoubleVariable"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">v2</span><span class="result">: <a href="../variable/DoubleVariable.html" class="extype" name="cc.factorie.variable.DoubleVariable">DoubleVariable</a></span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.tutorial.TutorialFactors#v3" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="v3:cc.factorie.variable.IntegerVariable"></a>
+      <a id="v3:IntegerVariable"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">v3</span><span class="result">: <a href="../variable/IntegerVariable.html" class="extype" name="cc.factorie.variable.IntegerVariable">IntegerVariable</a></span>
+      </span>
+      </h4>
+      
     </li><li name="scala.AnyRef#wait" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="wait():Unit"></a>
       <a id="wait():Unit"></a>
@@ -410,7 +933,11 @@
         </div>
 
         <div id="inheritedMembers">
-        <div class="parent" name="scala.AnyRef">
+        <div class="parent" name="scala.App">
+              <h3>Inherited from <span class="extype" name="scala.App">App</span></h3>
+            </div><div class="parent" name="scala.DelayedInit">
+              <h3>Inherited from <span class="extype" name="scala.DelayedInit">DelayedInit</span></h3>
+            </div><div class="parent" name="scala.AnyRef">
               <h3>Inherited from <a href="../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></h3>
             </div><div class="parent" name="scala.Any">
               <h3>Inherited from <span class="extype" name="scala.Any">Any</span></h3>

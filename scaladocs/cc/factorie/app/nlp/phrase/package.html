@@ -58,7 +58,59 @@
 
         <div id="types" class="types members">
               <h3>Type Members</h3>
-              <ol><li name="cc.factorie.app.nlp.phrase.NounPhrase" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+              <ol><li name="cc.factorie.app.nlp.phrase.ChainChunker" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="ChainChunker[L&lt;:cc.factorie.app.nlp.load.ChunkTag]extendsDocumentAnnotator"></a>
+      <a id="ChainChunker[L&lt;:ChunkTag]:ChainChunker[L]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="ChainChunker.html"><span class="name">ChainChunker</span></a><span class="tparams">[<span name="L">L &lt;: <a href="../load/ChunkTag.html" class="extype" name="cc.factorie.app.nlp.load.ChunkTag">ChunkTag</a></span>]</span><span class="result"> extends <a href="../DocumentAnnotator.html" class="extype" name="cc.factorie.app.nlp.DocumentAnnotator">DocumentAnnotator</a></span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.app.nlp.phrase.ChunkerOpts" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="ChunkerOptsextendsCmdOptionswithDefaultCmdOptionswithSharedNLPCmdOptions"></a>
+      <a id="ChunkerOpts:ChunkerOpts"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="ChunkerOpts.html"><span class="name">ChunkerOpts</span></a><span class="result"> extends <a href="../../../util/CmdOptions.html" class="extype" name="cc.factorie.util.CmdOptions">CmdOptions</a> with <a href="../../../util/DefaultCmdOptions.html" class="extype" name="cc.factorie.util.DefaultCmdOptions">DefaultCmdOptions</a> with <a href="../package$$SharedNLPCmdOptions.html" class="extype" name="cc.factorie.app.nlp.SharedNLPCmdOptions">SharedNLPCmdOptions</a></span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.app.nlp.phrase.GenderLabel" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="GenderLabel[P&lt;:cc.factorie.app.nlp.phrase.Phrase]extendsCategoricalVariable[String]"></a>
+      <a id="GenderLabel[P&lt;:Phrase]:GenderLabel[P]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="GenderLabel.html"><span class="name">GenderLabel</span></a><span class="tparams">[<span name="P">P &lt;: <a href="Phrase.html" class="extype" name="cc.factorie.app.nlp.phrase.Phrase">Phrase</a></span>]</span><span class="result"> extends <a href="../../../variable/CategoricalVariable.html" class="extype" name="cc.factorie.variable.CategoricalVariable">CategoricalVariable</a>[<span class="extype" name="scala.Predef.String">String</span>]</span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.app.nlp.phrase.GenderLabeler" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="GenderLabeler[P&lt;:cc.factorie.app.nlp.phrase.Phrase,PL&lt;:cc.factorie.app.nlp.TokenSpanList[P]]extendsDocumentAnnotator"></a>
+      <a id="GenderLabeler[P&lt;:Phrase,PL&lt;:TokenSpanList[P]]:GenderLabeler[P,PL]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="GenderLabeler.html"><span class="name">GenderLabeler</span></a><span class="tparams">[<span name="P">P &lt;: <a href="Phrase.html" class="extype" name="cc.factorie.app.nlp.phrase.Phrase">Phrase</a></span>, <span name="PL">PL &lt;: <a href="../TokenSpanList.html" class="extype" name="cc.factorie.app.nlp.TokenSpanList">TokenSpanList</a>[<span class="extype" name="cc.factorie.app.nlp.phrase.GenderLabeler.P">P</span>]</span>]</span><span class="result"> extends <a href="../DocumentAnnotator.html" class="extype" name="cc.factorie.app.nlp.DocumentAnnotator">DocumentAnnotator</a></span>
+      </span>
+      </h4>
+      <p class="comment cmt">Cheap gender predictor based on rules and lexicons.</p>
+    </li><li name="cc.factorie.app.nlp.phrase.NounPhrase" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="NounPhraseextendsPhrase"></a>
       <a id="NounPhrase:NounPhrase"></a>
       <h4 class="signature">
@@ -97,32 +149,6 @@
       </span>
       </h4>
       
-    </li><li name="cc.factorie.app.nlp.phrase.NounPhraseGenderLabel" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="NounPhraseGenderLabelextendsCategoricalVariable[String]"></a>
-      <a id="NounPhraseGenderLabel:NounPhraseGenderLabel"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">class</span>
-      </span>
-      <span class="symbol">
-        <a href="NounPhraseGenderLabel.html"><span class="name">NounPhraseGenderLabel</span></a><span class="result"> extends <a href="../../../variable/CategoricalVariable.html" class="extype" name="cc.factorie.variable.CategoricalVariable">CategoricalVariable</a>[<span class="extype" name="scala.Predef.String">String</span>]</span>
-      </span>
-      </h4>
-      
-    </li><li name="cc.factorie.app.nlp.phrase.NounPhraseGenderLabeler" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="NounPhraseGenderLabelerextendsDocumentAnnotator"></a>
-      <a id="NounPhraseGenderLabeler:NounPhraseGenderLabeler"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">class</span>
-      </span>
-      <span class="symbol">
-        <a href="NounPhraseGenderLabeler.html"><span class="name">NounPhraseGenderLabeler</span></a><span class="result"> extends <a href="../DocumentAnnotator.html" class="extype" name="cc.factorie.app.nlp.DocumentAnnotator">DocumentAnnotator</a></span>
-      </span>
-      </h4>
-      <p class="comment cmt">Cheap gender predictor based on rules and lexicons.</p>
     </li><li name="cc.factorie.app.nlp.phrase.NounPhraseList" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="NounPhraseListextendsTokenSpanList[cc.factorie.app.nlp.phrase.NounPhrase]"></a>
       <a id="NounPhraseList:NounPhraseList"></a>
@@ -135,33 +161,7 @@
         <a href="NounPhraseList.html"><span class="name">NounPhraseList</span></a><span class="result"> extends <a href="../TokenSpanList.html" class="extype" name="cc.factorie.app.nlp.TokenSpanList">TokenSpanList</a>[<a href="NounPhrase.html" class="extype" name="cc.factorie.app.nlp.phrase.NounPhrase">NounPhrase</a>]</span>
       </span>
       </h4>
-      
-    </li><li name="cc.factorie.app.nlp.phrase.NounPhraseNumberLabel" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="NounPhraseNumberLabelextendsCategoricalVariable[String]"></a>
-      <a id="NounPhraseNumberLabel:NounPhraseNumberLabel"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">class</span>
-      </span>
-      <span class="symbol">
-        <a href="NounPhraseNumberLabel.html"><span class="name">NounPhraseNumberLabel</span></a><span class="result"> extends <a href="../../../variable/CategoricalVariable.html" class="extype" name="cc.factorie.variable.CategoricalVariable">CategoricalVariable</a>[<span class="extype" name="scala.Predef.String">String</span>]</span>
-      </span>
-      </h4>
-      
-    </li><li name="cc.factorie.app.nlp.phrase.NounPhraseNumberLabeler" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="NounPhraseNumberLabelerextendsDocumentAnnotator"></a>
-      <a id="NounPhraseNumberLabeler:NounPhraseNumberLabeler"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">class</span>
-      </span>
-      <span class="symbol">
-        <a href="NounPhraseNumberLabeler.html"><span class="name">NounPhraseNumberLabeler</span></a><span class="result"> extends <a href="../DocumentAnnotator.html" class="extype" name="cc.factorie.app.nlp.DocumentAnnotator">DocumentAnnotator</a></span>
-      </span>
-      </h4>
-      <p class="comment cmt">Cheap number predictor based on rules and lexicons.</p>
+      <p class="comment cmt">A collection of NounPhrases.</p>
     </li><li name="cc.factorie.app.nlp.phrase.NounPhraseType" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="NounPhraseTypeextendsCategoricalVariable[String]"></a>
       <a id="NounPhraseType:NounPhraseType"></a>
@@ -175,6 +175,32 @@
       </span>
       </h4>
       <p class="comment cmt">Categorical variable indicating whether the noun phrase is a pronoun, nominal or proper noun.</p>
+    </li><li name="cc.factorie.app.nlp.phrase.NumberLabel" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="NumberLabel[P&lt;:cc.factorie.app.nlp.phrase.Phrase]extendsCategoricalVariable[String]"></a>
+      <a id="NumberLabel[P&lt;:Phrase]:NumberLabel[P]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="NumberLabel.html"><span class="name">NumberLabel</span></a><span class="tparams">[<span name="P">P &lt;: <a href="Phrase.html" class="extype" name="cc.factorie.app.nlp.phrase.Phrase">Phrase</a></span>]</span><span class="result"> extends <a href="../../../variable/CategoricalVariable.html" class="extype" name="cc.factorie.variable.CategoricalVariable">CategoricalVariable</a>[<span class="extype" name="scala.Predef.String">String</span>]</span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.app.nlp.phrase.NumberLabeler" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="NumberLabeler[P&lt;:cc.factorie.app.nlp.phrase.Phrase,PL&lt;:cc.factorie.app.nlp.TokenSpanList[P]]extendsDocumentAnnotator"></a>
+      <a id="NumberLabeler[P&lt;:Phrase,PL&lt;:TokenSpanList[P]]:NumberLabeler[P,PL]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="NumberLabeler.html"><span class="name">NumberLabeler</span></a><span class="tparams">[<span name="P">P &lt;: <a href="Phrase.html" class="extype" name="cc.factorie.app.nlp.phrase.Phrase">Phrase</a></span>, <span name="PL">PL &lt;: <a href="../TokenSpanList.html" class="extype" name="cc.factorie.app.nlp.TokenSpanList">TokenSpanList</a>[<span class="extype" name="cc.factorie.app.nlp.phrase.NumberLabeler.P">P</span>]</span>]</span><span class="result"> extends <a href="../DocumentAnnotator.html" class="extype" name="cc.factorie.app.nlp.DocumentAnnotator">DocumentAnnotator</a></span>
+      </span>
+      </h4>
+      <p class="comment cmt">Cheap number predictor based on rules and lexicons.</p>
     </li><li name="cc.factorie.app.nlp.phrase.Phrase" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="PhraseextendsTokenSpanwithAttr"></a>
       <a id="Phrase:Phrase"></a>
@@ -200,7 +226,7 @@
         <a href="PhraseList.html"><span class="name">PhraseList</span></a><span class="result"> extends <a href="../TokenSpanList.html" class="extype" name="cc.factorie.app.nlp.TokenSpanList">TokenSpanList</a>[<a href="Phrase.html" class="extype" name="cc.factorie.app.nlp.phrase.Phrase">Phrase</a>]</span>
       </span>
       </h4>
-      
+      <p class="comment cmt">A collection of Phrases.</p>
     </li><li name="cc.factorie.app.nlp.phrase.VerbPhrase" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="VerbPhraseextendsPhrase"></a>
       <a id="VerbPhrase:VerbPhrase"></a>
@@ -226,7 +252,7 @@
         <a href="VerbPhraseList.html"><span class="name">VerbPhraseList</span></a><span class="result"> extends <a href="../TokenSpanList.html" class="extype" name="cc.factorie.app.nlp.TokenSpanList">TokenSpanList</a>[<a href="VerbPhrase.html" class="extype" name="cc.factorie.app.nlp.phrase.VerbPhrase">VerbPhrase</a>]</span>
       </span>
       </h4>
-      
+      <p class="comment cmt">A collection of VerbPhrases.</p>
     </li></ol>
             </div>
 
@@ -234,7 +260,111 @@
 
         <div id="values" class="values members">
               <h3>Value Members</h3>
-              <ol><li name="cc.factorie.app.nlp.phrase.NounPhraseEntityTypeLabeler" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+              <ol><li name="cc.factorie.app.nlp.phrase.BILOUChainChunker" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="BILOUChainChunker"></a>
+      <a id="BILOUChainChunker:BILOUChainChunker"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="BILOUChainChunker$.html"><span class="name">BILOUChainChunker</span></a><span class="result"> extends <a href="ChainChunker.html" class="extype" name="cc.factorie.app.nlp.phrase.ChainChunker">ChainChunker</a>[<a href="../load/BILOUChunkTag.html" class="extype" name="cc.factorie.app.nlp.load.BILOUChunkTag">BILOUChunkTag</a>]</span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.app.nlp.phrase.BIOChainChunker" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="BIOChainChunker"></a>
+      <a id="BIOChainChunker:BIOChainChunker"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="BIOChainChunker$.html"><span class="name">BIOChainChunker</span></a><span class="result"> extends <a href="ChainChunker.html" class="extype" name="cc.factorie.app.nlp.phrase.ChainChunker">ChainChunker</a>[<a href="../load/BIOChunkTag.html" class="extype" name="cc.factorie.app.nlp.load.BIOChunkTag">BIOChunkTag</a>]</span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.app.nlp.phrase.ChainChunkerOptimizer" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="ChainChunkerOptimizer"></a>
+      <a id="ChainChunkerOptimizer:ChainChunkerOptimizer"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="ChainChunkerOptimizer$.html"><span class="name">ChainChunkerOptimizer</span></a>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.app.nlp.phrase.ChainChunkerTrainer" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="ChainChunkerTrainer"></a>
+      <a id="ChainChunkerTrainer:ChainChunkerTrainer"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="ChainChunkerTrainer$.html"><span class="name">ChainChunkerTrainer</span></a><span class="result"> extends <a href="../../../util/HyperparameterMain.html" class="extype" name="cc.factorie.util.HyperparameterMain">HyperparameterMain</a></span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.app.nlp.phrase.GenderDomain" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="GenderDomain"></a>
+      <a id="GenderDomain:GenderDomain"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="GenderDomain$.html"><span class="name">GenderDomain</span></a><span class="result"> extends <a href="../../../variable/EnumDomain.html" class="extype" name="cc.factorie.variable.EnumDomain">EnumDomain</a></span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.app.nlp.phrase.MentionGenderLabeler" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="MentionGenderLabeler"></a>
+      <a id="MentionGenderLabeler:MentionGenderLabeler"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="MentionGenderLabeler$.html"><span class="name">MentionGenderLabeler</span></a><span class="result"> extends <a href="GenderLabeler.html" class="extype" name="cc.factorie.app.nlp.phrase.GenderLabeler">GenderLabeler</a>[<a href="../coref/mention/Mention.html" class="extype" name="cc.factorie.app.nlp.coref.mention.Mention">Mention</a>, <a href="../coref/mention/MentionList.html" class="extype" name="cc.factorie.app.nlp.coref.mention.MentionList">MentionList</a>]</span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.app.nlp.phrase.MentionNumberLabeler" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="MentionNumberLabeler"></a>
+      <a id="MentionNumberLabeler:MentionNumberLabeler"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="MentionNumberLabeler$.html"><span class="name">MentionNumberLabeler</span></a><span class="result"> extends <a href="NumberLabeler.html" class="extype" name="cc.factorie.app.nlp.phrase.NumberLabeler">NumberLabeler</a>[<a href="../coref/mention/Mention.html" class="extype" name="cc.factorie.app.nlp.coref.mention.Mention">Mention</a>, <a href="../coref/mention/MentionList.html" class="extype" name="cc.factorie.app.nlp.coref.mention.MentionList">MentionList</a>]</span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.app.nlp.phrase.NestedChainChunker" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="NestedChainChunker"></a>
+      <a id="NestedChainChunker:NestedChainChunker"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="NestedChainChunker$.html"><span class="name">NestedChainChunker</span></a><span class="result"> extends <a href="ChainChunker.html" class="extype" name="cc.factorie.app.nlp.phrase.ChainChunker">ChainChunker</a>[<a href="../load/BILOUNestedChunkTag.html" class="extype" name="cc.factorie.app.nlp.load.BILOUNestedChunkTag">BILOUNestedChunkTag</a>]</span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.app.nlp.phrase.NounPhraseEntityTypeLabeler" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="NounPhraseEntityTypeLabeler"></a>
       <a id="NounPhraseEntityTypeLabeler:NounPhraseEntityTypeLabeler"></a>
       <h4 class="signature">
@@ -260,19 +390,6 @@
       </span>
       </h4>
       
-    </li><li name="cc.factorie.app.nlp.phrase.NounPhraseGenderDomain" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="NounPhraseGenderDomain"></a>
-      <a id="NounPhraseGenderDomain:NounPhraseGenderDomain"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">object</span>
-      </span>
-      <span class="symbol">
-        <a href="NounPhraseGenderDomain$.html"><span class="name">NounPhraseGenderDomain</span></a><span class="result"> extends <a href="../../../variable/EnumDomain.html" class="extype" name="cc.factorie.variable.EnumDomain">EnumDomain</a></span>
-      </span>
-      </h4>
-      
     </li><li name="cc.factorie.app.nlp.phrase.NounPhraseGenderLabeler" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="NounPhraseGenderLabeler"></a>
       <a id="NounPhraseGenderLabeler:NounPhraseGenderLabeler"></a>
@@ -282,20 +399,7 @@
         <span class="kind">object</span>
       </span>
       <span class="symbol">
-        <a href="NounPhraseGenderLabeler$.html"><span class="name">NounPhraseGenderLabeler</span></a><span class="result"> extends <a href="NounPhraseGenderLabeler.html" class="extype" name="cc.factorie.app.nlp.phrase.NounPhraseGenderLabeler">NounPhraseGenderLabeler</a></span>
-      </span>
-      </h4>
-      
-    </li><li name="cc.factorie.app.nlp.phrase.NounPhraseNumberDomain" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="NounPhraseNumberDomain"></a>
-      <a id="NounPhraseNumberDomain:NounPhraseNumberDomain"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">object</span>
-      </span>
-      <span class="symbol">
-        <a href="NounPhraseNumberDomain$.html"><span class="name">NounPhraseNumberDomain</span></a><span class="result"> extends <a href="../../../variable/EnumDomain.html" class="extype" name="cc.factorie.variable.EnumDomain">EnumDomain</a></span>
+        <a href="NounPhraseGenderLabeler$.html"><span class="name">NounPhraseGenderLabeler</span></a><span class="result"> extends <a href="GenderLabeler.html" class="extype" name="cc.factorie.app.nlp.phrase.GenderLabeler">GenderLabeler</a>[<a href="NounPhrase.html" class="extype" name="cc.factorie.app.nlp.phrase.NounPhrase">NounPhrase</a>, <a href="NounPhraseList.html" class="extype" name="cc.factorie.app.nlp.phrase.NounPhraseList">NounPhraseList</a>]</span>
       </span>
       </h4>
       
@@ -308,7 +412,20 @@
         <span class="kind">object</span>
       </span>
       <span class="symbol">
-        <a href="NounPhraseNumberLabeler$.html"><span class="name">NounPhraseNumberLabeler</span></a><span class="result"> extends <a href="NounPhraseNumberLabeler.html" class="extype" name="cc.factorie.app.nlp.phrase.NounPhraseNumberLabeler">NounPhraseNumberLabeler</a></span>
+        <a href="NounPhraseNumberLabeler$.html"><span class="name">NounPhraseNumberLabeler</span></a><span class="result"> extends <a href="NumberLabeler.html" class="extype" name="cc.factorie.app.nlp.phrase.NumberLabeler">NumberLabeler</a>[<a href="NounPhrase.html" class="extype" name="cc.factorie.app.nlp.phrase.NounPhrase">NounPhrase</a>, <a href="NounPhraseList.html" class="extype" name="cc.factorie.app.nlp.phrase.NounPhraseList">NounPhraseList</a>]</span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.app.nlp.phrase.NumberDomain" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="NumberDomain"></a>
+      <a id="NumberDomain:NumberDomain"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="NumberDomain$.html"><span class="name">NumberDomain</span></a><span class="result"> extends <a href="../../../variable/EnumDomain.html" class="extype" name="cc.factorie.variable.EnumDomain">EnumDomain</a></span>
       </span>
       </h4>
       

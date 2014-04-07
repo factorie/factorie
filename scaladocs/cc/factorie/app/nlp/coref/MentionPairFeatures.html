@@ -83,7 +83,7 @@ Time: 12:23 PM
         <div id="constructors" class="members">
               <h3>Instance Constructors</h3>
               <ol><li name="cc.factorie.app.nlp.coref.MentionPairFeatures#&lt;init&gt;" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="&lt;init&gt;(model:cc.factorie.app.nlp.coref.PairwiseCorefModel,mention1:cc.factorie.app.nlp.coref.CorefMention,mention2:cc.factorie.app.nlp.coref.CorefMention,mentions:Seq[cc.factorie.app.nlp.coref.CorefMention],options:cc.factorie.app.nlp.coref.Coref1Options):cc.factorie.app.nlp.coref.MentionPairFeatures"></a>
+      <a id="&lt;init&gt;(model:cc.factorie.app.nlp.coref.PairwiseCorefModel,mention1:cc.factorie.app.nlp.coref.mention.CorefMention,mention2:cc.factorie.app.nlp.coref.mention.CorefMention,mentions:Seq[cc.factorie.app.nlp.coref.mention.CorefMention],options:cc.factorie.app.nlp.coref.Coref1Options):cc.factorie.app.nlp.coref.MentionPairFeatures"></a>
       <a id="&lt;init&gt;:MentionPairFeatures"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -91,7 +91,7 @@ Time: 12:23 PM
         <span class="kind">new</span>
       </span>
       <span class="symbol">
-        <span class="name">MentionPairFeatures</span><span class="params">(<span name="model">model: <a href="PairwiseCorefModel.html" class="extype" name="cc.factorie.app.nlp.coref.PairwiseCorefModel">PairwiseCorefModel</a></span>, <span name="mention1">mention1: <a href="CorefMention.html" class="extype" name="cc.factorie.app.nlp.coref.CorefMention">CorefMention</a></span>, <span name="mention2">mention2: <a href="CorefMention.html" class="extype" name="cc.factorie.app.nlp.coref.CorefMention">CorefMention</a></span>, <span name="mentions">mentions: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="CorefMention.html" class="extype" name="cc.factorie.app.nlp.coref.CorefMention">CorefMention</a>]</span>, <span name="options">options: <a href="Coref1Options.html" class="extype" name="cc.factorie.app.nlp.coref.Coref1Options">Coref1Options</a></span>)</span>
+        <span class="name">MentionPairFeatures</span><span class="params">(<span name="model">model: <a href="PairwiseCorefModel.html" class="extype" name="cc.factorie.app.nlp.coref.PairwiseCorefModel">PairwiseCorefModel</a></span>, <span name="mention1">mention1: <a href="mention/CorefMention.html" class="extype" name="cc.factorie.app.nlp.coref.mention.CorefMention">CorefMention</a></span>, <span name="mention2">mention2: <a href="mention/CorefMention.html" class="extype" name="cc.factorie.app.nlp.coref.mention.CorefMention">CorefMention</a></span>, <span name="mentions">mentions: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="mention/CorefMention.html" class="extype" name="cc.factorie.app.nlp.coref.mention.CorefMention">CorefMention</a>]</span>, <span name="options">options: <a href="Coref1Options.html" class="extype" name="cc.factorie.app.nlp.coref.Coref1Options">Coref1Options</a></span>)</span>
       </span>
       </h4>
       
@@ -666,7 +666,7 @@ Time: 12:23 PM
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
     </li><li name="cc.factorie.app.nlp.coref.MentionPairFeatures#mentType" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="mentType(ment:cc.factorie.app.nlp.coref.CorefMention):String"></a>
+      <a id="mentType(ment:cc.factorie.app.nlp.coref.mention.CorefMention):String"></a>
       <a id="mentType(CorefMention):String"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -674,12 +674,12 @@ Time: 12:23 PM
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">mentType</span><span class="params">(<span name="ment">ment: <a href="CorefMention.html" class="extype" name="cc.factorie.app.nlp.coref.CorefMention">CorefMention</a></span>)</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
+        <span class="name">mentType</span><span class="params">(<span name="ment">ment: <a href="mention/CorefMention.html" class="extype" name="cc.factorie.app.nlp.coref.mention.CorefMention">CorefMention</a></span>)</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
       </span>
       </h4>
       
     </li><li name="cc.factorie.app.nlp.coref.MentionPairFeatures#mention1" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="mention1:cc.factorie.app.nlp.coref.CorefMention"></a>
+      <a id="mention1:cc.factorie.app.nlp.coref.mention.CorefMention"></a>
       <a id="mention1:CorefMention"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -687,12 +687,12 @@ Time: 12:23 PM
         <span class="kind">val</span>
       </span>
       <span class="symbol">
-        <span class="name">mention1</span><span class="result">: <a href="CorefMention.html" class="extype" name="cc.factorie.app.nlp.coref.CorefMention">CorefMention</a></span>
+        <span class="name">mention1</span><span class="result">: <a href="mention/CorefMention.html" class="extype" name="cc.factorie.app.nlp.coref.mention.CorefMention">CorefMention</a></span>
       </span>
       </h4>
       
     </li><li name="cc.factorie.app.nlp.coref.MentionPairFeatures#mention2" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="mention2:cc.factorie.app.nlp.coref.CorefMention"></a>
+      <a id="mention2:cc.factorie.app.nlp.coref.mention.CorefMention"></a>
       <a id="mention2:CorefMention"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -700,7 +700,7 @@ Time: 12:23 PM
         <span class="kind">val</span>
       </span>
       <span class="symbol">
-        <span class="name">mention2</span><span class="result">: <a href="CorefMention.html" class="extype" name="cc.factorie.app.nlp.coref.CorefMention">CorefMention</a></span>
+        <span class="name">mention2</span><span class="result">: <a href="mention/CorefMention.html" class="extype" name="cc.factorie.app.nlp.coref.mention.CorefMention">CorefMention</a></span>
       </span>
       </h4>
       

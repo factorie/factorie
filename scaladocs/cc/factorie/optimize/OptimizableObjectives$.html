@@ -252,6 +252,19 @@
       </h4>
       <p class="shortcomment cmt">General type for multivariate linear objective functions for clasification
 </p>
+    </li><li name="cc.factorie.optimize.OptimizableObjectives.SmoothHingeBinary" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="SmoothHingeBinaryextendsUnivariateOptimizableObjective[Int]"></a>
+      <a id="SmoothHingeBinary:SmoothHingeBinary"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="OptimizableObjectives$$SmoothHingeBinary.html"><span class="name">SmoothHingeBinary</span></a><span class="result"> extends <a href="UnivariateOptimizableObjective.html" class="extype" name="cc.factorie.optimize.UnivariateOptimizableObjective">UnivariateOptimizableObjective</a>[<span class="extype" name="scala.Int">Int</span>]</span>
+      </span>
+      </h4>
+      
     </li><li name="cc.factorie.optimize.OptimizableObjectives.SparseLogMulticlass" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="SparseLogMulticlassextendsMultivariateOptimizableObjective[Int]"></a>
       <a id="SparseLogMulticlass:SparseLogMulticlass"></a>
@@ -578,7 +591,7 @@
       <p class="shortcomment cmt">Hinge objective for multiclass classification
 </p>
     </li><li name="cc.factorie.optimize.OptimizableObjectives#hingeScaledBinary" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="hingeScaledBinary(posSlackRescale:Double,negSlackRescale:Double):cc.factorie.optimize.OptimizableObjectives.HingeScaledBinary"></a>
+      <a id="hingeScaledBinary(posCost:Double,negCost:Double):cc.factorie.optimize.OptimizableObjectives.HingeScaledBinary"></a>
       <a id="hingeScaledBinary(Double,Double):HingeScaledBinary"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -586,10 +599,10 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">hingeScaledBinary</span><span class="params">(<span name="posSlackRescale">posSlackRescale: <span class="extype" name="scala.Double">Double</span> = <span class="symbol">1.0</span></span>, <span name="negSlackRescale">negSlackRescale: <span class="extype" name="scala.Double">Double</span> = <span class="symbol">1.0</span></span>)</span><span class="result">: <a href="OptimizableObjectives$$HingeScaledBinary.html" class="extype" name="cc.factorie.optimize.OptimizableObjectives.HingeScaledBinary">HingeScaledBinary</a></span>
+        <span class="name">hingeScaledBinary</span><span class="params">(<span name="posCost">posCost: <span class="extype" name="scala.Double">Double</span> = <span class="symbol">1.0</span></span>, <span name="negCost">negCost: <span class="extype" name="scala.Double">Double</span> = <span class="symbol">1.0</span></span>)</span><span class="result">: <a href="OptimizableObjectives$$HingeScaledBinary.html" class="extype" name="cc.factorie.optimize.OptimizableObjectives.HingeScaledBinary">HingeScaledBinary</a></span>
       </span>
       </h4>
-      <p class="shortcomment cmt">A variant of the hinge objective for binary classification which can have different costs for type 1 and type 2 errors.</p><div class="fullcomment"><div class="comment cmt"><p>A variant of the hinge objective for binary classification which can have different costs for type 1 and type 2 errors.</p></div><dl class="paramcmts block"><dt class="param">posSlackRescale</dt><dd class="cmt"><p>The cost of predicting positive when the label is negative</p></dd><dt class="param">negSlackRescale</dt><dd class="cmt"><p>The cost of predicting negative when the label is positive</p></dd><dt>returns</dt><dd class="cmt"><p>An objective function
+      <p class="shortcomment cmt">A variant of the hinge objective for binary classification which can have different costs for type 1 and type 2 errors.</p><div class="fullcomment"><div class="comment cmt"><p>A variant of the hinge objective for binary classification which can have different costs for type 1 and type 2 errors.</p></div><dl class="paramcmts block"><dt class="param">posCost</dt><dd class="cmt"><p>The cost of predicting positive when the label is negative</p></dd><dt class="param">negCost</dt><dd class="cmt"><p>The cost of predicting negative when the label is positive</p></dd><dt>returns</dt><dd class="cmt"><p>An objective function
 </p></dd></dl></div>
     </li><li name="cc.factorie.optimize.OptimizableObjectives#hingeSqMulticlass" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="hingeSqMulticlass:cc.factorie.optimize.OptimizableObjectives.HingeSqMulticlass"></a>
@@ -698,6 +711,20 @@
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li name="cc.factorie.optimize.OptimizableObjectives#smoothHingeBinary" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="smoothHingeBinary(gamma:Double,margin:Double,posCost:Double,negCost:Double):cc.factorie.optimize.OptimizableObjectives.SmoothHingeBinary"></a>
+      <a id="smoothHingeBinary(Double,Double,Double,Double):SmoothHingeBinary"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">smoothHingeBinary</span><span class="params">(<span name="gamma">gamma: <span class="extype" name="scala.Double">Double</span> = <span class="symbol">1.0</span></span>, <span name="margin">margin: <span class="extype" name="scala.Double">Double</span> = <span class="symbol">1.0</span></span>, <span name="posCost">posCost: <span class="extype" name="scala.Double">Double</span> = <span class="symbol">1.0</span></span>, <span name="negCost">negCost: <span class="extype" name="scala.Double">Double</span> = <span class="symbol">1.0</span></span>)</span><span class="result">: <a href="OptimizableObjectives$$SmoothHingeBinary.html" class="extype" name="cc.factorie.optimize.OptimizableObjectives.SmoothHingeBinary">SmoothHingeBinary</a></span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">A smoothed (Lipschitz gradient) variant of the hinge objective for binary classification which can have different costs for type 1 and type 2 errors and adjustable margin.</p><div class="fullcomment"><div class="comment cmt"><p>A smoothed (Lipschitz gradient) variant of the hinge objective for binary classification which can have different costs for type 1 and type 2 errors and adjustable margin.</p></div><dl class="paramcmts block"><dt class="param">gamma</dt><dd class="cmt"><p>Adjusts how smoothly the hinge drops down to zero. Higher is more smooth, zero gives unsmoothed hinge.</p></dd><dt class="param">margin</dt><dd class="cmt"><p>The number that you need to predict above to achieve the maximum objective score.</p></dd><dt class="param">posCost</dt><dd class="cmt"><p>The cost of predicting positive when the label is negative.</p></dd><dt class="param">negCost</dt><dd class="cmt"><p>The cost of predicting negative when the label is positive.</p></dd><dt>returns</dt><dd class="cmt"><p>An objective function
+</p></dd></dl></div>
     </li><li name="cc.factorie.optimize.OptimizableObjectives#sparseLogMulticlass" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="sparseLogMulticlass:cc.factorie.optimize.OptimizableObjectives.SparseLogMulticlass"></a>
       <a id="sparseLogMulticlass:SparseLogMulticlass"></a>
