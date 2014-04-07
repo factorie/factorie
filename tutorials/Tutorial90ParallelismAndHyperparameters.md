@@ -224,8 +224,8 @@ Now we are ready to optimize the hyperparameters.
 
 ```scala
   val hyp = new cc.factorie.util.HyperParameterSearcher(opts, Seq(d1, d2), executor1, numTrials = 10, numToFinish = 5, secondsToSleep = 1)
-  val optimizeArgs = hyp.optimize()
-  assertStringEquals(optimizeArgs.length, "2")
+  val args = hyp.optimize()
+  assertStringEquals(args.length, "2")
 }
 ```
 

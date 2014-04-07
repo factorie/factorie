@@ -1,0 +1,10 @@
+{% for node in site.pages | sort:node.weight %}
+      {% if node.group == 'suffix' %}
+         {% if page.url == node.url %}
+            <li class="active nav-noindent"><a href="{{node.url}}">{{node.title}}</a></li>
+         {% else %}
+            <li class="nav-noindent"><a href="{{node.url}}">{{node.title}}</a></li>
+         {% endif %}
+      {% endif %}
+{% endfor %}
+{% assign suffix_pages_list = nil %}

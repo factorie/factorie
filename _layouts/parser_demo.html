@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <link href="{{ site.baseurl }}/assets/css/bootstrap.css" rel="stylesheet">
+        <link rel="stylesheet" type="text/css" href="{{ site.baseurl }}/assets/css/pygments/default.css" media="screen" />
+        <link rel="stylesheet" type="text/css" href="http://twitter.github.com/bootstrap/assets/js/google-code-prettify/prettify.css" />
+
+        <style type="text/css">
+          .token { background-color:#E6E6E6; }
+          .pos { background-color: #E6E6E6; font-size: 18px; font-style: italic; }
+        </style>
+        <script text="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.4.2/jquery.min.js"></script>
+        <script type="text/javascript" src="{{ site.baseurl }}/assets/js/jquery.jqtransform.js"></script>
+        <script text="text/javascript" src="{{ site.baseurl }}/assets/js/raphael.js"></script>
+        <title>Factorie: {{ page.title }}</title>
+    </head>
+
+    <body>
+        <div class="container">
+            <div class="page-header">
+              <h1><img width="50px" src="{{ site.baseurl }}/assets/images/{{ site.factorie_logo }}">
+                <a href="{{ site.baseurl }}/index.html">Factorie</a></h1>
+            </div>
+
+            <div class="row">
+                <div class="span3">
+                    {% include sidenav.html %}
+                </div>
+                <div class="span9">
+                  {{ content }}
+                  <br>
+                  <hr>
+                  <div class="row">
+                    <div class="span12">
+                      <form id="frm">
+                        <input id="message" class="input-xxlarge" type="text" placeholder="Enter a sentence here..">
+                      </form>
+                    </div>
+                  </div>
+                  <div class="row">
+                    <div class="span12" align="center">
+                      <br>
+                      <br>
+                      <ul id="sent_list" style="list-style:none"></ul>
+                      <div id="holder"></div>
+                    </div>
+                  </div>
+                </div>
+            </div>
+
+            <script text="text/javascript" src="{{ site.baseurl }}/assets/js/nlp.js"></script>
+
+            <hr>
+            {% include footer.html %}
+        </div> <!-- /container -->
+
+    </body>
+</html>

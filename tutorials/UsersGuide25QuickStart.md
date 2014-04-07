@@ -85,9 +85,6 @@ package cc.factorie.tutorial
 object ExampleGaussian extends App {
   import cc.factorie._                             // The base library
   import cc.factorie.directed._                    // Factors for directed graphical models
-  import cc.factorie.variable_
-  import cc.factorie.model._
-  import cc.factorie.infer._
   implicit val model = DirectedModel()             // Define the "model" that will implicitly store the new factors we create
   implicit val random = new scala.util.Random(0)   // Define a source of randomness that will be used implicitly in data generation below 
   val mean = new DoubleVariable(10)                // A random variable for holding the mean of the Gaussian
@@ -148,7 +145,7 @@ object ExampleLinearChainCRF extends App {
   }
   // Learn parameters
   val trainer = new BatchTrainer(model.parameters, new ConjugateGradient)
-  trainer.trainFromExamples(labelSequences.map(labels => new LikelihoodExample(labels, model, InferByBPChain)))
+  trainer.trainFromExamples(labelSequences.map(labels => new LikelihoodExample(labels, model, InferByBPChainSum)))
   // Inference on the same data.  We could let FACTORIE choose the inference method, 
   // but here instead we specify that is should use max-product belief propagation
   // specialized to a linear chain
