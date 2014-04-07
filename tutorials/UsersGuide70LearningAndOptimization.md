@@ -9,11 +9,11 @@ weight: 80
 # Optimization
 
 Much modern machine learning finds parameters by setting up an optimization
-problem trading off having low error on the training data with having a
-simple predictor which should generalize well. These optimization problems
-are usually of the form
+problem that trades off low error on the training data with having a
+simple predictor that generalizes well. These optimization problems
+are usually of the form:
 
-`\[ \theta^* = \mathop{\arg\min}_\theta \sum_i \ell(x_i, y_i, \theta) - R(\theta) \]`
+`\[ \theta^* = \mathop{\arg\min}_\theta \sum_i \ell(x_i, y_i, \theta) + R(\theta) \]`
 
 FACTORIE includes an optimization package directly designed to solve
 optimization problems of the form above, with many variants of batch and
