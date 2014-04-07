@@ -194,8 +194,8 @@ object Tutorial90ParallelismAndHyperparameters extends App {
    * Now we are ready to optimize the hyperparameters.
    */
   val hyp = new cc.factorie.util.HyperParameterSearcher(opts, Seq(d1, d2), executor1, numTrials = 10, numToFinish = 5, secondsToSleep = 1)
-  val args = hyp.optimize()
-  assertStringEquals(args.length, "2")
+  val optimizeArgs = hyp.optimize()
+  assertStringEquals(optimizeArgs.length, "2")
 }
 /*&
  * args is a string containing the two winning hyperparameter values. We don't know
