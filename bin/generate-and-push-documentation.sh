@@ -1,8 +1,4 @@
-mvn scala:doc && \
-cd doc && \
-rm -rf html && \
-./scala2md-usersguide.sh && \
-cd .. && \
+#mvn scala:doc && \
 git checkout gh-pages && \
 git pull && \
 git rm tutorials/*md && \
