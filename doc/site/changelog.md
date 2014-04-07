@@ -1,12 +1,141 @@
----
-title: "Changelog"
-layout: default
-weight: 1
-group: suffix
----
 
 Changelog
 ===
+
+New in version 1.0.0-RC1
+---
+
+* Overall
+    - Improved tutorials and documentation
+    - Switched many classifiers and factors to score using left-multiplication which gives >3x speedup in many cases
+    - Refactored usage of Var/Value type members, making Assignments nice to use, among other things
+    - Moved many files into separate subpackages, new "Factorie" object provides default imports
+    - Added automated performance testing of various models
+    - Simplified labeled variables by removing several varieties
+
+* NLP
+    - Renaming of many NLP components
+    - Simplified Spans with no self-types
+    - Refactored Spans and Tags
+    - New Phrase classes that generalizes mentions
+    - Performance improvements for parsing
+    - Fixes and accuracy improvements for POS tagging
+    - Fixes, refactoring, improvements for mention finding
+    - Fixes to mention entity type prediction
+    - Fixes to tokenizer, coreference
+    - Fixes and improved features / accuracy for NER
+    - Cleanup of ACE and Ontonotes loaders
+    - Efficiency improvements and fixes to app.chain command line tool
+
+* Classifiers
+    - New app.classify.backend package with enhanced and simplified support for GLMs, etc.
+    - Fix to squared epsilon insensitive loss
+
+* Learning
+    - Many efficiency improvements to online and batch optimizers
+    - Fix to BackTrackLineOptimizer that greatly speeds up BFGS and CG
+    - API for initialization/finalization of weights added to GradientOptimizers
+    - Speedup to parallel trainers by avoiding excess locking
+
+* Inference
+    - Greatly improved efficiency for inference and learning in chains using ChainModel
+    - Big refactoring/cleanup and fixes to BP
+
+* Linear Algebra
+    - Fixes and performance improvements to many tensor operations
+    - Fixes and speed/safety improvements to smart tensor accumulators
+
+* Serialization
+    - Added version numbers and IDs to Cubbie serialization
+    - Added buffering for speed improvements
+
+New in version 1.0.0-M7:
+---
+
+* Overall
+    - Removed deprecated code
+    - Improved tutorials and documentation
+    - Improved command line tools
+
+* NLP
+    - New tokenizers and sentence segmenter
+    - Reworked DocumentAnnotator annotation pipeline
+    - Parallel LDA implementation
+    - Improved NER
+    - Conll2000 loader
+    - Support for loading NER3 models from classpath (NER3 requires dependency on factorie-nlp-resources-ner project)
+    - Added support for word embeddings in NER3
+    - Bugfixes and improvement to mention finders, new NerAndPronounMentionFinder
+
+* Learning
+    - Efficiency improvements to accumulators, trainers, and weights maps
+    - Small bugfixes to OnlineTrainer and hyperparameter optimization
+
+* Inference
+    - Changed Infer API
+    - Bugfix to dual decomposition
+
+New in version 1.0.0-M6:
+---
+
+* Overall
+    - Website hosted on github
+    - removing deprecated code
+
+* NLP
+    - much improved mention annotators
+    - classifier-based mention entity type predictor
+    - deprecated annotators removed: DepParser1, WithinDocCoref1
+    - CorefGazetteers removed
+    - new pronoun lexicons
+    - bugfixes and improvements to coreference
+
+* Learning
+    - removing broken optimizers
+    - bugfix in SampleRank when proposals have same score
+
+New in version 1.0.0-M5:
+---
+
+* Overall
+    - Move to Scala 2.10.1
+    - Migration to github
+    - Better handling of Implicits
+    - Hyperparameter optimization
+    - support for conditional dependencies as profiles in pom
+    - improved tutorials
+
+* NLP
+    - Command line interface (see README.txt)
+    - Documents contain Sections
+    - Support for reading models from a variety of sources (classpath, files, urls, etc.)
+    - Default annotators that load models from the classpath
+    - Overhauled lexicons handling
+    - new annotators for mention type, gender, number, etc.
+    - better support for OntoNotes and all its annotations (parsing, coreference, etc)
+    - better support for ACE and relations
+    - much improved parse-based mention finding
+    - improvements to Tokenizers and Segmenters
+    - addition of SparseLDA
+    - more unification of data structures across different tasks
+    - bugfixes and speed improvements
+
+* Variables and values
+    - Refactoring of Assignment
+
+* Inference
+    - support for arbitrary number of neighbors in MPLP
+    - bugfixes and speed improvements
+
+* Learning
+    - regularized dual averaging (RDA) added
+    - exponentiated gradient optimizer
+
+* Serialization
+    - major bugfixes and speed improvements
+
+* Linear Algebra
+    - bugfixes and major speed improvements
 
 New in version 1.0.0-M4:
 ---
@@ -112,144 +241,144 @@ New in version 1.0.0-M3:
 ---
 
 * Documentation
-	- improved existing tutorials
-	- new tutorial on Inference and Learning
-	- better TUI
-	- better comments and error messages
-	- Parser Demo
-	- site can be generated at the users' end
+  - improved existing tutorials
+  - new tutorial on Inference and Learning
+  - better TUI
+  - better comments and error messages
+  - Parser Demo
+  - site can be generated at the users' end
 
 * Models and Templates
-	- support for feature hashing
-	- Massive renaming of Variables and Domains
+  - support for feature hashing
+  - Massive renaming of Variables and Domains
 
 * NLP
-	- Classifier based POS tagger
-	- added port of ClearNLP tokenizer/segmenter
-	- Faster Bibtex parser
-	- REST API for Parsers
+  - Classifier based POS tagger
+  - added port of ClearNLP tokenizer/segmenter
+  - Faster Bibtex parser
+  - REST API for Parsers
 
 * Inference
-	- support efficient inference for ChainModels
-	- Sampler can return a DiffList of all the changes
-	- bugfixes in MHSampler
-	- BP logZ implemented to enable likelihood learning
+  - support efficient inference for ChainModels
+  - Sampler can return a DiffList of all the changes
+  - bugfixes in MHSampler
+  - BP logZ implemented to enable likelihood learning
 
 * Optimization and Training
-	- Removed redundant SampleRank
-	- Added Pegasos. Pseudo-likelihood, Contrastive Divergence, StructSVM, AdaGrad
-	- new ClassifierTrainer to support all types of losses, trainers and optimizers
-	- better multi-threaded support
-	- bugfixes and efficiency improvements
+  - Removed redundant SampleRank
+  - Added Pegasos. Pseudo-likelihood, Contrastive Divergence, StructSVM, AdaGrad
+  - new ClassifierTrainer to support all types of losses, trainers and optimizers
+  - better multi-threaded support
+  - bugfixes and efficiency improvements
 
 * Tensors
-	- speed enhacements and bugfixes
-	- more operations implemented
-	- new tests for Tensors
+  - speed enhacements and bugfixes
+  - more operations implemented
+  - new tests for Tensors
 
 * Serialization
-	- all new serialization based on Cubbies
+  - all new serialization based on Cubbies
 
 New in version 1.0.0-M2:
 ---
 
 * Documentation
-	- markdown based website, the source for which is checked into the repository
-	- Tutorial on Domains
-	- more assertions throughout the code (including tutorials)
-	- better Tutorial prettifier
+  - markdown based website, the source for which is checked into the repository
+  - Tutorial on Domains
+  - more assertions throughout the code (including tutorials)
+  - better Tutorial prettifier
 
 * Models and Templates
-	- Factors can provide statistics and scores on any Assignment and valueTensors
-	- trait Model independent of context, ModelWithContext[C] can unroll given any context
+  - Factors can provide statistics and scores on any Assignment and valueTensors
+  - trait Model independent of context, ModelWithContext[C] can unroll given any context
 
 * NLP
-	- Abstracted dependency parser prediction for easily dropping in alternative classifiers.
-	- Bootstrapping for improved dependency parser training.
+  - Abstracted dependency parser prediction for easily dropping in alternative classifiers.
+  - Bootstrapping for improved dependency parser training.
 
 * Inference
-	- BPSummary is more efficient, includes an abstract version
+  - BPSummary is more efficient, includes an abstract version
 
 * Optimization and Training
-	- Pieces are now Examples, Learners are Trainers
-	- MaxlikelihoodExample is efficient in computing constraints
-	- SampleRankExample replaces old trainer, almost as efficient
+  - Pieces are now Examples, Learners are Trainers
+  - MaxlikelihoodExample is efficient in computing constraints
+  - SampleRankExample replaces old trainer, almost as efficient
 
 * Classifiers
     - Added DecisionTree, AdaBoost, SVM classifiers in app.classify
 
 * Tensors
-	- Filled in more of the missing cases in Tensors
-	- Fixed indexing bugs in a few Tensor types
-	- OuterTensors that efficiently represent the outer product between Tensors
+  - Filled in more of the missing cases in Tensors
+  - Fixed indexing bugs in a few Tensor types
+  - OuterTensors that efficiently represent the outer product between Tensors
 
 * Serialization
-	- gzip support
+  - gzip support
 
 New in version 1.0.0-M1:
 ---
 
 * Models and Templates
 
-	- All templates are now Models
-	- Models are now parameterized by the type of things they can score
-	- It is possible to write code that does not deduplicate factors
+  - All templates are now Models
+  - Models are now parameterized by the type of things they can score
+  - It is possible to write code that does not deduplicate factors
 
 * NLP
-	- new Ontonotes Loader
-	- new Nonprojective Dependency parser
+  - new Ontonotes Loader
+  - new Nonprojective Dependency parser
 
 * Inference
-	- Summary class now maintains the marginals, and is common to Samplers and BP
-	- Reimplementation of BP to be more efficient
+  - Summary class now maintains the marginals, and is common to Samplers and BP
+  - Reimplementation of BP to be more efficient
 
 * Optimization & Training
-	- efficient L2-regularized SVM training
-	- integration with app.classify
-	- support for parallel batch and online training with a Piece API
-	- support for Hogwild (including Hogwild SampleRank)
+  - efficient L2-regularized SVM training
+  - integration with app.classify
+  - support for parallel batch and online training with a Piece API
+  - support for Hogwild (including Hogwild SampleRank)
 
 * Tensors
-	- all new la package that replaces the earlier Vector classes with Tensors
-	- Tensors can be multi-dimensional, with implementations that independently choose sparsity/singleton for each dimension
-	- weights and features now use Tensors
+  - all new la package that replaces the earlier Vector classes with Tensors
+  - Tensors can be multi-dimensional, with implementations that independently choose sparsity/singleton for each dimension
+  - weights and features now use Tensors
 
 * Serialization
-	- Serialization exists in a different class
+  - Serialization exists in a different class
 
 * Misc
-	- Added Tutorials to walkthrough model construction
-	- Cleaned examples so that they work (added a test that makes sure they do)
+  - Added Tutorials to walkthrough model construction
+  - Cleaned examples so that they work (added a test that makes sure they do)
 
 New in version 0.10.2:
 ---
 
 * NLP
-	- Customized forward-backward and viterbi for chain models
-	- changes to the coreference data structures that support hierarchical models
-	- new data loaders
-	- models can be loaded from JARs (POS model in IESL Nexus)
-	- initial dependency parser
+  - Customized forward-backward and viterbi for chain models
+  - changes to the coreference data structures that support hierarchical models
+  - new data loaders
+  - models can be loaded from JARs (POS model in IESL Nexus)
+  - initial dependency parser
 
 * BP
-	- Refactoring to be faster and cleaner interface, with bugfixes
-	- Caching of scores and values
-	- MaxProduct works even when multiple MAP states
-	- TimingBP to compare performance of the different variants of BP in the codebase
-	- maxMarginal with threshold, to support PR curves
-	- some initial parallelization
+  - Refactoring to be faster and cleaner interface, with bugfixes
+  - Caching of scores and values
+  - MaxProduct works even when multiple MAP states
+  - TimingBP to compare performance of the different variants of BP in the codebase
+  - maxMarginal with threshold, to support PR curves
+  - some initial parallelization
 
 * Max likelihood training
-	- convenience constructors for selecting which families to update
-	- pieces can use families for inference that are not updated
+  - convenience constructors for selecting which families to update
+  - pieces can use families for inference that are not updated
 
 * Trainer that uses Stochastic gradient descent
 
 * Cubbie
-	- new united interface for serialization/persistence (including mongodb support)
+  - new united interface for serialization/persistence (including mongodb support)
 
 * Hierarchical Coref Model
-	- added model that supports arbitrarily deep and wide hierarchy of entites, aka Wick, Singh, McCallum, ACL 2012
+  - added model that supports arbitrarily deep and wide hierarchy of entites, aka Wick, Singh, McCallum, ACL 2012
 
 * Gzip saving/loading of models
 * Data loaders for bibtex, dblp, etc.
@@ -258,7 +387,7 @@ New in version 0.10.2:
 
 New in version 0.10.1:
 ---
-	
+  
 * Many renames, new features and refactors; the list below is partially complete.
 
 * Initial support for sparse value iteration in factor/families
@@ -277,7 +406,7 @@ New in version 0.10.1:
 
 * DiscreteVector and CategoricalVector
 
-	The old names "DiscretesValue", "DiscretesVariable", etc were
+  The old names "DiscretesValue", "DiscretesVariable", etc were
 deemed too easily misread (easy to miss the little "s" in the middle)
 and have been renamed "DiscreteVectorValue", "DiscreteVectorVariable",
 etc.
@@ -293,13 +422,13 @@ New in version 0.10.0:
 
 * Variable 'value' methods:
 
-	All variables must now have a 'value' method with return type
+  All variables must now have a 'value' method with return type
 'this.Value'. By default this type is Any. If you want to override
 use the VarAndValueType trait, which sets the covariant types
 'VariableType' and 'ValueType'. 'Value' is magically defined from
 these to be psuedo-invariant.
 
-	The canonical representation of DiscreteVariable (and
+  The canonical representation of DiscreteVariable (and
 CategoricalVariable) values used to be an Int. Now it is a
 DiscreteValue (or CategoricalValue) object, which is a wrapper around
 an integer (and its corresponding categorical value). These objects
@@ -307,36 +436,36 @@ are created automatically in the DiscreteDomain (or
 CategoricalDomain), and are guaranteed to be unique for each integer
 value, and thus can be compared by pointer equality.
 
-	For example, if 'label' is a CategoricalVariable[String]
+  For example, if 'label' is a CategoricalVariable[String]
 label.value is a CategoricalValue.
 label.intValue == label.value.index, is an integer
 label.categoryValue == label.value.category, is a String
 
 * Discrete variables and vectors
 
-	DiscreteValues has been renamed DiscretesValue. Similarily there are
+  DiscreteValues has been renamed DiscretesValue. Similarily there are
 now classes DiscretesVariable, CategoricalsValue and
 CategoricalsVariable. These plural names refer to vector values and
 their variables. For example, CategoricalsVariable is a superclass of
 the BinaryFeatureVectorVariable.
 
-	The singular DiscreteValue, DiscreteVariable, CategoricalValue and
+  The singular DiscreteValue, DiscreteVariable, CategoricalValue and
 CategoricalVariable hold single values (i.e. which could be mapped to
 single integers), but are subclasses their plural counterparts, with
 values that are singleton vectors.
 
-	The domain of the plural types (i.e. vectors, not necessarily
+  The domain of the plural types (i.e. vectors, not necessarily
 singleton vectors) are DiscretesDomain and CategoricalsDomain. The
 length of these vectors are determined by an inner DiscreteDomain or
 CategoricalDomain. Hence to create a domain for vectors of length 10:
 
-		new DiscretesDomain {
-		  val dimensionDomain = new DiscreteDomain { def count = 10 }
-		}
+    new DiscretesDomain {
+      val dimensionDomain = new DiscreteDomain { def count = 10 }
+    }
 
 * TrueSetting renamed to TargetValue
 
-	Now that all variables have a 'value', the name 'setting' is
+  Now that all variables have a 'value', the name 'setting' is
 deprecated. Also, "true" and "truth" were deemed confusable with
 boolean values, and are now deprecated. The preferred alternative is
 "target". Hence, the "TrueSetting" trait has been renamed
@@ -347,7 +476,7 @@ trueIntValue => targetIntValue
 
 * Domains:
 
-	Previously there was a one-to-one correspondence between variable
+  Previously there was a one-to-one correspondence between variable
 classes and domains; the variable looked up its domain in a global
 hashtable whose keys were the variable classes. Furthermore Domain
 objects were often created for the user auto-magically. This scheme
@@ -361,19 +490,19 @@ objects explicitly. Thus we have sacrificed a little brevity for
 clarity and flexibility. Here is an example of typical code for
 creating class labels:
 
-		object MyLabelDomain extends CategoricalDomain[String]
-		class MyLabel(theValue:String) extends CategoricalVariable(theValue) {
-		  def domain = MyLabelDomain
-		}
+    object MyLabelDomain extends CategoricalDomain[String]
+    class MyLabel(theValue:String) extends CategoricalVariable(theValue) {
+      def domain = MyLabelDomain
+    }
 
-	or
+  or
 
-		class MyLabel(theValue:String, val domain = MyLabelDomain) extends CategoricalVariable(theValue)
+    class MyLabel(theValue:String, val domain = MyLabelDomain) extends CategoricalVariable(theValue)
 
-	The type argument for domains used to be the variable class; now it is
+  The type argument for domains used to be the variable class; now it is
 the 'ValueType' type of the domain (and its variables).
 
-	Templates now automatically gather the domains of the neighbor
+  Templates now automatically gather the domains of the neighbor
 variables. VectorTemplates also gather the domains of their
 statistics values. [TODO: Discuss the dangers of this automatic
 mechanism and consider others mechanisms.]
@@ -382,35 +511,35 @@ mechanism and consider others mechanisms.]
 
 * Template statistics:
 
-	Previously the constructor arguments of Stat objects were Variables.
+  Previously the constructor arguments of Stat objects were Variables.
 They have now been changed to Variable *values* instead. Furthermore,
 whereas the old Template.statistics method took as arguments a list
 of variables, the new Template.statistics method takes a "Values"
 object, which is a simple Tuple-style case class containing variable values.
 
-	For example, old code:
+  For example, old code:
 
-		new Template2[Label,Label] extends DotStatistics1[BooleanVariable] {
-		  def statistics(y1:Label, y2:Label) =
-		    Stat(new BooleanVariable(y1.intValue == y2.intValue)
-		}
+    new Template2[Label,Label] extends DotStatistics1[BooleanVariable] {
+      def statistics(y1:Label, y2:Label) =
+        Stat(new BooleanVariable(y1.intValue == y2.intValue)
+    }
 
-	might be re-written as:
+  might be re-written as:
 
-		new Template2[Label,Label] extends DotStatistics1[BooleanValue] {
-		  def statistics(values:Values) = Stat(values._1 == values._2)
-		}
+    new Template2[Label,Label] extends DotStatistics1[BooleanValue] {
+      def statistics(values:Values) = Stat(values._1 == values._2)
+    }
 
 * VectorTemplate
 
-	VectorStatistics1, VectorStatistics2, VectorStatistics3 used to take
+  VectorStatistics1, VectorStatistics2, VectorStatistics3 used to take
 VectorVar type arguments. They now take DiscretesValue type
 arguments. The method 'statsize' has been renmed
 'statisticsVectorLength' for clarity.
 
 * Generative modeling package
 
-	The probability calculations and sampling routines are no longer
+  The probability calculations and sampling routines are no longer
 implemented in the variable, but in templates instead. Each
 GeneratedVar must have a value "generativeTemplate" and a method
 "generativeFactor". Many changes have been made to the generative
