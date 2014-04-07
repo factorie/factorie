@@ -8,7 +8,7 @@ problem trading off having low error on the training data with having a
 simple predictor which should generalize well. These optimization problems
 are usually of the form
 
-`\[ \theta^* = \mathop{\arg\max}_\theta \sum_i loss(x_i, y_i, \theta) - R(\theta) \]`
+`\[ \theta^* = \mathop{\arg\min}_\theta \sum_i \ell(x_i, y_i, \theta) - R(\theta) \]`
 
 FACTORIE includes an optimization package directly designed to solve
 optimization problems of the form above, with many variants of batch and
