@@ -1,0 +1,793 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+<html>
+        <head>
+          <title>Document - Factorie 1.0-SNAPSHOT API - cc.factorie.app.nlp.Document</title>
+          <meta name="description" content="Document - Factorie 1.0 - SNAPSHOT API - cc.factorie.app.nlp.Document" />
+          <meta name="keywords" content="Document Factorie 1.0 SNAPSHOT API cc.factorie.app.nlp.Document" />
+          <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+          
+      <link href="../../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
+      <link href="../../../../lib/diagrams.css" media="screen" type="text/css" rel="stylesheet" id="diagrams-css" />
+      <script type="text/javascript">
+         if(top === self) {
+            var url = '../../../../index.html';
+            var hash = 'cc.factorie.app.nlp.Document';
+            var anchor = window.location.hash;
+            var anchor_opt = '';
+            if (anchor.length >= 1)
+              anchor_opt = '@' + anchor.substring(1);
+            window.location.href = url + '#' + hash + anchor_opt;
+         }
+   	  </script>
+    
+        </head>
+        <body class="type">
+      <div id="definition">
+        <img src="../../../../lib/class_big.png" />
+        <p id="owner"><a href="../../../package.html" class="extype" name="cc">cc</a>.<a href="../../package.html" class="extype" name="cc.factorie">factorie</a>.<a href="../package.html" class="extype" name="cc.factorie.app">app</a>.<a href="package.html" class="extype" name="cc.factorie.app.nlp">nlp</a></p>
+        <h1>Document</h1>
+      </div>
+
+      <h4 id="signature" class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <span class="name">Document</span><span class="result"> extends <a href="DocumentSubstring.html" class="extype" name="cc.factorie.app.nlp.DocumentSubstring">DocumentSubstring</a> with <a href="../../util/Attr.html" class="extype" name="cc.factorie.util.Attr">Attr</a></span>
+      </span>
+      </h4>
+      
+          <div id="comment" class="fullcommenttop"><div class="comment cmt"><p>A Document holds a String containing the original raw string contents
+    of a natural language document to be processed.  The Document also holds
+    a sequence of Sections, each of which is delineated by character offsets
+    into the Document's string, and each of which contains a sequence of Tokens,
+    Sentences and other TokenSpans which may be annotated.</p><p>    Documents may be constructed with their full string contents, or they may
+    have their string contents augmented by the appendString method.</p><p>    Documents also have an optional &quot;name&quot; which can be set by Document.setName.
+    This is typically used to hold a filename in the file system, or some other similar identifier.</p><p>    The Document.stringLength method may be a faster alternative to Document.string.length
+    when you are in the middle of multiple appendString calls because it will
+    efficiently use the underlying string buffer length, rather than flushing the buffer
+    to create a string.</p><p>    The canonical sequence of Sections in the Document is available through
+    the Document.sections method.</p><p>    By default the canonical sequence of Sections holds a single Section that covers the
+    entire string contents of the Document (even as the Document grows).  This canonical sequence
+    of Sections may be modified by the user, but this special all-encompassing Section
+    instance will always be available as Document.asSection.</p><p>    Even though Tokens, Sentences and TokenSpans are really stored in the Sections,
+    Document has basic convenience methods for obtaining iterable collections of these
+    by concatenating them from the canonical sequence of Sections.  These iterable
+    collections are of type Iterable[Token], not Seq[Token], however.
+    If you need the Tokens as a Seq[Token] rather than an Iterable[Token], or you need
+    more advanced queries for TokenSpan types, you should use methods on a Section,
+    not on the Document.  In this case typical processing looks like:
+    &quot;for (section &lt;- document.sections) section.tokens.someMethodOnSeq()...&quot;.
+</p></div><div class="toggleContainer block">
+          <span class="toggle">Linear Supertypes</span>
+          <div class="superTypes hiddenContent"><a href="../../util/Attr.html" class="extype" name="cc.factorie.util.Attr">Attr</a>, <a href="DocumentSubstring.html" class="extype" name="cc.factorie.app.nlp.DocumentSubstring">DocumentSubstring</a>, <a href="../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <span class="extype" name="scala.Any">Any</span></div>
+        </div></div>
+        
+
+      <div id="mbrsel">
+        <div id="textfilter"><span class="pre"></span><span class="input"><input id="mbrsel-input" type="text" accesskey="/" /></span><span class="post"></span></div>
+        <div id="order">
+              <span class="filtertype">Ordering</span>
+              <ol>
+                
+                <li class="alpha in"><span>Alphabetic</span></li>
+                <li class="inherit out"><span>By inheritance</span></li>
+              </ol>
+            </div>
+        <div id="ancestors">
+                <span class="filtertype">Inherited<br />
+                </span>
+                <ol id="linearization">
+                  <li class="in" name="cc.factorie.app.nlp.Document"><span>Document</span></li><li class="in" name="cc.factorie.util.Attr"><span>Attr</span></li><li class="in" name="cc.factorie.app.nlp.DocumentSubstring"><span>DocumentSubstring</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
+                </ol>
+              </div><div id="ancestors">
+            <span class="filtertype"></span>
+            <ol>
+              <li class="hideall out"><span>Hide All</span></li>
+              <li class="showall in"><span>Show all</span></li>
+            </ol>
+            <a href="http://docs.scala-lang.org/overviews/scaladoc/usage.html#members" target="_blank">Learn more about member selection</a>
+          </div>
+        <div id="visbl">
+            <span class="filtertype">Visibility</span>
+            <ol><li class="public in"><span>Public</span></li><li class="all out"><span>All</span></li></ol>
+          </div>
+      </div>
+
+      <div id="template">
+        <div id="allMembers">
+        <div id="constructors" class="members">
+              <h3>Instance Constructors</h3>
+              <ol><li name="cc.factorie.app.nlp.Document#&lt;init&gt;" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="&lt;init&gt;(stringContents:String):cc.factorie.app.nlp.Document"></a>
+      <a id="&lt;init&gt;:Document"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">new</span>
+      </span>
+      <span class="symbol">
+        <span class="name">Document</span><span class="params">(<span name="stringContents">stringContents: <span class="extype" name="scala.Predef.String">String</span></span>)</span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">Create a new Document, initializing it to have contents given by the argument.</p>
+    </li><li name="cc.factorie.app.nlp.Document#&lt;init&gt;" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="&lt;init&gt;():cc.factorie.app.nlp.Document"></a>
+      <a id="&lt;init&gt;:Document"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">new</span>
+      </span>
+      <span class="symbol">
+        <span class="name">Document</span><span class="params">()</span>
+      </span>
+      </h4>
+      
+    </li></ol>
+            </div>
+
+        
+
+        
+
+        <div id="values" class="values members">
+              <h3>Value Members</h3>
+              <ol><li name="scala.AnyRef#!=" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="!=(x$1:AnyRef):Boolean"></a>
+      <a id="!=(AnyRef):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span title="gt4s: $bang$eq" class="name">!=</span><span class="params">(<span name="arg0">arg0: <a href="../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li name="scala.Any#!=" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="!=(x$1:Any):Boolean"></a>
+      <a id="!=(Any):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span title="gt4s: $bang$eq" class="name">!=</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Any">Any</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
+    </li><li name="scala.AnyRef###" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="##():Int"></a>
+      <a id="##():Int"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span title="gt4s: $hash$hash" class="name">##</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="cc.factorie.app.nlp.Document#+=" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="+=(s:cc.factorie.app.nlp.Section):scala.collection.mutable.Buffer[cc.factorie.app.nlp.Section]"></a>
+      <a id="+=(Section):Buffer[Section]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span title="gt4s: $plus$eq" class="name">+=</span><span class="params">(<span name="s">s: <a href="Section.html" class="extype" name="cc.factorie.app.nlp.Section">Section</a></span>)</span><span class="result">: <span class="extype" name="scala.collection.mutable.Buffer">Buffer</span>[<a href="Section.html" class="extype" name="cc.factorie.app.nlp.Section">Section</a>]</span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">Add a new Section to this Document's canonical list of Sections.</p>
+    </li><li name="cc.factorie.app.nlp.Document#-=" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="-=(s:cc.factorie.app.nlp.Section):scala.collection.mutable.Buffer[cc.factorie.app.nlp.Section]"></a>
+      <a id="-=(Section):Buffer[Section]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span title="gt4s: $minus$eq" class="name">-=</span><span class="params">(<span name="s">s: <a href="Section.html" class="extype" name="cc.factorie.app.nlp.Section">Section</a></span>)</span><span class="result">: <span class="extype" name="scala.collection.mutable.Buffer">Buffer</span>[<a href="Section.html" class="extype" name="cc.factorie.app.nlp.Section">Section</a>]</span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">Remove a Section from this Document's canonical list of Sections.</p>
+    </li><li name="scala.AnyRef#==" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="==(x$1:AnyRef):Boolean"></a>
+      <a id="==(AnyRef):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span title="gt4s: $eq$eq" class="name">==</span><span class="params">(<span name="arg0">arg0: <a href="../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li name="scala.Any#==" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="==(x$1:Any):Boolean"></a>
+      <a id="==(Any):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span title="gt4s: $eq$eq" class="name">==</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Any">Any</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
+    </li><li name="cc.factorie.app.nlp.Document#annotatorFor" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="annotatorFor(c:Class[_]):Option[Class[_]]"></a>
+      <a id="annotatorFor(Class[_]):Option[Class[_]]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">annotatorFor</span><span class="params">(<span name="c">c: <span class="extype" name="scala.Predef.Class">Class</span>[_]</span>)</span><span class="result">: <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="scala.Predef.Class">Class</span>[_]]</span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">Optionally return the DocumentAnnotator that produced the annotation of class 'c' within this Document.</p>
+    </li><li name="cc.factorie.app.nlp.Document#annotators" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="annotators:scala.collection.mutable.LinkedHashMap[Class[_],Class[_]]"></a>
+      <a id="annotators:LinkedHashMap[Class[_],Class[_]]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">annotators</span><span class="result">: <span class="extype" name="scala.collection.mutable.LinkedHashMap">LinkedHashMap</span>[<span class="extype" name="java.lang.Class">Class</span>[_], <span class="extype" name="java.lang.Class">Class</span>[_]]</span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">The collection of DocumentAnnotators that have been run on this Document,
+      For keeping records of which DocumentAnnotators have been run on this document, producing which annotations.</p><div class="fullcomment"><div class="comment cmt"><p>The collection of DocumentAnnotators that have been run on this Document,
+      For keeping records of which DocumentAnnotators have been run on this document, producing which annotations.
+      A Map from the annotation class to the DocumentAnnotator that produced it,
+      for example from classOf[cc.factorie.app.nlp.pos.PennPos] to classOf[cc.factorie.app.nlp.pos.ChainPosTagger].
+      Note that this map records annotations placed not just on the Document itself, but also its constituents,
+      such as NounPhraseNumberLabel on NounPhrase, PennPos on Token, ParseTree on Sentence, etc.</p></div></div>
+    </li><li name="cc.factorie.app.nlp.Document#appendString" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="appendString(s:String):Int"></a>
+      <a id="appendString(String):Int"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">appendString</span><span class="params">(<span name="s">s: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">Append the string 's' to this Document.</p><div class="fullcomment"><div class="comment cmt"><p>Append the string 's' to this Document.</p></div><dl class="paramcmts block"><dt>returns</dt><dd class="cmt"><p>the length of the Document's string before string 's' was appended.</p></dd></dl></div>
+    </li><li name="scala.Any#asInstanceOf" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="asInstanceOf[T0]:T0"></a>
+      <a id="asInstanceOf[T0]:T0"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">asInstanceOf</span><span class="tparams">[<span name="T0">T0</span>]</span><span class="result">: <span class="extype" name="scala.Any.asInstanceOf.T0">T0</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
+    </li><li name="cc.factorie.app.nlp.Document#asSection" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="asSection:cc.factorie.app.nlp.Section"></a>
+      <a id="asSection:Section"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">asSection</span><span class="result">: <a href="Section.html" class="extype" name="cc.factorie.app.nlp.Section">Section</a></span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">A predefined Section that covers the entirety of the Document string, and even grows as the length of this Document may grow.</p><div class="fullcomment"><div class="comment cmt"><p>A predefined Section that covers the entirety of the Document string, and even grows as the length of this Document may grow.
+      If the user does not explicitly add Sections to the document, this Section is the only one returned by the &quot;sections&quot; method.</p></div></div>
+    </li><li name="cc.factorie.util.Attr.attr" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="attr"></a>
+      <a id="attr:attr"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="../../util/Attr$attr$.html"><span class="name">attr</span></a>
+      </span>
+      </h4>
+      <p class="comment cmt">A collection of attributes, keyed by the attribute class.</p>
+    </li><li name="cc.factorie.app.nlp.Document#clearSections" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="clearSections():Unit"></a>
+      <a id="clearSections():Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">clearSections</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">Remove all Section from this Document's canonical list of Sections.</p>
+    </li><li name="scala.AnyRef#clone" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="clone():Object"></a>
+      <a id="clone():AnyRef"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">clone</span><span class="params">()</span><span class="result">: <a href="../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<a href="../../../../java$lang.html" class="extype" name="java.lang">java.lang</a>] </dd><dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="defval" name="classOf[java.lang.CloneNotSupportedException]">...</span>
+    </span>)</span>
+              
+        </dd></dl></div>
+    </li><li name="cc.factorie.app.nlp.Document#document" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="document:cc.factorie.app.nlp.Document"></a>
+      <a id="document:Document"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">document</span><span class="result">: <a href="" class="extype" name="cc.factorie.app.nlp.Document">Document</a></span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">A method required by the DocumentSubstring trait, which in this case simply returns this Document itself.</p><div class="fullcomment"><div class="comment cmt"><p>A method required by the DocumentSubstring trait, which in this case simply returns this Document itself.</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="cc.factorie.app.nlp.Document">Document</a> → <a href="DocumentSubstring.html" class="extype" name="cc.factorie.app.nlp.DocumentSubstring">DocumentSubstring</a></dd></dl></div>
+    </li><li name="scala.AnyRef#eq" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="eq(x$1:AnyRef):Boolean"></a>
+      <a id="eq(AnyRef):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">eq</span><span class="params">(<span name="arg0">arg0: <a href="../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li name="scala.AnyRef#equals" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="equals(x$1:Any):Boolean"></a>
+      <a id="equals(Any):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">equals</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Any">Any</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="scala.AnyRef#finalize" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="finalize():Unit"></a>
+      <a id="finalize():Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">finalize</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<a href="../../../../java$lang.html" class="extype" name="java.lang">java.lang</a>] </dd><dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="symbol">classOf[java.lang.Throwable]</span>
+    </span>)</span>
+              
+        </dd></dl></div>
+    </li><li name="scala.AnyRef#getClass" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="getClass():Class[_]"></a>
+      <a id="getClass():Class[_]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getClass</span><span class="params">()</span><span class="result">: <span class="extype" name="java.lang.Class">Class</span>[_]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="cc.factorie.app.nlp.Document#hasAnnotation" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="hasAnnotation(c:Class[_]):Boolean"></a>
+      <a id="hasAnnotation(Class[_]):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">hasAnnotation</span><span class="params">(<span name="c">c: <span class="extype" name="scala.Predef.Class">Class</span>[_]</span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">Return true if an annotation of class 'c' been placed somewhere within this Document.</p>
+    </li><li name="scala.AnyRef#hashCode" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="hashCode():Int"></a>
+      <a id="hashCode():Int"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">hashCode</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="scala.Any#isInstanceOf" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="isInstanceOf[T0]:Boolean"></a>
+      <a id="isInstanceOf[T0]:Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">isInstanceOf</span><span class="tparams">[<span name="T0">T0</span>]</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
+    </li><li name="cc.factorie.app.nlp.Document#name" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="name:String"></a>
+      <a id="name:String"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">name</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">Return the &quot;name&quot; assigned to this Document by the 'setName' method.</p><div class="fullcomment"><div class="comment cmt"><p>Return the &quot;name&quot; assigned to this Document by the 'setName' method.
+      This may be any String, but is typically a filename or other similar identifier.</p></div></div>
+    </li><li name="scala.AnyRef#ne" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="ne(x$1:AnyRef):Boolean"></a>
+      <a id="ne(AnyRef):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">ne</span><span class="params">(<span name="arg0">arg0: <a href="../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li name="scala.AnyRef#notify" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="notify():Unit"></a>
+      <a id="notify():Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">notify</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li name="scala.AnyRef#notifyAll" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="notifyAll():Unit"></a>
+      <a id="notifyAll():Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">notifyAll</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li name="cc.factorie.app.nlp.Document#owplString" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="owplString(annotator:cc.factorie.app.nlp.DocumentAnnotator):String"></a>
+      <a id="owplString(DocumentAnnotator):String"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">owplString</span><span class="params">(<span name="annotator">annotator: <a href="DocumentAnnotator.html" class="extype" name="cc.factorie.app.nlp.DocumentAnnotator">DocumentAnnotator</a></span>)</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">Return a String containing the Token strings in the document, formatted with one-word-per-line
+      and various tab-separated attributes appended on each line, generated from the 'annotator.</p><div class="fullcomment"><div class="comment cmt"><p>Return a String containing the Token strings in the document, formatted with one-word-per-line
+      and various tab-separated attributes appended on each line, generated from the 'annotator.tokenAnnotationString' method.</p></div></div>
+    </li><li name="cc.factorie.app.nlp.Document#owplString" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="owplString(attributes:Iterable[cc.factorie.app.nlp.Token=&gt;Any]):String"></a>
+      <a id="owplString(Iterable[(Token)⇒Any]):String"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">owplString</span><span class="params">(<span name="attributes">attributes: <a href="../../../../scala/package.html#Iterable[+A]=Iterable[A]" class="extmbr" name="scala.Iterable">Iterable</a>[(<a href="Token.html" class="extype" name="cc.factorie.app.nlp.Token">Token</a>) ⇒ <span class="extype" name="scala.Any">Any</span>]</span>)</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">Return a String containing the Token strings in the document, formatted with one-word-per-line
+      and various tab-separated attributes appended on each line, generated as specified by the argument.</p>
+    </li><li name="cc.factorie.app.nlp.Document#sections" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="sections:Seq[cc.factorie.app.nlp.Section]"></a>
+      <a id="sections:Seq[Section]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">sections</span><span class="result">: <a href="../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="Section.html" class="extype" name="cc.factorie.app.nlp.Section">Section</a>]</span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">The canonical list of Sections containing the tokens of the document.</p><div class="fullcomment"><div class="comment cmt"><p>The canonical list of Sections containing the tokens of the document.
+      The user may create and add Sections covering various substrings within the Document.
+      If the user does not explicitly add any Sections, by default there will be one Section that covers the entire Document string;
+      this one Section is the one returned by &quot;Document.asSection&quot;.
+      Note that Sections may overlap with each other, representing alternative tokenizations or annotations.</p></div></div>
+    </li><li name="cc.factorie.app.nlp.Document#sentenceCount" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="sentenceCount:Int"></a>
+      <a id="sentenceCount:Int"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">sentenceCount</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">An efficient way to get the total number of Sentences in the canonical Sections of this Document.</p>
+    </li><li name="cc.factorie.app.nlp.Document#sentences" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="sentences:Iterable[cc.factorie.app.nlp.Sentence]"></a>
+      <a id="sentences:Iterable[Sentence]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">sentences</span><span class="result">: <a href="../../../../scala/package.html#Iterable[+A]=Iterable[A]" class="extmbr" name="scala.Iterable">Iterable</a>[<a href="Sentence.html" class="extype" name="cc.factorie.app.nlp.Sentence">Sentence</a>]</span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">Return an Iterable collection of all Sentences in all canonical Sections of this Document.</p>
+    </li><li name="cc.factorie.app.nlp.Document#setName" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="setName(s:String):Document.this.type"></a>
+      <a id="setName(String):Document.this.type"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">setName</span><span class="params">(<span name="s">s: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <a href="" class="extype" name="cc.factorie.app.nlp.Document">Document</a>.this.type</span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">Set the value that will be returned by the 'name' method.</p><div class="fullcomment"><div class="comment cmt"><p>Set the value that will be returned by the 'name' method.
+      It accomplishes this by setting the DocumentName attr on Document.
+      If the String argument is null, it will remove DocumentName attr if present.</p></div></div>
+    </li><li name="cc.factorie.app.nlp.Document#string" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="string:String"></a>
+      <a id="string:String"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">string</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">The string contents of this Document.</p><div class="fullcomment"><div class="comment cmt"><p>The string contents of this Document.</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="cc.factorie.app.nlp.Document">Document</a> → <a href="DocumentSubstring.html" class="extype" name="cc.factorie.app.nlp.DocumentSubstring">DocumentSubstring</a></dd></dl></div>
+    </li><li name="cc.factorie.app.nlp.Document#stringEnd" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="stringEnd:Int"></a>
+      <a id="stringEnd:Int"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">stringEnd</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">A method required by the DocumentSubstring trait, which in this case simply returns Document.</p><div class="fullcomment"><div class="comment cmt"><p>A method required by the DocumentSubstring trait, which in this case simply returns Document.stringLength.</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="cc.factorie.app.nlp.Document">Document</a> → <a href="DocumentSubstring.html" class="extype" name="cc.factorie.app.nlp.DocumentSubstring">DocumentSubstring</a></dd></dl></div>
+    </li><li name="cc.factorie.app.nlp.Document#stringLength" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="stringLength:Int"></a>
+      <a id="stringLength:Int"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">stringLength</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">The number of characters in this Document's string.</p><div class="fullcomment"><div class="comment cmt"><p>The number of characters in this Document's string.
+      Use this instead of Document.string.length because it is more efficient when the Document's string is growing with appendString.</p></div></div>
+    </li><li name="cc.factorie.app.nlp.Document#stringStart" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="stringStart:Int"></a>
+      <a id="stringStart:Int"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">stringStart</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">A method required by the DocumentSubstring trait, which in this case simply returns 0.</p><div class="fullcomment"><div class="comment cmt"><p>A method required by the DocumentSubstring trait, which in this case simply returns 0.</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="cc.factorie.app.nlp.Document">Document</a> → <a href="DocumentSubstring.html" class="extype" name="cc.factorie.app.nlp.DocumentSubstring">DocumentSubstring</a></dd></dl></div>
+    </li><li name="scala.AnyRef#synchronized" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="synchronized[T0](x$1:=&gt;T0):T0"></a>
+      <a id="synchronized[T0](⇒T0):T0"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">synchronized</span><span class="tparams">[<span name="T0">T0</span>]</span><span class="params">(<span name="arg0">arg0: ⇒ <span class="extype" name="java.lang.AnyRef.synchronized.T0">T0</span></span>)</span><span class="result">: <span class="extype" name="java.lang.AnyRef.synchronized.T0">T0</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li name="scala.AnyRef#toString" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="toString():String"></a>
+      <a id="toString():String"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">toString</span><span class="params">()</span><span class="result">: <span class="extype" name="java.lang.String">String</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="cc.factorie.app.nlp.Document#tokenCount" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="tokenCount:Int"></a>
+      <a id="tokenCount:Int"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">tokenCount</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">An efficient way to get the total number of Tokens in the canonical Sections of this Document.</p>
+    </li><li name="cc.factorie.app.nlp.Document#tokens" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="tokens:Iterable[cc.factorie.app.nlp.Token]"></a>
+      <a id="tokens:Iterable[Token]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">tokens</span><span class="result">: <a href="../../../../scala/package.html#Iterable[+A]=Iterable[A]" class="extmbr" name="scala.Iterable">Iterable</a>[<a href="Token.html" class="extype" name="cc.factorie.app.nlp.Token">Token</a>]</span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">Return an Iterable collection of all Tokens in all canonical Sections of this Document.</p>
+    </li><li name="scala.AnyRef#wait" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="wait():Unit"></a>
+      <a id="wait():Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">wait</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="defval" name="classOf[java.lang.InterruptedException]">...</span>
+    </span>)</span>
+              
+        </dd></dl></div>
+    </li><li name="scala.AnyRef#wait" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="wait(x$1:Long,x$2:Int):Unit"></a>
+      <a id="wait(Long,Int):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">wait</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Long">Long</span></span>, <span name="arg1">arg1: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="defval" name="classOf[java.lang.InterruptedException]">...</span>
+    </span>)</span>
+              
+        </dd></dl></div>
+    </li><li name="scala.AnyRef#wait" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="wait(x$1:Long):Unit"></a>
+      <a id="wait(Long):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">wait</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Long">Long</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="defval" name="classOf[java.lang.InterruptedException]">...</span>
+    </span>)</span>
+              
+        </dd></dl></div>
+    </li></ol>
+            </div>
+
+        
+
+        
+        </div>
+
+        <div id="inheritedMembers">
+        <div class="parent" name="cc.factorie.util.Attr">
+              <h3>Inherited from <a href="../../util/Attr.html" class="extype" name="cc.factorie.util.Attr">Attr</a></h3>
+            </div><div class="parent" name="cc.factorie.app.nlp.DocumentSubstring">
+              <h3>Inherited from <a href="DocumentSubstring.html" class="extype" name="cc.factorie.app.nlp.DocumentSubstring">DocumentSubstring</a></h3>
+            </div><div class="parent" name="scala.AnyRef">
+              <h3>Inherited from <a href="../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></h3>
+            </div><div class="parent" name="scala.Any">
+              <h3>Inherited from <span class="extype" name="scala.Any">Any</span></h3>
+            </div>
+        
+        </div>
+
+        <div id="groupedMembers">
+        <div class="group" name="Ungrouped">
+              <h3>Ungrouped</h3>
+              
+            </div>
+        </div>
+
+      </div>
+
+      <div id="tooltip"></div>
+
+      <div id="footer">  </div>
+      <script defer="defer" type="text/javascript" id="jquery-js" src="../../../../lib/jquery.js"></script><script defer="defer" type="text/javascript" id="jquery-ui-js" src="../../../../lib/jquery-ui.js"></script><script defer="defer" type="text/javascript" id="tools-tooltip-js" src="../../../../lib/tools.tooltip.js"></script><script defer="defer" type="text/javascript" id="template-js" src="../../../../lib/template.js"></script>
+    </body>
+      </html>

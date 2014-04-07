@@ -1,0 +1,396 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+<html>
+        <head>
+          <title>mongo - Factorie 1.0-SNAPSHOT API - cc.factorie.db.mongo</title>
+          <meta name="description" content="mongo - Factorie 1.0 - SNAPSHOT API - cc.factorie.db.mongo" />
+          <meta name="keywords" content="mongo Factorie 1.0 SNAPSHOT API cc.factorie.db.mongo" />
+          <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+          
+      <link href="../../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
+      <link href="../../../../lib/diagrams.css" media="screen" type="text/css" rel="stylesheet" id="diagrams-css" />
+      <script type="text/javascript">
+         if(top === self) {
+            var url = '../../../../index.html';
+            var hash = 'cc.factorie.db.mongo.package';
+            var anchor = window.location.hash;
+            var anchor_opt = '';
+            if (anchor.length >= 1)
+              anchor_opt = '@' + anchor.substring(1);
+            window.location.href = url + '#' + hash + anchor_opt;
+         }
+   	  </script>
+    
+        </head>
+        <body class="value">
+      <div id="definition">
+        <img src="../../../../lib/package_big.png" />
+        <p id="owner"><a href="../../../package.html" class="extype" name="cc">cc</a>.<a href="../../package.html" class="extype" name="cc.factorie">factorie</a>.<a href="../package.html" class="extype" name="cc.factorie.db">db</a></p>
+        <h1>mongo</h1>
+      </div>
+
+      <h4 id="signature" class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <span class="name">mongo</span>
+      </span>
+      </h4>
+      
+          <div id="comment" class="fullcommenttop"></div>
+        
+
+      <div id="mbrsel">
+        <div id="textfilter"><span class="pre"></span><span class="input"><input id="mbrsel-input" type="text" accesskey="/" /></span><span class="post"></span></div>
+        
+        
+        <div id="visbl">
+            <span class="filtertype">Visibility</span>
+            <ol><li class="public in"><span>Public</span></li><li class="all out"><span>All</span></li></ol>
+          </div>
+      </div>
+
+      <div id="template">
+        <div id="allMembers">
+        
+
+        <div id="types" class="types members">
+              <h3>Type Members</h3>
+              <ol><li name="cc.factorie.db.mongo.AbstractCubbieCollection" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="AbstractCubbieCollection[+C&lt;:cc.factorie.util.Cubbie]extendsIterable[C]"></a>
+      <a id="AbstractCubbieCollection[+C&lt;:util.Cubbie]:AbstractCubbieCollection[C]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="AbstractCubbieCollection.html"><span class="name">AbstractCubbieCollection</span></a><span class="tparams">[<span name="C">+C &lt;: <a href="../../util/Cubbie.html" class="extype" name="cc.factorie.util.Cubbie">util.Cubbie</a></span>]</span><span class="result"> extends <a href="../../../../scala/package.html#Iterable[+A]=Iterable[A]" class="extmbr" name="scala.Iterable">Iterable</a>[<span class="extype" name="cc.factorie.db.mongo.AbstractCubbieCollection.C">C</span>]</span>
+      </span>
+      </h4>
+      <p class="comment cmt">Covariant interface to a cubbie collection.</p>
+    </li><li name="cc.factorie.db.mongo.BSONMap" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="BSONMapextendsMap[String,Any]"></a>
+      <a id="BSONMap:BSONMap"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="BSONMap.html"><span class="name">BSONMap</span></a><span class="result"> extends <span class="extype" name="scala.collection.mutable.Map">Map</span>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Any">Any</span>]</span>
+      </span>
+      </h4>
+      <p class="comment cmt">Wrapper around a bson map to provide scala-access to the map and its content.</p>
+    </li><li name="cc.factorie.db.mongo.BasicBSONBSeq" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="BasicBSONBSeqextendsSeq[Any]"></a>
+      <a id="BasicBSONBSeq:BasicBSONBSeq"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="BasicBSONBSeq.html"><span class="name">BasicBSONBSeq</span></a><span class="result"> extends <a href="../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<span class="extype" name="scala.Any">Any</span>]</span>
+      </span>
+      </h4>
+      <p class="comment cmt">Lazy scala seq wrapper around bson sequence.</p>
+    </li><li name="cc.factorie.db.mongo.CachedFunction" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="CachedFunction[F,T]extendsMap[F,T]"></a>
+      <a id="CachedFunction[F,T]:CachedFunction[F,T]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="CachedFunction.html"><span class="name">CachedFunction</span></a><span class="tparams">[<span name="F">F</span>, <span name="T">T</span>]</span><span class="result"> extends <span class="extype" name="scala.Predef.Map">Map</span>[<span class="extype" name="cc.factorie.db.mongo.CachedFunction.F">F</span>, <span class="extype" name="cc.factorie.db.mongo.CachedFunction.T">T</span>]</span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.db.mongo.EagerCubbieConverter" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="EagerCubbieConverter[C&lt;:cc.factorie.util.Cubbie]extendsMongoCubbieConverter[C]"></a>
+      <a id="EagerCubbieConverter[C&lt;:util.Cubbie]:EagerCubbieConverter[C]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="EagerCubbieConverter.html"><span class="name">EagerCubbieConverter</span></a><span class="tparams">[<span name="C">C &lt;: <a href="../../util/Cubbie.html" class="extype" name="cc.factorie.util.Cubbie">util.Cubbie</a></span>]</span><span class="result"> extends <a href="MongoCubbieConverter.html" class="extype" name="cc.factorie.db.mongo.MongoCubbieConverter">MongoCubbieConverter</a>[<span class="extype" name="cc.factorie.db.mongo.EagerCubbieConverter.C">C</span>]</span>
+      </span>
+      </h4>
+      <p class="comment cmt">A converter that eagerly, and recursively, creates a mutable.</p>
+    </li><li name="cc.factorie.db.mongo.IndexedLazyInverter" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="IndexedLazyInverterextendscc.factorie.util.Cubbie#InverseSlot[cc.factorie.util.Cubbie]=&gt;Iterable[cc.factorie.util.Cubbie]"></a>
+      <a id="IndexedLazyInverter:IndexedLazyInverter"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="IndexedLazyInverter.html"><span class="name">IndexedLazyInverter</span></a><span class="result"> extends (<a href="../../util/Cubbie$InverseSlot.html" class="extype" name="cc.factorie.util.Cubbie.InverseSlot">InverseSlot</a>[<a href="../../util/Cubbie.html" class="extype" name="cc.factorie.util.Cubbie">util.Cubbie</a>]) ⇒ <a href="../../../../scala/package.html#Iterable[+A]=Iterable[A]" class="extmbr" name="scala.Iterable">Iterable</a>[<a href="../../util/Cubbie.html" class="extype" name="cc.factorie.util.Cubbie">util.Cubbie</a>]</span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.db.mongo.Indexer" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="Indexerextends(cc.factorie.util.Cubbie#AbstractSlot[Any],Any)=&gt;Unit"></a>
+      <a id="Indexer:Indexer"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="Indexer.html"><span class="name">Indexer</span></a><span class="result"> extends (<a href="../../util/Cubbie$AbstractSlot.html" class="extype" name="cc.factorie.util.Cubbie.AbstractSlot">AbstractSlot</a>[<span class="extype" name="scala.Any">Any</span>], <span class="extype" name="scala.Any">Any</span>) ⇒ <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.db.mongo.LazyCubbieConverter" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="LazyCubbieConverter[C&lt;:cc.factorie.util.Cubbie]extendsMongoCubbieConverter[C]"></a>
+      <a id="LazyCubbieConverter[C&lt;:util.Cubbie]:LazyCubbieConverter[C]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="LazyCubbieConverter.html"><span class="name">LazyCubbieConverter</span></a><span class="tparams">[<span name="C">C &lt;: <a href="../../util/Cubbie.html" class="extype" name="cc.factorie.util.Cubbie">util.Cubbie</a></span>]</span><span class="result"> extends <a href="MongoCubbieConverter.html" class="extype" name="cc.factorie.db.mongo.MongoCubbieConverter">MongoCubbieConverter</a>[<span class="extype" name="cc.factorie.db.mongo.LazyCubbieConverter.C">C</span>]</span>
+      </span>
+      </h4>
+      <p class="comment cmt">This converter creates cubbies which do conversion from mongodb objects to
+scala maps and seqs on-the-fly.</p>
+    </li><li name="cc.factorie.db.mongo.LazyInverter" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="LazyInverterextendscc.factorie.util.Cubbie#InverseSlot[cc.factorie.util.Cubbie]=&gt;Iterable[cc.factorie.util.Cubbie]"></a>
+      <a id="LazyInverter:LazyInverter"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="LazyInverter.html"><span class="name">LazyInverter</span></a><span class="result"> extends (<a href="../../util/Cubbie$InverseSlot.html" class="extype" name="cc.factorie.util.Cubbie.InverseSlot">InverseSlot</a>[<a href="../../util/Cubbie.html" class="extype" name="cc.factorie.util.Cubbie">util.Cubbie</a>]) ⇒ <a href="../../../../scala/package.html#Iterable[+A]=Iterable[A]" class="extmbr" name="scala.Iterable">Iterable</a>[<a href="../../util/Cubbie.html" class="extype" name="cc.factorie.util.Cubbie">util.Cubbie</a>]</span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.db.mongo.LazyMongoInverter" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="LazyMongoInverterextendscc.factorie.util.Cubbie#InverseSlot[cc.factorie.util.Cubbie]=&gt;Iterable[cc.factorie.util.Cubbie]"></a>
+      <a id="LazyMongoInverter:LazyMongoInverter"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="LazyMongoInverter.html"><span class="name">LazyMongoInverter</span></a><span class="result"> extends (<a href="../../util/Cubbie$InverseSlot.html" class="extype" name="cc.factorie.util.Cubbie.InverseSlot">InverseSlot</a>[<a href="../../util/Cubbie.html" class="extype" name="cc.factorie.util.Cubbie">util.Cubbie</a>]) ⇒ <a href="../../../../scala/package.html#Iterable[+A]=Iterable[A]" class="extmbr" name="scala.Iterable">Iterable</a>[<a href="../../util/Cubbie.html" class="extype" name="cc.factorie.util.Cubbie">util.Cubbie</a>]</span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.db.mongo.MongoCubbie" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="MongoCubbie[C&lt;:cc.factorie.util.Cubbie]extendsAnyRef"></a>
+      <a id="MongoCubbie[C&lt;:util.Cubbie]:MongoCubbie[C]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="MongoCubbie.html"><span class="name">MongoCubbie</span></a><span class="tparams">[<span name="C">C &lt;: <a href="../../util/Cubbie.html" class="extype" name="cc.factorie.util.Cubbie">util.Cubbie</a></span>]</span><span class="result"> extends <a href="../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>
+      </span>
+      </h4>
+      <p class="comment cmt">A wrapper around a cubbie that can be used to specify mongo queries using the cubbie map.</p>
+    </li><li name="cc.factorie.db.mongo.MongoCubbieCollection" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="MongoCubbieCollection[C&lt;:cc.factorie.util.Cubbie]extendsMutableCubbieCollection[C]withMongoCubbieConverter[C]"></a>
+      <a id="MongoCubbieCollection[C&lt;:util.Cubbie]:MongoCubbieCollection[C]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="MongoCubbieCollection.html"><span class="name">MongoCubbieCollection</span></a><span class="tparams">[<span name="C">C &lt;: <a href="../../util/Cubbie.html" class="extype" name="cc.factorie.util.Cubbie">util.Cubbie</a></span>]</span><span class="result"> extends <a href="MutableCubbieCollection.html" class="extype" name="cc.factorie.db.mongo.MutableCubbieCollection">MutableCubbieCollection</a>[<span class="extype" name="cc.factorie.db.mongo.MongoCubbieCollection.C">C</span>] with <a href="MongoCubbieConverter.html" class="extype" name="cc.factorie.db.mongo.MongoCubbieConverter">MongoCubbieConverter</a>[<span class="extype" name="cc.factorie.db.mongo.MongoCubbieCollection.C">C</span>]</span>
+      </span>
+      </h4>
+      <p class="comment cmt">A MongoCubbieCollection stores cubbies in a Mongo collection.</p>
+    </li><li name="cc.factorie.db.mongo.MongoCubbieConverter" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="MongoCubbieConverter[C&lt;:cc.factorie.util.Cubbie]extendsAnyRef"></a>
+      <a id="MongoCubbieConverter[C&lt;:util.Cubbie]:MongoCubbieConverter[C]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="MongoCubbieConverter.html"><span class="name">MongoCubbieConverter</span></a><span class="tparams">[<span name="C">C &lt;: <a href="../../util/Cubbie.html" class="extype" name="cc.factorie.util.Cubbie">util.Cubbie</a></span>]</span><span class="result"> extends <a href="../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>
+      </span>
+      </h4>
+      <p class="comment cmt">A trait to mix-in into mongo cubbie collections that controls how the raw
+mongo documents are converted to cubbies.</p>
+    </li><li name="cc.factorie.db.mongo.MongoInvSlot" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="MongoInvSlot[C&lt;:cc.factorie.util.Cubbie,A&lt;:cc.factorie.util.Cubbie]extendsAnyRef"></a>
+      <a id="MongoInvSlot[C&lt;:util.Cubbie,A&lt;:util.Cubbie]:MongoInvSlot[C,A]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="MongoInvSlot.html"><span class="name">MongoInvSlot</span></a><span class="tparams">[<span name="C">C &lt;: <a href="../../util/Cubbie.html" class="extype" name="cc.factorie.util.Cubbie">util.Cubbie</a></span>, <span name="A">A &lt;: <a href="../../util/Cubbie.html" class="extype" name="cc.factorie.util.Cubbie">util.Cubbie</a></span>]</span><span class="result"> extends <a href="../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.db.mongo.MongoPrimitiveListSlot" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="MongoPrimitiveListSlot[C&lt;:cc.factorie.util.Cubbie,A]extendsAnyRef"></a>
+      <a id="MongoPrimitiveListSlot[C&lt;:util.Cubbie,A]:MongoPrimitiveListSlot[C,A]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="MongoPrimitiveListSlot.html"><span class="name">MongoPrimitiveListSlot</span></a><span class="tparams">[<span name="C">C &lt;: <a href="../../util/Cubbie.html" class="extype" name="cc.factorie.util.Cubbie">util.Cubbie</a></span>, <span name="A">A</span>]</span><span class="result"> extends <a href="../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>
+      </span>
+      </h4>
+      <p class="comment cmt">Support for mongo queries specific to list attributes</p>
+    </li><li name="cc.factorie.db.mongo.MongoRefSlot" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="MongoRefSlot[C&lt;:cc.factorie.util.Cubbie,A&lt;:cc.factorie.util.Cubbie]extendsAnyRef"></a>
+      <a id="MongoRefSlot[C&lt;:util.Cubbie,A&lt;:util.Cubbie]:MongoRefSlot[C,A]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="MongoRefSlot.html"><span class="name">MongoRefSlot</span></a><span class="tparams">[<span name="C">C &lt;: <a href="../../util/Cubbie.html" class="extype" name="cc.factorie.util.Cubbie">util.Cubbie</a></span>, <span name="A">A &lt;: <a href="../../util/Cubbie.html" class="extype" name="cc.factorie.util.Cubbie">util.Cubbie</a></span>]</span><span class="result"> extends <a href="../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.db.mongo.MongoSlot" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="MongoSlot[C&lt;:cc.factorie.util.Cubbie,V]extendsAnyRef"></a>
+      <a id="MongoSlot[C&lt;:util.Cubbie,V]:MongoSlot[C,V]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="MongoSlot.html"><span class="name">MongoSlot</span></a><span class="tparams">[<span name="C">C &lt;: <a href="../../util/Cubbie.html" class="extype" name="cc.factorie.util.Cubbie">util.Cubbie</a></span>, <span name="V">V</span>]</span><span class="result"> extends <a href="../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>
+      </span>
+      </h4>
+      <p class="comment cmt">A slot that can do mongo specific operations</p>
+    </li><li name="cc.factorie.db.mongo.MutableCubbieCollection" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="MutableCubbieCollection[C&lt;:cc.factorie.util.Cubbie]extendsAbstractCubbieCollection[C]"></a>
+      <a id="MutableCubbieCollection[C&lt;:util.Cubbie]:MutableCubbieCollection[C]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="MutableCubbieCollection.html"><span class="name">MutableCubbieCollection</span></a><span class="tparams">[<span name="C">C &lt;: <a href="../../util/Cubbie.html" class="extype" name="cc.factorie.util.Cubbie">util.Cubbie</a></span>]</span><span class="result"> extends <a href="AbstractCubbieCollection.html" class="extype" name="cc.factorie.db.mongo.AbstractCubbieCollection">AbstractCubbieCollection</a>[<span class="extype" name="cc.factorie.db.mongo.MutableCubbieCollection.C">C</span>]</span>
+      </span>
+      </h4>
+      <p class="comment cmt">A cubbie collection that can be modified (hence not covariant anymore).</p>
+    </li></ol>
+            </div>
+
+        
+
+        <div id="values" class="values members">
+              <h3>Value Members</h3>
+              <ol><li name="cc.factorie.db.mongo.CubbieMongoTest" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="CubbieMongoTest"></a>
+      <a id="CubbieMongoTest:CubbieMongoTest"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="CubbieMongoTest$.html"><span class="name">CubbieMongoTest</span></a>
+      </span>
+      </h4>
+      <p class="comment cmt">This class shows some example usage of cubbies and mongo serialization and querying.</p>
+    </li><li name="cc.factorie.db.mongo.DerefImplicits" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="DerefImplicits"></a>
+      <a id="DerefImplicits:DerefImplicits"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="DerefImplicits$.html"><span class="name">DerefImplicits</span></a>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.db.mongo.GraphLoader" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="GraphLoader"></a>
+      <a id="GraphLoader:GraphLoader"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="GraphLoader$.html"><span class="name">GraphLoader</span></a>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.db.mongo.MongoCubbieConverter" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="MongoCubbieConverter"></a>
+      <a id="MongoCubbieConverter:MongoCubbieConverter"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="MongoCubbieConverter$.html"><span class="name">MongoCubbieConverter</span></a>
+      </span>
+      </h4>
+      <p class="comment cmt">Helper methods to convert cubbies into mongo objects and vice versa.</p>
+    </li><li name="cc.factorie.db.mongo.MongoCubbieImplicits" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="MongoCubbieImplicits"></a>
+      <a id="MongoCubbieImplicits:MongoCubbieImplicits"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="MongoCubbieImplicits$.html"><span class="name">MongoCubbieImplicits</span></a>
+      </span>
+      </h4>
+      <p class="comment cmt">Implicits to import when you want to create cubbie mongo queries.</p>
+    </li></ol>
+            </div>
+
+        
+
+        
+        </div>
+
+        <div id="inheritedMembers">
+        
+        
+        </div>
+
+        <div id="groupedMembers">
+        <div class="group" name="Ungrouped">
+              <h3>Ungrouped</h3>
+              
+            </div>
+        </div>
+
+      </div>
+
+      <div id="tooltip"></div>
+
+      <div id="footer">  </div>
+      <script defer="defer" type="text/javascript" id="jquery-js" src="../../../../lib/jquery.js"></script><script defer="defer" type="text/javascript" id="jquery-ui-js" src="../../../../lib/jquery-ui.js"></script><script defer="defer" type="text/javascript" id="tools-tooltip-js" src="../../../../lib/tools.tooltip.js"></script><script defer="defer" type="text/javascript" id="template-js" src="../../../../lib/template.js"></script>
+    </body>
+      </html>

@@ -1,0 +1,1502 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+<html>
+        <head>
+          <title>model - Factorie 1.0-SNAPSHOT API - cc.factorie.model</title>
+          <meta name="description" content="model - Factorie 1.0 - SNAPSHOT API - cc.factorie.model" />
+          <meta name="keywords" content="model Factorie 1.0 SNAPSHOT API cc.factorie.model" />
+          <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+          
+      <link href="../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
+      <link href="../../../lib/diagrams.css" media="screen" type="text/css" rel="stylesheet" id="diagrams-css" />
+      <script type="text/javascript">
+         if(top === self) {
+            var url = '../../../index.html';
+            var hash = 'cc.factorie.model.package';
+            var anchor = window.location.hash;
+            var anchor_opt = '';
+            if (anchor.length >= 1)
+              anchor_opt = '@' + anchor.substring(1);
+            window.location.href = url + '#' + hash + anchor_opt;
+         }
+   	  </script>
+    
+        </head>
+        <body class="value">
+      <div id="definition">
+        <img src="../../../lib/package_big.png" />
+        <p id="owner"><a href="../../package.html" class="extype" name="cc">cc</a>.<a href="../package.html" class="extype" name="cc.factorie">factorie</a></p>
+        <h1>model</h1>
+      </div>
+
+      <h4 id="signature" class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <span class="name">model</span>
+      </span>
+      </h4>
+      
+          <div id="comment" class="fullcommenttop"></div>
+        
+
+      <div id="mbrsel">
+        <div id="textfilter"><span class="pre"></span><span class="input"><input id="mbrsel-input" type="text" accesskey="/" /></span><span class="post"></span></div>
+        
+        
+        <div id="visbl">
+            <span class="filtertype">Visibility</span>
+            <ol><li class="public in"><span>Public</span></li><li class="all out"><span>All</span></li></ol>
+          </div>
+      </div>
+
+      <div id="template">
+        <div id="allMembers">
+        
+
+        <div id="types" class="types members">
+              <h3>Type Members</h3>
+              <ol><li name="cc.factorie.model.CombinedModel" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="CombinedModelextendsModel"></a>
+      <a id="CombinedModel:CombinedModel"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="CombinedModel.html"><span class="name">CombinedModel</span></a><span class="result"> extends <a href="Model.html" class="extype" name="cc.factorie.model.Model">Model</a></span>
+      </span>
+      </h4>
+      <p class="comment cmt">A Model that concatenates the factors of multiple contained models.</p>
+    </li><li name="cc.factorie.model.DotFactor1" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="DotFactor1[N1&lt;:cc.factorie.variable.TensorVar]extendsTensorFactor1[N1]"></a>
+      <a id="DotFactor1[N1&lt;:TensorVar]:DotFactor1[N1]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="DotFactor1.html"><span class="name">DotFactor1</span></a><span class="tparams">[<span name="N1">N1 &lt;: <a href="../variable/TensorVar.html" class="extype" name="cc.factorie.variable.TensorVar">TensorVar</a></span>]</span><span class="result"> extends <a href="TensorFactor1.html" class="extype" name="cc.factorie.model.TensorFactor1">TensorFactor1</a>[<span class="extype" name="cc.factorie.model.DotFactor1.N1">N1</span>]</span>
+      </span>
+      </h4>
+      <p class="comment cmt">A 1-neighbor Factor whose statistics have type Tensor,
+    and whose score is the dot product between this Tensor and a &quot;weightsSet&quot; parameter Tensor.</p>
+    </li><li name="cc.factorie.model.DotFactor2" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="DotFactor2[N1&lt;:cc.factorie.variable.TensorVar,N2&lt;:cc.factorie.variable.TensorVar]extendsTensorFactor2[N1,N2]"></a>
+      <a id="DotFactor2[N1&lt;:TensorVar,N2&lt;:TensorVar]:DotFactor2[N1,N2]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="DotFactor2.html"><span class="name">DotFactor2</span></a><span class="tparams">[<span name="N1">N1 &lt;: <a href="../variable/TensorVar.html" class="extype" name="cc.factorie.variable.TensorVar">TensorVar</a></span>, <span name="N2">N2 &lt;: <a href="../variable/TensorVar.html" class="extype" name="cc.factorie.variable.TensorVar">TensorVar</a></span>]</span><span class="result"> extends <a href="TensorFactor2.html" class="extype" name="cc.factorie.model.TensorFactor2">TensorFactor2</a>[<span class="extype" name="cc.factorie.model.DotFactor2.N1">N1</span>, <span class="extype" name="cc.factorie.model.DotFactor2.N2">N2</span>]</span>
+      </span>
+      </h4>
+      <p class="comment cmt">A 2-neighbor Factor whose statistics have type Tensor,
+    and whose score is the dot product between this Tensor and a &quot;weightsSet&quot; parameter Tensor.</p>
+    </li><li name="cc.factorie.model.DotFactor3" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="DotFactor3[N1&lt;:cc.factorie.variable.TensorVar,N2&lt;:cc.factorie.variable.TensorVar,N3&lt;:cc.factorie.variable.TensorVar]extendsTensorFactor3[N1,N2,N3]"></a>
+      <a id="DotFactor3[N1&lt;:TensorVar,N2&lt;:TensorVar,N3&lt;:TensorVar]:DotFactor3[N1,N2,N3]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="DotFactor3.html"><span class="name">DotFactor3</span></a><span class="tparams">[<span name="N1">N1 &lt;: <a href="../variable/TensorVar.html" class="extype" name="cc.factorie.variable.TensorVar">TensorVar</a></span>, <span name="N2">N2 &lt;: <a href="../variable/TensorVar.html" class="extype" name="cc.factorie.variable.TensorVar">TensorVar</a></span>, <span name="N3">N3 &lt;: <a href="../variable/TensorVar.html" class="extype" name="cc.factorie.variable.TensorVar">TensorVar</a></span>]</span><span class="result"> extends <a href="TensorFactor3.html" class="extype" name="cc.factorie.model.TensorFactor3">TensorFactor3</a>[<span class="extype" name="cc.factorie.model.DotFactor3.N1">N1</span>, <span class="extype" name="cc.factorie.model.DotFactor3.N2">N2</span>, <span class="extype" name="cc.factorie.model.DotFactor3.N3">N3</span>]</span>
+      </span>
+      </h4>
+      <p class="comment cmt">A 3-neighbor Factor whose statistics have type Tensor,
+    and whose score is the dot product between this Tensor and a &quot;weightsSet&quot; parameter Tensor.</p>
+    </li><li name="cc.factorie.model.DotFactor4" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="DotFactor4[N1&lt;:cc.factorie.variable.TensorVar,N2&lt;:cc.factorie.variable.TensorVar,N3&lt;:cc.factorie.variable.TensorVar,N4&lt;:cc.factorie.variable.TensorVar]extendsTensorFactor4[N1,N2,N3,N4]"></a>
+      <a id="DotFactor4[N1&lt;:TensorVar,N2&lt;:TensorVar,N3&lt;:TensorVar,N4&lt;:TensorVar]:DotFactor4[N1,N2,N3,N4]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="DotFactor4.html"><span class="name">DotFactor4</span></a><span class="tparams">[<span name="N1">N1 &lt;: <a href="../variable/TensorVar.html" class="extype" name="cc.factorie.variable.TensorVar">TensorVar</a></span>, <span name="N2">N2 &lt;: <a href="../variable/TensorVar.html" class="extype" name="cc.factorie.variable.TensorVar">TensorVar</a></span>, <span name="N3">N3 &lt;: <a href="../variable/TensorVar.html" class="extype" name="cc.factorie.variable.TensorVar">TensorVar</a></span>, <span name="N4">N4 &lt;: <a href="../variable/TensorVar.html" class="extype" name="cc.factorie.variable.TensorVar">TensorVar</a></span>]</span><span class="result"> extends <a href="TensorFactor4.html" class="extype" name="cc.factorie.model.TensorFactor4">TensorFactor4</a>[<span class="extype" name="cc.factorie.model.DotFactor4.N1">N1</span>, <span class="extype" name="cc.factorie.model.DotFactor4.N2">N2</span>, <span class="extype" name="cc.factorie.model.DotFactor4.N3">N3</span>, <span class="extype" name="cc.factorie.model.DotFactor4.N4">N4</span>]</span>
+      </span>
+      </h4>
+      <p class="comment cmt">A 4-neighbor Factor whose statistics have type Tensor,
+    and whose score is the dot product between this Tensor and a &quot;weightsSet&quot; parameter Tensor.</p>
+    </li><li name="cc.factorie.model.DotFactorWithStatistics1" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="DotFactorWithStatistics1[N1&lt;:cc.factorie.variable.TensorVar]extendsDotFactor1[N1]withTensorFactorStatistics1[N1]"></a>
+      <a id="DotFactorWithStatistics1[N1&lt;:TensorVar]:DotFactorWithStatistics1[N1]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="DotFactorWithStatistics1.html"><span class="name">DotFactorWithStatistics1</span></a><span class="tparams">[<span name="N1">N1 &lt;: <a href="../variable/TensorVar.html" class="extype" name="cc.factorie.variable.TensorVar">TensorVar</a></span>]</span><span class="result"> extends <a href="DotFactor1.html" class="extype" name="cc.factorie.model.DotFactor1">DotFactor1</a>[<span class="extype" name="cc.factorie.model.DotFactorWithStatistics1.N1">N1</span>] with <a href="TensorFactorStatistics1.html" class="extype" name="cc.factorie.model.TensorFactorStatistics1">TensorFactorStatistics1</a>[<span class="extype" name="cc.factorie.model.DotFactorWithStatistics1.N1">N1</span>]</span>
+      </span>
+      </h4>
+      <p class="comment cmt">A 1-neighbor Factor whose neighbor has Tensor values,
+    and whose statistics are the outer product of those values,
+    and whose score is the dot product between this Tensor and a &quot;weightsSet&quot; parameter Tensor.</p>
+    </li><li name="cc.factorie.model.DotFactorWithStatistics2" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="DotFactorWithStatistics2[N1&lt;:cc.factorie.variable.TensorVar,N2&lt;:cc.factorie.variable.TensorVar]extendsDotFactor2[N1,N2]withTensorFactorStatistics2[N1,N2]"></a>
+      <a id="DotFactorWithStatistics2[N1&lt;:TensorVar,N2&lt;:TensorVar]:DotFactorWithStatistics2[N1,N2]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="DotFactorWithStatistics2.html"><span class="name">DotFactorWithStatistics2</span></a><span class="tparams">[<span name="N1">N1 &lt;: <a href="../variable/TensorVar.html" class="extype" name="cc.factorie.variable.TensorVar">TensorVar</a></span>, <span name="N2">N2 &lt;: <a href="../variable/TensorVar.html" class="extype" name="cc.factorie.variable.TensorVar">TensorVar</a></span>]</span><span class="result"> extends <a href="DotFactor2.html" class="extype" name="cc.factorie.model.DotFactor2">DotFactor2</a>[<span class="extype" name="cc.factorie.model.DotFactorWithStatistics2.N1">N1</span>, <span class="extype" name="cc.factorie.model.DotFactorWithStatistics2.N2">N2</span>] with <a href="TensorFactorStatistics2.html" class="extype" name="cc.factorie.model.TensorFactorStatistics2">TensorFactorStatistics2</a>[<span class="extype" name="cc.factorie.model.DotFactorWithStatistics2.N1">N1</span>, <span class="extype" name="cc.factorie.model.DotFactorWithStatistics2.N2">N2</span>]</span>
+      </span>
+      </h4>
+      <p class="comment cmt">A 2-neighbor Factor whose neighbors have Tensor values,
+    and whose statistics are the outer product of those values,
+    and whose score is the dot product between this Tensor and a &quot;weightsSet&quot; parameter Tensor.</p>
+    </li><li name="cc.factorie.model.DotFactorWithStatistics3" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="DotFactorWithStatistics3[N1&lt;:cc.factorie.variable.TensorVar,N2&lt;:cc.factorie.variable.TensorVar,N3&lt;:cc.factorie.variable.TensorVar]extendsDotFactor3[N1,N2,N3]withTensorFactorStatistics3[N1,N2,N3]"></a>
+      <a id="DotFactorWithStatistics3[N1&lt;:TensorVar,N2&lt;:TensorVar,N3&lt;:TensorVar]:DotFactorWithStatistics3[N1,N2,N3]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="DotFactorWithStatistics3.html"><span class="name">DotFactorWithStatistics3</span></a><span class="tparams">[<span name="N1">N1 &lt;: <a href="../variable/TensorVar.html" class="extype" name="cc.factorie.variable.TensorVar">TensorVar</a></span>, <span name="N2">N2 &lt;: <a href="../variable/TensorVar.html" class="extype" name="cc.factorie.variable.TensorVar">TensorVar</a></span>, <span name="N3">N3 &lt;: <a href="../variable/TensorVar.html" class="extype" name="cc.factorie.variable.TensorVar">TensorVar</a></span>]</span><span class="result"> extends <a href="DotFactor3.html" class="extype" name="cc.factorie.model.DotFactor3">DotFactor3</a>[<span class="extype" name="cc.factorie.model.DotFactorWithStatistics3.N1">N1</span>, <span class="extype" name="cc.factorie.model.DotFactorWithStatistics3.N2">N2</span>, <span class="extype" name="cc.factorie.model.DotFactorWithStatistics3.N3">N3</span>] with <a href="TensorFactorStatistics3.html" class="extype" name="cc.factorie.model.TensorFactorStatistics3">TensorFactorStatistics3</a>[<span class="extype" name="cc.factorie.model.DotFactorWithStatistics3.N1">N1</span>, <span class="extype" name="cc.factorie.model.DotFactorWithStatistics3.N2">N2</span>, <span class="extype" name="cc.factorie.model.DotFactorWithStatistics3.N3">N3</span>]</span>
+      </span>
+      </h4>
+      <p class="comment cmt">A 3-neighbor Factor whose neighbors have Tensor values,
+    and whose statistics are the outer product of those values,
+    and whose score is the dot product between this Tensor and a &quot;weightsSet&quot; parameter Tensor.</p>
+    </li><li name="cc.factorie.model.DotFactorWithStatistics4" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="DotFactorWithStatistics4[N1&lt;:cc.factorie.variable.TensorVar,N2&lt;:cc.factorie.variable.TensorVar,N3&lt;:cc.factorie.variable.TensorVar,N4&lt;:cc.factorie.variable.TensorVar]extendsDotFactor4[N1,N2,N3,N4]withTensorFactorStatistics4[N1,N2,N3,N4]"></a>
+      <a id="DotFactorWithStatistics4[N1&lt;:TensorVar,N2&lt;:TensorVar,N3&lt;:TensorVar,N4&lt;:TensorVar]:DotFactorWithStatistics4[N1,N2,N3,N4]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="DotFactorWithStatistics4.html"><span class="name">DotFactorWithStatistics4</span></a><span class="tparams">[<span name="N1">N1 &lt;: <a href="../variable/TensorVar.html" class="extype" name="cc.factorie.variable.TensorVar">TensorVar</a></span>, <span name="N2">N2 &lt;: <a href="../variable/TensorVar.html" class="extype" name="cc.factorie.variable.TensorVar">TensorVar</a></span>, <span name="N3">N3 &lt;: <a href="../variable/TensorVar.html" class="extype" name="cc.factorie.variable.TensorVar">TensorVar</a></span>, <span name="N4">N4 &lt;: <a href="../variable/TensorVar.html" class="extype" name="cc.factorie.variable.TensorVar">TensorVar</a></span>]</span><span class="result"> extends <a href="DotFactor4.html" class="extype" name="cc.factorie.model.DotFactor4">DotFactor4</a>[<span class="extype" name="cc.factorie.model.DotFactorWithStatistics4.N1">N1</span>, <span class="extype" name="cc.factorie.model.DotFactorWithStatistics4.N2">N2</span>, <span class="extype" name="cc.factorie.model.DotFactorWithStatistics4.N3">N3</span>, <span class="extype" name="cc.factorie.model.DotFactorWithStatistics4.N4">N4</span>] with <a href="TensorFactorStatistics4.html" class="extype" name="cc.factorie.model.TensorFactorStatistics4">TensorFactorStatistics4</a>[<span class="extype" name="cc.factorie.model.DotFactorWithStatistics4.N1">N1</span>, <span class="extype" name="cc.factorie.model.DotFactorWithStatistics4.N2">N2</span>, <span class="extype" name="cc.factorie.model.DotFactorWithStatistics4.N3">N3</span>, <span class="extype" name="cc.factorie.model.DotFactorWithStatistics4.N4">N4</span>]</span>
+      </span>
+      </h4>
+      <p class="comment cmt">A 4-neighbor Factor whose neighbors have Tensor values,
+    and whose statistics are the outer product of those values,
+    and whose score is the dot product between this Tensor and a &quot;weightsSet&quot; parameter Tensor.</p>
+    </li><li name="cc.factorie.model.DotFamily" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="DotFamilyextendsTensorFamily"></a>
+      <a id="DotFamily:DotFamily"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="DotFamily.html"><span class="name">DotFamily</span></a><span class="result"> extends <a href="TensorFamily.html" class="extype" name="cc.factorie.model.TensorFamily">TensorFamily</a></span>
+      </span>
+      </h4>
+      <p class="comment cmt">A Family whose Factors have scores calculated as a dot-product between sufficient statistics WeightsMap and the Family's weightsSet Tensor.</p>
+    </li><li name="cc.factorie.model.DotFamily1" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="DotFamily1[N1&lt;:cc.factorie.variable.Var]extendsTensorFamily1[N1]withDotFamily"></a>
+      <a id="DotFamily1[N1&lt;:variable.Var]:DotFamily1[N1]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="DotFamily1.html"><span class="name">DotFamily1</span></a><span class="tparams">[<span name="N1">N1 &lt;: <a href="../variable/Var.html" class="extype" name="cc.factorie.variable.Var">variable.Var</a></span>]</span><span class="result"> extends <a href="TensorFamily1.html" class="extype" name="cc.factorie.model.TensorFamily1">TensorFamily1</a>[<span class="extype" name="cc.factorie.model.DotFamily1.N1">N1</span>] with <a href="DotFamily.html" class="extype" name="cc.factorie.model.DotFamily">DotFamily</a></span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.model.DotFamily2" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="DotFamily2[N1&lt;:cc.factorie.variable.Var,N2&lt;:cc.factorie.variable.Var]extendsTensorFamily2[N1,N2]withDotFamily"></a>
+      <a id="DotFamily2[N1&lt;:variable.Var,N2&lt;:variable.Var]:DotFamily2[N1,N2]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="DotFamily2.html"><span class="name">DotFamily2</span></a><span class="tparams">[<span name="N1">N1 &lt;: <a href="../variable/Var.html" class="extype" name="cc.factorie.variable.Var">variable.Var</a></span>, <span name="N2">N2 &lt;: <a href="../variable/Var.html" class="extype" name="cc.factorie.variable.Var">variable.Var</a></span>]</span><span class="result"> extends <a href="TensorFamily2.html" class="extype" name="cc.factorie.model.TensorFamily2">TensorFamily2</a>[<span class="extype" name="cc.factorie.model.DotFamily2.N1">N1</span>, <span class="extype" name="cc.factorie.model.DotFamily2.N2">N2</span>] with <a href="DotFamily.html" class="extype" name="cc.factorie.model.DotFamily">DotFamily</a></span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.model.DotFamily3" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="DotFamily3[N1&lt;:cc.factorie.variable.Var,N2&lt;:cc.factorie.variable.Var,N3&lt;:cc.factorie.variable.Var]extendsTensorFamily3[N1,N2,N3]withDotFamily"></a>
+      <a id="DotFamily3[N1&lt;:variable.Var,N2&lt;:variable.Var,N3&lt;:variable.Var]:DotFamily3[N1,N2,N3]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="DotFamily3.html"><span class="name">DotFamily3</span></a><span class="tparams">[<span name="N1">N1 &lt;: <a href="../variable/Var.html" class="extype" name="cc.factorie.variable.Var">variable.Var</a></span>, <span name="N2">N2 &lt;: <a href="../variable/Var.html" class="extype" name="cc.factorie.variable.Var">variable.Var</a></span>, <span name="N3">N3 &lt;: <a href="../variable/Var.html" class="extype" name="cc.factorie.variable.Var">variable.Var</a></span>]</span><span class="result"> extends <a href="TensorFamily3.html" class="extype" name="cc.factorie.model.TensorFamily3">TensorFamily3</a>[<span class="extype" name="cc.factorie.model.DotFamily3.N1">N1</span>, <span class="extype" name="cc.factorie.model.DotFamily3.N2">N2</span>, <span class="extype" name="cc.factorie.model.DotFamily3.N3">N3</span>] with <a href="DotFamily.html" class="extype" name="cc.factorie.model.DotFamily">DotFamily</a></span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.model.DotFamily4" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="DotFamily4[N1&lt;:cc.factorie.variable.Var,N2&lt;:cc.factorie.variable.Var,N3&lt;:cc.factorie.variable.Var,N4&lt;:cc.factorie.variable.Var]extendsTensorFamily4[N1,N2,N3,N4]withDotFamily"></a>
+      <a id="DotFamily4[N1&lt;:variable.Var,N2&lt;:variable.Var,N3&lt;:variable.Var,N4&lt;:variable.Var]:DotFamily4[N1,N2,N3,N4]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="DotFamily4.html"><span class="name">DotFamily4</span></a><span class="tparams">[<span name="N1">N1 &lt;: <a href="../variable/Var.html" class="extype" name="cc.factorie.variable.Var">variable.Var</a></span>, <span name="N2">N2 &lt;: <a href="../variable/Var.html" class="extype" name="cc.factorie.variable.Var">variable.Var</a></span>, <span name="N3">N3 &lt;: <a href="../variable/Var.html" class="extype" name="cc.factorie.variable.Var">variable.Var</a></span>, <span name="N4">N4 &lt;: <a href="../variable/Var.html" class="extype" name="cc.factorie.variable.Var">variable.Var</a></span>]</span><span class="result"> extends <a href="TensorFamily4.html" class="extype" name="cc.factorie.model.TensorFamily4">TensorFamily4</a>[<span class="extype" name="cc.factorie.model.DotFamily4.N1">N1</span>, <span class="extype" name="cc.factorie.model.DotFamily4.N2">N2</span>, <span class="extype" name="cc.factorie.model.DotFamily4.N3">N3</span>, <span class="extype" name="cc.factorie.model.DotFamily4.N4">N4</span>] with <a href="DotFamily.html" class="extype" name="cc.factorie.model.DotFamily">DotFamily</a></span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.model.DotFamilyWithStatistics1" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="DotFamilyWithStatistics1[N1&lt;:cc.factorie.variable.TensorVar]extendsTensorFamilyWithStatistics1[N1]withDotFamily1[N1]"></a>
+      <a id="DotFamilyWithStatistics1[N1&lt;:TensorVar]:DotFamilyWithStatistics1[N1]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="DotFamilyWithStatistics1.html"><span class="name">DotFamilyWithStatistics1</span></a><span class="tparams">[<span name="N1">N1 &lt;: <a href="../variable/TensorVar.html" class="extype" name="cc.factorie.variable.TensorVar">TensorVar</a></span>]</span><span class="result"> extends <a href="TensorFamilyWithStatistics1.html" class="extype" name="cc.factorie.model.TensorFamilyWithStatistics1">TensorFamilyWithStatistics1</a>[<span class="extype" name="cc.factorie.model.DotFamilyWithStatistics1.N1">N1</span>] with <a href="DotFamily1.html" class="extype" name="cc.factorie.model.DotFamily1">DotFamily1</a>[<span class="extype" name="cc.factorie.model.DotFamilyWithStatistics1.N1">N1</span>]</span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.model.DotFamilyWithStatistics2" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="DotFamilyWithStatistics2[N1&lt;:cc.factorie.variable.TensorVar,N2&lt;:cc.factorie.variable.TensorVar]extendsTensorFamilyWithStatistics2[N1,N2]withDotFamily2[N1,N2]"></a>
+      <a id="DotFamilyWithStatistics2[N1&lt;:TensorVar,N2&lt;:TensorVar]:DotFamilyWithStatistics2[N1,N2]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="DotFamilyWithStatistics2.html"><span class="name">DotFamilyWithStatistics2</span></a><span class="tparams">[<span name="N1">N1 &lt;: <a href="../variable/TensorVar.html" class="extype" name="cc.factorie.variable.TensorVar">TensorVar</a></span>, <span name="N2">N2 &lt;: <a href="../variable/TensorVar.html" class="extype" name="cc.factorie.variable.TensorVar">TensorVar</a></span>]</span><span class="result"> extends <a href="TensorFamilyWithStatistics2.html" class="extype" name="cc.factorie.model.TensorFamilyWithStatistics2">TensorFamilyWithStatistics2</a>[<span class="extype" name="cc.factorie.model.DotFamilyWithStatistics2.N1">N1</span>, <span class="extype" name="cc.factorie.model.DotFamilyWithStatistics2.N2">N2</span>] with <a href="DotFamily2.html" class="extype" name="cc.factorie.model.DotFamily2">DotFamily2</a>[<span class="extype" name="cc.factorie.model.DotFamilyWithStatistics2.N1">N1</span>, <span class="extype" name="cc.factorie.model.DotFamilyWithStatistics2.N2">N2</span>]</span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.model.DotFamilyWithStatistics3" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="DotFamilyWithStatistics3[N1&lt;:cc.factorie.variable.TensorVar,N2&lt;:cc.factorie.variable.TensorVar,N3&lt;:cc.factorie.variable.TensorVar]extendsTensorFamilyWithStatistics3[N1,N2,N3]withDotFamily3[N1,N2,N3]"></a>
+      <a id="DotFamilyWithStatistics3[N1&lt;:TensorVar,N2&lt;:TensorVar,N3&lt;:TensorVar]:DotFamilyWithStatistics3[N1,N2,N3]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="DotFamilyWithStatistics3.html"><span class="name">DotFamilyWithStatistics3</span></a><span class="tparams">[<span name="N1">N1 &lt;: <a href="../variable/TensorVar.html" class="extype" name="cc.factorie.variable.TensorVar">TensorVar</a></span>, <span name="N2">N2 &lt;: <a href="../variable/TensorVar.html" class="extype" name="cc.factorie.variable.TensorVar">TensorVar</a></span>, <span name="N3">N3 &lt;: <a href="../variable/TensorVar.html" class="extype" name="cc.factorie.variable.TensorVar">TensorVar</a></span>]</span><span class="result"> extends <a href="TensorFamilyWithStatistics3.html" class="extype" name="cc.factorie.model.TensorFamilyWithStatistics3">TensorFamilyWithStatistics3</a>[<span class="extype" name="cc.factorie.model.DotFamilyWithStatistics3.N1">N1</span>, <span class="extype" name="cc.factorie.model.DotFamilyWithStatistics3.N2">N2</span>, <span class="extype" name="cc.factorie.model.DotFamilyWithStatistics3.N3">N3</span>] with <a href="DotFamily3.html" class="extype" name="cc.factorie.model.DotFamily3">DotFamily3</a>[<span class="extype" name="cc.factorie.model.DotFamilyWithStatistics3.N1">N1</span>, <span class="extype" name="cc.factorie.model.DotFamilyWithStatistics3.N2">N2</span>, <span class="extype" name="cc.factorie.model.DotFamilyWithStatistics3.N3">N3</span>]</span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.model.DotFamilyWithStatistics4" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="DotFamilyWithStatistics4[N1&lt;:cc.factorie.variable.TensorVar,N2&lt;:cc.factorie.variable.TensorVar,N3&lt;:cc.factorie.variable.TensorVar,N4&lt;:cc.factorie.variable.TensorVar]extendsTensorFamilyWithStatistics4[N1,N2,N3,N4]withDotFamily4[N1,N2,N3,N4]"></a>
+      <a id="DotFamilyWithStatistics4[N1&lt;:TensorVar,N2&lt;:TensorVar,N3&lt;:TensorVar,N4&lt;:TensorVar]:DotFamilyWithStatistics4[N1,N2,N3,N4]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="DotFamilyWithStatistics4.html"><span class="name">DotFamilyWithStatistics4</span></a><span class="tparams">[<span name="N1">N1 &lt;: <a href="../variable/TensorVar.html" class="extype" name="cc.factorie.variable.TensorVar">TensorVar</a></span>, <span name="N2">N2 &lt;: <a href="../variable/TensorVar.html" class="extype" name="cc.factorie.variable.TensorVar">TensorVar</a></span>, <span name="N3">N3 &lt;: <a href="../variable/TensorVar.html" class="extype" name="cc.factorie.variable.TensorVar">TensorVar</a></span>, <span name="N4">N4 &lt;: <a href="../variable/TensorVar.html" class="extype" name="cc.factorie.variable.TensorVar">TensorVar</a></span>]</span><span class="result"> extends <a href="TensorFamilyWithStatistics4.html" class="extype" name="cc.factorie.model.TensorFamilyWithStatistics4">TensorFamilyWithStatistics4</a>[<span class="extype" name="cc.factorie.model.DotFamilyWithStatistics4.N1">N1</span>, <span class="extype" name="cc.factorie.model.DotFamilyWithStatistics4.N2">N2</span>, <span class="extype" name="cc.factorie.model.DotFamilyWithStatistics4.N3">N3</span>, <span class="extype" name="cc.factorie.model.DotFamilyWithStatistics4.N4">N4</span>] with <a href="DotFamily4.html" class="extype" name="cc.factorie.model.DotFamily4">DotFamily4</a>[<span class="extype" name="cc.factorie.model.DotFamilyWithStatistics4.N1">N1</span>, <span class="extype" name="cc.factorie.model.DotFamilyWithStatistics4.N2">N2</span>, <span class="extype" name="cc.factorie.model.DotFamilyWithStatistics4.N3">N3</span>, <span class="extype" name="cc.factorie.model.DotFamilyWithStatistics4.N4">N4</span>]</span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.model.DotTemplate1" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="DotTemplate1[N1&lt;:cc.factorie.variable.Var]extendsTemplate1[N1]withDotFamily1[N1]"></a>
+      <a id="DotTemplate1[N1&lt;:variable.Var]:DotTemplate1[N1]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="DotTemplate1.html"><span class="name">DotTemplate1</span></a><span class="tparams">[<span name="N1">N1 &lt;: <a href="../variable/Var.html" class="extype" name="cc.factorie.variable.Var">variable.Var</a></span>]</span><span class="result"> extends <a href="Template1.html" class="extype" name="cc.factorie.model.Template1">Template1</a>[<span class="extype" name="cc.factorie.model.DotTemplate1.N1">N1</span>] with <a href="DotFamily1.html" class="extype" name="cc.factorie.model.DotFamily1">DotFamily1</a>[<span class="extype" name="cc.factorie.model.DotTemplate1.N1">N1</span>]</span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.model.DotTemplate2" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="DotTemplate2[N1&lt;:cc.factorie.variable.Var,N2&lt;:cc.factorie.variable.Var]extendsTemplate2[N1,N2]withDotFamily2[N1,N2]"></a>
+      <a id="DotTemplate2[N1&lt;:variable.Var,N2&lt;:variable.Var]:DotTemplate2[N1,N2]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="DotTemplate2.html"><span class="name">DotTemplate2</span></a><span class="tparams">[<span name="N1">N1 &lt;: <a href="../variable/Var.html" class="extype" name="cc.factorie.variable.Var">variable.Var</a></span>, <span name="N2">N2 &lt;: <a href="../variable/Var.html" class="extype" name="cc.factorie.variable.Var">variable.Var</a></span>]</span><span class="result"> extends <a href="Template2.html" class="extype" name="cc.factorie.model.Template2">Template2</a>[<span class="extype" name="cc.factorie.model.DotTemplate2.N1">N1</span>, <span class="extype" name="cc.factorie.model.DotTemplate2.N2">N2</span>] with <a href="DotFamily2.html" class="extype" name="cc.factorie.model.DotFamily2">DotFamily2</a>[<span class="extype" name="cc.factorie.model.DotTemplate2.N1">N1</span>, <span class="extype" name="cc.factorie.model.DotTemplate2.N2">N2</span>]</span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.model.DotTemplate3" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="DotTemplate3[N1&lt;:cc.factorie.variable.Var,N2&lt;:cc.factorie.variable.Var,N3&lt;:cc.factorie.variable.Var]extendsTemplate3[N1,N2,N3]withDotFamily3[N1,N2,N3]"></a>
+      <a id="DotTemplate3[N1&lt;:variable.Var,N2&lt;:variable.Var,N3&lt;:variable.Var]:DotTemplate3[N1,N2,N3]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="DotTemplate3.html"><span class="name">DotTemplate3</span></a><span class="tparams">[<span name="N1">N1 &lt;: <a href="../variable/Var.html" class="extype" name="cc.factorie.variable.Var">variable.Var</a></span>, <span name="N2">N2 &lt;: <a href="../variable/Var.html" class="extype" name="cc.factorie.variable.Var">variable.Var</a></span>, <span name="N3">N3 &lt;: <a href="../variable/Var.html" class="extype" name="cc.factorie.variable.Var">variable.Var</a></span>]</span><span class="result"> extends <a href="Template3.html" class="extype" name="cc.factorie.model.Template3">Template3</a>[<span class="extype" name="cc.factorie.model.DotTemplate3.N1">N1</span>, <span class="extype" name="cc.factorie.model.DotTemplate3.N2">N2</span>, <span class="extype" name="cc.factorie.model.DotTemplate3.N3">N3</span>] with <a href="DotFamily3.html" class="extype" name="cc.factorie.model.DotFamily3">DotFamily3</a>[<span class="extype" name="cc.factorie.model.DotTemplate3.N1">N1</span>, <span class="extype" name="cc.factorie.model.DotTemplate3.N2">N2</span>, <span class="extype" name="cc.factorie.model.DotTemplate3.N3">N3</span>]</span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.model.DotTemplate4" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="DotTemplate4[N1&lt;:cc.factorie.variable.Var,N2&lt;:cc.factorie.variable.Var,N3&lt;:cc.factorie.variable.Var,N4&lt;:cc.factorie.variable.Var]extendsTemplate4[N1,N2,N3,N4]withDotFamily4[N1,N2,N3,N4]"></a>
+      <a id="DotTemplate4[N1&lt;:variable.Var,N2&lt;:variable.Var,N3&lt;:variable.Var,N4&lt;:variable.Var]:DotTemplate4[N1,N2,N3,N4]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="DotTemplate4.html"><span class="name">DotTemplate4</span></a><span class="tparams">[<span name="N1">N1 &lt;: <a href="../variable/Var.html" class="extype" name="cc.factorie.variable.Var">variable.Var</a></span>, <span name="N2">N2 &lt;: <a href="../variable/Var.html" class="extype" name="cc.factorie.variable.Var">variable.Var</a></span>, <span name="N3">N3 &lt;: <a href="../variable/Var.html" class="extype" name="cc.factorie.variable.Var">variable.Var</a></span>, <span name="N4">N4 &lt;: <a href="../variable/Var.html" class="extype" name="cc.factorie.variable.Var">variable.Var</a></span>]</span><span class="result"> extends <a href="Template4.html" class="extype" name="cc.factorie.model.Template4">Template4</a>[<span class="extype" name="cc.factorie.model.DotTemplate4.N1">N1</span>, <span class="extype" name="cc.factorie.model.DotTemplate4.N2">N2</span>, <span class="extype" name="cc.factorie.model.DotTemplate4.N3">N3</span>, <span class="extype" name="cc.factorie.model.DotTemplate4.N4">N4</span>] with <a href="DotFamily4.html" class="extype" name="cc.factorie.model.DotFamily4">DotFamily4</a>[<span class="extype" name="cc.factorie.model.DotTemplate4.N1">N1</span>, <span class="extype" name="cc.factorie.model.DotTemplate4.N2">N2</span>, <span class="extype" name="cc.factorie.model.DotTemplate4.N3">N3</span>, <span class="extype" name="cc.factorie.model.DotTemplate4.N4">N4</span>]</span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.model.DotTemplateWithStatistics1" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="DotTemplateWithStatistics1[N1&lt;:cc.factorie.variable.TensorVar]extendsTemplate1[N1]withDotFamilyWithStatistics1[N1]"></a>
+      <a id="DotTemplateWithStatistics1[N1&lt;:TensorVar]:DotTemplateWithStatistics1[N1]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="DotTemplateWithStatistics1.html"><span class="name">DotTemplateWithStatistics1</span></a><span class="tparams">[<span name="N1">N1 &lt;: <a href="../variable/TensorVar.html" class="extype" name="cc.factorie.variable.TensorVar">TensorVar</a></span>]</span><span class="result"> extends <a href="Template1.html" class="extype" name="cc.factorie.model.Template1">Template1</a>[<span class="extype" name="cc.factorie.model.DotTemplateWithStatistics1.N1">N1</span>] with <a href="DotFamilyWithStatistics1.html" class="extype" name="cc.factorie.model.DotFamilyWithStatistics1">DotFamilyWithStatistics1</a>[<span class="extype" name="cc.factorie.model.DotTemplateWithStatistics1.N1">N1</span>]</span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.model.DotTemplateWithStatistics2" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="DotTemplateWithStatistics2[N1&lt;:cc.factorie.variable.TensorVar,N2&lt;:cc.factorie.variable.TensorVar]extendsTemplate2[N1,N2]withDotFamilyWithStatistics2[N1,N2]"></a>
+      <a id="DotTemplateWithStatistics2[N1&lt;:TensorVar,N2&lt;:TensorVar]:DotTemplateWithStatistics2[N1,N2]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="DotTemplateWithStatistics2.html"><span class="name">DotTemplateWithStatistics2</span></a><span class="tparams">[<span name="N1">N1 &lt;: <a href="../variable/TensorVar.html" class="extype" name="cc.factorie.variable.TensorVar">TensorVar</a></span>, <span name="N2">N2 &lt;: <a href="../variable/TensorVar.html" class="extype" name="cc.factorie.variable.TensorVar">TensorVar</a></span>]</span><span class="result"> extends <a href="Template2.html" class="extype" name="cc.factorie.model.Template2">Template2</a>[<span class="extype" name="cc.factorie.model.DotTemplateWithStatistics2.N1">N1</span>, <span class="extype" name="cc.factorie.model.DotTemplateWithStatistics2.N2">N2</span>] with <a href="DotFamilyWithStatistics2.html" class="extype" name="cc.factorie.model.DotFamilyWithStatistics2">DotFamilyWithStatistics2</a>[<span class="extype" name="cc.factorie.model.DotTemplateWithStatistics2.N1">N1</span>, <span class="extype" name="cc.factorie.model.DotTemplateWithStatistics2.N2">N2</span>]</span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.model.DotTemplateWithStatistics3" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="DotTemplateWithStatistics3[N1&lt;:cc.factorie.variable.TensorVar,N2&lt;:cc.factorie.variable.TensorVar,N3&lt;:cc.factorie.variable.TensorVar]extendsTemplate3[N1,N2,N3]withDotFamilyWithStatistics3[N1,N2,N3]"></a>
+      <a id="DotTemplateWithStatistics3[N1&lt;:TensorVar,N2&lt;:TensorVar,N3&lt;:TensorVar]:DotTemplateWithStatistics3[N1,N2,N3]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="DotTemplateWithStatistics3.html"><span class="name">DotTemplateWithStatistics3</span></a><span class="tparams">[<span name="N1">N1 &lt;: <a href="../variable/TensorVar.html" class="extype" name="cc.factorie.variable.TensorVar">TensorVar</a></span>, <span name="N2">N2 &lt;: <a href="../variable/TensorVar.html" class="extype" name="cc.factorie.variable.TensorVar">TensorVar</a></span>, <span name="N3">N3 &lt;: <a href="../variable/TensorVar.html" class="extype" name="cc.factorie.variable.TensorVar">TensorVar</a></span>]</span><span class="result"> extends <a href="Template3.html" class="extype" name="cc.factorie.model.Template3">Template3</a>[<span class="extype" name="cc.factorie.model.DotTemplateWithStatistics3.N1">N1</span>, <span class="extype" name="cc.factorie.model.DotTemplateWithStatistics3.N2">N2</span>, <span class="extype" name="cc.factorie.model.DotTemplateWithStatistics3.N3">N3</span>] with <a href="DotFamilyWithStatistics3.html" class="extype" name="cc.factorie.model.DotFamilyWithStatistics3">DotFamilyWithStatistics3</a>[<span class="extype" name="cc.factorie.model.DotTemplateWithStatistics3.N1">N1</span>, <span class="extype" name="cc.factorie.model.DotTemplateWithStatistics3.N2">N2</span>, <span class="extype" name="cc.factorie.model.DotTemplateWithStatistics3.N3">N3</span>]</span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.model.DotTemplateWithStatistics4" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="DotTemplateWithStatistics4[N1&lt;:cc.factorie.variable.TensorVar,N2&lt;:cc.factorie.variable.TensorVar,N3&lt;:cc.factorie.variable.TensorVar,N4&lt;:cc.factorie.variable.TensorVar]extendsTemplate4[N1,N2,N3,N4]withDotFamilyWithStatistics4[N1,N2,N3,N4]"></a>
+      <a id="DotTemplateWithStatistics4[N1&lt;:TensorVar,N2&lt;:TensorVar,N3&lt;:TensorVar,N4&lt;:TensorVar]:DotTemplateWithStatistics4[N1,N2,N3,N4]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="DotTemplateWithStatistics4.html"><span class="name">DotTemplateWithStatistics4</span></a><span class="tparams">[<span name="N1">N1 &lt;: <a href="../variable/TensorVar.html" class="extype" name="cc.factorie.variable.TensorVar">TensorVar</a></span>, <span name="N2">N2 &lt;: <a href="../variable/TensorVar.html" class="extype" name="cc.factorie.variable.TensorVar">TensorVar</a></span>, <span name="N3">N3 &lt;: <a href="../variable/TensorVar.html" class="extype" name="cc.factorie.variable.TensorVar">TensorVar</a></span>, <span name="N4">N4 &lt;: <a href="../variable/TensorVar.html" class="extype" name="cc.factorie.variable.TensorVar">TensorVar</a></span>]</span><span class="result"> extends <a href="Template4.html" class="extype" name="cc.factorie.model.Template4">Template4</a>[<span class="extype" name="cc.factorie.model.DotTemplateWithStatistics4.N1">N1</span>, <span class="extype" name="cc.factorie.model.DotTemplateWithStatistics4.N2">N2</span>, <span class="extype" name="cc.factorie.model.DotTemplateWithStatistics4.N3">N3</span>, <span class="extype" name="cc.factorie.model.DotTemplateWithStatistics4.N4">N4</span>] with <a href="DotFamilyWithStatistics4.html" class="extype" name="cc.factorie.model.DotFamilyWithStatistics4">DotFamilyWithStatistics4</a>[<span class="extype" name="cc.factorie.model.DotTemplateWithStatistics4.N1">N1</span>, <span class="extype" name="cc.factorie.model.DotTemplateWithStatistics4.N2">N2</span>, <span class="extype" name="cc.factorie.model.DotTemplateWithStatistics4.N3">N3</span>, <span class="extype" name="cc.factorie.model.DotTemplateWithStatistics4.N4">N4</span>]</span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.model.Factor" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="FactorextendsOrdered[cc.factorie.model.Factor]"></a>
+      <a id="Factor:Factor"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="Factor.html"><span class="name">Factor</span></a><span class="result"> extends <a href="../../../scala/package.html#Ordered[T]=scala.math.Ordered[T]" class="extmbr" name="scala.Ordered">Ordered</a>[<a href="Factor.html" class="extype" name="cc.factorie.model.Factor">Factor</a>]</span>
+      </span>
+      </h4>
+      <p class="comment cmt">A single factor in a factor graph.</p>
+    </li><li name="cc.factorie.model.Factor1" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="Factor1[N1&lt;:cc.factorie.variable.Var]extendsFactor"></a>
+      <a id="Factor1[N1&lt;:variable.Var]:Factor1[N1]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="Factor1.html"><span class="name">Factor1</span></a><span class="tparams">[<span name="N1">N1 &lt;: <a href="../variable/Var.html" class="extype" name="cc.factorie.variable.Var">variable.Var</a></span>]</span><span class="result"> extends <a href="Factor.html" class="extype" name="cc.factorie.model.Factor">Factor</a></span>
+      </span>
+      </h4>
+      <p class="comment cmt">A Factor with one neighboring variable</p>
+    </li><li name="cc.factorie.model.Factor2" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="Factor2[N1&lt;:cc.factorie.variable.Var,N2&lt;:cc.factorie.variable.Var]extendsFactor"></a>
+      <a id="Factor2[N1&lt;:variable.Var,N2&lt;:variable.Var]:Factor2[N1,N2]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="Factor2.html"><span class="name">Factor2</span></a><span class="tparams">[<span name="N1">N1 &lt;: <a href="../variable/Var.html" class="extype" name="cc.factorie.variable.Var">variable.Var</a></span>, <span name="N2">N2 &lt;: <a href="../variable/Var.html" class="extype" name="cc.factorie.variable.Var">variable.Var</a></span>]</span><span class="result"> extends <a href="Factor.html" class="extype" name="cc.factorie.model.Factor">Factor</a></span>
+      </span>
+      </h4>
+      <p class="comment cmt">The only abstract things are _1, _2, statistics(Values), and StatisticsType</p>
+    </li><li name="cc.factorie.model.Factor3" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="Factor3[N1&lt;:cc.factorie.variable.Var,N2&lt;:cc.factorie.variable.Var,N3&lt;:cc.factorie.variable.Var]extendsFactor"></a>
+      <a id="Factor3[N1&lt;:variable.Var,N2&lt;:variable.Var,N3&lt;:variable.Var]:Factor3[N1,N2,N3]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="Factor3.html"><span class="name">Factor3</span></a><span class="tparams">[<span name="N1">N1 &lt;: <a href="../variable/Var.html" class="extype" name="cc.factorie.variable.Var">variable.Var</a></span>, <span name="N2">N2 &lt;: <a href="../variable/Var.html" class="extype" name="cc.factorie.variable.Var">variable.Var</a></span>, <span name="N3">N3 &lt;: <a href="../variable/Var.html" class="extype" name="cc.factorie.variable.Var">variable.Var</a></span>]</span><span class="result"> extends <a href="Factor.html" class="extype" name="cc.factorie.model.Factor">Factor</a></span>
+      </span>
+      </h4>
+      <p class="comment cmt">The only abstract things are _1, _2, _3, statistics(Values), and StatisticsType</p>
+    </li><li name="cc.factorie.model.Factor4" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="Factor4[N1&lt;:cc.factorie.variable.Var,N2&lt;:cc.factorie.variable.Var,N3&lt;:cc.factorie.variable.Var,N4&lt;:cc.factorie.variable.Var]extendsFactor"></a>
+      <a id="Factor4[N1&lt;:variable.Var,N2&lt;:variable.Var,N3&lt;:variable.Var,N4&lt;:variable.Var]:Factor4[N1,N2,N3,N4]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="Factor4.html"><span class="name">Factor4</span></a><span class="tparams">[<span name="N1">N1 &lt;: <a href="../variable/Var.html" class="extype" name="cc.factorie.variable.Var">variable.Var</a></span>, <span name="N2">N2 &lt;: <a href="../variable/Var.html" class="extype" name="cc.factorie.variable.Var">variable.Var</a></span>, <span name="N3">N3 &lt;: <a href="../variable/Var.html" class="extype" name="cc.factorie.variable.Var">variable.Var</a></span>, <span name="N4">N4 &lt;: <a href="../variable/Var.html" class="extype" name="cc.factorie.variable.Var">variable.Var</a></span>]</span><span class="result"> extends <a href="Factor.html" class="extype" name="cc.factorie.model.Factor">Factor</a></span>
+      </span>
+      </h4>
+      <p class="comment cmt">The only abstract things are _1, _2, _3, statistics(Values), and StatisticsType</p>
+    </li><li name="cc.factorie.model.FactorWithStatistics1" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="FactorWithStatistics1[N1&lt;:cc.factorie.variable.Var]extendsFactor1[N1]"></a>
+      <a id="FactorWithStatistics1[N1&lt;:variable.Var]:FactorWithStatistics1[N1]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="FactorWithStatistics1.html"><span class="name">FactorWithStatistics1</span></a><span class="tparams">[<span name="N1">N1 &lt;: <a href="../variable/Var.html" class="extype" name="cc.factorie.variable.Var">variable.Var</a></span>]</span><span class="result"> extends <a href="Factor1.html" class="extype" name="cc.factorie.model.Factor1">Factor1</a>[<span class="extype" name="cc.factorie.model.FactorWithStatistics1.N1">N1</span>]</span>
+      </span>
+      </h4>
+      <p class="comment cmt">A 1-neighbor Factor whose statistics have type Tuple1.</p>
+    </li><li name="cc.factorie.model.Family" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="FamilyextendsAnyRef"></a>
+      <a id="Family:Family"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="Family.html"><span class="name">Family</span></a><span class="result"> extends <a href="../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.model.Family1" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="Family1[N1&lt;:cc.factorie.variable.Var]extendsFamilyWithNeighborDomains"></a>
+      <a id="Family1[N1&lt;:variable.Var]:Family1[N1]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="Family1.html"><span class="name">Family1</span></a><span class="tparams">[<span name="N1">N1 &lt;: <a href="../variable/Var.html" class="extype" name="cc.factorie.variable.Var">variable.Var</a></span>]</span><span class="result"> extends <a href="FamilyWithNeighborDomains.html" class="extype" name="cc.factorie.model.FamilyWithNeighborDomains">FamilyWithNeighborDomains</a></span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.model.Family2" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="Family2[N1&lt;:cc.factorie.variable.Var,N2&lt;:cc.factorie.variable.Var]extendsFamilyWithNeighborDomains"></a>
+      <a id="Family2[N1&lt;:variable.Var,N2&lt;:variable.Var]:Family2[N1,N2]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="Family2.html"><span class="name">Family2</span></a><span class="tparams">[<span name="N1">N1 &lt;: <a href="../variable/Var.html" class="extype" name="cc.factorie.variable.Var">variable.Var</a></span>, <span name="N2">N2 &lt;: <a href="../variable/Var.html" class="extype" name="cc.factorie.variable.Var">variable.Var</a></span>]</span><span class="result"> extends <a href="FamilyWithNeighborDomains.html" class="extype" name="cc.factorie.model.FamilyWithNeighborDomains">FamilyWithNeighborDomains</a></span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.model.Family3" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="Family3[N1&lt;:cc.factorie.variable.Var,N2&lt;:cc.factorie.variable.Var,N3&lt;:cc.factorie.variable.Var]extendsFamilyWithNeighborDomains"></a>
+      <a id="Family3[N1&lt;:variable.Var,N2&lt;:variable.Var,N3&lt;:variable.Var]:Family3[N1,N2,N3]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="Family3.html"><span class="name">Family3</span></a><span class="tparams">[<span name="N1">N1 &lt;: <a href="../variable/Var.html" class="extype" name="cc.factorie.variable.Var">variable.Var</a></span>, <span name="N2">N2 &lt;: <a href="../variable/Var.html" class="extype" name="cc.factorie.variable.Var">variable.Var</a></span>, <span name="N3">N3 &lt;: <a href="../variable/Var.html" class="extype" name="cc.factorie.variable.Var">variable.Var</a></span>]</span><span class="result"> extends <a href="FamilyWithNeighborDomains.html" class="extype" name="cc.factorie.model.FamilyWithNeighborDomains">FamilyWithNeighborDomains</a></span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.model.Family4" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="Family4[N1&lt;:cc.factorie.variable.Var,N2&lt;:cc.factorie.variable.Var,N3&lt;:cc.factorie.variable.Var,N4&lt;:cc.factorie.variable.Var]extendsFamilyWithNeighborDomains"></a>
+      <a id="Family4[N1&lt;:variable.Var,N2&lt;:variable.Var,N3&lt;:variable.Var,N4&lt;:variable.Var]:Family4[N1,N2,N3,N4]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="Family4.html"><span class="name">Family4</span></a><span class="tparams">[<span name="N1">N1 &lt;: <a href="../variable/Var.html" class="extype" name="cc.factorie.variable.Var">variable.Var</a></span>, <span name="N2">N2 &lt;: <a href="../variable/Var.html" class="extype" name="cc.factorie.variable.Var">variable.Var</a></span>, <span name="N3">N3 &lt;: <a href="../variable/Var.html" class="extype" name="cc.factorie.variable.Var">variable.Var</a></span>, <span name="N4">N4 &lt;: <a href="../variable/Var.html" class="extype" name="cc.factorie.variable.Var">variable.Var</a></span>]</span><span class="result"> extends <a href="FamilyWithNeighborDomains.html" class="extype" name="cc.factorie.model.FamilyWithNeighborDomains">FamilyWithNeighborDomains</a></span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.model.FamilyWithNeighborClasses" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="FamilyWithNeighborClassesextendsFamily"></a>
+      <a id="FamilyWithNeighborClasses:FamilyWithNeighborClasses"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="FamilyWithNeighborClasses.html"><span class="name">FamilyWithNeighborClasses</span></a><span class="result"> extends <a href="Family.html" class="extype" name="cc.factorie.model.Family">Family</a></span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.model.FamilyWithNeighborDomains" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="FamilyWithNeighborDomainsextendsFamily"></a>
+      <a id="FamilyWithNeighborDomains:FamilyWithNeighborDomains"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="FamilyWithNeighborDomains.html"><span class="name">FamilyWithNeighborDomains</span></a><span class="result"> extends <a href="Family.html" class="extype" name="cc.factorie.model.Family">Family</a></span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.model.ItemizedModel" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="ItemizedModelextendsModel"></a>
+      <a id="ItemizedModel:ItemizedModel"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="ItemizedModel.html"><span class="name">ItemizedModel</span></a><span class="result"> extends <a href="Model.html" class="extype" name="cc.factorie.model.Model">Model</a></span>
+      </span>
+      </h4>
+      <p class="comment cmt">A Model that explicitly stores all factors, with an efficient map from variables to their neighboring factors.</p>
+    </li><li name="cc.factorie.model.IterableSingleFactor" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="IterableSingleFactor[F&lt;:cc.factorie.model.Factor]extendsIterable[F]"></a>
+      <a id="IterableSingleFactor[F&lt;:Factor]:IterableSingleFactor[F]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="IterableSingleFactor.html"><span class="name">IterableSingleFactor</span></a><span class="tparams">[<span name="F">F &lt;: <a href="Factor.html" class="extype" name="cc.factorie.model.Factor">Factor</a></span>]</span><span class="result"> extends <a href="../../../scala/package.html#Iterable[+A]=Iterable[A]" class="extmbr" name="scala.Iterable">Iterable</a>[<span class="extype" name="cc.factorie.model.IterableSingleFactor.F">F</span>]</span>
+      </span>
+      </h4>
+      <p class="comment cmt">An iterable collection for efficiently holding a single Factor.</p>
+    </li><li name="cc.factorie.model.Model" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="ModelextendsAnyRef"></a>
+      <a id="Model:Model"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="Model.html"><span class="name">Model</span></a><span class="result"> extends <a href="../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>
+      </span>
+      </h4>
+      <p class="comment cmt">In FACTORIE a Model is a source of factors.</p>
+    </li><li name="cc.factorie.model.Parameters" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="ParametersextendsAnyRef"></a>
+      <a id="Parameters:Parameters"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="Parameters.html"><span class="name">Parameters</span></a><span class="result"> extends <a href="../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>
+      </span>
+      </h4>
+      <p class="comment cmt">An object with a &quot;parameters&quot; method, which returns a WeightsSet holding the multiple Tensors that make up the parameters.</p>
+    </li><li name="cc.factorie.model.Statistics" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="Statistics[A]extendsFamily"></a>
+      <a id="Statistics[A]:Statistics[A]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="Statistics.html"><span class="name">Statistics</span></a><span class="tparams">[<span name="A">A</span>]</span><span class="result"> extends <a href="Family.html" class="extype" name="cc.factorie.model.Family">Family</a></span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.model.Template" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="TemplateextendsFamilyWithNeighborDomainswithFamilyWithNeighborClasseswithModel"></a>
+      <a id="Template:Template"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="Template.html"><span class="name">Template</span></a><span class="result"> extends <a href="FamilyWithNeighborDomains.html" class="extype" name="cc.factorie.model.FamilyWithNeighborDomains">FamilyWithNeighborDomains</a> with <a href="FamilyWithNeighborClasses.html" class="extype" name="cc.factorie.model.FamilyWithNeighborClasses">FamilyWithNeighborClasses</a> with <a href="Model.html" class="extype" name="cc.factorie.model.Model">Model</a></span>
+      </span>
+      </h4>
+      <p class="comment cmt">A template for creating Factors.</p>
+    </li><li name="cc.factorie.model.Template1" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="Template1[N1&lt;:cc.factorie.variable.Var]extendsTemplatewithFamily1[N1]"></a>
+      <a id="Template1[N1&lt;:variable.Var]:Template1[N1]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="Template1.html"><span class="name">Template1</span></a><span class="tparams">[<span name="N1">N1 &lt;: <a href="../variable/Var.html" class="extype" name="cc.factorie.variable.Var">variable.Var</a></span>]</span><span class="result"> extends <a href="Template.html" class="extype" name="cc.factorie.model.Template">Template</a> with <a href="Family1.html" class="extype" name="cc.factorie.model.Family1">Family1</a>[<span class="extype" name="cc.factorie.model.Template1.N1">N1</span>]</span>
+      </span>
+      </h4>
+      <p class="comment cmt">A Template that creates Factors with one neighbor.</p>
+    </li><li name="cc.factorie.model.Template2" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="Template2[N1&lt;:cc.factorie.variable.Var,N2&lt;:cc.factorie.variable.Var]extendsFamily2[N1,N2]withTemplate"></a>
+      <a id="Template2[N1&lt;:variable.Var,N2&lt;:variable.Var]:Template2[N1,N2]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="Template2.html"><span class="name">Template2</span></a><span class="tparams">[<span name="N1">N1 &lt;: <a href="../variable/Var.html" class="extype" name="cc.factorie.variable.Var">variable.Var</a></span>, <span name="N2">N2 &lt;: <a href="../variable/Var.html" class="extype" name="cc.factorie.variable.Var">variable.Var</a></span>]</span><span class="result"> extends <a href="Family2.html" class="extype" name="cc.factorie.model.Family2">Family2</a>[<span class="extype" name="cc.factorie.model.Template2.N1">N1</span>, <span class="extype" name="cc.factorie.model.Template2.N2">N2</span>] with <a href="Template.html" class="extype" name="cc.factorie.model.Template">Template</a></span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.model.Template3" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="Template3[N1&lt;:cc.factorie.variable.Var,N2&lt;:cc.factorie.variable.Var,N3&lt;:cc.factorie.variable.Var]extendsFamily3[N1,N2,N3]withTemplate"></a>
+      <a id="Template3[N1&lt;:variable.Var,N2&lt;:variable.Var,N3&lt;:variable.Var]:Template3[N1,N2,N3]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="Template3.html"><span class="name">Template3</span></a><span class="tparams">[<span name="N1">N1 &lt;: <a href="../variable/Var.html" class="extype" name="cc.factorie.variable.Var">variable.Var</a></span>, <span name="N2">N2 &lt;: <a href="../variable/Var.html" class="extype" name="cc.factorie.variable.Var">variable.Var</a></span>, <span name="N3">N3 &lt;: <a href="../variable/Var.html" class="extype" name="cc.factorie.variable.Var">variable.Var</a></span>]</span><span class="result"> extends <a href="Family3.html" class="extype" name="cc.factorie.model.Family3">Family3</a>[<span class="extype" name="cc.factorie.model.Template3.N1">N1</span>, <span class="extype" name="cc.factorie.model.Template3.N2">N2</span>, <span class="extype" name="cc.factorie.model.Template3.N3">N3</span>] with <a href="Template.html" class="extype" name="cc.factorie.model.Template">Template</a></span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.model.Template4" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="Template4[N1&lt;:cc.factorie.variable.Var,N2&lt;:cc.factorie.variable.Var,N3&lt;:cc.factorie.variable.Var,N4&lt;:cc.factorie.variable.Var]extendsFamily4[N1,N2,N3,N4]withTemplate"></a>
+      <a id="Template4[N1&lt;:variable.Var,N2&lt;:variable.Var,N3&lt;:variable.Var,N4&lt;:variable.Var]:Template4[N1,N2,N3,N4]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="Template4.html"><span class="name">Template4</span></a><span class="tparams">[<span name="N1">N1 &lt;: <a href="../variable/Var.html" class="extype" name="cc.factorie.variable.Var">variable.Var</a></span>, <span name="N2">N2 &lt;: <a href="../variable/Var.html" class="extype" name="cc.factorie.variable.Var">variable.Var</a></span>, <span name="N3">N3 &lt;: <a href="../variable/Var.html" class="extype" name="cc.factorie.variable.Var">variable.Var</a></span>, <span name="N4">N4 &lt;: <a href="../variable/Var.html" class="extype" name="cc.factorie.variable.Var">variable.Var</a></span>]</span><span class="result"> extends <a href="Family4.html" class="extype" name="cc.factorie.model.Family4">Family4</a>[<span class="extype" name="cc.factorie.model.Template4.N1">N1</span>, <span class="extype" name="cc.factorie.model.Template4.N2">N2</span>, <span class="extype" name="cc.factorie.model.Template4.N3">N3</span>, <span class="extype" name="cc.factorie.model.Template4.N4">N4</span>] with <a href="Template.html" class="extype" name="cc.factorie.model.Template">Template</a></span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.model.TemplateModel" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="TemplateModelextendsModel"></a>
+      <a id="TemplateModel:TemplateModel"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="TemplateModel.html"><span class="name">TemplateModel</span></a><span class="result"> extends <a href="Model.html" class="extype" name="cc.factorie.model.Model">Model</a></span>
+      </span>
+      </h4>
+      <p class="comment cmt">A Model whose Factors come from Templates.</p>
+    </li><li name="cc.factorie.model.TensorFactor1" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="TensorFactor1[N1&lt;:cc.factorie.variable.Var]extendsFactor1[N1]"></a>
+      <a id="TensorFactor1[N1&lt;:variable.Var]:TensorFactor1[N1]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="TensorFactor1.html"><span class="name">TensorFactor1</span></a><span class="tparams">[<span name="N1">N1 &lt;: <a href="../variable/Var.html" class="extype" name="cc.factorie.variable.Var">variable.Var</a></span>]</span><span class="result"> extends <a href="Factor1.html" class="extype" name="cc.factorie.model.Factor1">Factor1</a>[<span class="extype" name="cc.factorie.model.TensorFactor1.N1">N1</span>]</span>
+      </span>
+      </h4>
+      <p class="comment cmt">A 1-neighbor Factor whose statistics have type Tensor.</p>
+    </li><li name="cc.factorie.model.TensorFactor2" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="TensorFactor2[N1&lt;:cc.factorie.variable.Var,N2&lt;:cc.factorie.variable.Var]extendsFactor2[N1,N2]"></a>
+      <a id="TensorFactor2[N1&lt;:variable.Var,N2&lt;:variable.Var]:TensorFactor2[N1,N2]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="TensorFactor2.html"><span class="name">TensorFactor2</span></a><span class="tparams">[<span name="N1">N1 &lt;: <a href="../variable/Var.html" class="extype" name="cc.factorie.variable.Var">variable.Var</a></span>, <span name="N2">N2 &lt;: <a href="../variable/Var.html" class="extype" name="cc.factorie.variable.Var">variable.Var</a></span>]</span><span class="result"> extends <a href="Factor2.html" class="extype" name="cc.factorie.model.Factor2">Factor2</a>[<span class="extype" name="cc.factorie.model.TensorFactor2.N1">N1</span>, <span class="extype" name="cc.factorie.model.TensorFactor2.N2">N2</span>]</span>
+      </span>
+      </h4>
+      <p class="comment cmt">A 2-neighbor Factor whose statistics have type Tensor.</p>
+    </li><li name="cc.factorie.model.TensorFactor3" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="TensorFactor3[N1&lt;:cc.factorie.variable.TensorVar,N2&lt;:cc.factorie.variable.TensorVar,N3&lt;:cc.factorie.variable.TensorVar]extendsFactor3[N1,N2,N3]"></a>
+      <a id="TensorFactor3[N1&lt;:TensorVar,N2&lt;:TensorVar,N3&lt;:TensorVar]:TensorFactor3[N1,N2,N3]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="TensorFactor3.html"><span class="name">TensorFactor3</span></a><span class="tparams">[<span name="N1">N1 &lt;: <a href="../variable/TensorVar.html" class="extype" name="cc.factorie.variable.TensorVar">TensorVar</a></span>, <span name="N2">N2 &lt;: <a href="../variable/TensorVar.html" class="extype" name="cc.factorie.variable.TensorVar">TensorVar</a></span>, <span name="N3">N3 &lt;: <a href="../variable/TensorVar.html" class="extype" name="cc.factorie.variable.TensorVar">TensorVar</a></span>]</span><span class="result"> extends <a href="Factor3.html" class="extype" name="cc.factorie.model.Factor3">Factor3</a>[<span class="extype" name="cc.factorie.model.TensorFactor3.N1">N1</span>, <span class="extype" name="cc.factorie.model.TensorFactor3.N2">N2</span>, <span class="extype" name="cc.factorie.model.TensorFactor3.N3">N3</span>]</span>
+      </span>
+      </h4>
+      <p class="comment cmt">A 3-neighbor Factor whose statistics have type Tensor.</p>
+    </li><li name="cc.factorie.model.TensorFactor4" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="TensorFactor4[N1&lt;:cc.factorie.variable.TensorVar,N2&lt;:cc.factorie.variable.TensorVar,N3&lt;:cc.factorie.variable.TensorVar,N4&lt;:cc.factorie.variable.TensorVar]extendsFactor4[N1,N2,N3,N4]"></a>
+      <a id="TensorFactor4[N1&lt;:TensorVar,N2&lt;:TensorVar,N3&lt;:TensorVar,N4&lt;:TensorVar]:TensorFactor4[N1,N2,N3,N4]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="TensorFactor4.html"><span class="name">TensorFactor4</span></a><span class="tparams">[<span name="N1">N1 &lt;: <a href="../variable/TensorVar.html" class="extype" name="cc.factorie.variable.TensorVar">TensorVar</a></span>, <span name="N2">N2 &lt;: <a href="../variable/TensorVar.html" class="extype" name="cc.factorie.variable.TensorVar">TensorVar</a></span>, <span name="N3">N3 &lt;: <a href="../variable/TensorVar.html" class="extype" name="cc.factorie.variable.TensorVar">TensorVar</a></span>, <span name="N4">N4 &lt;: <a href="../variable/TensorVar.html" class="extype" name="cc.factorie.variable.TensorVar">TensorVar</a></span>]</span><span class="result"> extends <a href="Factor4.html" class="extype" name="cc.factorie.model.Factor4">Factor4</a>[<span class="extype" name="cc.factorie.model.TensorFactor4.N1">N1</span>, <span class="extype" name="cc.factorie.model.TensorFactor4.N2">N2</span>, <span class="extype" name="cc.factorie.model.TensorFactor4.N3">N3</span>, <span class="extype" name="cc.factorie.model.TensorFactor4.N4">N4</span>]</span>
+      </span>
+      </h4>
+      <p class="comment cmt">A 4-neighbor Factor whose statistics have type Tensor.</p>
+    </li><li name="cc.factorie.model.TensorFactorStatistics1" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="TensorFactorStatistics1[N1&lt;:cc.factorie.variable.TensorVar]extendsTensorFactor1[N1]"></a>
+      <a id="TensorFactorStatistics1[N1&lt;:TensorVar]:TensorFactorStatistics1[N1]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="TensorFactorStatistics1.html"><span class="name">TensorFactorStatistics1</span></a><span class="tparams">[<span name="N1">N1 &lt;: <a href="../variable/TensorVar.html" class="extype" name="cc.factorie.variable.TensorVar">TensorVar</a></span>]</span><span class="result"> extends <a href="TensorFactor1.html" class="extype" name="cc.factorie.model.TensorFactor1">TensorFactor1</a>[<span class="extype" name="cc.factorie.model.TensorFactorStatistics1.N1">N1</span>]</span>
+      </span>
+      </h4>
+      <p class="comment cmt">A trait for 1-neighbor Factor whose neighbor has Tensor values, and whose statistics are the outer product of those values.</p>
+    </li><li name="cc.factorie.model.TensorFactorStatistics2" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="TensorFactorStatistics2[N1&lt;:cc.factorie.variable.TensorVar,N2&lt;:cc.factorie.variable.TensorVar]extendsTensorFactor2[N1,N2]"></a>
+      <a id="TensorFactorStatistics2[N1&lt;:TensorVar,N2&lt;:TensorVar]:TensorFactorStatistics2[N1,N2]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="TensorFactorStatistics2.html"><span class="name">TensorFactorStatistics2</span></a><span class="tparams">[<span name="N1">N1 &lt;: <a href="../variable/TensorVar.html" class="extype" name="cc.factorie.variable.TensorVar">TensorVar</a></span>, <span name="N2">N2 &lt;: <a href="../variable/TensorVar.html" class="extype" name="cc.factorie.variable.TensorVar">TensorVar</a></span>]</span><span class="result"> extends <a href="TensorFactor2.html" class="extype" name="cc.factorie.model.TensorFactor2">TensorFactor2</a>[<span class="extype" name="cc.factorie.model.TensorFactorStatistics2.N1">N1</span>, <span class="extype" name="cc.factorie.model.TensorFactorStatistics2.N2">N2</span>]</span>
+      </span>
+      </h4>
+      <p class="comment cmt">A trait for 2-neighbor Factor whose neighbors have Tensor values,
+    and whose statistics are the outer product of those values.</p>
+    </li><li name="cc.factorie.model.TensorFactorStatistics3" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="TensorFactorStatistics3[N1&lt;:cc.factorie.variable.TensorVar,N2&lt;:cc.factorie.variable.TensorVar,N3&lt;:cc.factorie.variable.TensorVar]extendsTensorFactor3[N1,N2,N3]"></a>
+      <a id="TensorFactorStatistics3[N1&lt;:TensorVar,N2&lt;:TensorVar,N3&lt;:TensorVar]:TensorFactorStatistics3[N1,N2,N3]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="TensorFactorStatistics3.html"><span class="name">TensorFactorStatistics3</span></a><span class="tparams">[<span name="N1">N1 &lt;: <a href="../variable/TensorVar.html" class="extype" name="cc.factorie.variable.TensorVar">TensorVar</a></span>, <span name="N2">N2 &lt;: <a href="../variable/TensorVar.html" class="extype" name="cc.factorie.variable.TensorVar">TensorVar</a></span>, <span name="N3">N3 &lt;: <a href="../variable/TensorVar.html" class="extype" name="cc.factorie.variable.TensorVar">TensorVar</a></span>]</span><span class="result"> extends <a href="TensorFactor3.html" class="extype" name="cc.factorie.model.TensorFactor3">TensorFactor3</a>[<span class="extype" name="cc.factorie.model.TensorFactorStatistics3.N1">N1</span>, <span class="extype" name="cc.factorie.model.TensorFactorStatistics3.N2">N2</span>, <span class="extype" name="cc.factorie.model.TensorFactorStatistics3.N3">N3</span>]</span>
+      </span>
+      </h4>
+      <p class="comment cmt">A trait for 3-neighbor Factor whose neighbors have Tensor values,
+    and whose statistics are the outer product of those values.</p>
+    </li><li name="cc.factorie.model.TensorFactorStatistics4" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="TensorFactorStatistics4[N1&lt;:cc.factorie.variable.TensorVar,N2&lt;:cc.factorie.variable.TensorVar,N3&lt;:cc.factorie.variable.TensorVar,N4&lt;:cc.factorie.variable.TensorVar]extendsTensorFactor4[N1,N2,N3,N4]"></a>
+      <a id="TensorFactorStatistics4[N1&lt;:TensorVar,N2&lt;:TensorVar,N3&lt;:TensorVar,N4&lt;:TensorVar]:TensorFactorStatistics4[N1,N2,N3,N4]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="TensorFactorStatistics4.html"><span class="name">TensorFactorStatistics4</span></a><span class="tparams">[<span name="N1">N1 &lt;: <a href="../variable/TensorVar.html" class="extype" name="cc.factorie.variable.TensorVar">TensorVar</a></span>, <span name="N2">N2 &lt;: <a href="../variable/TensorVar.html" class="extype" name="cc.factorie.variable.TensorVar">TensorVar</a></span>, <span name="N3">N3 &lt;: <a href="../variable/TensorVar.html" class="extype" name="cc.factorie.variable.TensorVar">TensorVar</a></span>, <span name="N4">N4 &lt;: <a href="../variable/TensorVar.html" class="extype" name="cc.factorie.variable.TensorVar">TensorVar</a></span>]</span><span class="result"> extends <a href="TensorFactor4.html" class="extype" name="cc.factorie.model.TensorFactor4">TensorFactor4</a>[<span class="extype" name="cc.factorie.model.TensorFactorStatistics4.N1">N1</span>, <span class="extype" name="cc.factorie.model.TensorFactorStatistics4.N2">N2</span>, <span class="extype" name="cc.factorie.model.TensorFactorStatistics4.N3">N3</span>, <span class="extype" name="cc.factorie.model.TensorFactorStatistics4.N4">N4</span>]</span>
+      </span>
+      </h4>
+      <p class="comment cmt">A trait for 4-neighbor Factor whose neighbors have Tensor values,
+    and whose statistics are the outer product of those values.</p>
+    </li><li name="cc.factorie.model.TensorFactorWithStatistics1" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="TensorFactorWithStatistics1[N1&lt;:cc.factorie.variable.TensorVar]extendsTensorFactor1[N1]withTensorFactorStatistics1[N1]"></a>
+      <a id="TensorFactorWithStatistics1[N1&lt;:TensorVar]:TensorFactorWithStatistics1[N1]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="TensorFactorWithStatistics1.html"><span class="name">TensorFactorWithStatistics1</span></a><span class="tparams">[<span name="N1">N1 &lt;: <a href="../variable/TensorVar.html" class="extype" name="cc.factorie.variable.TensorVar">TensorVar</a></span>]</span><span class="result"> extends <a href="TensorFactor1.html" class="extype" name="cc.factorie.model.TensorFactor1">TensorFactor1</a>[<span class="extype" name="cc.factorie.model.TensorFactorWithStatistics1.N1">N1</span>] with <a href="TensorFactorStatistics1.html" class="extype" name="cc.factorie.model.TensorFactorStatistics1">TensorFactorStatistics1</a>[<span class="extype" name="cc.factorie.model.TensorFactorWithStatistics1.N1">N1</span>]</span>
+      </span>
+      </h4>
+      <p class="comment cmt">A 1-neighbor Factor whose neighbor has Tensor values,
+    and whose statistics are the outer product of those values.</p>
+    </li><li name="cc.factorie.model.TensorFactorWithStatistics2" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="TensorFactorWithStatistics2[N1&lt;:cc.factorie.variable.TensorVar,N2&lt;:cc.factorie.variable.TensorVar]extendsTensorFactor2[N1,N2]withTensorFactorStatistics2[N1,N2]"></a>
+      <a id="TensorFactorWithStatistics2[N1&lt;:TensorVar,N2&lt;:TensorVar]:TensorFactorWithStatistics2[N1,N2]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="TensorFactorWithStatistics2.html"><span class="name">TensorFactorWithStatistics2</span></a><span class="tparams">[<span name="N1">N1 &lt;: <a href="../variable/TensorVar.html" class="extype" name="cc.factorie.variable.TensorVar">TensorVar</a></span>, <span name="N2">N2 &lt;: <a href="../variable/TensorVar.html" class="extype" name="cc.factorie.variable.TensorVar">TensorVar</a></span>]</span><span class="result"> extends <a href="TensorFactor2.html" class="extype" name="cc.factorie.model.TensorFactor2">TensorFactor2</a>[<span class="extype" name="cc.factorie.model.TensorFactorWithStatistics2.N1">N1</span>, <span class="extype" name="cc.factorie.model.TensorFactorWithStatistics2.N2">N2</span>] with <a href="TensorFactorStatistics2.html" class="extype" name="cc.factorie.model.TensorFactorStatistics2">TensorFactorStatistics2</a>[<span class="extype" name="cc.factorie.model.TensorFactorWithStatistics2.N1">N1</span>, <span class="extype" name="cc.factorie.model.TensorFactorWithStatistics2.N2">N2</span>]</span>
+      </span>
+      </h4>
+      <p class="comment cmt">A 2-neighbor Factor whose neighbors have Tensor values,
+    and whose statistics are the outer product of those values.</p>
+    </li><li name="cc.factorie.model.TensorFactorWithStatistics3" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="TensorFactorWithStatistics3[N1&lt;:cc.factorie.variable.TensorVar,N2&lt;:cc.factorie.variable.TensorVar,N3&lt;:cc.factorie.variable.TensorVar]extendsTensorFactor3[N1,N2,N3]withTensorFactorStatistics3[N1,N2,N3]"></a>
+      <a id="TensorFactorWithStatistics3[N1&lt;:TensorVar,N2&lt;:TensorVar,N3&lt;:TensorVar]:TensorFactorWithStatistics3[N1,N2,N3]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="TensorFactorWithStatistics3.html"><span class="name">TensorFactorWithStatistics3</span></a><span class="tparams">[<span name="N1">N1 &lt;: <a href="../variable/TensorVar.html" class="extype" name="cc.factorie.variable.TensorVar">TensorVar</a></span>, <span name="N2">N2 &lt;: <a href="../variable/TensorVar.html" class="extype" name="cc.factorie.variable.TensorVar">TensorVar</a></span>, <span name="N3">N3 &lt;: <a href="../variable/TensorVar.html" class="extype" name="cc.factorie.variable.TensorVar">TensorVar</a></span>]</span><span class="result"> extends <a href="TensorFactor3.html" class="extype" name="cc.factorie.model.TensorFactor3">TensorFactor3</a>[<span class="extype" name="cc.factorie.model.TensorFactorWithStatistics3.N1">N1</span>, <span class="extype" name="cc.factorie.model.TensorFactorWithStatistics3.N2">N2</span>, <span class="extype" name="cc.factorie.model.TensorFactorWithStatistics3.N3">N3</span>] with <a href="TensorFactorStatistics3.html" class="extype" name="cc.factorie.model.TensorFactorStatistics3">TensorFactorStatistics3</a>[<span class="extype" name="cc.factorie.model.TensorFactorWithStatistics3.N1">N1</span>, <span class="extype" name="cc.factorie.model.TensorFactorWithStatistics3.N2">N2</span>, <span class="extype" name="cc.factorie.model.TensorFactorWithStatistics3.N3">N3</span>]</span>
+      </span>
+      </h4>
+      <p class="comment cmt">A 3-neighbor Factor whose neighbors have Tensor values,
+    and whose statistics are the outer product of those values.</p>
+    </li><li name="cc.factorie.model.TensorFactorWithStatistics4" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="TensorFactorWithStatistics4[N1&lt;:cc.factorie.variable.TensorVar,N2&lt;:cc.factorie.variable.TensorVar,N3&lt;:cc.factorie.variable.TensorVar,N4&lt;:cc.factorie.variable.TensorVar]extendsTensorFactor4[N1,N2,N3,N4]withTensorFactorStatistics4[N1,N2,N3,N4]"></a>
+      <a id="TensorFactorWithStatistics4[N1&lt;:TensorVar,N2&lt;:TensorVar,N3&lt;:TensorVar,N4&lt;:TensorVar]:TensorFactorWithStatistics4[N1,N2,N3,N4]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="TensorFactorWithStatistics4.html"><span class="name">TensorFactorWithStatistics4</span></a><span class="tparams">[<span name="N1">N1 &lt;: <a href="../variable/TensorVar.html" class="extype" name="cc.factorie.variable.TensorVar">TensorVar</a></span>, <span name="N2">N2 &lt;: <a href="../variable/TensorVar.html" class="extype" name="cc.factorie.variable.TensorVar">TensorVar</a></span>, <span name="N3">N3 &lt;: <a href="../variable/TensorVar.html" class="extype" name="cc.factorie.variable.TensorVar">TensorVar</a></span>, <span name="N4">N4 &lt;: <a href="../variable/TensorVar.html" class="extype" name="cc.factorie.variable.TensorVar">TensorVar</a></span>]</span><span class="result"> extends <a href="TensorFactor4.html" class="extype" name="cc.factorie.model.TensorFactor4">TensorFactor4</a>[<span class="extype" name="cc.factorie.model.TensorFactorWithStatistics4.N1">N1</span>, <span class="extype" name="cc.factorie.model.TensorFactorWithStatistics4.N2">N2</span>, <span class="extype" name="cc.factorie.model.TensorFactorWithStatistics4.N3">N3</span>, <span class="extype" name="cc.factorie.model.TensorFactorWithStatistics4.N4">N4</span>] with <a href="TensorFactorStatistics4.html" class="extype" name="cc.factorie.model.TensorFactorStatistics4">TensorFactorStatistics4</a>[<span class="extype" name="cc.factorie.model.TensorFactorWithStatistics4.N1">N1</span>, <span class="extype" name="cc.factorie.model.TensorFactorWithStatistics4.N2">N2</span>, <span class="extype" name="cc.factorie.model.TensorFactorWithStatistics4.N3">N3</span>, <span class="extype" name="cc.factorie.model.TensorFactorWithStatistics4.N4">N4</span>]</span>
+      </span>
+      </h4>
+      <p class="comment cmt">A 4-neighbor Factor whose neighbors have Tensor values,
+    and whose statistics are the outer product of those values.</p>
+    </li><li name="cc.factorie.model.TensorFamily" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="TensorFamilyextendsFamily"></a>
+      <a id="TensorFamily:TensorFamily"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="TensorFamily.html"><span class="name">TensorFamily</span></a><span class="result"> extends <a href="Family.html" class="extype" name="cc.factorie.model.Family">Family</a></span>
+      </span>
+      </h4>
+      <p class="comment cmt">A Family whose Factors have statistics that are WeightsMap.</p>
+    </li><li name="cc.factorie.model.TensorFamily1" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="TensorFamily1[N1&lt;:cc.factorie.variable.Var]extendsFamily1[N1]withTensorFamily"></a>
+      <a id="TensorFamily1[N1&lt;:variable.Var]:TensorFamily1[N1]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="TensorFamily1.html"><span class="name">TensorFamily1</span></a><span class="tparams">[<span name="N1">N1 &lt;: <a href="../variable/Var.html" class="extype" name="cc.factorie.variable.Var">variable.Var</a></span>]</span><span class="result"> extends <a href="Family1.html" class="extype" name="cc.factorie.model.Family1">Family1</a>[<span class="extype" name="cc.factorie.model.TensorFamily1.N1">N1</span>] with <a href="TensorFamily.html" class="extype" name="cc.factorie.model.TensorFamily">TensorFamily</a></span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.model.TensorFamily2" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="TensorFamily2[N1&lt;:cc.factorie.variable.Var,N2&lt;:cc.factorie.variable.Var]extendsFamily2[N1,N2]withTensorFamily"></a>
+      <a id="TensorFamily2[N1&lt;:variable.Var,N2&lt;:variable.Var]:TensorFamily2[N1,N2]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="TensorFamily2.html"><span class="name">TensorFamily2</span></a><span class="tparams">[<span name="N1">N1 &lt;: <a href="../variable/Var.html" class="extype" name="cc.factorie.variable.Var">variable.Var</a></span>, <span name="N2">N2 &lt;: <a href="../variable/Var.html" class="extype" name="cc.factorie.variable.Var">variable.Var</a></span>]</span><span class="result"> extends <a href="Family2.html" class="extype" name="cc.factorie.model.Family2">Family2</a>[<span class="extype" name="cc.factorie.model.TensorFamily2.N1">N1</span>, <span class="extype" name="cc.factorie.model.TensorFamily2.N2">N2</span>] with <a href="TensorFamily.html" class="extype" name="cc.factorie.model.TensorFamily">TensorFamily</a></span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.model.TensorFamily3" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="TensorFamily3[N1&lt;:cc.factorie.variable.Var,N2&lt;:cc.factorie.variable.Var,N3&lt;:cc.factorie.variable.Var]extendsFamily3[N1,N2,N3]withTensorFamily"></a>
+      <a id="TensorFamily3[N1&lt;:variable.Var,N2&lt;:variable.Var,N3&lt;:variable.Var]:TensorFamily3[N1,N2,N3]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="TensorFamily3.html"><span class="name">TensorFamily3</span></a><span class="tparams">[<span name="N1">N1 &lt;: <a href="../variable/Var.html" class="extype" name="cc.factorie.variable.Var">variable.Var</a></span>, <span name="N2">N2 &lt;: <a href="../variable/Var.html" class="extype" name="cc.factorie.variable.Var">variable.Var</a></span>, <span name="N3">N3 &lt;: <a href="../variable/Var.html" class="extype" name="cc.factorie.variable.Var">variable.Var</a></span>]</span><span class="result"> extends <a href="Family3.html" class="extype" name="cc.factorie.model.Family3">Family3</a>[<span class="extype" name="cc.factorie.model.TensorFamily3.N1">N1</span>, <span class="extype" name="cc.factorie.model.TensorFamily3.N2">N2</span>, <span class="extype" name="cc.factorie.model.TensorFamily3.N3">N3</span>] with <a href="TensorFamily.html" class="extype" name="cc.factorie.model.TensorFamily">TensorFamily</a></span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.model.TensorFamily4" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="TensorFamily4[N1&lt;:cc.factorie.variable.Var,N2&lt;:cc.factorie.variable.Var,N3&lt;:cc.factorie.variable.Var,N4&lt;:cc.factorie.variable.Var]extendsFamily4[N1,N2,N3,N4]withTensorFamily"></a>
+      <a id="TensorFamily4[N1&lt;:variable.Var,N2&lt;:variable.Var,N3&lt;:variable.Var,N4&lt;:variable.Var]:TensorFamily4[N1,N2,N3,N4]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="TensorFamily4.html"><span class="name">TensorFamily4</span></a><span class="tparams">[<span name="N1">N1 &lt;: <a href="../variable/Var.html" class="extype" name="cc.factorie.variable.Var">variable.Var</a></span>, <span name="N2">N2 &lt;: <a href="../variable/Var.html" class="extype" name="cc.factorie.variable.Var">variable.Var</a></span>, <span name="N3">N3 &lt;: <a href="../variable/Var.html" class="extype" name="cc.factorie.variable.Var">variable.Var</a></span>, <span name="N4">N4 &lt;: <a href="../variable/Var.html" class="extype" name="cc.factorie.variable.Var">variable.Var</a></span>]</span><span class="result"> extends <a href="Family4.html" class="extype" name="cc.factorie.model.Family4">Family4</a>[<span class="extype" name="cc.factorie.model.TensorFamily4.N1">N1</span>, <span class="extype" name="cc.factorie.model.TensorFamily4.N2">N2</span>, <span class="extype" name="cc.factorie.model.TensorFamily4.N3">N3</span>, <span class="extype" name="cc.factorie.model.TensorFamily4.N4">N4</span>] with <a href="TensorFamily.html" class="extype" name="cc.factorie.model.TensorFamily">TensorFamily</a></span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.model.TensorFamilyWithStatistics1" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="TensorFamilyWithStatistics1[N1&lt;:cc.factorie.variable.TensorVar]extendsTensorFamily1[N1]"></a>
+      <a id="TensorFamilyWithStatistics1[N1&lt;:TensorVar]:TensorFamilyWithStatistics1[N1]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="TensorFamilyWithStatistics1.html"><span class="name">TensorFamilyWithStatistics1</span></a><span class="tparams">[<span name="N1">N1 &lt;: <a href="../variable/TensorVar.html" class="extype" name="cc.factorie.variable.TensorVar">TensorVar</a></span>]</span><span class="result"> extends <a href="TensorFamily1.html" class="extype" name="cc.factorie.model.TensorFamily1">TensorFamily1</a>[<span class="extype" name="cc.factorie.model.TensorFamilyWithStatistics1.N1">N1</span>]</span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.model.TensorFamilyWithStatistics2" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="TensorFamilyWithStatistics2[N1&lt;:cc.factorie.variable.TensorVar,N2&lt;:cc.factorie.variable.TensorVar]extendsTensorFamily2[N1,N2]"></a>
+      <a id="TensorFamilyWithStatistics2[N1&lt;:TensorVar,N2&lt;:TensorVar]:TensorFamilyWithStatistics2[N1,N2]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="TensorFamilyWithStatistics2.html"><span class="name">TensorFamilyWithStatistics2</span></a><span class="tparams">[<span name="N1">N1 &lt;: <a href="../variable/TensorVar.html" class="extype" name="cc.factorie.variable.TensorVar">TensorVar</a></span>, <span name="N2">N2 &lt;: <a href="../variable/TensorVar.html" class="extype" name="cc.factorie.variable.TensorVar">TensorVar</a></span>]</span><span class="result"> extends <a href="TensorFamily2.html" class="extype" name="cc.factorie.model.TensorFamily2">TensorFamily2</a>[<span class="extype" name="cc.factorie.model.TensorFamilyWithStatistics2.N1">N1</span>, <span class="extype" name="cc.factorie.model.TensorFamilyWithStatistics2.N2">N2</span>]</span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.model.TensorFamilyWithStatistics3" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="TensorFamilyWithStatistics3[N1&lt;:cc.factorie.variable.TensorVar,N2&lt;:cc.factorie.variable.TensorVar,N3&lt;:cc.factorie.variable.TensorVar]extendsTensorFamily3[N1,N2,N3]"></a>
+      <a id="TensorFamilyWithStatistics3[N1&lt;:TensorVar,N2&lt;:TensorVar,N3&lt;:TensorVar]:TensorFamilyWithStatistics3[N1,N2,N3]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="TensorFamilyWithStatistics3.html"><span class="name">TensorFamilyWithStatistics3</span></a><span class="tparams">[<span name="N1">N1 &lt;: <a href="../variable/TensorVar.html" class="extype" name="cc.factorie.variable.TensorVar">TensorVar</a></span>, <span name="N2">N2 &lt;: <a href="../variable/TensorVar.html" class="extype" name="cc.factorie.variable.TensorVar">TensorVar</a></span>, <span name="N3">N3 &lt;: <a href="../variable/TensorVar.html" class="extype" name="cc.factorie.variable.TensorVar">TensorVar</a></span>]</span><span class="result"> extends <a href="TensorFamily3.html" class="extype" name="cc.factorie.model.TensorFamily3">TensorFamily3</a>[<span class="extype" name="cc.factorie.model.TensorFamilyWithStatistics3.N1">N1</span>, <span class="extype" name="cc.factorie.model.TensorFamilyWithStatistics3.N2">N2</span>, <span class="extype" name="cc.factorie.model.TensorFamilyWithStatistics3.N3">N3</span>]</span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.model.TensorFamilyWithStatistics4" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="TensorFamilyWithStatistics4[N1&lt;:cc.factorie.variable.TensorVar,N2&lt;:cc.factorie.variable.TensorVar,N3&lt;:cc.factorie.variable.TensorVar,N4&lt;:cc.factorie.variable.TensorVar]extendsTensorFamily4[N1,N2,N3,N4]"></a>
+      <a id="TensorFamilyWithStatistics4[N1&lt;:TensorVar,N2&lt;:TensorVar,N3&lt;:TensorVar,N4&lt;:TensorVar]:TensorFamilyWithStatistics4[N1,N2,N3,N4]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="TensorFamilyWithStatistics4.html"><span class="name">TensorFamilyWithStatistics4</span></a><span class="tparams">[<span name="N1">N1 &lt;: <a href="../variable/TensorVar.html" class="extype" name="cc.factorie.variable.TensorVar">TensorVar</a></span>, <span name="N2">N2 &lt;: <a href="../variable/TensorVar.html" class="extype" name="cc.factorie.variable.TensorVar">TensorVar</a></span>, <span name="N3">N3 &lt;: <a href="../variable/TensorVar.html" class="extype" name="cc.factorie.variable.TensorVar">TensorVar</a></span>, <span name="N4">N4 &lt;: <a href="../variable/TensorVar.html" class="extype" name="cc.factorie.variable.TensorVar">TensorVar</a></span>]</span><span class="result"> extends <a href="TensorFamily4.html" class="extype" name="cc.factorie.model.TensorFamily4">TensorFamily4</a>[<span class="extype" name="cc.factorie.model.TensorFamilyWithStatistics4.N1">N1</span>, <span class="extype" name="cc.factorie.model.TensorFamilyWithStatistics4.N2">N2</span>, <span class="extype" name="cc.factorie.model.TensorFamilyWithStatistics4.N3">N3</span>, <span class="extype" name="cc.factorie.model.TensorFamilyWithStatistics4.N4">N4</span>]</span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.model.TensorSet" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="TensorSetextendsAnyRef"></a>
+      <a id="TensorSet:TensorSet"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="TensorSet.html"><span class="name">TensorSet</span></a><span class="result"> extends <a href="../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>
+      </span>
+      </h4>
+      <p class="comment cmt">A collection of Tensors each associated with a Weights key.</p>
+    </li><li name="cc.factorie.model.TensorTemplate1" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="TensorTemplate1[N1&lt;:cc.factorie.variable.Var]extendsTemplate1[N1]withTensorFamily1[N1]"></a>
+      <a id="TensorTemplate1[N1&lt;:variable.Var]:TensorTemplate1[N1]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="TensorTemplate1.html"><span class="name">TensorTemplate1</span></a><span class="tparams">[<span name="N1">N1 &lt;: <a href="../variable/Var.html" class="extype" name="cc.factorie.variable.Var">variable.Var</a></span>]</span><span class="result"> extends <a href="Template1.html" class="extype" name="cc.factorie.model.Template1">Template1</a>[<span class="extype" name="cc.factorie.model.TensorTemplate1.N1">N1</span>] with <a href="TensorFamily1.html" class="extype" name="cc.factorie.model.TensorFamily1">TensorFamily1</a>[<span class="extype" name="cc.factorie.model.TensorTemplate1.N1">N1</span>]</span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.model.TensorTemplate2" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="TensorTemplate2[N1&lt;:cc.factorie.variable.Var,N2&lt;:cc.factorie.variable.Var]extendsTemplate2[N1,N2]withTensorFamily2[N1,N2]"></a>
+      <a id="TensorTemplate2[N1&lt;:variable.Var,N2&lt;:variable.Var]:TensorTemplate2[N1,N2]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="TensorTemplate2.html"><span class="name">TensorTemplate2</span></a><span class="tparams">[<span name="N1">N1 &lt;: <a href="../variable/Var.html" class="extype" name="cc.factorie.variable.Var">variable.Var</a></span>, <span name="N2">N2 &lt;: <a href="../variable/Var.html" class="extype" name="cc.factorie.variable.Var">variable.Var</a></span>]</span><span class="result"> extends <a href="Template2.html" class="extype" name="cc.factorie.model.Template2">Template2</a>[<span class="extype" name="cc.factorie.model.TensorTemplate2.N1">N1</span>, <span class="extype" name="cc.factorie.model.TensorTemplate2.N2">N2</span>] with <a href="TensorFamily2.html" class="extype" name="cc.factorie.model.TensorFamily2">TensorFamily2</a>[<span class="extype" name="cc.factorie.model.TensorTemplate2.N1">N1</span>, <span class="extype" name="cc.factorie.model.TensorTemplate2.N2">N2</span>]</span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.model.TensorTemplate3" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="TensorTemplate3[N1&lt;:cc.factorie.variable.Var,N2&lt;:cc.factorie.variable.Var,N3&lt;:cc.factorie.variable.Var]extendsTemplate3[N1,N2,N3]withTensorFamily3[N1,N2,N3]"></a>
+      <a id="TensorTemplate3[N1&lt;:variable.Var,N2&lt;:variable.Var,N3&lt;:variable.Var]:TensorTemplate3[N1,N2,N3]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="TensorTemplate3.html"><span class="name">TensorTemplate3</span></a><span class="tparams">[<span name="N1">N1 &lt;: <a href="../variable/Var.html" class="extype" name="cc.factorie.variable.Var">variable.Var</a></span>, <span name="N2">N2 &lt;: <a href="../variable/Var.html" class="extype" name="cc.factorie.variable.Var">variable.Var</a></span>, <span name="N3">N3 &lt;: <a href="../variable/Var.html" class="extype" name="cc.factorie.variable.Var">variable.Var</a></span>]</span><span class="result"> extends <a href="Template3.html" class="extype" name="cc.factorie.model.Template3">Template3</a>[<span class="extype" name="cc.factorie.model.TensorTemplate3.N1">N1</span>, <span class="extype" name="cc.factorie.model.TensorTemplate3.N2">N2</span>, <span class="extype" name="cc.factorie.model.TensorTemplate3.N3">N3</span>] with <a href="TensorFamily3.html" class="extype" name="cc.factorie.model.TensorFamily3">TensorFamily3</a>[<span class="extype" name="cc.factorie.model.TensorTemplate3.N1">N1</span>, <span class="extype" name="cc.factorie.model.TensorTemplate3.N2">N2</span>, <span class="extype" name="cc.factorie.model.TensorTemplate3.N3">N3</span>]</span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.model.TensorTemplate4" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="TensorTemplate4[N1&lt;:cc.factorie.variable.Var,N2&lt;:cc.factorie.variable.Var,N3&lt;:cc.factorie.variable.Var,N4&lt;:cc.factorie.variable.Var]extendsTemplate4[N1,N2,N3,N4]withTensorFamily4[N1,N2,N3,N4]"></a>
+      <a id="TensorTemplate4[N1&lt;:variable.Var,N2&lt;:variable.Var,N3&lt;:variable.Var,N4&lt;:variable.Var]:TensorTemplate4[N1,N2,N3,N4]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="TensorTemplate4.html"><span class="name">TensorTemplate4</span></a><span class="tparams">[<span name="N1">N1 &lt;: <a href="../variable/Var.html" class="extype" name="cc.factorie.variable.Var">variable.Var</a></span>, <span name="N2">N2 &lt;: <a href="../variable/Var.html" class="extype" name="cc.factorie.variable.Var">variable.Var</a></span>, <span name="N3">N3 &lt;: <a href="../variable/Var.html" class="extype" name="cc.factorie.variable.Var">variable.Var</a></span>, <span name="N4">N4 &lt;: <a href="../variable/Var.html" class="extype" name="cc.factorie.variable.Var">variable.Var</a></span>]</span><span class="result"> extends <a href="Template4.html" class="extype" name="cc.factorie.model.Template4">Template4</a>[<span class="extype" name="cc.factorie.model.TensorTemplate4.N1">N1</span>, <span class="extype" name="cc.factorie.model.TensorTemplate4.N2">N2</span>, <span class="extype" name="cc.factorie.model.TensorTemplate4.N3">N3</span>, <span class="extype" name="cc.factorie.model.TensorTemplate4.N4">N4</span>] with <a href="TensorFamily4.html" class="extype" name="cc.factorie.model.TensorFamily4">TensorFamily4</a>[<span class="extype" name="cc.factorie.model.TensorTemplate4.N1">N1</span>, <span class="extype" name="cc.factorie.model.TensorTemplate4.N2">N2</span>, <span class="extype" name="cc.factorie.model.TensorTemplate4.N3">N3</span>, <span class="extype" name="cc.factorie.model.TensorTemplate4.N4">N4</span>]</span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.model.TensorTemplateWithStatistics1" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="TensorTemplateWithStatistics1[N1&lt;:cc.factorie.variable.TensorVar]extendsTemplate1[N1]withTensorFamilyWithStatistics1[N1]"></a>
+      <a id="TensorTemplateWithStatistics1[N1&lt;:TensorVar]:TensorTemplateWithStatistics1[N1]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="TensorTemplateWithStatistics1.html"><span class="name">TensorTemplateWithStatistics1</span></a><span class="tparams">[<span name="N1">N1 &lt;: <a href="../variable/TensorVar.html" class="extype" name="cc.factorie.variable.TensorVar">TensorVar</a></span>]</span><span class="result"> extends <a href="Template1.html" class="extype" name="cc.factorie.model.Template1">Template1</a>[<span class="extype" name="cc.factorie.model.TensorTemplateWithStatistics1.N1">N1</span>] with <a href="TensorFamilyWithStatistics1.html" class="extype" name="cc.factorie.model.TensorFamilyWithStatistics1">TensorFamilyWithStatistics1</a>[<span class="extype" name="cc.factorie.model.TensorTemplateWithStatistics1.N1">N1</span>]</span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.model.TensorTemplateWithStatistics2" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="TensorTemplateWithStatistics2[N1&lt;:cc.factorie.variable.TensorVar,N2&lt;:cc.factorie.variable.TensorVar]extendsTemplate2[N1,N2]withTensorFamilyWithStatistics2[N1,N2]"></a>
+      <a id="TensorTemplateWithStatistics2[N1&lt;:TensorVar,N2&lt;:TensorVar]:TensorTemplateWithStatistics2[N1,N2]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="TensorTemplateWithStatistics2.html"><span class="name">TensorTemplateWithStatistics2</span></a><span class="tparams">[<span name="N1">N1 &lt;: <a href="../variable/TensorVar.html" class="extype" name="cc.factorie.variable.TensorVar">TensorVar</a></span>, <span name="N2">N2 &lt;: <a href="../variable/TensorVar.html" class="extype" name="cc.factorie.variable.TensorVar">TensorVar</a></span>]</span><span class="result"> extends <a href="Template2.html" class="extype" name="cc.factorie.model.Template2">Template2</a>[<span class="extype" name="cc.factorie.model.TensorTemplateWithStatistics2.N1">N1</span>, <span class="extype" name="cc.factorie.model.TensorTemplateWithStatistics2.N2">N2</span>] with <a href="TensorFamilyWithStatistics2.html" class="extype" name="cc.factorie.model.TensorFamilyWithStatistics2">TensorFamilyWithStatistics2</a>[<span class="extype" name="cc.factorie.model.TensorTemplateWithStatistics2.N1">N1</span>, <span class="extype" name="cc.factorie.model.TensorTemplateWithStatistics2.N2">N2</span>]</span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.model.TensorTemplateWithStatistics3" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="TensorTemplateWithStatistics3[N1&lt;:cc.factorie.variable.TensorVar,N2&lt;:cc.factorie.variable.TensorVar,N3&lt;:cc.factorie.variable.TensorVar]extendsTemplate3[N1,N2,N3]withTensorFamilyWithStatistics3[N1,N2,N3]"></a>
+      <a id="TensorTemplateWithStatistics3[N1&lt;:TensorVar,N2&lt;:TensorVar,N3&lt;:TensorVar]:TensorTemplateWithStatistics3[N1,N2,N3]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="TensorTemplateWithStatistics3.html"><span class="name">TensorTemplateWithStatistics3</span></a><span class="tparams">[<span name="N1">N1 &lt;: <a href="../variable/TensorVar.html" class="extype" name="cc.factorie.variable.TensorVar">TensorVar</a></span>, <span name="N2">N2 &lt;: <a href="../variable/TensorVar.html" class="extype" name="cc.factorie.variable.TensorVar">TensorVar</a></span>, <span name="N3">N3 &lt;: <a href="../variable/TensorVar.html" class="extype" name="cc.factorie.variable.TensorVar">TensorVar</a></span>]</span><span class="result"> extends <a href="Template3.html" class="extype" name="cc.factorie.model.Template3">Template3</a>[<span class="extype" name="cc.factorie.model.TensorTemplateWithStatistics3.N1">N1</span>, <span class="extype" name="cc.factorie.model.TensorTemplateWithStatistics3.N2">N2</span>, <span class="extype" name="cc.factorie.model.TensorTemplateWithStatistics3.N3">N3</span>] with <a href="TensorFamilyWithStatistics3.html" class="extype" name="cc.factorie.model.TensorFamilyWithStatistics3">TensorFamilyWithStatistics3</a>[<span class="extype" name="cc.factorie.model.TensorTemplateWithStatistics3.N1">N1</span>, <span class="extype" name="cc.factorie.model.TensorTemplateWithStatistics3.N2">N2</span>, <span class="extype" name="cc.factorie.model.TensorTemplateWithStatistics3.N3">N3</span>]</span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.model.TensorTemplateWithStatistics4" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="TensorTemplateWithStatistics4[N1&lt;:cc.factorie.variable.TensorVar,N2&lt;:cc.factorie.variable.TensorVar,N3&lt;:cc.factorie.variable.TensorVar,N4&lt;:cc.factorie.variable.TensorVar]extendsTemplate4[N1,N2,N3,N4]withTensorFamilyWithStatistics4[N1,N2,N3,N4]"></a>
+      <a id="TensorTemplateWithStatistics4[N1&lt;:TensorVar,N2&lt;:TensorVar,N3&lt;:TensorVar,N4&lt;:TensorVar]:TensorTemplateWithStatistics4[N1,N2,N3,N4]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="TensorTemplateWithStatistics4.html"><span class="name">TensorTemplateWithStatistics4</span></a><span class="tparams">[<span name="N1">N1 &lt;: <a href="../variable/TensorVar.html" class="extype" name="cc.factorie.variable.TensorVar">TensorVar</a></span>, <span name="N2">N2 &lt;: <a href="../variable/TensorVar.html" class="extype" name="cc.factorie.variable.TensorVar">TensorVar</a></span>, <span name="N3">N3 &lt;: <a href="../variable/TensorVar.html" class="extype" name="cc.factorie.variable.TensorVar">TensorVar</a></span>, <span name="N4">N4 &lt;: <a href="../variable/TensorVar.html" class="extype" name="cc.factorie.variable.TensorVar">TensorVar</a></span>]</span><span class="result"> extends <a href="Template4.html" class="extype" name="cc.factorie.model.Template4">Template4</a>[<span class="extype" name="cc.factorie.model.TensorTemplateWithStatistics4.N1">N1</span>, <span class="extype" name="cc.factorie.model.TensorTemplateWithStatistics4.N2">N2</span>, <span class="extype" name="cc.factorie.model.TensorTemplateWithStatistics4.N3">N3</span>, <span class="extype" name="cc.factorie.model.TensorTemplateWithStatistics4.N4">N4</span>] with <a href="TensorFamilyWithStatistics4.html" class="extype" name="cc.factorie.model.TensorFamilyWithStatistics4">TensorFamilyWithStatistics4</a>[<span class="extype" name="cc.factorie.model.TensorTemplateWithStatistics4.N1">N1</span>, <span class="extype" name="cc.factorie.model.TensorTemplateWithStatistics4.N2">N2</span>, <span class="extype" name="cc.factorie.model.TensorTemplateWithStatistics4.N3">N3</span>, <span class="extype" name="cc.factorie.model.TensorTemplateWithStatistics4.N4">N4</span>]</span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.model.TupleFactorWithStatistics2" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="TupleFactorWithStatistics2[N1&lt;:cc.factorie.variable.Var,N2&lt;:cc.factorie.variable.Var]extendsFactor2[N1,N2]"></a>
+      <a id="TupleFactorWithStatistics2[N1&lt;:variable.Var,N2&lt;:variable.Var]:TupleFactorWithStatistics2[N1,N2]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="TupleFactorWithStatistics2.html"><span class="name">TupleFactorWithStatistics2</span></a><span class="tparams">[<span name="N1">N1 &lt;: <a href="../variable/Var.html" class="extype" name="cc.factorie.variable.Var">variable.Var</a></span>, <span name="N2">N2 &lt;: <a href="../variable/Var.html" class="extype" name="cc.factorie.variable.Var">variable.Var</a></span>]</span><span class="result"> extends <a href="Factor2.html" class="extype" name="cc.factorie.model.Factor2">Factor2</a>[<span class="extype" name="cc.factorie.model.TupleFactorWithStatistics2.N1">N1</span>, <span class="extype" name="cc.factorie.model.TupleFactorWithStatistics2.N2">N2</span>]</span>
+      </span>
+      </h4>
+      <p class="comment cmt">A 2-neighbor Factor whose statistics have type Tuple2.</p>
+    </li><li name="cc.factorie.model.TupleFactorWithStatistics3" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="TupleFactorWithStatistics3[N1&lt;:cc.factorie.variable.Var,N2&lt;:cc.factorie.variable.Var,N3&lt;:cc.factorie.variable.Var]extendsFactor3[N1,N2,N3]"></a>
+      <a id="TupleFactorWithStatistics3[N1&lt;:variable.Var,N2&lt;:variable.Var,N3&lt;:variable.Var]:TupleFactorWithStatistics3[N1,N2,N3]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="TupleFactorWithStatistics3.html"><span class="name">TupleFactorWithStatistics3</span></a><span class="tparams">[<span name="N1">N1 &lt;: <a href="../variable/Var.html" class="extype" name="cc.factorie.variable.Var">variable.Var</a></span>, <span name="N2">N2 &lt;: <a href="../variable/Var.html" class="extype" name="cc.factorie.variable.Var">variable.Var</a></span>, <span name="N3">N3 &lt;: <a href="../variable/Var.html" class="extype" name="cc.factorie.variable.Var">variable.Var</a></span>]</span><span class="result"> extends <a href="Factor3.html" class="extype" name="cc.factorie.model.Factor3">Factor3</a>[<span class="extype" name="cc.factorie.model.TupleFactorWithStatistics3.N1">N1</span>, <span class="extype" name="cc.factorie.model.TupleFactorWithStatistics3.N2">N2</span>, <span class="extype" name="cc.factorie.model.TupleFactorWithStatistics3.N3">N3</span>]</span>
+      </span>
+      </h4>
+      <p class="comment cmt">A 3-neighbor Factor whose statistics have type Tuple2.</p>
+    </li><li name="cc.factorie.model.TupleFactorWithStatistics4" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="TupleFactorWithStatistics4[N1&lt;:cc.factorie.variable.Var,N2&lt;:cc.factorie.variable.Var,N3&lt;:cc.factorie.variable.Var,N4&lt;:cc.factorie.variable.Var]extendsFactor4[N1,N2,N3,N4]"></a>
+      <a id="TupleFactorWithStatistics4[N1&lt;:variable.Var,N2&lt;:variable.Var,N3&lt;:variable.Var,N4&lt;:variable.Var]:TupleFactorWithStatistics4[N1,N2,N3,N4]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="TupleFactorWithStatistics4.html"><span class="name">TupleFactorWithStatistics4</span></a><span class="tparams">[<span name="N1">N1 &lt;: <a href="../variable/Var.html" class="extype" name="cc.factorie.variable.Var">variable.Var</a></span>, <span name="N2">N2 &lt;: <a href="../variable/Var.html" class="extype" name="cc.factorie.variable.Var">variable.Var</a></span>, <span name="N3">N3 &lt;: <a href="../variable/Var.html" class="extype" name="cc.factorie.variable.Var">variable.Var</a></span>, <span name="N4">N4 &lt;: <a href="../variable/Var.html" class="extype" name="cc.factorie.variable.Var">variable.Var</a></span>]</span><span class="result"> extends <a href="Factor4.html" class="extype" name="cc.factorie.model.Factor4">Factor4</a>[<span class="extype" name="cc.factorie.model.TupleFactorWithStatistics4.N1">N1</span>, <span class="extype" name="cc.factorie.model.TupleFactorWithStatistics4.N2">N2</span>, <span class="extype" name="cc.factorie.model.TupleFactorWithStatistics4.N3">N3</span>, <span class="extype" name="cc.factorie.model.TupleFactorWithStatistics4.N4">N4</span>]</span>
+      </span>
+      </h4>
+      <p class="comment cmt">A 4-neighbor Factor whose statistics have type Tuple2.</p>
+    </li><li name="cc.factorie.model.TupleFamily1" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="TupleFamily1[N1&lt;:cc.factorie.variable.Var]extendsFamily1[N1]"></a>
+      <a id="TupleFamily1[N1&lt;:variable.Var]:TupleFamily1[N1]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="TupleFamily1.html"><span class="name">TupleFamily1</span></a><span class="tparams">[<span name="N1">N1 &lt;: <a href="../variable/Var.html" class="extype" name="cc.factorie.variable.Var">variable.Var</a></span>]</span><span class="result"> extends <a href="Family1.html" class="extype" name="cc.factorie.model.Family1">Family1</a>[<span class="extype" name="cc.factorie.model.TupleFamily1.N1">N1</span>]</span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.model.TupleFamily2" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="TupleFamily2[N1&lt;:cc.factorie.variable.Var,N2&lt;:cc.factorie.variable.Var]extendsFamily2[N1,N2]"></a>
+      <a id="TupleFamily2[N1&lt;:variable.Var,N2&lt;:variable.Var]:TupleFamily2[N1,N2]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="TupleFamily2.html"><span class="name">TupleFamily2</span></a><span class="tparams">[<span name="N1">N1 &lt;: <a href="../variable/Var.html" class="extype" name="cc.factorie.variable.Var">variable.Var</a></span>, <span name="N2">N2 &lt;: <a href="../variable/Var.html" class="extype" name="cc.factorie.variable.Var">variable.Var</a></span>]</span><span class="result"> extends <a href="Family2.html" class="extype" name="cc.factorie.model.Family2">Family2</a>[<span class="extype" name="cc.factorie.model.TupleFamily2.N1">N1</span>, <span class="extype" name="cc.factorie.model.TupleFamily2.N2">N2</span>]</span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.model.TupleFamily3" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="TupleFamily3[N1&lt;:cc.factorie.variable.Var,N2&lt;:cc.factorie.variable.Var,N3&lt;:cc.factorie.variable.Var]extendsFamily3[N1,N2,N3]"></a>
+      <a id="TupleFamily3[N1&lt;:variable.Var,N2&lt;:variable.Var,N3&lt;:variable.Var]:TupleFamily3[N1,N2,N3]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="TupleFamily3.html"><span class="name">TupleFamily3</span></a><span class="tparams">[<span name="N1">N1 &lt;: <a href="../variable/Var.html" class="extype" name="cc.factorie.variable.Var">variable.Var</a></span>, <span name="N2">N2 &lt;: <a href="../variable/Var.html" class="extype" name="cc.factorie.variable.Var">variable.Var</a></span>, <span name="N3">N3 &lt;: <a href="../variable/Var.html" class="extype" name="cc.factorie.variable.Var">variable.Var</a></span>]</span><span class="result"> extends <a href="Family3.html" class="extype" name="cc.factorie.model.Family3">Family3</a>[<span class="extype" name="cc.factorie.model.TupleFamily3.N1">N1</span>, <span class="extype" name="cc.factorie.model.TupleFamily3.N2">N2</span>, <span class="extype" name="cc.factorie.model.TupleFamily3.N3">N3</span>]</span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.model.TupleFamily4" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="TupleFamily4[N1&lt;:cc.factorie.variable.Var,N2&lt;:cc.factorie.variable.Var,N3&lt;:cc.factorie.variable.Var,N4&lt;:cc.factorie.variable.Var]extendsFamily4[N1,N2,N3,N4]"></a>
+      <a id="TupleFamily4[N1&lt;:variable.Var,N2&lt;:variable.Var,N3&lt;:variable.Var,N4&lt;:variable.Var]:TupleFamily4[N1,N2,N3,N4]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="TupleFamily4.html"><span class="name">TupleFamily4</span></a><span class="tparams">[<span name="N1">N1 &lt;: <a href="../variable/Var.html" class="extype" name="cc.factorie.variable.Var">variable.Var</a></span>, <span name="N2">N2 &lt;: <a href="../variable/Var.html" class="extype" name="cc.factorie.variable.Var">variable.Var</a></span>, <span name="N3">N3 &lt;: <a href="../variable/Var.html" class="extype" name="cc.factorie.variable.Var">variable.Var</a></span>, <span name="N4">N4 &lt;: <a href="../variable/Var.html" class="extype" name="cc.factorie.variable.Var">variable.Var</a></span>]</span><span class="result"> extends <a href="Family4.html" class="extype" name="cc.factorie.model.Family4">Family4</a>[<span class="extype" name="cc.factorie.model.TupleFamily4.N1">N1</span>, <span class="extype" name="cc.factorie.model.TupleFamily4.N2">N2</span>, <span class="extype" name="cc.factorie.model.TupleFamily4.N3">N3</span>, <span class="extype" name="cc.factorie.model.TupleFamily4.N4">N4</span>]</span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.model.TupleFamilyWithStatistics1" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="TupleFamilyWithStatistics1[N1&lt;:cc.factorie.variable.Var]extendsTupleFamily1[N1]"></a>
+      <a id="TupleFamilyWithStatistics1[N1&lt;:variable.Var]:TupleFamilyWithStatistics1[N1]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="TupleFamilyWithStatistics1.html"><span class="name">TupleFamilyWithStatistics1</span></a><span class="tparams">[<span name="N1">N1 &lt;: <a href="../variable/Var.html" class="extype" name="cc.factorie.variable.Var">variable.Var</a></span>]</span><span class="result"> extends <a href="TupleFamily1.html" class="extype" name="cc.factorie.model.TupleFamily1">TupleFamily1</a>[<span class="extype" name="cc.factorie.model.TupleFamilyWithStatistics1.N1">N1</span>]</span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.model.TupleFamilyWithStatistics2" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="TupleFamilyWithStatistics2[N1&lt;:cc.factorie.variable.Var,N2&lt;:cc.factorie.variable.Var]extendsTupleFamily2[N1,N2]"></a>
+      <a id="TupleFamilyWithStatistics2[N1&lt;:variable.Var,N2&lt;:variable.Var]:TupleFamilyWithStatistics2[N1,N2]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="TupleFamilyWithStatistics2.html"><span class="name">TupleFamilyWithStatistics2</span></a><span class="tparams">[<span name="N1">N1 &lt;: <a href="../variable/Var.html" class="extype" name="cc.factorie.variable.Var">variable.Var</a></span>, <span name="N2">N2 &lt;: <a href="../variable/Var.html" class="extype" name="cc.factorie.variable.Var">variable.Var</a></span>]</span><span class="result"> extends <a href="TupleFamily2.html" class="extype" name="cc.factorie.model.TupleFamily2">TupleFamily2</a>[<span class="extype" name="cc.factorie.model.TupleFamilyWithStatistics2.N1">N1</span>, <span class="extype" name="cc.factorie.model.TupleFamilyWithStatistics2.N2">N2</span>]</span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.model.TupleFamilyWithStatistics3" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="TupleFamilyWithStatistics3[N1&lt;:cc.factorie.variable.Var,N2&lt;:cc.factorie.variable.Var,N3&lt;:cc.factorie.variable.Var]extendsTupleFamily3[N1,N2,N3]"></a>
+      <a id="TupleFamilyWithStatistics3[N1&lt;:variable.Var,N2&lt;:variable.Var,N3&lt;:variable.Var]:TupleFamilyWithStatistics3[N1,N2,N3]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="TupleFamilyWithStatistics3.html"><span class="name">TupleFamilyWithStatistics3</span></a><span class="tparams">[<span name="N1">N1 &lt;: <a href="../variable/Var.html" class="extype" name="cc.factorie.variable.Var">variable.Var</a></span>, <span name="N2">N2 &lt;: <a href="../variable/Var.html" class="extype" name="cc.factorie.variable.Var">variable.Var</a></span>, <span name="N3">N3 &lt;: <a href="../variable/Var.html" class="extype" name="cc.factorie.variable.Var">variable.Var</a></span>]</span><span class="result"> extends <a href="TupleFamily3.html" class="extype" name="cc.factorie.model.TupleFamily3">TupleFamily3</a>[<span class="extype" name="cc.factorie.model.TupleFamilyWithStatistics3.N1">N1</span>, <span class="extype" name="cc.factorie.model.TupleFamilyWithStatistics3.N2">N2</span>, <span class="extype" name="cc.factorie.model.TupleFamilyWithStatistics3.N3">N3</span>]</span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.model.TupleFamilyWithStatistics4" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="TupleFamilyWithStatistics4[N1&lt;:cc.factorie.variable.Var,N2&lt;:cc.factorie.variable.Var,N3&lt;:cc.factorie.variable.Var,N4&lt;:cc.factorie.variable.Var]extendsTupleFamily4[N1,N2,N3,N4]"></a>
+      <a id="TupleFamilyWithStatistics4[N1&lt;:variable.Var,N2&lt;:variable.Var,N3&lt;:variable.Var,N4&lt;:variable.Var]:TupleFamilyWithStatistics4[N1,N2,N3,N4]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="TupleFamilyWithStatistics4.html"><span class="name">TupleFamilyWithStatistics4</span></a><span class="tparams">[<span name="N1">N1 &lt;: <a href="../variable/Var.html" class="extype" name="cc.factorie.variable.Var">variable.Var</a></span>, <span name="N2">N2 &lt;: <a href="../variable/Var.html" class="extype" name="cc.factorie.variable.Var">variable.Var</a></span>, <span name="N3">N3 &lt;: <a href="../variable/Var.html" class="extype" name="cc.factorie.variable.Var">variable.Var</a></span>, <span name="N4">N4 &lt;: <a href="../variable/Var.html" class="extype" name="cc.factorie.variable.Var">variable.Var</a></span>]</span><span class="result"> extends <a href="TupleFamily4.html" class="extype" name="cc.factorie.model.TupleFamily4">TupleFamily4</a>[<span class="extype" name="cc.factorie.model.TupleFamilyWithStatistics4.N1">N1</span>, <span class="extype" name="cc.factorie.model.TupleFamilyWithStatistics4.N2">N2</span>, <span class="extype" name="cc.factorie.model.TupleFamilyWithStatistics4.N3">N3</span>, <span class="extype" name="cc.factorie.model.TupleFamilyWithStatistics4.N4">N4</span>]</span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.model.TupleTemplate1" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="TupleTemplate1[N1&lt;:cc.factorie.variable.Var]extendsTemplate1[N1]withTupleFamily1[N1]"></a>
+      <a id="TupleTemplate1[N1&lt;:variable.Var]:TupleTemplate1[N1]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="TupleTemplate1.html"><span class="name">TupleTemplate1</span></a><span class="tparams">[<span name="N1">N1 &lt;: <a href="../variable/Var.html" class="extype" name="cc.factorie.variable.Var">variable.Var</a></span>]</span><span class="result"> extends <a href="Template1.html" class="extype" name="cc.factorie.model.Template1">Template1</a>[<span class="extype" name="cc.factorie.model.TupleTemplate1.N1">N1</span>] with <a href="TupleFamily1.html" class="extype" name="cc.factorie.model.TupleFamily1">TupleFamily1</a>[<span class="extype" name="cc.factorie.model.TupleTemplate1.N1">N1</span>]</span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.model.TupleTemplate2" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="TupleTemplate2[N1&lt;:cc.factorie.variable.Var,N2&lt;:cc.factorie.variable.Var]extendsTemplate2[N1,N2]withTupleFamily2[N1,N2]"></a>
+      <a id="TupleTemplate2[N1&lt;:variable.Var,N2&lt;:variable.Var]:TupleTemplate2[N1,N2]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="TupleTemplate2.html"><span class="name">TupleTemplate2</span></a><span class="tparams">[<span name="N1">N1 &lt;: <a href="../variable/Var.html" class="extype" name="cc.factorie.variable.Var">variable.Var</a></span>, <span name="N2">N2 &lt;: <a href="../variable/Var.html" class="extype" name="cc.factorie.variable.Var">variable.Var</a></span>]</span><span class="result"> extends <a href="Template2.html" class="extype" name="cc.factorie.model.Template2">Template2</a>[<span class="extype" name="cc.factorie.model.TupleTemplate2.N1">N1</span>, <span class="extype" name="cc.factorie.model.TupleTemplate2.N2">N2</span>] with <a href="TupleFamily2.html" class="extype" name="cc.factorie.model.TupleFamily2">TupleFamily2</a>[<span class="extype" name="cc.factorie.model.TupleTemplate2.N1">N1</span>, <span class="extype" name="cc.factorie.model.TupleTemplate2.N2">N2</span>]</span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.model.TupleTemplate3" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="TupleTemplate3[N1&lt;:cc.factorie.variable.Var,N2&lt;:cc.factorie.variable.Var,N3&lt;:cc.factorie.variable.Var]extendsTemplate3[N1,N2,N3]withTupleFamily3[N1,N2,N3]"></a>
+      <a id="TupleTemplate3[N1&lt;:variable.Var,N2&lt;:variable.Var,N3&lt;:variable.Var]:TupleTemplate3[N1,N2,N3]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="TupleTemplate3.html"><span class="name">TupleTemplate3</span></a><span class="tparams">[<span name="N1">N1 &lt;: <a href="../variable/Var.html" class="extype" name="cc.factorie.variable.Var">variable.Var</a></span>, <span name="N2">N2 &lt;: <a href="../variable/Var.html" class="extype" name="cc.factorie.variable.Var">variable.Var</a></span>, <span name="N3">N3 &lt;: <a href="../variable/Var.html" class="extype" name="cc.factorie.variable.Var">variable.Var</a></span>]</span><span class="result"> extends <a href="Template3.html" class="extype" name="cc.factorie.model.Template3">Template3</a>[<span class="extype" name="cc.factorie.model.TupleTemplate3.N1">N1</span>, <span class="extype" name="cc.factorie.model.TupleTemplate3.N2">N2</span>, <span class="extype" name="cc.factorie.model.TupleTemplate3.N3">N3</span>] with <a href="TupleFamily3.html" class="extype" name="cc.factorie.model.TupleFamily3">TupleFamily3</a>[<span class="extype" name="cc.factorie.model.TupleTemplate3.N1">N1</span>, <span class="extype" name="cc.factorie.model.TupleTemplate3.N2">N2</span>, <span class="extype" name="cc.factorie.model.TupleTemplate3.N3">N3</span>]</span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.model.TupleTemplate4" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="TupleTemplate4[N1&lt;:cc.factorie.variable.Var,N2&lt;:cc.factorie.variable.Var,N3&lt;:cc.factorie.variable.Var,N4&lt;:cc.factorie.variable.Var]extendsTemplate4[N1,N2,N3,N4]withTupleFamily4[N1,N2,N3,N4]"></a>
+      <a id="TupleTemplate4[N1&lt;:variable.Var,N2&lt;:variable.Var,N3&lt;:variable.Var,N4&lt;:variable.Var]:TupleTemplate4[N1,N2,N3,N4]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="TupleTemplate4.html"><span class="name">TupleTemplate4</span></a><span class="tparams">[<span name="N1">N1 &lt;: <a href="../variable/Var.html" class="extype" name="cc.factorie.variable.Var">variable.Var</a></span>, <span name="N2">N2 &lt;: <a href="../variable/Var.html" class="extype" name="cc.factorie.variable.Var">variable.Var</a></span>, <span name="N3">N3 &lt;: <a href="../variable/Var.html" class="extype" name="cc.factorie.variable.Var">variable.Var</a></span>, <span name="N4">N4 &lt;: <a href="../variable/Var.html" class="extype" name="cc.factorie.variable.Var">variable.Var</a></span>]</span><span class="result"> extends <a href="Template4.html" class="extype" name="cc.factorie.model.Template4">Template4</a>[<span class="extype" name="cc.factorie.model.TupleTemplate4.N1">N1</span>, <span class="extype" name="cc.factorie.model.TupleTemplate4.N2">N2</span>, <span class="extype" name="cc.factorie.model.TupleTemplate4.N3">N3</span>, <span class="extype" name="cc.factorie.model.TupleTemplate4.N4">N4</span>] with <a href="TupleFamily4.html" class="extype" name="cc.factorie.model.TupleFamily4">TupleFamily4</a>[<span class="extype" name="cc.factorie.model.TupleTemplate4.N1">N1</span>, <span class="extype" name="cc.factorie.model.TupleTemplate4.N2">N2</span>, <span class="extype" name="cc.factorie.model.TupleTemplate4.N3">N3</span>, <span class="extype" name="cc.factorie.model.TupleTemplate4.N4">N4</span>]</span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.model.TupleTemplateWithStatistics1" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="TupleTemplateWithStatistics1[N1&lt;:cc.factorie.variable.Var]extendsTemplate1[N1]withTupleFamilyWithStatistics1[N1]"></a>
+      <a id="TupleTemplateWithStatistics1[N1&lt;:variable.Var]:TupleTemplateWithStatistics1[N1]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="TupleTemplateWithStatistics1.html"><span class="name">TupleTemplateWithStatistics1</span></a><span class="tparams">[<span name="N1">N1 &lt;: <a href="../variable/Var.html" class="extype" name="cc.factorie.variable.Var">variable.Var</a></span>]</span><span class="result"> extends <a href="Template1.html" class="extype" name="cc.factorie.model.Template1">Template1</a>[<span class="extype" name="cc.factorie.model.TupleTemplateWithStatistics1.N1">N1</span>] with <a href="TupleFamilyWithStatistics1.html" class="extype" name="cc.factorie.model.TupleFamilyWithStatistics1">TupleFamilyWithStatistics1</a>[<span class="extype" name="cc.factorie.model.TupleTemplateWithStatistics1.N1">N1</span>]</span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.model.TupleTemplateWithStatistics2" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="TupleTemplateWithStatistics2[N1&lt;:cc.factorie.variable.Var,N2&lt;:cc.factorie.variable.Var]extendsTemplate2[N1,N2]withTupleFamilyWithStatistics2[N1,N2]"></a>
+      <a id="TupleTemplateWithStatistics2[N1&lt;:variable.Var,N2&lt;:variable.Var]:TupleTemplateWithStatistics2[N1,N2]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="TupleTemplateWithStatistics2.html"><span class="name">TupleTemplateWithStatistics2</span></a><span class="tparams">[<span name="N1">N1 &lt;: <a href="../variable/Var.html" class="extype" name="cc.factorie.variable.Var">variable.Var</a></span>, <span name="N2">N2 &lt;: <a href="../variable/Var.html" class="extype" name="cc.factorie.variable.Var">variable.Var</a></span>]</span><span class="result"> extends <a href="Template2.html" class="extype" name="cc.factorie.model.Template2">Template2</a>[<span class="extype" name="cc.factorie.model.TupleTemplateWithStatistics2.N1">N1</span>, <span class="extype" name="cc.factorie.model.TupleTemplateWithStatistics2.N2">N2</span>] with <a href="TupleFamilyWithStatistics2.html" class="extype" name="cc.factorie.model.TupleFamilyWithStatistics2">TupleFamilyWithStatistics2</a>[<span class="extype" name="cc.factorie.model.TupleTemplateWithStatistics2.N1">N1</span>, <span class="extype" name="cc.factorie.model.TupleTemplateWithStatistics2.N2">N2</span>]</span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.model.TupleTemplateWithStatistics3" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="TupleTemplateWithStatistics3[N1&lt;:cc.factorie.variable.Var,N2&lt;:cc.factorie.variable.Var,N3&lt;:cc.factorie.variable.Var]extendsTemplate3[N1,N2,N3]withTupleFamilyWithStatistics3[N1,N2,N3]"></a>
+      <a id="TupleTemplateWithStatistics3[N1&lt;:variable.Var,N2&lt;:variable.Var,N3&lt;:variable.Var]:TupleTemplateWithStatistics3[N1,N2,N3]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="TupleTemplateWithStatistics3.html"><span class="name">TupleTemplateWithStatistics3</span></a><span class="tparams">[<span name="N1">N1 &lt;: <a href="../variable/Var.html" class="extype" name="cc.factorie.variable.Var">variable.Var</a></span>, <span name="N2">N2 &lt;: <a href="../variable/Var.html" class="extype" name="cc.factorie.variable.Var">variable.Var</a></span>, <span name="N3">N3 &lt;: <a href="../variable/Var.html" class="extype" name="cc.factorie.variable.Var">variable.Var</a></span>]</span><span class="result"> extends <a href="Template3.html" class="extype" name="cc.factorie.model.Template3">Template3</a>[<span class="extype" name="cc.factorie.model.TupleTemplateWithStatistics3.N1">N1</span>, <span class="extype" name="cc.factorie.model.TupleTemplateWithStatistics3.N2">N2</span>, <span class="extype" name="cc.factorie.model.TupleTemplateWithStatistics3.N3">N3</span>] with <a href="TupleFamilyWithStatistics3.html" class="extype" name="cc.factorie.model.TupleFamilyWithStatistics3">TupleFamilyWithStatistics3</a>[<span class="extype" name="cc.factorie.model.TupleTemplateWithStatistics3.N1">N1</span>, <span class="extype" name="cc.factorie.model.TupleTemplateWithStatistics3.N2">N2</span>, <span class="extype" name="cc.factorie.model.TupleTemplateWithStatistics3.N3">N3</span>]</span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.model.TupleTemplateWithStatistics4" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="TupleTemplateWithStatistics4[N1&lt;:cc.factorie.variable.Var,N2&lt;:cc.factorie.variable.Var,N3&lt;:cc.factorie.variable.Var,N4&lt;:cc.factorie.variable.Var]extendsTemplate4[N1,N2,N3,N4]withTupleFamilyWithStatistics4[N1,N2,N3,N4]"></a>
+      <a id="TupleTemplateWithStatistics4[N1&lt;:variable.Var,N2&lt;:variable.Var,N3&lt;:variable.Var,N4&lt;:variable.Var]:TupleTemplateWithStatistics4[N1,N2,N3,N4]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="TupleTemplateWithStatistics4.html"><span class="name">TupleTemplateWithStatistics4</span></a><span class="tparams">[<span name="N1">N1 &lt;: <a href="../variable/Var.html" class="extype" name="cc.factorie.variable.Var">variable.Var</a></span>, <span name="N2">N2 &lt;: <a href="../variable/Var.html" class="extype" name="cc.factorie.variable.Var">variable.Var</a></span>, <span name="N3">N3 &lt;: <a href="../variable/Var.html" class="extype" name="cc.factorie.variable.Var">variable.Var</a></span>, <span name="N4">N4 &lt;: <a href="../variable/Var.html" class="extype" name="cc.factorie.variable.Var">variable.Var</a></span>]</span><span class="result"> extends <a href="Template4.html" class="extype" name="cc.factorie.model.Template4">Template4</a>[<span class="extype" name="cc.factorie.model.TupleTemplateWithStatistics4.N1">N1</span>, <span class="extype" name="cc.factorie.model.TupleTemplateWithStatistics4.N2">N2</span>, <span class="extype" name="cc.factorie.model.TupleTemplateWithStatistics4.N3">N3</span>, <span class="extype" name="cc.factorie.model.TupleTemplateWithStatistics4.N4">N4</span>] with <a href="TupleFamilyWithStatistics4.html" class="extype" name="cc.factorie.model.TupleFamilyWithStatistics4">TupleFamilyWithStatistics4</a>[<span class="extype" name="cc.factorie.model.TupleTemplateWithStatistics4.N1">N1</span>, <span class="extype" name="cc.factorie.model.TupleTemplateWithStatistics4.N2">N2</span>, <span class="extype" name="cc.factorie.model.TupleTemplateWithStatistics4.N3">N3</span>, <span class="extype" name="cc.factorie.model.TupleTemplateWithStatistics4.N4">N4</span>]</span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.model.Weights" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="WeightsextendsTensorVar"></a>
+      <a id="Weights:Weights"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="Weights.html"><span class="name">Weights</span></a><span class="result"> extends <a href="../variable/TensorVar.html" class="extype" name="cc.factorie.variable.TensorVar">TensorVar</a></span>
+      </span>
+      </h4>
+      <p class="comment cmt">A TensorVar that is also used as a key in a TensorSet.</p>
+    </li><li name="cc.factorie.model.Weights1" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="Weights1extendsWeights"></a>
+      <a id="Weights1:Weights1"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="Weights1.html"><span class="name">Weights1</span></a><span class="result"> extends <a href="Weights.html" class="extype" name="cc.factorie.model.Weights">Weights</a></span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.model.Weights2" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="Weights2extendsWeights"></a>
+      <a id="Weights2:Weights2"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="Weights2.html"><span class="name">Weights2</span></a><span class="result"> extends <a href="Weights.html" class="extype" name="cc.factorie.model.Weights">Weights</a></span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.model.Weights3" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="Weights3extendsWeights"></a>
+      <a id="Weights3:Weights3"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="Weights3.html"><span class="name">Weights3</span></a><span class="result"> extends <a href="Weights.html" class="extype" name="cc.factorie.model.Weights">Weights</a></span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.model.Weights4" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="Weights4extendsWeights"></a>
+      <a id="Weights4:Weights4"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="Weights4.html"><span class="name">Weights4</span></a><span class="result"> extends <a href="Weights.html" class="extype" name="cc.factorie.model.Weights">Weights</a></span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.model.WeightsMap" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="WeightsMapextendsTensorSet"></a>
+      <a id="WeightsMap:WeightsMap"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="WeightsMap.html"><span class="name">WeightsMap</span></a><span class="result"> extends <a href="TensorSet.html" class="extype" name="cc.factorie.model.TensorSet">TensorSet</a></span>
+      </span>
+      </h4>
+      <p class="comment cmt">A TensorSet in which the Tensors are not stored in the Weights objects, but in a map inside this object.</p>
+    </li><li name="cc.factorie.model.WeightsSet" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="WeightsSetextendsTensorSet"></a>
+      <a id="WeightsSet:WeightsSet"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="WeightsSet.html"><span class="name">WeightsSet</span></a><span class="result"> extends <a href="TensorSet.html" class="extype" name="cc.factorie.model.TensorSet">TensorSet</a></span>
+      </span>
+      </h4>
+      <p class="comment cmt">A TensorSet used for holding parameters.</p>
+    </li><li name="cc.factorie.model.WeightsSetCubbie" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="WeightsSetCubbieextendscc.factorie.Cubbie"></a>
+      <a id="WeightsSetCubbie:WeightsSetCubbie"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="WeightsSetCubbie.html"><span class="name">WeightsSetCubbie</span></a><span class="result"> extends <a href="../package.html#Cubbie=cc.factorie.util.Cubbie" class="extmbr" name="cc.factorie.Cubbie">Cubbie</a></span>
+      </span>
+      </h4>
+      <p class="comment cmt">A Cubbie for serializing a WeightsSet.</p>
+    </li></ol>
+            </div>
+
+        
+
+        
+
+        
+
+        
+        </div>
+
+        <div id="inheritedMembers">
+        
+        
+        </div>
+
+        <div id="groupedMembers">
+        <div class="group" name="Ungrouped">
+              <h3>Ungrouped</h3>
+              
+            </div>
+        </div>
+
+      </div>
+
+      <div id="tooltip"></div>
+
+      <div id="footer">  </div>
+      <script defer="defer" type="text/javascript" id="jquery-js" src="../../../lib/jquery.js"></script><script defer="defer" type="text/javascript" id="jquery-ui-js" src="../../../lib/jquery-ui.js"></script><script defer="defer" type="text/javascript" id="tools-tooltip-js" src="../../../lib/tools.tooltip.js"></script><script defer="defer" type="text/javascript" id="template-js" src="../../../lib/template.js"></script>
+    </body>
+      </html>

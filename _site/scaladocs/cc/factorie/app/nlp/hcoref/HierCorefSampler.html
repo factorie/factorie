@@ -1,0 +1,1158 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+<html>
+        <head>
+          <title>HierCorefSampler - Factorie 1.0-SNAPSHOT API - cc.factorie.app.nlp.hcoref.HierCorefSampler</title>
+          <meta name="description" content="HierCorefSampler - Factorie 1.0 - SNAPSHOT API - cc.factorie.app.nlp.hcoref.HierCorefSampler" />
+          <meta name="keywords" content="HierCorefSampler Factorie 1.0 SNAPSHOT API cc.factorie.app.nlp.hcoref.HierCorefSampler" />
+          <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+          
+      <link href="../../../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
+      <link href="../../../../../lib/diagrams.css" media="screen" type="text/css" rel="stylesheet" id="diagrams-css" />
+      <script type="text/javascript">
+         if(top === self) {
+            var url = '../../../../../index.html';
+            var hash = 'cc.factorie.app.nlp.hcoref.HierCorefSampler';
+            var anchor = window.location.hash;
+            var anchor_opt = '';
+            if (anchor.length >= 1)
+              anchor_opt = '@' + anchor.substring(1);
+            window.location.href = url + '#' + hash + anchor_opt;
+         }
+   	  </script>
+    
+        </head>
+        <body class="type">
+      <div id="definition">
+        <img src="../../../../../lib/class_big.png" />
+        <p id="owner"><a href="../../../../package.html" class="extype" name="cc">cc</a>.<a href="../../../package.html" class="extype" name="cc.factorie">factorie</a>.<a href="../../package.html" class="extype" name="cc.factorie.app">app</a>.<a href="../package.html" class="extype" name="cc.factorie.app.nlp">nlp</a>.<a href="package.html" class="extype" name="cc.factorie.app.nlp.hcoref">hcoref</a></p>
+        <h1>HierCorefSampler</h1>
+      </div>
+
+      <h4 id="signature" class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <span class="name">HierCorefSampler</span><span class="tparams">[<span name="T">T &lt;: <a href="HierEntity.html" class="extype" name="cc.factorie.app.nlp.hcoref.HierEntity">HierEntity</a></span>]</span><span class="result"> extends <a href="../../../infer/SettingsSampler.html" class="extype" name="cc.factorie.infer.SettingsSampler">SettingsSampler</a>[<span class="extype" name="scala.Null">Null</span>]</span>
+      </span>
+      </h4>
+      
+          <div id="comment" class="fullcommenttop"><div class="toggleContainer block">
+          <span class="toggle">Linear Supertypes</span>
+          <div class="superTypes hiddenContent"><a href="../../../infer/SettingsSampler.html" class="extype" name="cc.factorie.infer.SettingsSampler">SettingsSampler</a>[<span class="extype" name="scala.Null">Null</span>], <a href="../../../infer/ProposalSampler.html" class="extype" name="cc.factorie.infer.ProposalSampler">ProposalSampler</a>[<span class="extype" name="scala.Null">Null</span>], <a href="../../../infer/Sampler.html" class="extype" name="cc.factorie.infer.Sampler">Sampler</a>[<span class="extype" name="scala.Null">Null</span>], <a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <span class="extype" name="scala.Any">Any</span></div>
+        </div><div class="toggleContainer block">
+          <span class="toggle">Known Subclasses</span>
+          <div class="subClasses hiddenContent"><a href="../../bib/AuthorSampler.html" class="extype" name="cc.factorie.app.bib.AuthorSampler">AuthorSampler</a>, <a href="../../bib/experiments/AuthorSamplerWriter.html" class="extype" name="cc.factorie.app.bib.experiments.AuthorSamplerWriter">AuthorSamplerWriter</a>, <a href="../../bib/experiments/AuthorSamplerWriterWithReliability.html" class="extype" name="cc.factorie.app.bib.experiments.AuthorSamplerWriterWithReliability">AuthorSamplerWriterWithReliability</a>, <a href="../../bib/AuthorStreamer.html" class="extype" name="cc.factorie.app.bib.AuthorStreamer">AuthorStreamer</a>, <a href="../../bib/BibSampler.html" class="extype" name="cc.factorie.app.bib.BibSampler">BibSampler</a>, <a href="../../../tutorial/Coref2$$MyEntitySampler.html" class="extype" name="cc.factorie.tutorial.Coref2.MyEntitySampler">MyEntitySampler</a>, <a href="../../bib/PaperSampler.html" class="extype" name="cc.factorie.app.bib.PaperSampler">PaperSampler</a>, <a href="../../bib/ParallelAuthorSampler.html" class="extype" name="cc.factorie.app.bib.ParallelAuthorSampler">ParallelAuthorSampler</a>, <a href="../../bib/ParallelPaperSampler.html" class="extype" name="cc.factorie.app.bib.ParallelPaperSampler">ParallelPaperSampler</a>, <a href="../../bib/ParallelSampling.html" class="extype" name="cc.factorie.app.bib.ParallelSampling">ParallelSampling</a></div>
+        </div></div>
+        
+
+      <div id="mbrsel">
+        <div id="textfilter"><span class="pre"></span><span class="input"><input id="mbrsel-input" type="text" accesskey="/" /></span><span class="post"></span></div>
+        <div id="order">
+              <span class="filtertype">Ordering</span>
+              <ol>
+                
+                <li class="alpha in"><span>Alphabetic</span></li>
+                <li class="inherit out"><span>By inheritance</span></li>
+              </ol>
+            </div>
+        <div id="ancestors">
+                <span class="filtertype">Inherited<br />
+                </span>
+                <ol id="linearization">
+                  <li class="in" name="cc.factorie.app.nlp.hcoref.HierCorefSampler"><span>HierCorefSampler</span></li><li class="in" name="cc.factorie.infer.SettingsSampler"><span>SettingsSampler</span></li><li class="in" name="cc.factorie.infer.ProposalSampler"><span>ProposalSampler</span></li><li class="in" name="cc.factorie.infer.Sampler"><span>Sampler</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
+                </ol>
+              </div><div id="ancestors">
+            <span class="filtertype"></span>
+            <ol>
+              <li class="hideall out"><span>Hide All</span></li>
+              <li class="showall in"><span>Show all</span></li>
+            </ol>
+            <a href="http://docs.scala-lang.org/overviews/scaladoc/usage.html#members" target="_blank">Learn more about member selection</a>
+          </div>
+        <div id="visbl">
+            <span class="filtertype">Visibility</span>
+            <ol><li class="public in"><span>Public</span></li><li class="all out"><span>All</span></li></ol>
+          </div>
+      </div>
+
+      <div id="template">
+        <div id="allMembers">
+        <div id="constructors" class="members">
+              <h3>Instance Constructors</h3>
+              <ol><li name="cc.factorie.app.nlp.hcoref.HierCorefSampler#&lt;init&gt;" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="&lt;init&gt;(model:cc.factorie.model.Model):cc.factorie.app.nlp.hcoref.HierCorefSampler[T]"></a>
+      <a id="&lt;init&gt;:HierCorefSampler[T]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">new</span>
+      </span>
+      <span class="symbol">
+        <span class="name">HierCorefSampler</span><span class="params">(<span name="model">model: <a href="../../../model/Model.html" class="extype" name="cc.factorie.model.Model">model.Model</a></span>)</span>
+      </span>
+      </h4>
+      
+    </li></ol>
+            </div>
+
+        <div id="types" class="types members">
+              <h3>Type Members</h3>
+              <ol><li name="cc.factorie.infer.Sampler.ContextType" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="ContextType=C"></a>
+      <a id="ContextType:ContextType"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">type</span>
+      </span>
+      <span class="symbol">
+        <span class="name">ContextType</span><span class="result"> = <span class="extype" name="scala.Null">Null</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../../infer/Sampler.html" class="extype" name="cc.factorie.infer.Sampler">Sampler</a></dd></dl></div>
+    </li></ol>
+            </div>
+
+        <div id="values" class="values members">
+              <h3>Abstract Value Members</h3>
+              <ol><li name="cc.factorie.app.nlp.hcoref.HierCorefSampler#initializeAttributesOfNewRoot" visbl="prt" data-isabs="true" fullComment="yes" group="Ungrouped">
+      <a id="initializeAttributesOfNewRoot(e1:T,e2:T,parent:T)(implicitd:cc.factorie.variable.DiffList):Unit"></a>
+      <a id="initializeAttributesOfNewRoot(T,T,T)(variable.DiffList):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">initializeAttributesOfNewRoot</span><span class="params">(<span name="e1">e1: <span class="extype" name="cc.factorie.app.nlp.hcoref.HierCorefSampler.T">T</span></span>, <span name="e2">e2: <span class="extype" name="cc.factorie.app.nlp.hcoref.HierCorefSampler.T">T</span></span>, <span name="parent">parent: <span class="extype" name="cc.factorie.app.nlp.hcoref.HierCorefSampler.T">T</span></span>)</span><span class="params">(<span class="implicit">implicit </span><span name="d">d: <a href="../../../variable/DiffList.html" class="extype" name="cc.factorie.variable.DiffList">variable.DiffList</a></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd></dl></div>
+    </li><li name="cc.factorie.app.nlp.hcoref.HierCorefSampler#newEntity" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="newEntity:T"></a>
+      <a id="newEntity:T"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">newEntity</span><span class="result">: <span class="extype" name="cc.factorie.app.nlp.hcoref.HierCorefSampler.T">T</span></span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.app.nlp.hcoref.HierCorefSampler#sampleAttributes" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="sampleAttributes(e:T)(implicitd:cc.factorie.variable.DiffList):Unit"></a>
+      <a id="sampleAttributes(T)(variable.DiffList):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">sampleAttributes</span><span class="params">(<span name="e">e: <span class="extype" name="cc.factorie.app.nlp.hcoref.HierCorefSampler.T">T</span></span>)</span><span class="params">(<span class="implicit">implicit </span><span name="d">d: <a href="../../../variable/DiffList.html" class="extype" name="cc.factorie.variable.DiffList">variable.DiffList</a></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4>
+      
+    </li></ol>
+            </div>
+
+        <div id="values" class="values members">
+              <h3>Concrete Value Members</h3>
+              <ol><li name="scala.AnyRef#!=" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="!=(x$1:AnyRef):Boolean"></a>
+      <a id="!=(AnyRef):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span title="gt4s: $bang$eq" class="name">!=</span><span class="params">(<span name="arg0">arg0: <a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li name="scala.Any#!=" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="!=(x$1:Any):Boolean"></a>
+      <a id="!=(Any):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span title="gt4s: $bang$eq" class="name">!=</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Any">Any</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
+    </li><li name="scala.AnyRef###" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="##():Int"></a>
+      <a id="##():Int"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span title="gt4s: $hash$hash" class="name">##</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="scala.AnyRef#==" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="==(x$1:AnyRef):Boolean"></a>
+      <a id="==(AnyRef):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span title="gt4s: $eq$eq" class="name">==</span><span class="params">(<span name="arg0">arg0: <a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li name="scala.Any#==" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="==(x$1:Any):Boolean"></a>
+      <a id="==(Any):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span title="gt4s: $eq$eq" class="name">==</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Any">Any</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
+    </li><li name="cc.factorie.app.nlp.hcoref.HierCorefSampler#addEntity" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="addEntity(e:T):Unit"></a>
+      <a id="addEntity(T):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">addEntity</span><span class="params">(<span name="e">e: <span class="extype" name="cc.factorie.app.nlp.hcoref.HierCorefSampler.T">T</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4>
+      
+    </li><li name="scala.Any#asInstanceOf" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="asInstanceOf[T0]:T0"></a>
+      <a id="asInstanceOf[T0]:T0"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">asInstanceOf</span><span class="tparams">[<span name="T0">T0</span>]</span><span class="result">: <span class="extype" name="scala.Any.asInstanceOf.T0">T0</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
+    </li><li name="cc.factorie.infer.Sampler#changeCount" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="changeCount:Int"></a>
+      <a id="changeCount:Int"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">var</span>
+      </span>
+      <span class="symbol">
+        <span class="name">changeCount</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">The number of calls to process that resulted in a change (a non-empty DiffList)</p><div class="fullcomment"><div class="comment cmt"><p>The number of calls to process that resulted in a change (a non-empty DiffList)</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../../infer/Sampler.html" class="extype" name="cc.factorie.infer.Sampler">Sampler</a></dd></dl></div>
+    </li><li name="scala.AnyRef#clone" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="clone():Object"></a>
+      <a id="clone():AnyRef"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">clone</span><span class="params">()</span><span class="result">: <a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<a href="../../../../../java$lang.html" class="extype" name="java.lang">java.lang</a>] </dd><dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="defval" name="classOf[java.lang.CloneNotSupportedException]">...</span>
+    </span>)</span>
+              
+        </dd></dl></div>
+    </li><li name="cc.factorie.app.nlp.hcoref.HierCorefSampler#collapse" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="collapse(entity:T)(implicitd:cc.factorie.variable.DiffList):Unit"></a>
+      <a id="collapse(T)(variable.DiffList):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">collapse</span><span class="params">(<span name="entity">entity: <span class="extype" name="cc.factorie.app.nlp.hcoref.HierCorefSampler.T">T</span></span>)</span><span class="params">(<span class="implicit">implicit </span><span name="d">d: <a href="../../../variable/DiffList.html" class="extype" name="cc.factorie.variable.DiffList">variable.DiffList</a></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">Removes an intermediate node in the tree, merging that nodes children to their grandparent.</p>
+    </li><li name="cc.factorie.app.nlp.hcoref.HierCorefSampler#deletedEntities" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="deletedEntities:scala.collection.mutable.ArrayBuffer[T]"></a>
+      <a id="deletedEntities:ArrayBuffer[T]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">var</span>
+      </span>
+      <span class="symbol">
+        <span class="name">deletedEntities</span><span class="result">: <span class="extype" name="scala.collection.mutable.ArrayBuffer">ArrayBuffer</span>[<span class="extype" name="cc.factorie.app.nlp.hcoref.HierCorefSampler.T">T</span>]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd></dl></div>
+    </li><li name="cc.factorie.app.nlp.hcoref.HierCorefSampler#entities" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="entities:scala.collection.mutable.ArrayBuffer[T]"></a>
+      <a id="entities:ArrayBuffer[T]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">var</span>
+      </span>
+      <span class="symbol">
+        <span class="name">entities</span><span class="result">: <span class="extype" name="scala.collection.mutable.ArrayBuffer">ArrayBuffer</span>[<span class="extype" name="cc.factorie.app.nlp.hcoref.HierCorefSampler.T">T</span>]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd></dl></div>
+    </li><li name="scala.AnyRef#eq" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="eq(x$1:AnyRef):Boolean"></a>
+      <a id="eq(AnyRef):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">eq</span><span class="params">(<span name="arg0">arg0: <a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li name="scala.AnyRef#equals" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="equals(x$1:Any):Boolean"></a>
+      <a id="equals(Any):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">equals</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Any">Any</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="scala.AnyRef#finalize" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="finalize():Unit"></a>
+      <a id="finalize():Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">finalize</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<a href="../../../../../java$lang.html" class="extype" name="java.lang">java.lang</a>] </dd><dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="symbol">classOf[java.lang.Throwable]</span>
+    </span>)</span>
+              
+        </dd></dl></div>
+    </li><li name="scala.AnyRef#getClass" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="getClass():Class[_]"></a>
+      <a id="getClass():Class[_]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getClass</span><span class="params">()</span><span class="result">: <span class="extype" name="java.lang.Class">Class</span>[_]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="cc.factorie.app.nlp.hcoref.HierCorefSampler#getDeletedEntities" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="getDeletedEntities:Seq[T]"></a>
+      <a id="getDeletedEntities:Seq[T]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getDeletedEntities</span><span class="result">: <span class="extype" name="scala.collection.Seq">Seq</span>[<span class="extype" name="cc.factorie.app.nlp.hcoref.HierCorefSampler.T">T</span>]</span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.app.nlp.hcoref.HierCorefSampler#getEntities" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="getEntities:Seq[T]"></a>
+      <a id="getEntities:Seq[T]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getEntities</span><span class="result">: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<span class="extype" name="cc.factorie.app.nlp.hcoref.HierCorefSampler.T">T</span>]</span>
+      </span>
+      </h4>
+      
+    </li><li name="scala.AnyRef#hashCode" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="hashCode():Int"></a>
+      <a id="hashCode():Int"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">hashCode</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="cc.factorie.app.nlp.hcoref.HierCorefSampler#infer" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="infer(numSamples:Int):Unit"></a>
+      <a id="infer(Int):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">infer</span><span class="params">(<span name="numSamples">numSamples: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4>
+      
+    </li><li name="scala.Any#isInstanceOf" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="isInstanceOf[T0]:Boolean"></a>
+      <a id="isInstanceOf[T0]:Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">isInstanceOf</span><span class="tparams">[<span name="T0">T0</span>]</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
+    </li><li name="cc.factorie.app.nlp.hcoref.HierCorefSampler#isMention" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="isMention(e:cc.factorie.app.nlp.hcoref.Entity):Boolean"></a>
+      <a id="isMention(Entity):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">isMention</span><span class="params">(<span name="e">e: <a href="Entity.html" class="extype" name="cc.factorie.app.nlp.hcoref.Entity">Entity</a></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.infer.Sampler#iterationCount" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="iterationCount:Int"></a>
+      <a id="iterationCount:Int"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">var</span>
+      </span>
+      <span class="symbol">
+        <span class="name">iterationCount</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">The number of calls to process(numIterations:Int) or process(contexts:C,numIterations:Int).</p><div class="fullcomment"><div class="comment cmt"><p>The number of calls to process(numIterations:Int) or process(contexts:C,numIterations:Int).</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../../infer/Sampler.html" class="extype" name="cc.factorie.infer.Sampler">Sampler</a></dd></dl></div>
+    </li><li name="cc.factorie.infer.Sampler#makeNewDiffList" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="makeNewDiffList:Boolean"></a>
+      <a id="makeNewDiffList:Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">var</span>
+      </span>
+      <span class="symbol">
+        <span class="name">makeNewDiffList</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">If true, calls to &quot;newDiffList&quot; will create a new DiffList to describe the changes they made, otherwise &quot;newDiffList&quot; will return null.</p><div class="fullcomment"><div class="comment cmt"><p>If true, calls to &quot;newDiffList&quot; will create a new DiffList to describe the changes they made, otherwise &quot;newDiffList&quot; will return null.</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../../infer/Sampler.html" class="extype" name="cc.factorie.infer.Sampler">Sampler</a></dd></dl></div>
+    </li><li name="cc.factorie.app.nlp.hcoref.HierCorefSampler#mergeLeft" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="mergeLeft(left:T,right:T)(implicitd:cc.factorie.variable.DiffList):Unit"></a>
+      <a id="mergeLeft(T,T)(variable.DiffList):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">mergeLeft</span><span class="params">(<span name="left">left: <span class="extype" name="cc.factorie.app.nlp.hcoref.HierCorefSampler.T">T</span></span>, <span name="right">right: <span class="extype" name="cc.factorie.app.nlp.hcoref.HierCorefSampler.T">T</span></span>)</span><span class="params">(<span class="implicit">implicit </span><span name="d">d: <a href="../../../variable/DiffList.html" class="extype" name="cc.factorie.variable.DiffList">variable.DiffList</a></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">Jump function that proposes merge: entity1&lt;----entity2</p>
+    </li><li name="cc.factorie.app.nlp.hcoref.HierCorefSampler#mergeUp" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="mergeUp(e1:T,e2:T)(implicitd:cc.factorie.variable.DiffList):T"></a>
+      <a id="mergeUp(T,T)(variable.DiffList):T"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">mergeUp</span><span class="params">(<span name="e1">e1: <span class="extype" name="cc.factorie.app.nlp.hcoref.HierCorefSampler.T">T</span></span>, <span name="e2">e2: <span class="extype" name="cc.factorie.app.nlp.hcoref.HierCorefSampler.T">T</span></span>)</span><span class="params">(<span class="implicit">implicit </span><span name="d">d: <a href="../../../variable/DiffList.html" class="extype" name="cc.factorie.variable.DiffList">variable.DiffList</a></span>)</span><span class="result">: <span class="extype" name="cc.factorie.app.nlp.hcoref.HierCorefSampler.T">T</span></span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">Jump function that proposes merge: entity1---&gt;NEW-PARENT-ENTITY&lt;---entity2</p>
+    </li><li name="scala.AnyRef#ne" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="ne(x$1:AnyRef):Boolean"></a>
+      <a id="ne(AnyRef):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">ne</span><span class="params">(<span name="arg0">arg0: <a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li name="cc.factorie.infer.Sampler#newDiffList" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="newDiffList:cc.factorie.variable.DiffList"></a>
+      <a id="newDiffList:variable.DiffList"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">newDiffList</span><span class="result">: <a href="../../../variable/DiffList.html" class="extype" name="cc.factorie.variable.DiffList">variable.DiffList</a></span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">In your implementation of &quot;process1&quot; use this method to optionally create a new DiffList, obeying &quot;makeNewDiffList&quot;.</p><div class="fullcomment"><div class="comment cmt"><p>In your implementation of &quot;process1&quot; use this method to optionally create a new DiffList, obeying &quot;makeNewDiffList&quot;.</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../../infer/Sampler.html" class="extype" name="cc.factorie.infer.Sampler">Sampler</a></dd></dl></div>
+    </li><li name="cc.factorie.app.nlp.hcoref.HierCorefSampler#nextEntity" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="nextEntity(context:T):T"></a>
+      <a id="nextEntity(T):T"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">nextEntity</span><span class="params">(<span name="context">context: <span class="extype" name="cc.factorie.app.nlp.hcoref.HierCorefSampler.T">T</span></span>)</span><span class="result">: <span class="extype" name="cc.factorie.app.nlp.hcoref.HierCorefSampler.T">T</span></span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.app.nlp.hcoref.HierCorefSampler#nextEntity" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="nextEntity:T"></a>
+      <a id="nextEntity:T"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">nextEntity</span><span class="result">: <span class="extype" name="cc.factorie.app.nlp.hcoref.HierCorefSampler.T">T</span></span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">Returns a random entity that 'exists'</p>
+    </li><li name="cc.factorie.app.nlp.hcoref.HierCorefSampler#nextEntityPair" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="nextEntityPair:(T,T)"></a>
+      <a id="nextEntityPair:(T,T)"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">nextEntityPair</span><span class="result">: (<span class="extype" name="cc.factorie.app.nlp.hcoref.HierCorefSampler.T">T</span>, <span class="extype" name="cc.factorie.app.nlp.hcoref.HierCorefSampler.T">T</span>)</span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.infer.Sampler#noDiffList" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="noDiffList:Sampler.this.type"></a>
+      <a id="noDiffList:HierCorefSampler.this.type"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">noDiffList</span><span class="result">: <a href="" class="extype" name="cc.factorie.app.nlp.hcoref.HierCorefSampler">HierCorefSampler</a>.this.type</span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">Convenient method for setting makeNewDiffList to false, and returning this.</p><div class="fullcomment"><div class="comment cmt"><p>Convenient method for setting makeNewDiffList to false, and returning this.</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../../infer/Sampler.html" class="extype" name="cc.factorie.infer.Sampler">Sampler</a></dd></dl></div>
+    </li><li name="scala.AnyRef#notify" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="notify():Unit"></a>
+      <a id="notify():Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">notify</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li name="scala.AnyRef#notifyAll" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="notifyAll():Unit"></a>
+      <a id="notifyAll():Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">notifyAll</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li name="cc.factorie.infer.SettingsSampler#objective" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="objective:cc.factorie.model.Model"></a>
+      <a id="objective:model.Model"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">objective</span><span class="result">: <a href="../../../model/Model.html" class="extype" name="cc.factorie.model.Model">model.Model</a></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../../infer/SettingsSampler.html" class="extype" name="cc.factorie.infer.SettingsSampler">SettingsSampler</a></dd></dl></div>
+    </li><li name="cc.factorie.app.nlp.hcoref.HierCorefSampler#performMaintenance" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="performMaintenance(es:scala.collection.mutable.ArrayBuffer[T]):Unit"></a>
+      <a id="performMaintenance(ArrayBuffer[T]):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">performMaintenance</span><span class="params">(<span name="es">es: <span class="extype" name="scala.collection.mutable.ArrayBuffer">ArrayBuffer</span>[<span class="extype" name="cc.factorie.app.nlp.hcoref.HierCorefSampler.T">T</span>]</span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">Garbage collects all the deleted entities from the master list of entities</p>
+    </li><li name="cc.factorie.infer.ProposalSampler#pickProposal" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="pickProposal(proposals:Seq[cc.factorie.infer.Proposal[C]]):cc.factorie.infer.Proposal[C]"></a>
+      <a id="pickProposal(Seq[Proposal[Null]]):Proposal[Null]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">pickProposal</span><span class="params">(<span name="proposals">proposals: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../../../infer/Proposal.html" class="extype" name="cc.factorie.infer.Proposal">Proposal</a>[<span class="extype" name="scala.Null">Null</span>]]</span>)</span><span class="result">: <a href="../../../infer/Proposal.html" class="extype" name="cc.factorie.infer.Proposal">Proposal</a>[<span class="extype" name="scala.Null">Null</span>]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../../infer/ProposalSampler.html" class="extype" name="cc.factorie.infer.ProposalSampler">ProposalSampler</a></dd></dl></div>
+    </li><li name="cc.factorie.infer.Sampler#postIterationHook" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="postIterationHook:Boolean"></a>
+      <a id="postIterationHook:Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">postIterationHook</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">Called after each iteration of sampling the full list of variables.</p><div class="fullcomment"><div class="comment cmt"><p>Called after each iteration of sampling the full list of variables.  Return false if you want sampling to stop early.</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../../infer/Sampler.html" class="extype" name="cc.factorie.infer.Sampler">Sampler</a></dd></dl></div>
+    </li><li name="cc.factorie.infer.Sampler#postIterationHooks" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="postIterationHooks:cc.factorie.util.Hooks0"></a>
+      <a id="postIterationHooks:Hooks0"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">postIterationHooks</span><span class="result">: <a href="../../../util/Hooks0.html" class="extype" name="cc.factorie.util.Hooks0">Hooks0</a></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../../infer/Sampler.html" class="extype" name="cc.factorie.infer.Sampler">Sampler</a></dd></dl></div>
+    </li><li name="cc.factorie.infer.Sampler#postProcessHook" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="postProcessHook(context:C,difflist:cc.factorie.DiffList):Unit"></a>
+      <a id="postProcessHook(Null,DiffList):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">postProcessHook</span><span class="params">(<span name="context">context: <span class="extype" name="scala.Null">Null</span></span>, <span name="difflist">difflist: <a href="../../../package.html#DiffList=cc.factorie.variable.DiffList" class="extmbr" name="cc.factorie.DiffList">DiffList</a></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">Call just after each step of sampling.</p><div class="fullcomment"><div class="comment cmt"><p>Call just after each step of sampling.</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../../infer/Sampler.html" class="extype" name="cc.factorie.infer.Sampler">Sampler</a></dd></dl></div>
+    </li><li name="cc.factorie.infer.Sampler#preProcessHook" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="preProcessHook(context:C):C"></a>
+      <a id="preProcessHook(Null):Null"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">preProcessHook</span><span class="params">(<span name="context">context: <span class="extype" name="scala.Null">Null</span></span>)</span><span class="result">: <span class="extype" name="scala.Null">Null</span></span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">Called just before each step of sampling.</p><div class="fullcomment"><div class="comment cmt"><p>Called just before each step of sampling.  Return an alternative variable if you want that one sampled instead.
+      Return null if you want to abort sampling of this context.</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../../infer/Sampler.html" class="extype" name="cc.factorie.infer.Sampler">Sampler</a></dd></dl></div>
+    </li><li name="cc.factorie.infer.Sampler#process" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="process(count:Int):Unit"></a>
+      <a id="process(Int):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">process</span><span class="params">(<span name="count">count: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../../infer/Sampler.html" class="extype" name="cc.factorie.infer.Sampler">Sampler</a></dd></dl></div>
+    </li><li name="cc.factorie.infer.Sampler#process" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="process(context:C,repeat:Int):Unit"></a>
+      <a id="process(Null,Int):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">process</span><span class="params">(<span name="context">context: <span class="extype" name="scala.Null">Null</span></span>, <span name="repeat">repeat: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../../infer/Sampler.html" class="extype" name="cc.factorie.infer.Sampler">Sampler</a></dd></dl></div>
+    </li><li name="cc.factorie.infer.Sampler#process" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="process(context:C):cc.factorie.DiffList"></a>
+      <a id="process(Null):DiffList"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">process</span><span class="params">(<span name="context">context: <span class="extype" name="scala.Null">Null</span></span>)</span><span class="result">: <a href="../../../package.html#DiffList=cc.factorie.variable.DiffList" class="extmbr" name="cc.factorie.DiffList">DiffList</a></span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">Do one step of sampling.</p><div class="fullcomment"><div class="comment cmt"><p>Do one step of sampling.  This is a method intended to be called by users.  It manages hooks and processCount.</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../../infer/Sampler.html" class="extype" name="cc.factorie.infer.Sampler">Sampler</a></dd></dl></div>
+    </li><li name="cc.factorie.infer.ProposalSampler#process1" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="process1(context:C):cc.factorie.DiffList"></a>
+      <a id="process1(Null):DiffList"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">process1</span><span class="params">(<span name="context">context: <span class="extype" name="scala.Null">Null</span></span>)</span><span class="result">: <a href="../../../package.html#DiffList=cc.factorie.variable.DiffList" class="extmbr" name="cc.factorie.DiffList">DiffList</a></span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">The underlying protected method that actually does the work.</p><div class="fullcomment"><div class="comment cmt"><p>The underlying protected method that actually does the work.  Use this.newDiffList to optionally create returned DiffList.
+      Needs to be defined in subclasses.</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../../infer/ProposalSampler.html" class="extype" name="cc.factorie.infer.ProposalSampler">ProposalSampler</a> → <a href="../../../infer/Sampler.html" class="extype" name="cc.factorie.infer.Sampler">Sampler</a></dd></dl></div>
+    </li><li name="cc.factorie.infer.Sampler#processAll" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="processAll(contexts:Iterable[C],numIterations:Int):Unit"></a>
+      <a id="processAll(Iterable[Null],Int):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">processAll</span><span class="params">(<span name="contexts">contexts: <a href="../../../../../scala/package.html#Iterable[+A]=Iterable[A]" class="extmbr" name="scala.Iterable">Iterable</a>[<span class="extype" name="scala.Null">Null</span>]</span>, <span name="numIterations">numIterations: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../../infer/Sampler.html" class="extype" name="cc.factorie.infer.Sampler">Sampler</a></dd></dl></div>
+    </li><li name="cc.factorie.infer.Sampler#processAll" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="processAll(contexts:Iterable[C],returnDiffs:Boolean):cc.factorie.DiffList"></a>
+      <a id="processAll(Iterable[Null],Boolean):DiffList"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">processAll</span><span class="params">(<span name="contexts">contexts: <a href="../../../../../scala/package.html#Iterable[+A]=Iterable[A]" class="extmbr" name="scala.Iterable">Iterable</a>[<span class="extype" name="scala.Null">Null</span>]</span>, <span name="returnDiffs">returnDiffs: <span class="extype" name="scala.Boolean">Boolean</span> = <span class="symbol">false</span></span>)</span><span class="result">: <a href="../../../package.html#DiffList=cc.factorie.variable.DiffList" class="extmbr" name="cc.factorie.DiffList">DiffList</a></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../../infer/Sampler.html" class="extype" name="cc.factorie.infer.Sampler">Sampler</a></dd></dl></div>
+    </li><li name="cc.factorie.infer.Sampler#processCount" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="processCount:Int"></a>
+      <a id="processCount:Int"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">var</span>
+      </span>
+      <span class="symbol">
+        <span class="name">processCount</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">The number of calls to process(context:C)</p><div class="fullcomment"><div class="comment cmt"><p>The number of calls to process(context:C)</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../../infer/Sampler.html" class="extype" name="cc.factorie.infer.Sampler">Sampler</a></dd></dl></div>
+    </li><li name="cc.factorie.infer.ProposalSampler#processProposals" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="processProposals(props:Seq[cc.factorie.infer.Proposal[C]]):cc.factorie.DiffList"></a>
+      <a id="processProposals(Seq[Proposal[Null]]):DiffList"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">processProposals</span><span class="params">(<span name="props">props: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../../../infer/Proposal.html" class="extype" name="cc.factorie.infer.Proposal">Proposal</a>[<span class="extype" name="scala.Null">Null</span>]]</span>)</span><span class="result">: <a href="../../../package.html#DiffList=cc.factorie.variable.DiffList" class="extmbr" name="cc.factorie.DiffList">DiffList</a></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../../infer/ProposalSampler.html" class="extype" name="cc.factorie.infer.ProposalSampler">ProposalSampler</a></dd></dl></div>
+    </li><li name="cc.factorie.app.nlp.hcoref.HierCorefSampler#propagateBagUp" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="propagateBagUp(entity:cc.factorie.app.nlp.hcoref.Entity)(implicitd:cc.factorie.variable.DiffList):Unit"></a>
+      <a id="propagateBagUp(Entity)(variable.DiffList):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">propagateBagUp</span><span class="params">(<span name="entity">entity: <a href="Entity.html" class="extype" name="cc.factorie.app.nlp.hcoref.Entity">Entity</a></span>)</span><span class="params">(<span class="implicit">implicit </span><span name="d">d: <a href="../../../variable/DiffList.html" class="extype" name="cc.factorie.variable.DiffList">variable.DiffList</a></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd></dl></div>
+    </li><li name="cc.factorie.app.nlp.hcoref.HierCorefSampler#propagateRemoveBag" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="propagateRemoveBag(parting:cc.factorie.app.nlp.hcoref.Entity,formerParent:cc.factorie.app.nlp.hcoref.Entity)(implicitd:cc.factorie.variable.DiffList):Unit"></a>
+      <a id="propagateRemoveBag(Entity,Entity)(variable.DiffList):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">propagateRemoveBag</span><span class="params">(<span name="parting">parting: <a href="Entity.html" class="extype" name="cc.factorie.app.nlp.hcoref.Entity">Entity</a></span>, <span name="formerParent">formerParent: <a href="Entity.html" class="extype" name="cc.factorie.app.nlp.hcoref.Entity">Entity</a></span>)</span><span class="params">(<span class="implicit">implicit </span><span name="d">d: <a href="../../../variable/DiffList.html" class="extype" name="cc.factorie.variable.DiffList">variable.DiffList</a></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd></dl></div>
+    </li><li name="cc.factorie.app.nlp.hcoref.HierCorefSampler#proposalHook" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="proposalHook(proposal:cc.factorie.infer.Proposal[Null]):Unit"></a>
+      <a id="proposalHook(Proposal[Null]):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">proposalHook</span><span class="params">(<span name="proposal">proposal: <a href="../../../infer/Proposal.html" class="extype" name="cc.factorie.infer.Proposal">Proposal</a>[<span class="extype" name="scala.Null">Null</span>]</span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">Identify entities that are created by accepted jumps so we can add them to our master entity list.</p><div class="fullcomment"><div class="comment cmt"><p>Identify entities that are created by accepted jumps so we can add them to our master entity list.</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="cc.factorie.app.nlp.hcoref.HierCorefSampler">HierCorefSampler</a> → <a href="../../../infer/ProposalSampler.html" class="extype" name="cc.factorie.infer.ProposalSampler">ProposalSampler</a></dd></dl></div>
+    </li><li name="cc.factorie.infer.ProposalSampler#proposalHooks" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="proposalHooks:cc.factorie.util.Hooks1[cc.factorie.infer.Proposal[C]]"></a>
+      <a id="proposalHooks:Hooks1[Proposal[Null]]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">proposalHooks</span><span class="result">: <a href="../../../util/Hooks1.html" class="extype" name="cc.factorie.util.Hooks1">Hooks1</a>[<a href="../../../infer/Proposal.html" class="extype" name="cc.factorie.infer.Proposal">Proposal</a>[<span class="extype" name="scala.Null">Null</span>]]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../../infer/ProposalSampler.html" class="extype" name="cc.factorie.infer.ProposalSampler">ProposalSampler</a></dd></dl></div>
+    </li><li name="cc.factorie.infer.SettingsSampler#proposals" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="proposals(context:C):Seq[cc.factorie.infer.Proposal[C]]"></a>
+      <a id="proposals(Null):Seq[Proposal[Null]]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">proposals</span><span class="params">(<span name="context">context: <span class="extype" name="scala.Null">Null</span></span>)</span><span class="result">: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../../../infer/Proposal.html" class="extype" name="cc.factorie.infer.Proposal">Proposal</a>[<span class="extype" name="scala.Null">Null</span>]]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../../infer/SettingsSampler.html" class="extype" name="cc.factorie.infer.SettingsSampler">SettingsSampler</a> → <a href="../../../infer/ProposalSampler.html" class="extype" name="cc.factorie.infer.ProposalSampler">ProposalSampler</a></dd></dl></div>
+    </li><li name="cc.factorie.infer.ProposalSampler#proposalsHook" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="proposalsHook(proposals:Seq[cc.factorie.infer.Proposal[C]]):Unit"></a>
+      <a id="proposalsHook(Seq[Proposal[Null]]):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">proposalsHook</span><span class="params">(<span name="proposals">proposals: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../../../infer/Proposal.html" class="extype" name="cc.factorie.infer.Proposal">Proposal</a>[<span class="extype" name="scala.Null">Null</span>]]</span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../../infer/ProposalSampler.html" class="extype" name="cc.factorie.infer.ProposalSampler">ProposalSampler</a></dd></dl></div>
+    </li><li name="cc.factorie.infer.ProposalSampler#proposalsHooks" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="proposalsHooks:cc.factorie.util.Hooks1[Seq[cc.factorie.infer.Proposal[C]]]"></a>
+      <a id="proposalsHooks:Hooks1[Seq[Proposal[Null]]]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">proposalsHooks</span><span class="result">: <a href="../../../util/Hooks1.html" class="extype" name="cc.factorie.util.Hooks1">Hooks1</a>[<a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../../../infer/Proposal.html" class="extype" name="cc.factorie.infer.Proposal">Proposal</a>[<span class="extype" name="scala.Null">Null</span>]]]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../../infer/ProposalSampler.html" class="extype" name="cc.factorie.infer.ProposalSampler">ProposalSampler</a></dd></dl></div>
+    </li><li name="cc.factorie.app.nlp.hcoref.HierCorefSampler#proposeMergeIfValid" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="proposeMergeIfValid(entity1:T,entity2:T,changes:scala.collection.mutable.ArrayBuffer[cc.factorie.variable.DiffList=&gt;Unit]):Unit"></a>
+      <a id="proposeMergeIfValid(T,T,ArrayBuffer[(variable.DiffList)⇒Unit]):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">proposeMergeIfValid</span><span class="params">(<span name="entity1">entity1: <span class="extype" name="cc.factorie.app.nlp.hcoref.HierCorefSampler.T">T</span></span>, <span name="entity2">entity2: <span class="extype" name="cc.factorie.app.nlp.hcoref.HierCorefSampler.T">T</span></span>, <span name="changes">changes: <span class="extype" name="scala.collection.mutable.ArrayBuffer">ArrayBuffer</span>[(<a href="../../../variable/DiffList.html" class="extype" name="cc.factorie.variable.DiffList">variable.DiffList</a>) ⇒ <span class="extype" name="scala.Unit">Unit</span>]</span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.infer.SettingsSampler#random" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="random:scala.util.Random"></a>
+      <a id="random:Random"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">implicit </span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">random</span><span class="result">: <span class="extype" name="scala.util.Random">Random</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../../infer/SettingsSampler.html" class="extype" name="cc.factorie.infer.SettingsSampler">SettingsSampler</a> → <a href="../../../infer/Sampler.html" class="extype" name="cc.factorie.infer.Sampler">Sampler</a></dd></dl></div>
+    </li><li name="cc.factorie.app.nlp.hcoref.HierCorefSampler#sampleEntity" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="sampleEntity(samplePool:scala.collection.mutable.ArrayBuffer[T]):T"></a>
+      <a id="sampleEntity(ArrayBuffer[T]):T"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">sampleEntity</span><span class="params">(<span name="samplePool">samplePool: <span class="extype" name="scala.collection.mutable.ArrayBuffer">ArrayBuffer</span>[<span class="extype" name="cc.factorie.app.nlp.hcoref.HierCorefSampler.T">T</span>]</span>)</span><span class="result">: <span class="extype" name="cc.factorie.app.nlp.hcoref.HierCorefSampler.T">T</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd></dl></div>
+    </li><li name="cc.factorie.app.nlp.hcoref.HierCorefSampler#setEntities" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="setEntities(ents:Iterable[T]):Unit"></a>
+      <a id="setEntities(Iterable[T]):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">setEntities</span><span class="params">(<span name="ents">ents: <a href="../../../../../scala/package.html#Iterable[+A]=Iterable[A]" class="extmbr" name="scala.Iterable">Iterable</a>[<span class="extype" name="cc.factorie.app.nlp.hcoref.HierCorefSampler.T">T</span>]</span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.app.nlp.hcoref.HierCorefSampler#settings" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="settings(c:Null):cc.factorie.variable.SettingIterator"></a>
+      <a id="settings(Null):SettingIterator"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">settings</span><span class="params">(<span name="c">c: <span class="extype" name="scala.Null">Null</span></span>)</span><span class="result">: <a href="../../../variable/SettingIterator.html" class="extype" name="cc.factorie.variable.SettingIterator">SettingIterator</a></span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">Abstract method must be implemented in sub-classes.</p><div class="fullcomment"><div class="comment cmt"><p>Abstract method must be implemented in sub-classes.
+      Provides access to all different possible worlds we will evaluate for each call to 'process'</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="cc.factorie.app.nlp.hcoref.HierCorefSampler">HierCorefSampler</a> → <a href="../../../infer/SettingsSampler.html" class="extype" name="cc.factorie.infer.SettingsSampler">SettingsSampler</a></dd></dl></div>
+    </li><li name="cc.factorie.infer.ProposalSampler#skipEmptyProposals" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="skipEmptyProposals:Boolean"></a>
+      <a id="skipEmptyProposals:Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">skipEmptyProposals</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../../infer/ProposalSampler.html" class="extype" name="cc.factorie.infer.ProposalSampler">ProposalSampler</a></dd></dl></div>
+    </li><li name="cc.factorie.app.nlp.hcoref.HierCorefSampler#splitRight" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="splitRight(left:T,right:T)(implicitd:cc.factorie.variable.DiffList):Unit"></a>
+      <a id="splitRight(T,T)(variable.DiffList):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">splitRight</span><span class="params">(<span name="left">left: <span class="extype" name="cc.factorie.app.nlp.hcoref.HierCorefSampler.T">T</span></span>, <span name="right">right: <span class="extype" name="cc.factorie.app.nlp.hcoref.HierCorefSampler.T">T</span></span>)</span><span class="params">(<span class="implicit">implicit </span><span name="d">d: <a href="../../../variable/DiffList.html" class="extype" name="cc.factorie.variable.DiffList">variable.DiffList</a></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">Peels off the entity &quot;right&quot;, second argument not necessary except for error checking/debuggin.</p>
+    </li><li name="cc.factorie.app.nlp.hcoref.HierCorefSampler#structurePreservationForEntityThatLostChild" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="structurePreservationForEntityThatLostChild(e:cc.factorie.app.nlp.hcoref.Entity)(implicitd:cc.factorie.variable.DiffList):Unit"></a>
+      <a id="structurePreservationForEntityThatLostChild(Entity)(variable.DiffList):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">structurePreservationForEntityThatLostChild</span><span class="params">(<span name="e">e: <a href="Entity.html" class="extype" name="cc.factorie.app.nlp.hcoref.Entity">Entity</a></span>)</span><span class="params">(<span class="implicit">implicit </span><span name="d">d: <a href="../../../variable/DiffList.html" class="extype" name="cc.factorie.variable.DiffList">variable.DiffList</a></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">Ensure that chains are not created in our tree.</p><div class="fullcomment"><div class="comment cmt"><p>Ensure that chains are not created in our tree. No dangling children-entities either.</p></div><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd></dl></div>
+    </li><li name="scala.AnyRef#synchronized" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="synchronized[T0](x$1:=&gt;T0):T0"></a>
+      <a id="synchronized[T0](⇒T0):T0"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">synchronized</span><span class="tparams">[<span name="T0">T0</span>]</span><span class="params">(<span name="arg0">arg0: ⇒ <span class="extype" name="java.lang.AnyRef.synchronized.T0">T0</span></span>)</span><span class="result">: <span class="extype" name="java.lang.AnyRef.synchronized.T0">T0</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li name="cc.factorie.infer.ProposalSampler#temperature" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="temperature:Double"></a>
+      <a id="temperature:Double"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">var</span>
+      </span>
+      <span class="symbol">
+        <span class="name">temperature</span><span class="result">: <span class="extype" name="scala.Double">Double</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../../infer/ProposalSampler.html" class="extype" name="cc.factorie.infer.ProposalSampler">ProposalSampler</a></dd></dl></div>
+    </li><li name="cc.factorie.app.nlp.hcoref.HierCorefSampler#timeAndProcess" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="timeAndProcess(n:Int):Unit"></a>
+      <a id="timeAndProcess(Int):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">timeAndProcess</span><span class="params">(<span name="n">n: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4>
+      
+    </li><li name="scala.AnyRef#toString" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="toString():String"></a>
+      <a id="toString():String"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">toString</span><span class="params">()</span><span class="result">: <span class="extype" name="java.lang.String">String</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="scala.AnyRef#wait" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="wait():Unit"></a>
+      <a id="wait():Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">wait</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="defval" name="classOf[java.lang.InterruptedException]">...</span>
+    </span>)</span>
+              
+        </dd></dl></div>
+    </li><li name="scala.AnyRef#wait" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="wait(x$1:Long,x$2:Int):Unit"></a>
+      <a id="wait(Long,Int):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">wait</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Long">Long</span></span>, <span name="arg1">arg1: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="defval" name="classOf[java.lang.InterruptedException]">...</span>
+    </span>)</span>
+              
+        </dd></dl></div>
+    </li><li name="scala.AnyRef#wait" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="wait(x$1:Long):Unit"></a>
+      <a id="wait(Long):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">wait</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Long">Long</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="defval" name="classOf[java.lang.InterruptedException]">...</span>
+    </span>)</span>
+              
+        </dd></dl></div>
+    </li></ol>
+            </div>
+
+        
+
+        
+        </div>
+
+        <div id="inheritedMembers">
+        <div class="parent" name="cc.factorie.infer.SettingsSampler">
+              <h3>Inherited from <a href="../../../infer/SettingsSampler.html" class="extype" name="cc.factorie.infer.SettingsSampler">SettingsSampler</a>[<span class="extype" name="scala.Null">Null</span>]</h3>
+            </div><div class="parent" name="cc.factorie.infer.ProposalSampler">
+              <h3>Inherited from <a href="../../../infer/ProposalSampler.html" class="extype" name="cc.factorie.infer.ProposalSampler">ProposalSampler</a>[<span class="extype" name="scala.Null">Null</span>]</h3>
+            </div><div class="parent" name="cc.factorie.infer.Sampler">
+              <h3>Inherited from <a href="../../../infer/Sampler.html" class="extype" name="cc.factorie.infer.Sampler">Sampler</a>[<span class="extype" name="scala.Null">Null</span>]</h3>
+            </div><div class="parent" name="scala.AnyRef">
+              <h3>Inherited from <a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></h3>
+            </div><div class="parent" name="scala.Any">
+              <h3>Inherited from <span class="extype" name="scala.Any">Any</span></h3>
+            </div>
+        
+        </div>
+
+        <div id="groupedMembers">
+        <div class="group" name="Ungrouped">
+              <h3>Ungrouped</h3>
+              
+            </div>
+        </div>
+
+      </div>
+
+      <div id="tooltip"></div>
+
+      <div id="footer">  </div>
+      <script defer="defer" type="text/javascript" id="jquery-js" src="../../../../../lib/jquery.js"></script><script defer="defer" type="text/javascript" id="jquery-ui-js" src="../../../../../lib/jquery-ui.js"></script><script defer="defer" type="text/javascript" id="tools-tooltip-js" src="../../../../../lib/tools.tooltip.js"></script><script defer="defer" type="text/javascript" id="template-js" src="../../../../../lib/template.js"></script>
+    </body>
+      </html>

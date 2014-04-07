@@ -1,0 +1,945 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+<html>
+        <head>
+          <title>CategoricalSeqDomainCubbie - Factorie 1.0-SNAPSHOT API - cc.factorie.variable.CategoricalSeqDomainCubbie</title>
+          <meta name="description" content="CategoricalSeqDomainCubbie - Factorie 1.0 - SNAPSHOT API - cc.factorie.variable.CategoricalSeqDomainCubbie" />
+          <meta name="keywords" content="CategoricalSeqDomainCubbie Factorie 1.0 SNAPSHOT API cc.factorie.variable.CategoricalSeqDomainCubbie" />
+          <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+          
+      <link href="../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
+      <link href="../../../lib/diagrams.css" media="screen" type="text/css" rel="stylesheet" id="diagrams-css" />
+      <script type="text/javascript">
+         if(top === self) {
+            var url = '../../../index.html';
+            var hash = 'cc.factorie.variable.CategoricalSeqDomainCubbie';
+            var anchor = window.location.hash;
+            var anchor_opt = '';
+            if (anchor.length >= 1)
+              anchor_opt = '@' + anchor.substring(1);
+            window.location.href = url + '#' + hash + anchor_opt;
+         }
+   	  </script>
+    
+        </head>
+        <body class="type">
+      <div id="definition">
+        <img src="../../../lib/class_big.png" />
+        <p id="owner"><a href="../../package.html" class="extype" name="cc">cc</a>.<a href="../package.html" class="extype" name="cc.factorie">factorie</a>.<a href="package.html" class="extype" name="cc.factorie.variable">variable</a></p>
+        <h1>CategoricalSeqDomainCubbie</h1>
+      </div>
+
+      <h4 id="signature" class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <span class="name">CategoricalSeqDomainCubbie</span><span class="tparams">[<span name="T">T</span>]</span><span class="result"> extends <a href="../util/Cubbie.html" class="extype" name="cc.factorie.util.Cubbie">util.Cubbie</a></span>
+      </span>
+      </h4>
+      
+          <div id="comment" class="fullcommenttop"><div class="comment cmt"><p>A Cubbie for serializing a CategoricalSeqDomain.
+    It saves the elementDomain containing the sequence of categories.</p></div><div class="toggleContainer block">
+          <span class="toggle">Linear Supertypes</span>
+          <div class="superTypes hiddenContent"><a href="../util/Cubbie.html" class="extype" name="cc.factorie.util.Cubbie">util.Cubbie</a>, <a href="../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <span class="extype" name="scala.Any">Any</span></div>
+        </div></div>
+        
+
+      <div id="mbrsel">
+        <div id="textfilter"><span class="pre"></span><span class="input"><input id="mbrsel-input" type="text" accesskey="/" /></span><span class="post"></span></div>
+        <div id="order">
+              <span class="filtertype">Ordering</span>
+              <ol>
+                
+                <li class="alpha in"><span>Alphabetic</span></li>
+                <li class="inherit out"><span>By inheritance</span></li>
+              </ol>
+            </div>
+        <div id="ancestors">
+                <span class="filtertype">Inherited<br />
+                </span>
+                <ol id="linearization">
+                  <li class="in" name="cc.factorie.variable.CategoricalSeqDomainCubbie"><span>CategoricalSeqDomainCubbie</span></li><li class="in" name="cc.factorie.util.Cubbie"><span>Cubbie</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
+                </ol>
+              </div><div id="ancestors">
+            <span class="filtertype"></span>
+            <ol>
+              <li class="hideall out"><span>Hide All</span></li>
+              <li class="showall in"><span>Show all</span></li>
+            </ol>
+            <a href="http://docs.scala-lang.org/overviews/scaladoc/usage.html#members" target="_blank">Learn more about member selection</a>
+          </div>
+        <div id="visbl">
+            <span class="filtertype">Visibility</span>
+            <ol><li class="public in"><span>Public</span></li><li class="all out"><span>All</span></li></ol>
+          </div>
+      </div>
+
+      <div id="template">
+        <div id="allMembers">
+        <div id="constructors" class="members">
+              <h3>Instance Constructors</h3>
+              <ol><li name="cc.factorie.variable.CategoricalSeqDomainCubbie#&lt;init&gt;" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="&lt;init&gt;(csd:cc.factorie.variable.CategoricalSeqDomain[T]):cc.factorie.variable.CategoricalSeqDomainCubbie[T]"></a>
+      <a id="&lt;init&gt;:CategoricalSeqDomainCubbie[T]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">new</span>
+      </span>
+      <span class="symbol">
+        <span class="name">CategoricalSeqDomainCubbie</span><span class="params">(<span name="csd">csd: <a href="CategoricalSeqDomain.html" class="extype" name="cc.factorie.variable.CategoricalSeqDomain">CategoricalSeqDomain</a>[<span class="extype" name="cc.factorie.variable.CategoricalSeqDomainCubbie.T">T</span>]</span>)</span>
+      </span>
+      </h4>
+      
+    </li></ol>
+            </div>
+
+        <div id="types" class="types members">
+              <h3>Type Members</h3>
+              <ol><li name="cc.factorie.util.Cubbie.AbstractInverseSlot" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="AbstractInverseSlot[+A&lt;:cc.factorie.util.Cubbie]extendsAnyRef"></a>
+      <a id="AbstractInverseSlot[+A&lt;:Cubbie]:AbstractInverseSlot[A]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">sealed </span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="../util/Cubbie$AbstractInverseSlot.html"><span class="name">AbstractInverseSlot</span></a><span class="tparams">[<span name="A">+A &lt;: <a href="../util/Cubbie.html" class="extype" name="cc.factorie.util.Cubbie">Cubbie</a></span>]</span><span class="result"> extends <a href="../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>
+      </span>
+      </h4>
+      <p class="comment cmt">An AbstractInverseSlot is a slot that contains a collection of
+other cubbies, namely the ones that have the given target value as
+value of the given foreign slot.</p>
+    </li><li name="cc.factorie.util.Cubbie.AbstractRefSlot" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="AbstractRefSlot[+A&lt;:cc.factorie.util.Cubbie]extendsCubbie.this.AbstractSlot[Any]"></a>
+      <a id="AbstractRefSlot[+A&lt;:Cubbie]:AbstractRefSlot[A]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="../util/Cubbie$AbstractRefSlot.html"><span class="name">AbstractRefSlot</span></a><span class="tparams">[<span name="A">+A &lt;: <a href="../util/Cubbie.html" class="extype" name="cc.factorie.util.Cubbie">Cubbie</a></span>]</span><span class="result"> extends <a href="../util/Cubbie$AbstractSlot.html" class="extype" name="cc.factorie.util.Cubbie.AbstractSlot">AbstractSlot</a>[<span class="extype" name="scala.Any">Any</span>]</span>
+      </span>
+      </h4>
+      <p class="comment cmt">A helper trait for libraries that need ref slots to be covariant.</p>
+    </li><li name="cc.factorie.util.Cubbie.AbstractSlot" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="AbstractSlot[+T]extendsAnyRef"></a>
+      <a id="AbstractSlot[+T]:AbstractSlot[T]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="../util/Cubbie$AbstractSlot.html"><span class="name">AbstractSlot</span></a><span class="tparams">[<span name="T">+T</span>]</span><span class="result"> extends <a href="../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>
+      </span>
+      </h4>
+      <p class="comment cmt">A Cubbie has a collection of slots (or fields) that store the attributes of the
+cubbie.</p>
+    </li><li name="cc.factorie.util.Cubbie.AnySlot" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="AnySlot[A]extendsCubbie.this.PrimitiveSlot[A]withProductwithSerializable"></a>
+      <a id="AnySlot[A]:AnySlot[A]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="../util/Cubbie$AnySlot.html"><span class="name">AnySlot</span></a><span class="tparams">[<span name="A">A</span>]</span><span class="params">(<span name="name">name: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result"> extends <a href="../util/Cubbie$PrimitiveSlot.html" class="extype" name="cc.factorie.util.Cubbie.PrimitiveSlot">PrimitiveSlot</a>[<span class="extype" name="cc.factorie.util.Cubbie.AnySlot.A">A</span>] with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4>
+      <p class="comment cmt">This allows any type to be stored in a slot.</p>
+    </li><li name="cc.factorie.util.Cubbie.BooleanListSlot" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="BooleanListSlotextendsCubbie.this.PrimitiveListSlot[Boolean]withProductwithSerializable"></a>
+      <a id="BooleanListSlot:BooleanListSlot"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="../util/Cubbie$BooleanListSlot.html"><span class="name">BooleanListSlot</span></a><span class="params">(<span name="name">name: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result"> extends <a href="../util/Cubbie$PrimitiveListSlot.html" class="extype" name="cc.factorie.util.Cubbie.PrimitiveListSlot">PrimitiveListSlot</a>[<span class="extype" name="scala.Boolean">Boolean</span>] with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../util/Cubbie.html" class="extype" name="cc.factorie.util.Cubbie">Cubbie</a></dd></dl></div>
+    </li><li name="cc.factorie.util.Cubbie.BooleanSlot" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="BooleanSlotextendsCubbie.this.PrimitiveSlot[Boolean]withProductwithSerializable"></a>
+      <a id="BooleanSlot:BooleanSlot"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="../util/Cubbie$BooleanSlot.html"><span class="name">BooleanSlot</span></a><span class="params">(<span name="name">name: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result"> extends <a href="../util/Cubbie$PrimitiveSlot.html" class="extype" name="cc.factorie.util.Cubbie.PrimitiveSlot">PrimitiveSlot</a>[<span class="extype" name="scala.Boolean">Boolean</span>] with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../util/Cubbie.html" class="extype" name="cc.factorie.util.Cubbie">Cubbie</a></dd></dl></div>
+    </li><li name="cc.factorie.util.Cubbie.CubbieListSlot" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="CubbieListSlot[A&lt;:cc.factorie.util.Cubbie]extendsCubbie.this.Slot[Seq[A]]withProductwithSerializable"></a>
+      <a id="CubbieListSlot[A&lt;:Cubbie]:CubbieListSlot[A]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="../util/Cubbie$CubbieListSlot.html"><span class="name">CubbieListSlot</span></a><span class="tparams">[<span name="A">A &lt;: <a href="../util/Cubbie.html" class="extype" name="cc.factorie.util.Cubbie">Cubbie</a></span>]</span><span class="params">(<span name="name">name: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="constructor">constructor: () ⇒ <span class="extype" name="cc.factorie.util.Cubbie.CubbieListSlot.A">A</span></span>)</span><span class="result"> extends <a href="../util/Cubbie$Slot.html" class="extype" name="cc.factorie.util.Cubbie.Slot">Slot</a>[<a href="../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<span class="extype" name="cc.factorie.util.Cubbie.CubbieListSlot.A">A</span>]] with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4>
+      <p class="comment cmt">A slot that contains a list of cubbies.</p>
+    </li><li name="cc.factorie.util.Cubbie.CubbieSlot" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="CubbieSlot[A&lt;:cc.factorie.util.Cubbie]extendsCubbie.this.Slot[A]withProductwithSerializable"></a>
+      <a id="CubbieSlot[A&lt;:Cubbie]:CubbieSlot[A]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="../util/Cubbie$CubbieSlot.html"><span class="name">CubbieSlot</span></a><span class="tparams">[<span name="A">A &lt;: <a href="../util/Cubbie.html" class="extype" name="cc.factorie.util.Cubbie">Cubbie</a></span>]</span><span class="params">(<span name="name">name: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="constructor">constructor: () ⇒ <span class="extype" name="cc.factorie.util.Cubbie.CubbieSlot.A">A</span></span>)</span><span class="result"> extends <a href="../util/Cubbie$Slot.html" class="extype" name="cc.factorie.util.Cubbie.Slot">Slot</a>[<span class="extype" name="cc.factorie.util.Cubbie.CubbieSlot.A">A</span>] with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4>
+      <p class="comment cmt">A slot that contains a cubbie.</p>
+    </li><li name="cc.factorie.util.Cubbie.DateSlot" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="DateSlotextendsCubbie.this.PrimitiveSlot[java.util.Date]withProductwithSerializable"></a>
+      <a id="DateSlot:DateSlot"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="../util/Cubbie$DateSlot.html"><span class="name">DateSlot</span></a><span class="params">(<span name="name">name: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result"> extends <a href="../util/Cubbie$PrimitiveSlot.html" class="extype" name="cc.factorie.util.Cubbie.PrimitiveSlot">PrimitiveSlot</a>[<span class="extype" name="java.util.Date">Date</span>] with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../util/Cubbie.html" class="extype" name="cc.factorie.util.Cubbie">Cubbie</a></dd></dl></div>
+    </li><li name="cc.factorie.util.Cubbie.DoubleListSlot" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="DoubleListSlotextendsCubbie.this.PrimitiveListSlot[Double]withProductwithSerializable"></a>
+      <a id="DoubleListSlot:DoubleListSlot"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="../util/Cubbie$DoubleListSlot.html"><span class="name">DoubleListSlot</span></a><span class="params">(<span name="name">name: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result"> extends <a href="../util/Cubbie$PrimitiveListSlot.html" class="extype" name="cc.factorie.util.Cubbie.PrimitiveListSlot">PrimitiveListSlot</a>[<span class="extype" name="scala.Double">Double</span>] with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../util/Cubbie.html" class="extype" name="cc.factorie.util.Cubbie">Cubbie</a></dd></dl></div>
+    </li><li name="cc.factorie.util.Cubbie.DoubleSlot" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="DoubleSlotextendsCubbie.this.PrimitiveSlot[Double]withProductwithSerializable"></a>
+      <a id="DoubleSlot:DoubleSlot"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="../util/Cubbie$DoubleSlot.html"><span class="name">DoubleSlot</span></a><span class="params">(<span name="name">name: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result"> extends <a href="../util/Cubbie$PrimitiveSlot.html" class="extype" name="cc.factorie.util.Cubbie.PrimitiveSlot">PrimitiveSlot</a>[<span class="extype" name="scala.Double">Double</span>] with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../util/Cubbie.html" class="extype" name="cc.factorie.util.Cubbie">Cubbie</a></dd></dl></div>
+    </li><li name="cc.factorie.util.Cubbie.IntListSlot" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="IntListSlotextendsCubbie.this.PrimitiveListSlot[Int]withProductwithSerializable"></a>
+      <a id="IntListSlot:IntListSlot"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="../util/Cubbie$IntListSlot.html"><span class="name">IntListSlot</span></a><span class="params">(<span name="name">name: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result"> extends <a href="../util/Cubbie$PrimitiveListSlot.html" class="extype" name="cc.factorie.util.Cubbie.PrimitiveListSlot">PrimitiveListSlot</a>[<span class="extype" name="scala.Int">Int</span>] with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../util/Cubbie.html" class="extype" name="cc.factorie.util.Cubbie">Cubbie</a></dd></dl></div>
+    </li><li name="cc.factorie.util.Cubbie.IntSlot" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="IntSlotextendsCubbie.this.PrimitiveSlot[Int]withProductwithSerializable"></a>
+      <a id="IntSlot:IntSlot"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="../util/Cubbie$IntSlot.html"><span class="name">IntSlot</span></a><span class="params">(<span name="name">name: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result"> extends <a href="../util/Cubbie$PrimitiveSlot.html" class="extype" name="cc.factorie.util.Cubbie.PrimitiveSlot">PrimitiveSlot</a>[<span class="extype" name="scala.Int">Int</span>] with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../util/Cubbie.html" class="extype" name="cc.factorie.util.Cubbie">Cubbie</a></dd></dl></div>
+    </li><li name="cc.factorie.util.Cubbie.InverseSlot" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="InverseSlot[A&lt;:cc.factorie.util.Cubbie]extendsCubbie.this.AbstractInverseSlot[A]withProductwithSerializable"></a>
+      <a id="InverseSlot[A&lt;:Cubbie]:InverseSlot[A]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="../util/Cubbie$InverseSlot.html"><span class="name">InverseSlot</span></a><span class="tparams">[<span name="A">A &lt;: <a href="../util/Cubbie.html" class="extype" name="cc.factorie.util.Cubbie">Cubbie</a></span>]</span><span class="params">(<span name="name">name: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="slot">slot: (<span class="extype" name="cc.factorie.util.Cubbie.InverseSlot.A">A</span>) ⇒ <span class="extype" name="cc.factorie.util.Cubbie.AbstractRefSlot">A.AbstractRefSlot</span>[<a href="../util/Cubbie.html" class="extype" name="cc.factorie.util.Cubbie">Cubbie</a>]</span>)</span><span class="params">(<span class="implicit">implicit </span><span name="m">m: <span class="extype" name="scala.Predef.Manifest">Manifest</span>[<span class="extype" name="cc.factorie.util.Cubbie.InverseSlot.A">A</span>]</span>)</span><span class="result"> extends <a href="../util/Cubbie$AbstractInverseSlot.html" class="extype" name="cc.factorie.util.Cubbie.AbstractInverseSlot">AbstractInverseSlot</a>[<span class="extype" name="cc.factorie.util.Cubbie.InverseSlot.A">A</span>] with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4>
+      <p class="comment cmt">The Inverse slot is a default implementation of the AbstractInverseSlot.</p>
+    </li><li name="cc.factorie.util.Cubbie.MapType" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="MapType=scala.collection.mutable.Map[String,Any]"></a>
+      <a id="MapType:MapType"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">type</span>
+      </span>
+      <span class="symbol">
+        <span class="name">MapType</span><span class="result"> = <span class="extype" name="scala.collection.mutable.Map">Map</span>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Any">Any</span>]</span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">The type of underlying Map.</p><div class="fullcomment"><div class="comment cmt"><p>The type of underlying Map. We use the generic scala mutable Map interface.
+If clients want to use their own Map data structure (such as MongoDB maps) they
+only need to provide a wrapper mutable.Map implementation around their data.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../util/Cubbie.html" class="extype" name="cc.factorie.util.Cubbie">Cubbie</a></dd></dl></div>
+    </li><li name="cc.factorie.util.Cubbie.PrimitiveListSlot" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="PrimitiveListSlot[A]extendsCubbie.this.Slot[Seq[A]]"></a>
+      <a id="PrimitiveListSlot[A]:PrimitiveListSlot[A]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="../util/Cubbie$PrimitiveListSlot.html"><span class="name">PrimitiveListSlot</span></a><span class="tparams">[<span name="A">A</span>]</span><span class="result"> extends <a href="../util/Cubbie$Slot.html" class="extype" name="cc.factorie.util.Cubbie.Slot">Slot</a>[<a href="../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<span class="extype" name="cc.factorie.util.Cubbie.PrimitiveListSlot.A">A</span>]]</span>
+      </span>
+      </h4>
+      <p class="comment cmt">A slot containing a list of primitives.</p>
+    </li><li name="cc.factorie.util.Cubbie.PrimitiveSlot" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="PrimitiveSlot[T]extendsCubbie.this.Slot[T]"></a>
+      <a id="PrimitiveSlot[T]:PrimitiveSlot[T]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="../util/Cubbie$PrimitiveSlot.html"><span class="name">PrimitiveSlot</span></a><span class="tparams">[<span name="T">T</span>]</span><span class="result"> extends <a href="../util/Cubbie$Slot.html" class="extype" name="cc.factorie.util.Cubbie.Slot">Slot</a>[<span class="extype" name="cc.factorie.util.Cubbie.PrimitiveSlot.T">T</span>]</span>
+      </span>
+      </h4>
+      <p class="comment cmt">A slot containing primitive values (ints, strings, booleans etc.</p>
+    </li><li name="cc.factorie.util.Cubbie.RefSlot" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="RefSlot[A&lt;:cc.factorie.util.Cubbie]extendsCubbie.this.Slot[Any]withCubbie.this.AbstractRefSlot[A]withCubbie.this.AbstractInverseSlot[A]withProductwithSerializable"></a>
+      <a id="RefSlot[A&lt;:Cubbie]:RefSlot[A]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="../util/Cubbie$RefSlot.html"><span class="name">RefSlot</span></a><span class="tparams">[<span name="A">A &lt;: <a href="../util/Cubbie.html" class="extype" name="cc.factorie.util.Cubbie">Cubbie</a></span>]</span><span class="params">(<span name="name">name: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="constructor">constructor: () ⇒ <span class="extype" name="cc.factorie.util.Cubbie.RefSlot.A">A</span></span>)</span><span class="result"> extends <a href="../util/Cubbie$Slot.html" class="extype" name="cc.factorie.util.Cubbie.Slot">Slot</a>[<span class="extype" name="scala.Any">Any</span>] with <a href="../util/Cubbie$AbstractRefSlot.html" class="extype" name="cc.factorie.util.Cubbie.AbstractRefSlot">AbstractRefSlot</a>[<span class="extype" name="cc.factorie.util.Cubbie.RefSlot.A">A</span>] with <a href="../util/Cubbie$AbstractInverseSlot.html" class="extype" name="cc.factorie.util.Cubbie.AbstractInverseSlot">AbstractInverseSlot</a>[<span class="extype" name="cc.factorie.util.Cubbie.RefSlot.A">A</span>] with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4>
+      <p class="comment cmt">A RefSlot is a simple type of AbstractInverseSlot which &quot;contains&quot; all cubbies
+of a given type with the given ID.</p>
+    </li><li name="cc.factorie.util.Cubbie.Slot" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="Slot[T]extendsCubbie.this.AbstractSlot[T]"></a>
+      <a id="Slot[T]:Slot[T]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="../util/Cubbie$Slot.html"><span class="name">Slot</span></a><span class="tparams">[<span name="T">T</span>]</span><span class="result"> extends <a href="../util/Cubbie$AbstractSlot.html" class="extype" name="cc.factorie.util.Cubbie.AbstractSlot">AbstractSlot</a>[<span class="extype" name="cc.factorie.util.Cubbie.Slot.T">T</span>]</span>
+      </span>
+      </h4>
+      <p class="comment cmt">Default implementation of an AbstractSlot.</p>
+    </li><li name="cc.factorie.util.Cubbie.StringListSlot" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="StringListSlotextendsCubbie.this.PrimitiveListSlot[String]withProductwithSerializable"></a>
+      <a id="StringListSlot:StringListSlot"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="../util/Cubbie$StringListSlot.html"><span class="name">StringListSlot</span></a><span class="params">(<span name="name">name: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result"> extends <a href="../util/Cubbie$PrimitiveListSlot.html" class="extype" name="cc.factorie.util.Cubbie.PrimitiveListSlot">PrimitiveListSlot</a>[<span class="extype" name="scala.Predef.String">String</span>] with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../util/Cubbie.html" class="extype" name="cc.factorie.util.Cubbie">Cubbie</a></dd></dl></div>
+    </li><li name="cc.factorie.util.Cubbie.StringSlot" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="StringSlotextendsCubbie.this.PrimitiveSlot[String]withProductwithSerializable"></a>
+      <a id="StringSlot:StringSlot"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="../util/Cubbie$StringSlot.html"><span class="name">StringSlot</span></a><span class="params">(<span name="name">name: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result"> extends <a href="../util/Cubbie$PrimitiveSlot.html" class="extype" name="cc.factorie.util.Cubbie.PrimitiveSlot">PrimitiveSlot</a>[<span class="extype" name="scala.Predef.String">String</span>] with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../util/Cubbie.html" class="extype" name="cc.factorie.util.Cubbie">Cubbie</a></dd></dl></div>
+    </li><li name="cc.factorie.util.Cubbie.TensorListSlot" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="TensorListSlotextendsCubbie.this.PrimitiveListSlot[cc.factorie.la.Tensor]withProductwithSerializable"></a>
+      <a id="TensorListSlot:TensorListSlot"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="../util/Cubbie$TensorListSlot.html"><span class="name">TensorListSlot</span></a><span class="params">(<span name="name">name: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result"> extends <a href="../util/Cubbie$PrimitiveListSlot.html" class="extype" name="cc.factorie.util.Cubbie.PrimitiveListSlot">PrimitiveListSlot</a>[<a href="../la/Tensor.html" class="extype" name="cc.factorie.la.Tensor">Tensor</a>] with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../util/Cubbie.html" class="extype" name="cc.factorie.util.Cubbie">Cubbie</a></dd></dl></div>
+    </li><li name="cc.factorie.util.Cubbie.TensorSlot" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="TensorSlotextendsCubbie.this.PrimitiveSlot[cc.factorie.la.Tensor]withProductwithSerializable"></a>
+      <a id="TensorSlot:TensorSlot"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="../util/Cubbie$TensorSlot.html"><span class="name">TensorSlot</span></a><span class="params">(<span name="name">name: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result"> extends <a href="../util/Cubbie$PrimitiveSlot.html" class="extype" name="cc.factorie.util.Cubbie.PrimitiveSlot">PrimitiveSlot</a>[<a href="../la/Tensor.html" class="extype" name="cc.factorie.la.Tensor">Tensor</a>] with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../util/Cubbie.html" class="extype" name="cc.factorie.util.Cubbie">Cubbie</a></dd></dl></div>
+    </li></ol>
+            </div>
+
+        
+
+        <div id="values" class="values members">
+              <h3>Value Members</h3>
+              <ol><li name="scala.AnyRef#!=" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="!=(x$1:AnyRef):Boolean"></a>
+      <a id="!=(AnyRef):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span title="gt4s: $bang$eq" class="name">!=</span><span class="params">(<span name="arg0">arg0: <a href="../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li name="scala.Any#!=" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="!=(x$1:Any):Boolean"></a>
+      <a id="!=(Any):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span title="gt4s: $bang$eq" class="name">!=</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Any">Any</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
+    </li><li name="scala.AnyRef###" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="##():Int"></a>
+      <a id="##():Int"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span title="gt4s: $hash$hash" class="name">##</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="scala.AnyRef#==" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="==(x$1:AnyRef):Boolean"></a>
+      <a id="==(AnyRef):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span title="gt4s: $eq$eq" class="name">==</span><span class="params">(<span name="arg0">arg0: <a href="../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li name="scala.Any#==" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="==(x$1:Any):Boolean"></a>
+      <a id="==(Any):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span title="gt4s: $eq$eq" class="name">==</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Any">Any</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
+    </li><li name="cc.factorie.util.Cubbie.Id" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="Id"></a>
+      <a id="Id:Id"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="../util/Cubbie$Id$.html"><span class="name">Id</span></a><span class="result"> extends <a href="../util/Cubbie$AbstractSlot.html" class="extype" name="cc.factorie.util.Cubbie.AbstractSlot">AbstractSlot</a>[<span class="extype" name="scala.Any">Any</span>]</span>
+      </span>
+      </h4>
+      <p class="comment cmt">Every cubbie has an ID.</p>
+    </li><li name="cc.factorie.util.Cubbie#_map" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="_map:Cubbie.this.MapType"></a>
+      <a id="_map:MapType"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">_map</span><span class="result">: <a href="#MapType=scala.collection.mutable.Map[String,Any]" class="extmbr" name="cc.factorie.variable.CategoricalSeqDomainCubbie.MapType">MapType</a></span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">Returns underlying map.</p><div class="fullcomment"><div class="comment cmt"><p>Returns underlying map.
+todo: remove this</p></div><dl class="paramcmts block"><dt>returns</dt><dd class="cmt"><p>the current underlying map. If empty, a new map is created and set.
+</p></dd></dl><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../util/Cubbie.html" class="extype" name="cc.factorie.util.Cubbie">Cubbie</a></dd></dl></div>
+    </li><li name="cc.factorie.util.Cubbie#_map_=" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="_map_=(map:scala.collection.mutable.Map[String,Any]):Unit"></a>
+      <a id="_map_=(Map[String,Any]):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span title="gt4s: _map_$eq" class="name">_map_=</span><span class="params">(<span name="map">map: <span class="extype" name="scala.collection.mutable.Map">Map</span>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Any">Any</span>]</span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">Alternative method to set underyling map.</p><div class="fullcomment"><div class="comment cmt"><p>Alternative method to set underyling map.
+todo: remove this.</p></div><dl class="paramcmts block"><dt class="param">map</dt><dd class="cmt"><p>the underlying map.
+</p></dd></dl><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../util/Cubbie.html" class="extype" name="cc.factorie.util.Cubbie">Cubbie</a></dd></dl></div>
+    </li><li name="cc.factorie.util.Cubbie#_newDefaultMap" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="_newDefaultMap:Cubbie.this.MapType"></a>
+      <a id="_newDefaultMap:MapType"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">_newDefaultMap</span><span class="result">: <a href="#MapType=scala.collection.mutable.Map[String,Any]" class="extmbr" name="cc.factorie.variable.CategoricalSeqDomainCubbie.MapType">MapType</a></span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">Creates a default map.</p><div class="fullcomment"><div class="comment cmt"><p>Creates a default map.</p></div><dl class="paramcmts block"><dt>returns</dt><dd class="cmt"><p>a default map to be used as underyling map.
+</p></dd></dl><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../util/Cubbie.html" class="extype" name="cc.factorie.util.Cubbie">Cubbie</a></dd></dl></div>
+    </li><li name="scala.Any#asInstanceOf" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="asInstanceOf[T0]:T0"></a>
+      <a id="asInstanceOf[T0]:T0"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">asInstanceOf</span><span class="tparams">[<span name="T0">T0</span>]</span><span class="result">: <span class="extype" name="scala.Any.asInstanceOf.T0">T0</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
+    </li><li name="scala.AnyRef#clone" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="clone():Object"></a>
+      <a id="clone():AnyRef"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">clone</span><span class="params">()</span><span class="result">: <a href="../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<a href="../../../java$lang.html" class="extype" name="java.lang">java.lang</a>] </dd><dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="defval" name="classOf[java.lang.CloneNotSupportedException]">...</span>
+    </span>)</span>
+              
+        </dd></dl></div>
+    </li><li name="cc.factorie.variable.CategoricalSeqDomainCubbie#csd" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="csd:cc.factorie.variable.CategoricalSeqDomain[T]"></a>
+      <a id="csd:CategoricalSeqDomain[T]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">csd</span><span class="result">: <a href="CategoricalSeqDomain.html" class="extype" name="cc.factorie.variable.CategoricalSeqDomain">CategoricalSeqDomain</a>[<span class="extype" name="cc.factorie.variable.CategoricalSeqDomainCubbie.T">T</span>]</span>
+      </span>
+      </h4>
+      
+    </li><li name="cc.factorie.util.Cubbie#cubbieClass" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="cubbieClass:Class[cc.factorie.util.Cubbie]"></a>
+      <a id="cubbieClass:Class[util.Cubbie]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">cubbieClass</span><span class="result">: <span class="extype" name="scala.Predef.Class">Class</span>[<a href="../util/Cubbie.html" class="extype" name="cc.factorie.util.Cubbie">util.Cubbie</a>]</span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">Typed access to the cubbie class.</p><div class="fullcomment"><div class="comment cmt"><p>Typed access to the cubbie class.</p></div><dl class="paramcmts block"><dt>returns</dt><dd class="cmt"><p>the Cubbie class.
+</p></dd></dl><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../util/Cubbie.html" class="extype" name="cc.factorie.util.Cubbie">Cubbie</a></dd></dl></div>
+    </li><li name="cc.factorie.util.Cubbie#cubbieName" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="cubbieName:String"></a>
+      <a id="cubbieName:String"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">cubbieName</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../util/Cubbie.html" class="extype" name="cc.factorie.util.Cubbie">Cubbie</a></dd></dl></div>
+    </li><li name="cc.factorie.variable.CategoricalSeqDomainCubbie#elementDomainCubbie" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="elementDomainCubbie:cc.factorie.variable.CategoricalDomainCubbie[T]"></a>
+      <a id="elementDomainCubbie:CategoricalDomainCubbie[T]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">elementDomainCubbie</span><span class="result">: <a href="CategoricalDomainCubbie.html" class="extype" name="cc.factorie.variable.CategoricalDomainCubbie">CategoricalDomainCubbie</a>[<span class="extype" name="cc.factorie.variable.CategoricalSeqDomainCubbie.T">T</span>]</span>
+      </span>
+      </h4>
+      
+    </li><li name="scala.AnyRef#eq" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="eq(x$1:AnyRef):Boolean"></a>
+      <a id="eq(AnyRef):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">eq</span><span class="params">(<span name="arg0">arg0: <a href="../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li name="scala.AnyRef#equals" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="equals(x$1:Any):Boolean"></a>
+      <a id="equals(Any):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">equals</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Any">Any</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="scala.AnyRef#finalize" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="finalize():Unit"></a>
+      <a id="finalize():Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">finalize</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<a href="../../../java$lang.html" class="extype" name="java.lang">java.lang</a>] </dd><dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="symbol">classOf[java.lang.Throwable]</span>
+    </span>)</span>
+              
+        </dd></dl></div>
+    </li><li name="scala.AnyRef#getClass" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="getClass():Class[_]"></a>
+      <a id="getClass():Class[_]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getClass</span><span class="params">()</span><span class="result">: <span class="extype" name="java.lang.Class">Class</span>[_]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="scala.AnyRef#hashCode" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="hashCode():Int"></a>
+      <a id="hashCode():Int"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">hashCode</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="cc.factorie.util.Cubbie#id" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="id:Any"></a>
+      <a id="id:Any"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">id</span><span class="result">: <span class="extype" name="scala.Any">Any</span></span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">Returns the ID of the cubbie.</p><div class="fullcomment"><div class="comment cmt"><p>Returns the ID of the cubbie. Creates a new ID if no ID has yet been set.</p></div><dl class="paramcmts block"><dt>returns</dt><dd class="cmt"><p>an identifier for this cubbie.
+</p></dd></dl><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../util/Cubbie.html" class="extype" name="cc.factorie.util.Cubbie">Cubbie</a></dd></dl></div>
+    </li><li name="cc.factorie.util.Cubbie#idName" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="idName:String"></a>
+      <a id="idName:String"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">idName</span><span class="result">: <span class="extype" name="java.lang.String">String</span></span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">The map key to use for the ID field.</p><div class="fullcomment"><div class="comment cmt"><p>The map key to use for the ID field.</p></div><dl class="paramcmts block"><dt>returns</dt><dd class="cmt"><p>the key to use for the id field.
+</p></dd></dl><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../util/Cubbie.html" class="extype" name="cc.factorie.util.Cubbie">Cubbie</a></dd></dl></div>
+    </li><li name="cc.factorie.util.Cubbie#id_=" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="id_=(i:Any):Unit"></a>
+      <a id="id_=(Any):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span title="gt4s: id_$eq" class="name">id_=</span><span class="params">(<span name="i">i: <span class="extype" name="scala.Any">Any</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">Set an id for this cubbie.</p><div class="fullcomment"><div class="comment cmt"><p>Set an id for this cubbie.</p></div><dl class="paramcmts block"><dt class="param">i</dt><dd class="cmt"><p>an ID. Generally can be any type of object, but during serialization
+         some types may not be storable by the underyling serialization framework.
+</p></dd></dl><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../util/Cubbie.html" class="extype" name="cc.factorie.util.Cubbie">Cubbie</a></dd></dl></div>
+    </li><li name="scala.Any#isInstanceOf" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="isInstanceOf[T0]:Boolean"></a>
+      <a id="isInstanceOf[T0]:Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">isInstanceOf</span><span class="tparams">[<span name="T0">T0</span>]</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
+    </li><li name="scala.AnyRef#ne" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="ne(x$1:AnyRef):Boolean"></a>
+      <a id="ne(AnyRef):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">ne</span><span class="params">(<span name="arg0">arg0: <a href="../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li name="cc.factorie.util.Cubbie#newId" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="newId:Long"></a>
+      <a id="newId:Long"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">newId</span><span class="result">: <span class="extype" name="scala.Long">Long</span></span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">Create a new random ID.</p><div class="fullcomment"><div class="comment cmt"><p>Create a new random ID.</p></div><dl class="paramcmts block"><dt>returns</dt><dd class="cmt"><p>random ID.
+</p></dd></dl><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../util/Cubbie.html" class="extype" name="cc.factorie.util.Cubbie">Cubbie</a></dd></dl></div>
+    </li><li name="scala.AnyRef#notify" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="notify():Unit"></a>
+      <a id="notify():Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">notify</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li name="scala.AnyRef#notifyAll" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="notifyAll():Unit"></a>
+      <a id="notifyAll():Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">notifyAll</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li name="cc.factorie.util.Cubbie#setMap" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="setMap(map:Cubbie.this.MapType):Cubbie.this.type"></a>
+      <a id="setMap(MapType):CategoricalSeqDomainCubbie.this.type"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">setMap</span><span class="params">(<span name="map">map: <a href="#MapType=scala.collection.mutable.Map[String,Any]" class="extmbr" name="cc.factorie.variable.CategoricalSeqDomainCubbie.MapType">MapType</a></span>)</span><span class="result">: <a href="" class="extype" name="cc.factorie.variable.CategoricalSeqDomainCubbie">CategoricalSeqDomainCubbie</a>.this.type</span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">Set the underlying map for this cubbie.</p><div class="fullcomment"><div class="comment cmt"><p>Set the underlying map for this cubbie.</p></div><dl class="paramcmts block"><dt class="param">map</dt><dd class="cmt"><p>the map that will be used as underlying datastructure</p></dd><dt>returns</dt><dd class="cmt"><p>this cubbie.
+</p></dd></dl><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../util/Cubbie.html" class="extype" name="cc.factorie.util.Cubbie">Cubbie</a></dd></dl></div>
+    </li><li name="scala.AnyRef#synchronized" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="synchronized[T0](x$1:=&gt;T0):T0"></a>
+      <a id="synchronized[T0](⇒T0):T0"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">synchronized</span><span class="tparams">[<span name="T0">T0</span>]</span><span class="params">(<span name="arg0">arg0: ⇒ <span class="extype" name="java.lang.AnyRef.synchronized.T0">T0</span></span>)</span><span class="result">: <span class="extype" name="java.lang.AnyRef.synchronized.T0">T0</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li name="cc.factorie.util.Cubbie#toString" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="toString():String"></a>
+      <a id="toString():String"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">toString</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">Prints out the underlying map</p><div class="fullcomment"><div class="comment cmt"><p>Prints out the underlying map</p></div><dl class="paramcmts block"><dt>returns</dt><dd class="cmt"><p>a string representation of the underyling map.
+</p></dd></dl><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../util/Cubbie.html" class="extype" name="cc.factorie.util.Cubbie">Cubbie</a> → AnyRef → Any</dd></dl></div>
+    </li><li name="cc.factorie.util.Cubbie#version" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="version:String"></a>
+      <a id="version:String"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">version</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../util/Cubbie.html" class="extype" name="cc.factorie.util.Cubbie">Cubbie</a></dd></dl></div>
+    </li><li name="scala.AnyRef#wait" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="wait():Unit"></a>
+      <a id="wait():Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">wait</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="defval" name="classOf[java.lang.InterruptedException]">...</span>
+    </span>)</span>
+              
+        </dd></dl></div>
+    </li><li name="scala.AnyRef#wait" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="wait(x$1:Long,x$2:Int):Unit"></a>
+      <a id="wait(Long,Int):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">wait</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Long">Long</span></span>, <span name="arg1">arg1: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="defval" name="classOf[java.lang.InterruptedException]">...</span>
+    </span>)</span>
+              
+        </dd></dl></div>
+    </li><li name="scala.AnyRef#wait" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="wait(x$1:Long):Unit"></a>
+      <a id="wait(Long):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">wait</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Long">Long</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="defval" name="classOf[java.lang.InterruptedException]">...</span>
+    </span>)</span>
+              
+        </dd></dl></div>
+    </li></ol>
+            </div>
+
+        
+
+        
+        </div>
+
+        <div id="inheritedMembers">
+        <div class="parent" name="cc.factorie.util.Cubbie">
+              <h3>Inherited from <a href="../util/Cubbie.html" class="extype" name="cc.factorie.util.Cubbie">util.Cubbie</a></h3>
+            </div><div class="parent" name="scala.AnyRef">
+              <h3>Inherited from <a href="../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></h3>
+            </div><div class="parent" name="scala.Any">
+              <h3>Inherited from <span class="extype" name="scala.Any">Any</span></h3>
+            </div>
+        
+        </div>
+
+        <div id="groupedMembers">
+        <div class="group" name="Ungrouped">
+              <h3>Ungrouped</h3>
+              
+            </div>
+        </div>
+
+      </div>
+
+      <div id="tooltip"></div>
+
+      <div id="footer">  </div>
+      <script defer="defer" type="text/javascript" id="jquery-js" src="../../../lib/jquery.js"></script><script defer="defer" type="text/javascript" id="jquery-ui-js" src="../../../lib/jquery-ui.js"></script><script defer="defer" type="text/javascript" id="tools-tooltip-js" src="../../../lib/tools.tooltip.js"></script><script defer="defer" type="text/javascript" id="template-js" src="../../../lib/template.js"></script>
+    </body>
+      </html>
