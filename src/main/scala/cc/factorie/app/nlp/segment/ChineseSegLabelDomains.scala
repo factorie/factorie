@@ -47,13 +47,7 @@ trait SegmentedCorpusLabeling {
 
   def isSolitary(label: String): Boolean
 
-<<<<<<< HEAD
-  def isPunctTag(label: String): Boolean
-  
-  def getLabeledCharacters(corpus: File): IndexedSeq[(String, String)] = {
-=======
   def getLabeledCharacters(corpus: File): IndexedSeq[IndexedSeq[(String, String)]] = {
->>>>>>> punctmod
 
     val fileLines = scala.io.Source.fromFile(corpus, "utf-8").getLines.toList
     val labeledCorpus =
@@ -98,39 +92,6 @@ trait SegmentedCorpusLabeling {
     offsets
   }
 
-<<<<<<< HEAD
-  def isFirst(i: Int, line: String): Boolean = (i == 0 || isWhiteSpace(line(i-1)) && !isWhiteSpace(line(i)))
-
-  def isLast(i: Int, line: String): Boolean = (i == (line.size - 1) || isWhiteSpace(line(i+1)) && !isWhiteSpace(line(i)))
-
-  def isPunctuation(character: Char): Boolean = {
-
-    List( (0x0021, 0x002D), 
-          (0x002F, 0x002F),
-          (0x003A, 0x0040), 
-          (0x005B, 0x0060), 
-          (0x007B, 0x007E),
-          (0x2010, 0x2010),
-          (0x2015, 0x2027),
-          (0x2030, 0x205E),
-          (0x2400, 0x243F), 
-          (0x3001, 0x303F), 
-          (0xFE50, 0xFE57),
-          (0xFE59, 0xFE61),
-          (0xFE68, 0xFE68),
-          (0xFF00, 0xFF04), 
-          (0xFF06, 0xFF0D), 
-          (0xFF0F, 0xFF0F),
-          (0xFF1A, 0xFFEF) 
-    ).exists( 
-      range => character >= range._1 && character <= range._2 
-    )
-  }
-
-  def isEndOfSentence(character: Char): Boolean = {
-    
-    List( 0x002C, 
-=======
   //Checks if a character in a training set is first in a word
   def isFirst(i: Int, line: String): Boolean = 
     (i == 0 || isWhiteSpace(line(i-1)) && !isWhiteSpace(line(i)))
@@ -142,53 +103,17 @@ trait SegmentedCorpusLabeling {
   def isEndOfSentence(character: Char): Boolean = {
 
     List( 0x002C,
->>>>>>> punctmod
           0x3002,
           0xFE50,
           0xFE52,
           0xFE54,
           0xFE56,
           0xFE57,
-<<<<<<< HEAD
-          0xFF01, 
-          0xFF0C, 
-          0xFF1B, 
-          0xFF1F, 
-          0xFF61
-    ).exists( 
-      punct => character == punct 
-    )
-  }
-
-  def isNumerical(character: Char): Boolean = {
-
-    List( (0x0030, 0x0039),
-          (0x4E00, 0x4E00),
-          (0x4E03, 0x4E03),
-          (0x4E07, 0x4E07),
-          (0x4E09, 0x4E09),
-          (0x4E5D, 0x4E5D),
-          (0x4E8C, 0x4E8C),
-          (0x4E94, 0x4E94),
-          (0x4EBF, 0x4EBF),
-          (0x5104, 0x5104),
-          (0x5146, 0x5146),
-          (0x516B, 0x516B),
-          (0x516D, 0x516D),
-          (0x5341, 0x5341),
-          (0x5343, 0x5343),
-          (0x56DB, 0x56DB),
-          (0x767E, 0x767E),
-          (0x842C, 0x842C),
-          (0x96F6, 0x96F6),
-          (0xFF10, 0xFF19)
-=======
           0xFF01,
           0xFF0C,
           0xFF1B,
           0xFF1F,
           0xFF61
->>>>>>> punctmod
     ).exists(
       punct => character == punct
     )
