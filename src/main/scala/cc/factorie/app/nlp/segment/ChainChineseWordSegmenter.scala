@@ -103,13 +103,13 @@ class ChainChineseWordSegmenter(
     println("Training In Progress")
     println("\tFeature Extraction In Progress")
 
-    val labeledCorpuses = filePaths.map(
+    val labeledCorpora = filePaths.map(
                             filePath => labelDomain.getLabeledCharacters(new File(filePath))
                           ).flatten.toIndexedSeq
 
-    populateFeatureTables(labeledCorpuses.flatten)
+    populateFeatureTables(labeledCorpora.flatten)
 
-    val trainingSegmentables = getSegmentables(labeledCorpuses)
+    val trainingSegmentables = getSegmentables(labeledCorpora)
 
     SegmentationFeaturesDomain.freeze
     
