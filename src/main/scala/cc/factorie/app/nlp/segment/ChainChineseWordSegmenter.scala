@@ -16,25 +16,6 @@ import cc.factorie.app.chain.ChainModel
     different variety of written Mandarin. 
     @author Henry Oskar Singer  */
 
-class GlobalChainChineseWordSegmenter
-  extends ChainChineseWordSegmenter
-object GlobalChainChineseWordSegmenter
-  extends GlobalChainChineseWordSegmenter {
-  def main(args: Array[String]): Unit = {
-
-    val argList = args.toList
-    val numArgs = argList.size
-
-    train(argList.slice(3, numArgs).take(args(0).toInt))
-
-    val f1Scores = argList.slice(args(0).toInt+3, numArgs).map(
-      trainPath => getF1Score(trainPath, args(2)) 
-    ).mkString("\t")
-
-    println(f1Scores)
-  }
-}
-
 class ChainChineseWordSegmenter(
   labelDomain: SegmentationLabelDomain = BIOSegmentationDomain
 ) extends DocumentAnnotator {
@@ -130,8 +111,6 @@ class ChainChineseWordSegmenter(
 
     val trainingSegmentables = getSegmentables(labeledCorpuses)
 
-    println("Number of Segmentables: " + trainingSegmentables.size)
-
     SegmentationFeaturesDomain.freeze
     
     println("\tFeature Extraction Completed")
@@ -140,8 +119,6 @@ class ChainChineseWordSegmenter(
       trainingSegmentables.map( segmentable =>
         new model.ChainLikelihoodExample(segmentable.links.map( _.label ))
       ).toList
-
-    println("Number of Examples: " + examples.size)
 
     Random.setSeed(0)
 
@@ -189,8 +166,6 @@ class ChainChineseWordSegmenter(
     val suffixes = rareWords.map( 
       word => word.slice(word.size-1, word.size) 
     ).distinct
-    println("\t\tNumber of Prefixes: " + prefixes.size + 
-            "\tNumber of Suffixes: " + suffixes.size)
 
     (prefixes, suffixes)
   }
@@ -303,9 +278,6 @@ class ChainChineseWordSegmenter(
       wordPair => wordPair._1.forall( label => label.valueIsTarget ) && 
                   labelDomain.indicatesSegmentStart(wordPair._2(0).target.categoryValue)
     }
-
-    assert(myWords.size <= labelSeq.size)
-
     val printer = new PrintWriter(new BufferedWriter(new FileWriter(logPath)))
     val printString: String = myWords.filter( word => 
       word.exists( label => !label.valueIsTarget ) 
@@ -353,8 +325,6 @@ class ChainChineseWordSegmenter(
     getSegmentables(labeledExamples)
   }
   def getSegmentables(labeledExamples: IndexedSeq[IndexedSeq[(String, String)]]): IndexedSeq[Segmentable] = {
-
-    println("Number of Examples: " + labeledExamples.size)
 
     val segmentables = labeledExamples.map( 
       example => new Segmentable ++= (0 until example.size).map( 
