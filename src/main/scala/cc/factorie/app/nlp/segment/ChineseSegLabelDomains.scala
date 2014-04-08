@@ -16,8 +16,7 @@ object BIOSegmentationDomain extends SegmentationLabelDomain {
     "RR",
     "LR",
     "LL",
-    "MM",
-    "PP"
+    "MM"
   )
   
   freeze
@@ -30,13 +29,10 @@ object BIOSegmentationDomain extends SegmentationLabelDomain {
 
   def isSolitary(label: String): Boolean = label equals "LR"
 
-  def isPunctTag(label: String): Boolean = label equals "PP"
-
   def getLabeledCharacter(i: Int, line: String): (String, String) = {
 
     val label =
-      if(isPunctuation(line(i))) "PP"
-      else if(isFirst(i, line) && isLast(i, line)) "LR"
+      if(isFirst(i, line) && isLast(i, line)) "LR"
       else if(isFirst(i, line)) "LL"
       else if(isLast(i, line)) "RR"
       else "MM"
@@ -51,31 +47,37 @@ trait SegmentedCorpusLabeling {
 
   def isSolitary(label: String): Boolean
 
+<<<<<<< HEAD
   def isPunctTag(label: String): Boolean
   
   def getLabeledCharacters(corpus: File): IndexedSeq[(String, String)] = {
+=======
+  def getLabeledCharacters(corpus: File): IndexedSeq[IndexedSeq[(String, String)]] = {
+>>>>>>> punctmod
 
+    val fileLines = scala.io.Source.fromFile(corpus, "utf-8").getLines.toList
     val labeledCorpus =
-      (for{
-         line <- scala.io.Source.fromFile(corpus, "utf-8").getLines
-         i <- 0 until line.size
-         if !isWhiteSpace(line(i))
-       } yield getLabeledCharacter(i, line)
-      ).toList.foldRight(IndexedSeq[(String, String)]())(_+:_)
-
-    labeledCorpus }
-
-  def getLabeledCharacters(document: Document): IndexedSeq[(String, String)] = {
-
-    val docString = document.string
-    val labeledCorpus =
-      (for{
-         i <- 0 until docString.size
-         if !isWhiteSpace(docString(i))
-       } yield getLabeledCharacter(i, docString)
-      ).toList.foldRight(IndexedSeq[(String, String)]())(_+:_)
+      fileLines.map( 
+        line => (0 until line.size).filter( 
+          i => !isWhiteSpace(line(i)) 
+        ).map( 
+          i => getLabeledCharacter(i, line) 
+        ).toIndexedSeq
+      ).toIndexedSeq
 
     labeledCorpus
+  }
+
+  def getLabeledCharacters(document: Document): IndexedSeq[IndexedSeq[(String, String)]] = {
+
+    val docString = document.string
+    val labeledCorpus = (0 until docString.size).filter( 
+      i => !isWhiteSpace(docString(i)) 
+    ).map( 
+      i => getLabeledCharacter(i, docString) 
+    ).toIndexedSeq
+
+    IndexedSeq(labeledCorpus)
   }
 
   def getLabeledCharacter(i: Int, line: String): (String, String)
@@ -96,6 +98,7 @@ trait SegmentedCorpusLabeling {
     offsets
   }
 
+<<<<<<< HEAD
   def isFirst(i: Int, line: String): Boolean = (i == 0 || isWhiteSpace(line(i-1)) && !isWhiteSpace(line(i)))
 
   def isLast(i: Int, line: String): Boolean = (i == (line.size - 1) || isWhiteSpace(line(i+1)) && !isWhiteSpace(line(i)))
@@ -127,12 +130,26 @@ trait SegmentedCorpusLabeling {
   def isEndOfSentence(character: Char): Boolean = {
     
     List( 0x002C, 
+=======
+  //Checks if a character in a training set is first in a word
+  def isFirst(i: Int, line: String): Boolean = 
+    (i == 0 || isWhiteSpace(line(i-1)) && !isWhiteSpace(line(i)))
+
+  //Checks if a character in a training set is last in a word
+  def isLast(i: Int, line: String): Boolean = 
+    (i == (line.size - 1) || isWhiteSpace(line(i+1)) && !isWhiteSpace(line(i)))
+
+  def isEndOfSentence(character: Char): Boolean = {
+
+    List( 0x002C,
+>>>>>>> punctmod
           0x3002,
           0xFE50,
           0xFE52,
           0xFE54,
           0xFE56,
           0xFE57,
+<<<<<<< HEAD
           0xFF01, 
           0xFF0C, 
           0xFF1B, 
@@ -165,12 +182,20 @@ trait SegmentedCorpusLabeling {
           (0x842C, 0x842C),
           (0x96F6, 0x96F6),
           (0xFF10, 0xFF19)
+=======
+          0xFF01,
+          0xFF0C,
+          0xFF1B,
+          0xFF1F,
+          0xFF61
+>>>>>>> punctmod
     ).exists(
-      range => character >= range._1 && character <= range._2
+      punct => character == punct
     )
   }
 
-  def isWhiteSpace(character: Char): Boolean = 
+  def isWhiteSpace(character: Char): Boolean = {
+
     List( (0x0000, 0x0020), 
           (0x0085, 0x0085), 
           (0x2000, 0x200F),
@@ -180,4 +205,6 @@ trait SegmentedCorpusLabeling {
     ).exists( 
       range => character >= range._1 && character <= range._2
     )
+  }
+
 }

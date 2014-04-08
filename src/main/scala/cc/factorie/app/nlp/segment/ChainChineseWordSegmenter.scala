@@ -16,6 +16,7 @@ import cc.factorie.app.chain.ChainModel
     different variety of written Mandarin. 
     @author Henry Oskar Singer  */
 
+<<<<<<< HEAD
 class GlobalChainChineseWordSegmenter
   extends ChainChineseWordSegmenter
 object GlobalChainChineseWordSegmenter
@@ -31,6 +32,8 @@ object GlobalChainChineseWordSegmenter
   }
 }
 
+=======
+>>>>>>> punctmod
 class ChainChineseWordSegmenter(
   labelDomain: SegmentationLabelDomain = BIOSegmentationDomain
 ) extends DocumentAnnotator {
@@ -122,7 +125,7 @@ class ChainChineseWordSegmenter(
                             filePath => labelDomain.getLabeledCharacters(new File(filePath))
                           ).flatten.toIndexedSeq
 
-    populateFeatureTables(labeledCorpuses)
+    populateFeatureTables(labeledCorpuses.flatten)
 
     val trainingSegmentables = getSegmentables(labeledCorpuses)
 
@@ -181,8 +184,6 @@ class ChainChineseWordSegmenter(
     val suffixes = rareWords.map( 
       word => word.slice(word.size-1, word.size) 
     ).distinct
-    println("\t\tNumber of Prefixes: " + prefixes.size + 
-            "\tNumber of Suffixes: " + suffixes.size)
 
     (prefixes, suffixes)
   }
@@ -191,9 +192,7 @@ class ChainChineseWordSegmenter(
 
     val delimiter = '|'
 
-    labeledCorpus.filter(
-      pair => !labelDomain.isPunctTag(pair._2)
-    ).map(
+    labeledCorpus.map(
       pair => {
                if ( labelDomain.indicatesSegmentStart(pair._2) ) 
                  delimiter+pair._1 
@@ -276,22 +275,25 @@ class ChainChineseWordSegmenter(
     character => character.label
   )
 
+<<<<<<< HEAD
   def getF1Score(trainingFilePath: String, errorLogPath: String): Double = {
 
     val labelSeq = segment(trainingFilePath)
+=======
+  def getF1Score(trainPath: String, logPath: String): Double = {
+
+    val labelSeq = segment(trainPath)
+>>>>>>> punctmod
     val myWords = new ArrayBuffer[ArrayBuffer[SegmentationLabel]]
-    val numTrueWords: Double = labelSeq.count{ 
-      label => labelDomain.indicatesSegmentStart(label.target.categoryValue) && 
-               !labelDomain.isPunctTag(label.target.categoryValue)
-    }
+    val numTrueWords: Double = labelSeq.count(
+      label => labelDomain.indicatesSegmentStart(label.target.categoryValue)
+    )
     
     labelSeq.foreach{ label => 
-      if( !labelDomain.isPunctTag(label.categoryValue) ){
-        if ( !labelDomain.indicatesSegmentStart(label.categoryValue) && myWords.size > 0 )
-          myWords(myWords.size - 1) += label
-        else
-          myWords += (new ArrayBuffer[SegmentationLabel] :+ label)
-      }
+      if ( !labelDomain.indicatesSegmentStart(label.categoryValue) && myWords.size > 0 )
+        myWords(myWords.size - 1) += label
+      else
+        myWords += (new ArrayBuffer[SegmentationLabel] :+ label)
     }
 
     val pad = new ArrayBuffer[SegmentationLabel]
@@ -300,6 +302,7 @@ class ChainChineseWordSegmenter(
       wordPair => wordPair._1.forall( label => label.valueIsTarget ) && 
                   labelDomain.indicatesSegmentStart(wordPair._2(0).target.categoryValue)
     }
+<<<<<<< HEAD
 
     assert(myWords.size <= labelSeq.size)
 
@@ -309,6 +312,14 @@ class ChainChineseWordSegmenter(
     ).map( 
       word => word.map( label => label.character.string + 
                                  "/" + label.categoryValue + 
+=======
+    val printer = new PrintWriter(new BufferedWriter(new FileWriter(logPath)))
+    val printString: String = myWords.filter( word => 
+      word.exists( label => !label.valueIsTarget ) 
+    ).map( 
+      word => word.map( label => label.character.string +
+                                 "/" + label.categoryValue +
+>>>>>>> punctmod
                                  "/" + label.target.categoryValue +
                                  "\t"
               ).reduceLeft(_+_)
@@ -339,16 +350,17 @@ class ChainChineseWordSegmenter(
 
   def getSegmentables(corpus: File): IndexedSeq[Segmentable] = {
 
-    val labeledCharacters: IndexedSeq[(String, String)] = labelDomain.getLabeledCharacters(corpus)
+    val labeledExamples: IndexedSeq[IndexedSeq[(String, String)]] = labelDomain.getLabeledCharacters(corpus)
 
-    getSegmentables(labeledCharacters)
+    getSegmentables(labeledExamples)
   }
   def getSegmentables(document: Document): IndexedSeq[Segmentable] = {
 
-    val labeledCharacters: IndexedSeq[(String, String)] = labelDomain.getLabeledCharacters(document)
+    val labeledExamples: IndexedSeq[IndexedSeq[(String, String)]] = labelDomain.getLabeledCharacters(document)
 
-    getSegmentables(labeledCharacters)
+    getSegmentables(labeledExamples)
   }
+<<<<<<< HEAD
   def getSegmentables(labeledCharacters: IndexedSeq[(String, String)]): IndexedSeq[Segmentable] = {
 
     val numChars = labeledCharacters.size
@@ -374,6 +386,16 @@ class ChainChineseWordSegmenter(
         characterBuffer = new ArrayBuffer[(String, String)]
       }
     }
+=======
+  def getSegmentables(labeledExamples: IndexedSeq[IndexedSeq[(String, String)]]): IndexedSeq[Segmentable] = {
+
+    val segmentables = labeledExamples.map( 
+      example => new Segmentable ++= (0 until example.size).map( 
+        i => new Character(example(i)._1, example(i)._2, characterToFeatures(i, example))
+      )
+    )
+
+>>>>>>> punctmod
     println("Segmentables Retrieved")
 
     segmentables
@@ -433,8 +455,12 @@ class ChainChineseWordSegmenter(
       (tableContains(singleCharWordTable, c0),    "UN" + c0),
       (tableContains(singleCharWordTable, cpos1), "UN" + cpos1),
       (tableContains(prefixTable, cneg1),         "PR" + cneg1),
+<<<<<<< HEAD
       (tableContains(suffixTable, c0),            "SU" + c0)/*,
       (labelDomain.isNumerical(cneg1(0)),         "NU" + cneg1label)*/
+=======
+      (tableContains(suffixTable, c0),            "SU" + c0)
+>>>>>>> punctmod
     ).filter( pair => pair._1 ).map( pair => pair._2 ).toList
 
     features.toList.filter( feature => !feature.contains(defaultFeature) ).toSeq
