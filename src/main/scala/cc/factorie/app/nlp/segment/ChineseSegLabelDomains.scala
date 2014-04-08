@@ -13,27 +13,29 @@ abstract class SegmentationLabelDomain
 object BIOSegmentationDomain extends SegmentationLabelDomain {
 
   this ++= Vector(
-    "B",
-    "I",
-    "O",
-    "P"
+    "RR",
+    "LR",
+    "LL",
+    "MM"
   )
   
   freeze
 
   def indicatesSegmentStart(label: String): Boolean = {
-    val segmentStarts = List( "P", "O", "B" )
+    val segmentStarts = List( "LL", "LR" )
 
     segmentStarts.exists( segStart => segStart equals label )
   }
 
+  def isSolitary(label: String): Boolean = label equals "LR"
+
   def getLabeledCharacter(i: Int, line: String): (String, String) = {
 
     val label =
-      if(isPunctuation(line(i))) "P"
-      else if(isFirst(i, line) && isLast(i, line)) "O"
-      else if(isFirst(i, line)) "B"
-      else "I"
+      if(isFirst(i, line) && isLast(i, line)) "LR"
+      else if(isFirst(i, line)) "LL"
+      else if(isLast(i, line)) "RR"
+      else "MM"
 
     (line.slice(i, i+1), label)
   }
@@ -42,35 +44,36 @@ object BIOSegmentationDomain extends SegmentationLabelDomain {
 trait SegmentedCorpusLabeling {
 
   def indicatesSegmentStart(label: String): Boolean
-  
-  //Labels a pre-segmented training set based on this tag set: 
-  //B (beginning) I (inner) O (solitary) P (punctuation)
-  def getLabeledCharacters(corpus: File): IndexedSeq[(String, String)] = {
 
+  def isSolitary(label: String): Boolean
+
+  def getLabeledCharacters(corpus: File): IndexedSeq[IndexedSeq[(String, String)]] = {
+
+    val fileLines = scala.io.Source.fromFile(corpus, "utf-8").getLines.toList
     val labeledCorpus =
-      (for{
-         line <- scala.io.Source.fromFile(corpus, "utf-8").getLines
-         i <- 0 until line.size
-         if !isWhiteSpace(line(i))
-       } yield getLabeledCharacter(i, line)
-      ).toList.foldRight(IndexedSeq[(String, String)]())(_+:_)
-
-    labeledCorpus }
-
-  def getLabeledCharacters(document: Document): IndexedSeq[(String, String)] = {
-
-    val docString = document.string
-    val labeledCorpus =
-      (for{
-         i <- 0 until docString.size
-         if !isWhiteSpace(docString(i))
-       } yield getLabeledCharacter(i, docString)
-      ).toList.foldRight(IndexedSeq[(String, String)]())(_+:_)
+      fileLines.map( 
+        line => (0 until line.size).filter( 
+          i => !isWhiteSpace(line(i)) 
+        ).map( 
+          i => getLabeledCharacter(i, line) 
+        ).toIndexedSeq
+      ).toIndexedSeq
 
     labeledCorpus
   }
 
-  //Returns a 2-tuple of an instance of character from a training set mapped to its tag
+  def getLabeledCharacters(document: Document): IndexedSeq[IndexedSeq[(String, String)]] = {
+
+    val docString = document.string
+    val labeledCorpus = (0 until docString.size).filter( 
+      i => !isWhiteSpace(docString(i)) 
+    ).map( 
+      i => getLabeledCharacter(i, docString) 
+    ).toIndexedSeq
+
+    IndexedSeq(labeledCorpus)
+  }
+
   def getLabeledCharacter(i: Int, line: String): (String, String)
 
   def getWhiteSpaceOffsets(content: String): IndexedSeq[Int] = {
@@ -90,29 +93,43 @@ trait SegmentedCorpusLabeling {
   }
 
   //Checks if a character in a training set is first in a word
-  def isFirst(i: Int, line: String): Boolean = (i == 0 || isWhiteSpace(line(i-1)))
+  def isFirst(i: Int, line: String): Boolean = 
+    (i == 0 || isWhiteSpace(line(i-1)) && !isWhiteSpace(line(i)))
 
   //Checks if a character in a training set is last in a word
-  def isLast(i: Int, line: String): Boolean = (i == (line.size - 1) || isWhiteSpace(line(i+1)))
+  def isLast(i: Int, line: String): Boolean = 
+    (i == (line.size - 1) || isWhiteSpace(line(i+1)) && !isWhiteSpace(line(i)))
 
-  def isPunctuation(character: Char): Boolean = {
+  def isEndOfSentence(character: Char): Boolean = {
 
-    val punctuationChars = 
-      List( (0x3000, 0x303F), (0x2400, 0x243F), (0xFF00, 0xFF04), 
-            (0xFF06, 0xFF0D), (0xFF1A, 0xFFEF), (0x2000, 0x206F), 
-            (0x0021, 0x002C), (0x002E, 0x002F), (0x003A, 0x0040), 
-            (0x005B, 0x0060), (0x007B, 0x007E) )
-    
-    punctuationChars.exists( range => character >= range._1 && character <= range._2 )
+    List( 0x002C,
+          0x3002,
+          0xFE50,
+          0xFE52,
+          0xFE54,
+          0xFE56,
+          0xFE57,
+          0xFF01,
+          0xFF0C,
+          0xFF1B,
+          0xFF1F,
+          0xFF61
+    ).exists(
+      punct => character == punct
+    )
   }
 
-  def isEndOfSentence(character: String): Boolean = {
-    
-    val EOSChars = List( 0x3002, 0xFF0C, 0x002C, 0x002E ) 
+  def isWhiteSpace(character: Char): Boolean = {
 
-    EOSChars.exists( punct => character equals punct.toString )
+    List( (0x0000, 0x0020), 
+          (0x0085, 0x0085), 
+          (0x2000, 0x200F),
+          (0x2028, 0x202F),
+          (0x205F, 0x206F),
+          (0x3000, 0x3000)
+    ).exists( 
+      range => character >= range._1 && character <= range._2
+    )
   }
 
-  def isWhiteSpace(character: Char): Boolean = 
-    List( (0x0000, 0x0020), (0x0085, 0x0085), (0x2028, 0x2029) ).exists( range => character >= range._1 && character <= range._2)
 }
