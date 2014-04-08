@@ -50,8 +50,6 @@ trait SegmentedCorpusLabeling {
   def getLabeledCharacters(corpus: File): IndexedSeq[IndexedSeq[(String, String)]] = {
 
     val fileLines = scala.io.Source.fromFile(corpus, "utf-8").getLines.toList
-    fileLines.take(3).foreach(println)
-    println("Number of Lines: " + fileLines.size)
     val labeledCorpus =
       fileLines.map( 
         line => (0 until line.size).filter( 
