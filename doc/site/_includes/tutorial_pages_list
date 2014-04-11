@@ -1,0 +1,12 @@
+{% for weight in (1..100) %}
+   {% for node in site.pages %}
+      {% if node.group == group and node.weight == weight %}
+         {% if page.url == node.url %}
+            <li class="active"><a href="{{node.url}}">{{node.title}}</a></li>
+         {% else %}
+            <li><a href="{{node.url}}">{{node.title}}</a></li>
+         {% endif %}
+      {% endif %}
+   {% endfor %}
+ {% endfor %}
+{% assign suffix_pages_list = nil %}

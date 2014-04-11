@@ -23,7 +23,7 @@ import cc.factorie.util._
 // TODO Consider having all Tensor += methods return this.type.  Question: will this reduce efficiency? -akm
 
 /** An N-dimensional collection of Doubles. */
-trait Tensor extends MutableDoubleSeq {
+trait Tensor extends MutableDoubleSeq with Serializable {
   def numDimensions: Int
   def dimensions: Array[Int]
   // For handling sparsity

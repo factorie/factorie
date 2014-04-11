@@ -1,32 +1,68 @@
 <!DOCTYPE html>
 <html lang="en">
-    <head>
-        <meta charset="UTF-8">
-        <link href="{{ site.baseurl }}/assets/css/bootstrap.css" rel="stylesheet">
-        <link rel="stylesheet" type="text/css" href="{{ site.baseurl }}/assets/css/pygments/default.css" media="screen" />
-        <link rel="stylesheet" type="text/css" href="http://twitter.github.com/bootstrap/assets/js/google-code-prettify/prettify.css" />
-        <title>Factorie: {{ page.title }}</title>
-    </head>
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <link rel="shortcut icon" href="/assets/ico/favicon.ico">
+    
+    <title>FACTORIE: {{page.title}}</title>
+    
+    <!-- Bootstrap core CSS -->
+    <link href="/assets/css/bootstrap-custom.css" rel="stylesheet">
 
-    <body>
-        <div class="container">
-            <div class="page-header">
-              <h1><img width="50px" src="{{ site.baseurl }}/assets/images/{{ site.factorie_logo }}">
-                <a href="{{ site.baseurl }}/index.html">Factorie</a></h1>
-            </div>
-
-            <div class="row">
-                <div class="span3">
-                    {% include nav.html %}
-                </div>
-                <div class="span9">
-                  {{ content }}
-                </div>
-            </div>
-
-            <hr>
-            {% include footer.html %}
-        </div> <!-- /container -->
-
-    </body>
+    <!-- Custom styles for this template -->
+    <link href="/assets/css/jumbotron.css" rel="stylesheet">
+    <link href="/assets/css/offcanvas.css" rel="stylesheet">
+    <link href="/assets/css/affix.css" rel="stylesheet">
+    
+    <!-- For Pygments syntax highlighting -->
+    <link href="/assets/css/pygments/github.css" rel="stylesheet">
+    
+  </head>
+  {% include navbar.html %}
+  <div class="container">
+	 <div class="row row-offcanvas row-offcanvas-left">
+     <div class="col-xs-12 col-sm-9">
+       <p class="pull-left visible-xs">
+         <button type="button" class="btn btn-primary btn-xs" data-toggle="offcanvas">Toggle nav</button>
+       </p>
+     </div>
+	 <div class="col-xs-2 col-sm-3 col-md-2 bs-sidebar sidebar-offcanvas affix" id="sidebar" role="navigation"> 
+	 {% include sidenav.html %} 
+	 </div>
+	 <div class="col-xs-10 col-sm-9 col-md-9 pull-right" id="main" role="content">
+	 {{ content }}
+	 </div>
+	</div> <!-- /row -->
+  {% include footer.html %}
+  </div> <!-- /container -->
+    <!-- Bootstrap core JavaScript
+    ================================================== -->
+    <!-- Placed at the end of the document so the pages load faster -->
+    <script src="https://code.jquery.com/jquery-1.10.2.min.js"></script>
+    <script src="/assets/js/bootstrap.js"></script>
+    <script src="/assets/js/offcanvas.js"></script>
+    <script src="/assets/js/affix.js"></script>
+	  <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script>
+	  $(document).ready(function() {
+	
+	   var docHeight = $(window).height();
+	   var footerHeight = $('#footer').height();
+	   var footerTop = $('#footer').position().top + footerHeight;
+	
+	   if (footerTop < docHeight) {
+	    $('#footer').css('margin-top', 5 + (docHeight - footerTop) + 'px');
+	   }
+	  });
+	 </script>
+	 <script>
+		 MathJax.Hub.Config({
+		   "HTML-CSS": {styles: {".MathJax .mo, .MathJax .mi": {color: "#333333 ! important"}}},
+	       tex2jax: {skipTags: ['script', 'noscript', 'style', 'textarea', 'pre']}
+	     });
+	 </script>
 </html>

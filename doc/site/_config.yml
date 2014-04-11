@@ -1,8 +1,13 @@
-auto: true
-markdown: redcarpet2
-redcarpet:
-  extensions: ["no_intra_emphasis", "fenced_code_blocks", "autolink", "strikethrough", "superscript", "with_toc_data"]
+name: FACTORIE
+markdown: redcarpet
+pygments: true
 
 author_sameer: "<a href='http://www.cs.umass.edu/~sameer'>Sameer Singh</a>"
-baseurl: ""
+author_luke: "<a href='http://www.cs.umass.edu/~luke'>Luke Vilnis</a>"
+factorie_version: "1.0"
+factorie_source_url: "https://github.com/factorie/factorie/releases/download/factorie-1.0.0-RC1/factorie-1.0-sources.jar"
+factorie_executable_url: "https://github.com/factorie/factorie/releases/download/factorie-1.0.0-RC1/factorie-1.0-RC1.jar"
+#baseurl: "http://factorie.cs.umass.edu"
 factorie_logo: "factorie-logo55.png"
+safe: true
+lsi: false
