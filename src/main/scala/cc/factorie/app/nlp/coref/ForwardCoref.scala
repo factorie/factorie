@@ -9,7 +9,7 @@ import java.io._
 import cc.factorie.util.{ClasspathURL, BinarySerializer}
 import scala.collection.mutable.ArrayBuffer
 import cc.factorie.app.nlp.coref.mention._
-import cc.factorie.app.nlp.phrase.{PhraseNumber, PhraseGender}
+import cc.factorie.app.nlp.phrase.{PhraseNumber, PhraseGender, OntonotesPhraseEntityType, NounPhraseType}
 
 /**
  * User: apassos
@@ -21,7 +21,7 @@ abstract class ForwardCorefBase extends DocumentAnnotator {
   val options = new Coref1Options
   val model: PairwiseCorefModel
 
-  def prereqAttrs: Seq[Class[_]] = Seq(classOf[MentionList], classOf[MentionEntityType], classOf[PhraseGender], classOf[PhraseNumber])
+  def prereqAttrs: Seq[Class[_]] = Seq(classOf[MentionList], classOf[OntonotesPhraseEntityType], classOf[PhraseGender], classOf[PhraseNumber])
   def postAttrs = Seq(classOf[GenericEntityMap[Mention]])
   def process(document: Document) = {
     if (options.useEntityLR) document.attr += processDocumentOneModelFromEntities(document)
@@ -31,7 +31,7 @@ abstract class ForwardCorefBase extends DocumentAnnotator {
   def tokenAnnotationString(token:Token): String = {
     val emap = token.document.attr[GenericEntityMap[Mention]]
     token.document.attr[MentionList].filter(mention => mention.phrase.contains(token)) match {
-      case ms:Seq[Mention] if ms.length > 0 => ms.map(m => m.attr[MentionType].categoryValue+":"+m.phrase.indexOf(token)+"e"+emap.getEntity(m)).mkString(", ")
+      case ms:Seq[Mention] if ms.length > 0 => ms.map(m => m.phrase.attr[NounPhraseType].categoryValue+":"+m.phrase.indexOf(token)+"e"+emap.getEntity(m)).mkString(", ")
       case _ => "_"
     }
   }
@@ -455,13 +455,13 @@ class ForwardCorefImplicitConjunctions extends ForwardCorefBase {
 }
 
 object ForwardCoref extends ForwardCoref {
-  override def prereqAttrs: Seq[Class[_]] = Seq(classOf[MentionEntityType], classOf[PhraseGender], classOf[PhraseNumber])
+  override def prereqAttrs: Seq[Class[_]] = Seq(classOf[OntonotesPhraseEntityType], classOf[PhraseGender], classOf[PhraseNumber])
   deserialize(new DataInputStream(ClasspathURL[ForwardCoref](".factorie").openConnection().getInputStream))
 }
 
 // This should only be used when using the NerAndPronounMentionFinder to find mentions
 class NerForwardCoref extends ForwardCoref {
-  override def prereqAttrs: Seq[Class[_]] = Seq(classOf[NerMentionList], classOf[MentionEntityType], classOf[PhraseGender], classOf[PhraseNumber])
+  override def prereqAttrs: Seq[Class[_]] = Seq(classOf[NerMentionList], classOf[OntonotesPhraseEntityType], classOf[PhraseGender], classOf[PhraseNumber])
 }
 object NerForwardCoref extends NerForwardCoref {
   deserialize(new DataInputStream(ClasspathURL[NerForwardCoref](".factorie").openConnection().getInputStream))

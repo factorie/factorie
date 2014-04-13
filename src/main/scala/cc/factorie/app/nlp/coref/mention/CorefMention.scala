@@ -16,7 +16,7 @@ import cc.factorie.app.nlp.phrase.{Number, Gender}
 object CorefMention{
   def mentionToCorefMention(m: Mention): CorefMention = {
     val cm = new CorefMention(m, m.phrase.start, m.phrase.sentence.indexInSection)
-    cm.attr += new MentionEntityType(m, m.attr[MentionEntityType].categoryValue)
+    //cm.attr += new MentionEntityType(m, m.attr[MentionEntityType].categoryValue)
     cm
   }
 
@@ -36,8 +36,8 @@ object CorefMention{
       }else
         headTokenIndex
     }
-    val docMention = span.document.getCoref.mention(new Phrase(span, headInd))
-    docMention.attr += new MentionType(docMention, mentionType)
+    val docMention = span.document.getCoref.addMention(new Phrase(span, headInd))
+    docMention.phrase.attr += new NounPhraseType(docMention.phrase, mentionType)
     new CorefMention(docMention, tokenNum,  sentenceNum)
   }
 
@@ -58,7 +58,8 @@ class CorefMention(val mention: Mention, val tokenNum: Int, val sentenceNum: Int
   def parentEntity = mention.entity // TODO Get rid of this method, and just use "entity" method -akm
   def mType = headToken.posTag.categoryValue
   def span = mention.phrase
-  def entityType: String = mention.attr[MentionEntityType].categoryValue
+  //def entityType: String = mention.attr[MentionEntityType].categoryValue
+  def entityType: String = mention.phrase.attr[OntonotesEntityType].categoryValue // TODO Should return just EntityType, not String. -akm
   def document = mention.phrase.document
 
   val isPRO = CorefMention.posTagsSet.contains(mType)
@@ -112,7 +113,8 @@ class MentionCache(m: CorefMention) {
     m.span.tokens.filterNot(_.posTag.categoryValue == "DT").map(t => t.string.toLowerCase)
   lazy val initials: String =
       m.span.tokens.map(_.string).filterNot(lexicon.iesl.OrgSuffix.contains).filter(t => t(0).isUpper).map(_(0)).mkString("")
-  lazy val predictEntityType: String = m.mention.attr[MentionEntityType].categoryValue
+  //lazy val predictEntityType: String = m.mention.attr[MentionEntityType].categoryValue
+  lazy val predictEntityType: String = m.mention.phrase.attr[OntonotesEntityType].categoryValue
   lazy val demonym: String = lexicon.iesl.DemonymMap.getOrElse(m.headPhraseTrim, "")
 
   lazy val capitalization: Char = {

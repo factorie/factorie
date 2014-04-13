@@ -60,7 +60,6 @@ abstract class Mention(val phrase:Phrase) extends AbstractMention {
   // If number, gender and entity type are needed, put a CategoricalVariable subclass in the Attr
 }
 
-// TODO Delete all these as soon as we get rid of MentionList usage elsewhere.  Use WithinDocCoref instead.
 /** A collection of Mentions, either immutable or mutable. */
 trait MentionCollection extends Iterable[Mention]
 /** An immutable ordered collection of Mentions. */
@@ -118,45 +117,53 @@ trait EvaluatableCoref[EntityIdType,MentionIdType] {
 class WithinDocCoref(val document:Document) extends EvaluatableCoref[WithinDocEntity,Phrase] {
   /** When we have labeled gold-standard truth for coref, it is stored here. */
   var target: WithinDocCoref = null // ...the alternative would have been to create different subclasses of WithinDocCoref so they could be stored separately in the Document.attr, but I chose this as cleaner. -akm
-  /** A mapping from Phrase to Mention */
-  private val _phraseMap = new scala.collection.mutable.LinkedHashMap[Phrase,Mention]
+  /** A mapping from (the Phrase's span value) to Mention */
+  private val _spanToMention = new scala.collection.mutable.LinkedHashMap[Span[Section,Token],Mention]
+  //private val _phraseToMention = new scala.collection.mutable.LinkedHashMap[Phrase,Mention] // Used to index by this instead.  I think we can remove this now. -akm
   /** A mapping from entity.uniqueId to WithinDocEntity */
   private val _entities = new scala.collection.mutable.LinkedHashMap[String,WithinDocEntity]
-  /** A mapping from entity key (i.e. a string identifying the true entity) to the entity.uniqueId */
+  /** A mapping from entity key (i.e. an Int identifying the true entity) to the entity.uniqueId */
   private lazy val _entityKeyToId = new scala.collection.mutable.HashMap[Int,String]
   private var _entityCount = 0 // The number of WithinDocEntities ever created here
   /** A string that will be used as a prefix on the uniqueIds of the Mentions and WithinDocEntities created here. */
   def uniqueId: String = document.uniqueId // TODO Perhaps this should be something more safely unique if we save more than one WithinDocCoref objects per Document? -akm 
-  /** Concrete implementation of WithinDocEntity that automatically stores itself among with WithinDocCoref.entities. */
+  /** Concrete implementation of WithinDocEntity that automatically stores itself in WithinDocCoref.entities. */
   class WithinDocEntity1(val uniqueId:String) extends WithinDocEntity(document) {
     def this() = this(WithinDocCoref.this.uniqueId + "//WithinDocEntity" + _entityCount) // TODO Is this what we want? -akm
     _entityCount += 1
     _entities(uniqueId) = this
     def coref: WithinDocCoref = WithinDocCoref.this
   }
+  /** Concrete implementation of Mention that automatically stores itself in WithinDocCoref.mentions. */
   class Mention1(phrase:Phrase, entity:WithinDocEntity) extends Mention(phrase) {
     def this(phrase:Phrase, entityKey:Int) = this(phrase, entityFromKey(entityKey)) // Typically used for labeled data
     def this(phrase:Phrase, entityUniqueId:String) = this(phrase, entityFromUniqueId(entityUniqueId)) // Typically used for deserialization
     def this(phrase:Phrase) = this(phrase, null.asInstanceOf[WithinDocEntity]) // Typically used for new inference // TODO Should this be null, or a newly created blank Entity; See LoadConll2011 also.
-    assert(!_phraseMap.contains(phrase))
-    _phraseMap(phrase) = this
+    assert(!_spanToMention.contains(phrase.value))
+    _spanToMention(phrase.value) = this
     val uniqueId = WithinDocCoref.this.uniqueId + "//Mention(" + phrase.start + "," + phrase.length + ")" // TODO Is this what we want? -akm
     if (entity ne null) entity += this
     def coref: WithinDocCoref = WithinDocCoref.this
   }
-  /** Return existing Mention corresponding to given Phrase, or create a new (entity-less) Mention if not already present. */
-  def mention(phrase:Phrase): Mention = _phraseMap.getOrElse(phrase, new Mention1(phrase))
+  /** Given Span (typically the value of a Phrase), return the corresponding Mention.
+      Note that Span is a case class, so the lookup is done by the span's boundaries, not by its identity. */
+  def mention(span:Span[Section,Token]): Mention = _spanToMention(span)
+  /** Return the Mention corresponding to the given Phrase.  If none present, return null.
+      Note that since the lookup happens by the Phrase's Span value, the returned mention.phrase may be different than this method's argument. */
+  def mention(phrase:Phrase): Mention = _spanToMention(phrase.value)
+  /** Create a new Mention whose entity will be null. */
+  def addMention(phrase:Phrase): Mention = _spanToMention.getOrElse(phrase.value, new Mention1(phrase))
   /** Create a new Mention with entity specified by given uniqueId. */
-  def mention(phrase:Phrase, entityId:String): Mention = { assert(!_phraseMap.contains(phrase)); new Mention1(phrase, entityId) }
+  def addMention(phrase:Phrase, entityId:String): Mention = { assert(!_spanToMention.contains(phrase.value)); new Mention1(phrase, entityId) }
   /** Create a new Mention with entity specified by given key. */
-  def mention(phrase:Phrase, entityKey:Int): Mention = { assert(!_phraseMap.contains(phrase)); new Mention1(phrase, entityKey) }
+  def addMention(phrase:Phrase, entityKey:Int): Mention = { assert(!_spanToMention.contains(phrase.value)); new Mention1(phrase, entityKey) }
   /** Return all Mentions in this coreference solution. */
-  def mentions: Iterable[Mention] = _phraseMap.values
+  def mentions: Iterable[Mention] = _spanToMention.values
   /** Return a collection of WithinDocEntities managed by this coref solution.  Note that some of them may have no Mentions. */
   def entities: Iterable[WithinDocEntity] = _entities.values
-  /** Return the entity associated with the given uniqueId, or create a new entity if not found. */
+  /** Return the entity associated with the given uniqueId, or create a new entity if not found already among 'entities'. */
   def entityFromUniqueId(id:String): WithinDocEntity = _entities.getOrElse(id, new WithinDocEntity1(id))
-  /** Return the entity associated with the given key, or create a new entity if not found. */
+  /** Return the entity associated with the given key, or create a new entity if not found alread among 'entities'. */
   def entityFromKey(key:Int): WithinDocEntity = { 
     val id = _entityKeyToId(key)
     val result = if (id eq null) new WithinDocEntity1 else _entities(id)
@@ -169,10 +176,10 @@ class WithinDocCoref(val document:Document) extends EvaluatableCoref[WithinDocEn
   def trimEmptyEntities: Unit = _entities.values.filter(_.mentions.size == 0).map(_.uniqueId).foreach(_entities.remove(_))
   // Support for evaluation
   def evalEntityIds: Iterable[WithinDocEntity] = _entities.values
-  def evalMentionIds: Iterable[Phrase] = _phraseMap.keys
+  def evalMentionIds: Iterable[Phrase] = _spanToMention.values.map(_.phrase)
   def evalMentionIds(entityId:WithinDocEntity): Iterable[Phrase] = entityId.mentions.map(_.phrase)
   def evalIntersectionSize(entityId1:WithinDocEntity, entityId2:WithinDocEntity): Int = entityId1.mentions.map(_.phrase).intersect(entityId2.mentions.map(_.phrase)).size
-  def evalEntityId(mentionId:Phrase): WithinDocEntity = _phraseMap(mentionId).entity
+  def evalEntityId(mentionId:Phrase): WithinDocEntity = _spanToMention(mentionId.value).entity
 }
 
 
@@ -185,17 +192,28 @@ trait CrossDocEntity extends AbstractEntity // ...
 
 
 
-class OntonotesEntityType(category:String) extends LabeledCategoricalVariable[String](category) {
-  def domain = OntonotesEntityTypeDomain
-}
-class PhraseOntonotesEntityType(val phrase:Phrase, value:String) extends OntonotesEntityType(value)
-class EntityOntonotesEntityType(val entity:AbstractEntity, value:String) extends OntonotesEntityType(value)
-class WithinDocEntityOntonotesEntityType(override val entity:WithinDocEntity, value:String) extends EntityOntonotesEntityType(entity, value)
+///** Categorical variable indicating whether the mention is a pronoun, nominal or named proper noun.
+//    (Obviously different from MentionEntityType, which may indicate whether it is a person, location, organization, etc.) */
+//class MentionType(val mention:AbstractMention, targetValue:String) extends LabeledCategoricalVariable(targetValue) {
+//  def domain = OntonotesMentionTypeDomain
+//}
+///** The domain of MentionType, consisting of pronouns (PRO), nominals (NOM) and named proper nouns (NAM). */
+//object OntonotesMentionTypeDomain extends CategoricalDomain(List("PRO", "NOM", "NAM"))
 
-class EntityGender(val entity:AbstractEntity, value:String) extends Gender(value)
-class WithinDocEntityGender(override val entity:WithinDocEntity, value:String) extends EntityGender(entity, value)
-//class CrossDocEntityGender(override val entity:CrossDocEntity, value:String) extends EntityGender(entity, value)
 
-class EntityNumber(val entity:AbstractEntity, value:String) extends Number(value)
-class WithinDocEntityNumber(override val entity:WithinDocEntity, value:String) extends EntityNumber(entity, value)
+// // In case we need to put labels on Mentions or Entities in addition to their underlying Phrases. -akm
+//class OntonotesEntityType(category:String) extends LabeledCategoricalVariable[String](category) {
+//  def domain = OntonotesEntityTypeDomain
+//}
+//
+//class PhraseOntonotesEntityType(val phrase:Phrase, value:String) extends OntonotesEntityType(value)
+//class EntityOntonotesEntityType(val entity:AbstractEntity, value:String) extends OntonotesEntityType(value)
+//class WithinDocEntityOntonotesEntityType(override val entity:WithinDocEntity, value:String) extends EntityOntonotesEntityType(entity, value)
+//
+//class EntityGender(val entity:AbstractEntity, value:String) extends Gender(value)
+//class WithinDocEntityGender(override val entity:WithinDocEntity, value:String) extends EntityGender(entity, value)
+////class CrossDocEntityGender(override val entity:CrossDocEntity, value:String) extends EntityGender(entity, value)
+//
+//class EntityNumber(val entity:AbstractEntity, value:String) extends Number(value)
+//class WithinDocEntityNumber(override val entity:WithinDocEntity, value:String) extends EntityNumber(entity, value)
 

@@ -1,7 +1,7 @@
 package cc.factorie.app.nlp.coref.mention
 
 import cc.factorie.app.nlp._
-import cc.factorie.app.nlp.phrase.Phrase
+import cc.factorie.app.nlp.phrase.{Phrase,OntonotesPhraseEntityType,NounPhraseType}
 import cc.factorie.app.nlp.coref.{Mention,MentionList,WithinDocCoref}
 import scala.collection.mutable.ListBuffer
 import cc.factorie.app.nlp.load.{ChunkTag, BILOUNestedChunkTag, BILOUChunkTag}
@@ -35,9 +35,9 @@ object NestedNPChunkMentionFinder extends NPChunkMentionFinder[BILOUNestedChunkT
 object NPChunkMentionFinder extends NPChunkMentionFinder[BILOUChunkTag]
 
 class NPChunkMentionFinder[L<:ChunkTag](implicit m: Manifest[L]) extends DocumentAnnotator {
-  def prereqAttrs = Seq(classOf[Token], classOf[Sentence],m.runtimeClass)
-  def postAttrs = Seq(classOf[MentionList], classOf[MentionEntityType])
-  override def tokenAnnotationString(token:Token): String = token.document.attr[MentionList].filter(mention => mention.phrase.contains(token)) match { case ms:Seq[Mention] if ms.length > 0 => ms.map(m => m.attr[MentionType].categoryValue+":"+ m.attr[MentionEntityType].categoryValue +":" +m.phrase.indexOf(token)).mkString(","); case _ => "_" }
+  def prereqAttrs = Seq(classOf[Token], classOf[Sentence], m.runtimeClass)
+  def postAttrs = Seq(classOf[MentionList], classOf[OntonotesPhraseEntityType])
+  override def tokenAnnotationString(token:Token): String = token.document.attr[MentionList].filter(mention => mention.phrase.contains(token)) match { case ms:Seq[Mention] if ms.length > 0 => ms.map(m => m.attr[NounPhraseType].categoryValue+":"+ m.phrase.attr[OntonotesPhraseEntityType].categoryValue +":" +m.phrase.indexOf(token)).mkString(","); case _ => "_" }
 
   val upperCase = "[A-Z]+".r
 
@@ -53,8 +53,8 @@ class NPChunkMentionFinder[L<:ChunkTag](implicit m: Manifest[L]) extends Documen
     getMentionSpans(document).map{labelSpan =>
       val s = labelSpan
       val p = new Phrase(s, s.length-1)
-      val m = coref.mention(p)
-      m.attr += new MentionEntityType(m,"")
+      val m = coref.addMention(p)
+      p.attr += new OntonotesPhraseEntityType(p,"") // TODO Why the empty string here?? -akm
       m
     }
   }

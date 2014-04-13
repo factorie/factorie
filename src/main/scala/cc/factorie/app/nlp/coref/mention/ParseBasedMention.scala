@@ -4,7 +4,7 @@ import scala.collection.mutable.HashSet
 import scala.collection.mutable.ArrayBuffer
 import cc.factorie.app.nlp._
 import cc.factorie.app.nlp.coref._
-import cc.factorie.app.nlp.phrase.Phrase
+import cc.factorie.app.nlp.phrase.{Phrase,NounPhraseType}
 import cc.factorie.app.nlp.parse.ParseTree
 import cc.factorie.app.nlp.ner._
 import cc.factorie.app.nlp.pos.PennPosTag
@@ -44,7 +44,7 @@ class ParseBasedMentionFinding(val useNER: Boolean) extends DocumentAnnotator {
   private def nerSpans(doc: Document): Seq[Mention] = {
     val coref = doc.getCoref
     (for (span <- doc.attr[ConllNerSpanBuffer]) yield
-      coref.mention(new Phrase(span.section, span.start, span.length, span.length - 1)) //this sets the head token idx to be the last token in the span
+      coref.addMention(new Phrase(span.section, span.start, span.length, span.length - 1)) //this sets the head token idx to be the last token in the span
       ).toSeq
   }
 
@@ -58,7 +58,7 @@ class ParseBasedMentionFinding(val useNER: Boolean) extends DocumentAnnotator {
     }
     if(spans.nonEmpty && spans.last.isEmpty) spans.remove(spans.length-1)
     (for(span <- spans) yield
-      coref.mention(new Phrase(span.head.section, span.head.positionInSection, span.last.positionInSection-span.head.positionInSection+1, span.last.positionInSection-span.head.positionInSection))).toSeq
+      coref.addMention(new Phrase(span.head.section, span.head.positionInSection, span.last.positionInSection-span.head.positionInSection+1, span.last.positionInSection-span.head.positionInSection))).toSeq
   }
 
   // [Assumes personal pronouns are single tokens.]
@@ -66,7 +66,7 @@ class ParseBasedMentionFinding(val useNER: Boolean) extends DocumentAnnotator {
     val coref = doc.getCoref
     (for (section <- doc.sections; s <- section.sentences;
            (t,i) <- s.tokens.zipWithIndex if isPersonalPronoun(t)) yield
-        coref.mention(new Phrase(section, s.start + i, 1,0))
+        coref.addMention(new Phrase(section, s.start + i, 1,0))
       ).toSeq
   }
 
@@ -121,7 +121,7 @@ class ParseBasedMentionFinding(val useNER: Boolean) extends DocumentAnnotator {
       val sTokens = tokens.sortBy(_.positionInSection)
       val start = sTokens.head.positionInSection
       val end = sTokens.last.positionInSection
-      mentions += coref.mention(new Phrase(section, start, end-start+1, sTokens.zipWithIndex.filter(i => i._1 eq t).head._2))
+      mentions += coref.addMention(new Phrase(section, start, end-start+1, sTokens.zipWithIndex.filter(i => i._1 eq t).head._2))
     }
     mentions
   }
@@ -132,7 +132,7 @@ class ParseBasedMentionFinding(val useNER: Boolean) extends DocumentAnnotator {
         if(mentions.length == 1){
           return mentions.head
         }else{
-          mentions.find(_.attr[MentionType].categoryValue == "NAM").getOrElse(mentions.head)
+          mentions.find(_.phrase.attr[NounPhraseType].categoryValue == "NAM").getOrElse(mentions.head)
         }
       }
 
@@ -154,19 +154,19 @@ class ParseBasedMentionFinding(val useNER: Boolean) extends DocumentAnnotator {
     if(useNER) docMentions ++=  NerAndPronounMentionFinder.getNerMentions(doc)
 
     // NAM = proper noun, NOM = common noun, PRO = pronoun
-    docMentions ++= personalPronounSpans(doc)           map(  m => {m.attr += new MentionType(m,"PRO");m})
-    docMentions ++= nounPhraseSpans(doc, isCommonNoun)  map(  m => {m.attr += new MentionType(m,"NOM");m})
-    docMentions ++= nounPhraseSpans(doc, isProperNoun)  map(  m => {m.attr += new MentionType(m,"NAM");m})
-    docMentions ++= NNPSpans(doc)                       map(  m => {m.attr += new MentionType(m,"NAM");m})
+    docMentions ++= personalPronounSpans(doc)           map(  m => {m.phrase.attr += new NounPhraseType(m.phrase,"PRO");m})
+    docMentions ++= nounPhraseSpans(doc, isCommonNoun)  map(  m => {m.phrase.attr += new NounPhraseType(m.phrase,"NOM");m})
+    docMentions ++= nounPhraseSpans(doc, isProperNoun)  map(  m => {m.phrase.attr += new NounPhraseType(m.phrase,"NAM");m})
+    docMentions ++= NNPSpans(doc)                       map(  m => {m.phrase.attr += new NounPhraseType(m.phrase,"NAM");m})
     // Filter Mentions that have no MentionType and that are longer than 5 words -akm
     //doc.attr += (new MentionList() ++= removeSmallerIfHeadWordEqual(doc, dedup(docMentions)).filter(mention => (mention.attr[MentionType] ne null) && mention.span.length < 6).toSeq)
-    doc.attr += (new MentionList(dedup(docMentions).filter(mention => mention.attr[MentionType] ne null).toSeq))
+    doc.attr += (new MentionList(dedup(docMentions).filter(mention => mention.phrase.attr[NounPhraseType] ne null).toSeq))
     doc
   }
 
   def prereqAttrs: Iterable[Class[_]] = if (!useNER) Seq(classOf[parse.ParseTree]) else Seq(classOf[parse.ParseTree], classOf[ner.IobConllNerTag])
   def postAttrs: Iterable[Class[_]] = Seq(classOf[MentionList])
-  override def tokenAnnotationString(token:Token): String = token.document.attr[MentionList].filter(mention => mention.phrase.contains(token)) match { case ms:Seq[Mention] if ms.length > 0 => ms.map(m => m.attr[MentionType].categoryValue+":"+m.phrase.indexOf(token)).mkString(","); case _ => "_" }
+  override def tokenAnnotationString(token:Token): String = token.document.attr[MentionList].filter(mention => mention.phrase.contains(token)) match { case ms:Seq[Mention] if ms.length > 0 => ms.map(m => m.phrase.attr[NounPhraseType].categoryValue+":"+m.phrase.indexOf(token)).mkString(","); case _ => "_" }
 
 
 }

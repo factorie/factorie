@@ -24,8 +24,10 @@ class TokenSpan(theSection:Section, initialStart:Int, initialLength:Int) extends
   final def tokens = this.toIndexedSeq //value
   /** The Sentence to which the first Token in this TokenSpan belongs. */
   def sentence = tokens(0).sentence
-  def phrase: String = if (length == 1) tokens.head.string else document.string.substring(tokens.head.stringStart, tokens.last.stringEnd) // TODO Handle Token.attr[TokenString] changes
-  def string: String = phrase
+  @deprecated("Use 'string' instead.") def phrase: String = phrase
+  /** Return the substring of the Document covered by this TokenSpan.
+      If this is a multi-Token TokenSpan, this will include all original characters in the Document, including those skipped by tokenization. */
+  def string: String = if (length == 1) tokens.head.string else document.string.substring(tokens.head.stringStart, tokens.last.stringEnd) // TODO Handle Token.attr[TokenString] changes
   /** Returns true if this span contain the words of argument span in order. */
   def containsStrings(span:TokenSpan): Boolean = {
     for (i <- 0 until length) {
@@ -33,7 +35,7 @@ class TokenSpan(theSection:Section, initialStart:Int, initialLength:Int) extends
       var result = true
       var i2 = i; var j = 0
       while (j < span.length && i2 < this.length && result) {
-        if (span.tokens(j).string != tokens(i2)) result = false
+        if (span.tokens(j).string != tokens(i2).string) result = false
         j += 1; i2 += 1
       }
       if (result) return true
@@ -43,6 +45,7 @@ class TokenSpan(theSection:Section, initialStart:Int, initialLength:Int) extends
   override def toString = "TokenSpan("+start+","+end+":"+this.phrase+")"
   // TODO This seems unsafe.  Can we delete it? -akm
   /** A short name for this span */
+  @deprecated("This method will be deleted in the near future.")
   def name: String = attr.values.head match {
     case label:LabeledCategoricalVariable[String @unchecked] => label.categoryValue
     case x => x.toString
