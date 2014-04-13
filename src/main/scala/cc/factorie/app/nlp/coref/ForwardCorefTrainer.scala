@@ -6,7 +6,7 @@ import cc.factorie.app.nlp.wordnet.WordNet
 import cc.factorie.app.nlp.ner.{ConllChainNer, NerTag}
 import cc.factorie.util.HyperparameterMain
 import cc.factorie.app.nlp.coref.mention._
-import cc.factorie.app.nlp.phrase.{MentionGenderLabeler,MentionNumberLabeler}
+import cc.factorie.app.nlp.phrase._ //{NounPhraseGenderLabeler,NounPhraseNumberLabeler,NounPhraseEntityTypeLabeler}
 import cc.factorie.app.nlp.load.LoadConll2011
 
 /**
@@ -53,10 +53,10 @@ object ForwardCorefTrainer extends HyperparameterMain{
 
   def printConll2011Format(doc: Document, map: GenericEntityMap[Mention], out: java.io.PrintStream) {
     val mappedMentions = doc.attr[MentionList]
-    val (singleTokMents, multiTokMents) = mappedMentions.partition(_.length == 1)
-    val beginningTokMap = multiTokMents.groupBy(_.head)
-    val endingTokMap = multiTokMents.groupBy(_.last)
-    val singleTokMap = singleTokMents.groupBy(_.head)
+    val (singleTokMents, multiTokMents) = mappedMentions.partition(_.phrase.length == 1)
+    val beginningTokMap = multiTokMents.groupBy(_.phrase.head)
+    val endingTokMap = multiTokMents.groupBy(_.phrase.last)
+    val singleTokMap = singleTokMents.groupBy(_.phrase.head)
     val fId = doc.name
     val docName = fId.substring(0, fId.length() - 4)
     val partNum = fId.takeRight(3)
@@ -138,9 +138,17 @@ object ForwardCorefTrainer extends HyperparameterMain{
     else makeTrainTestData(opts.trainFile.value,opts.testFile.value, loadTrain)
 
     if(loadTrain)
-      trainDocs.foreach(d => { MentionGenderLabeler.process(d); MentionNumberLabeler.process(d) } )
+      for (doc <- trainDocs; mention <- doc.coref.mentions) {
+        NounPhraseGenderLabeler.process(mention.phrase)
+        NounPhraseNumberLabeler.process(mention.phrase)
+      }
+      //trainDocs.foreach(d => { MentionPhraseGenderLabeler.process(d); MentionPhraseNumberLabeler.process(d) } )
 
-    testDocs.foreach(d => { MentionGenderLabeler.process(d); MentionNumberLabeler.process(d) } )
+    for (doc <- trainDocs; mention <- doc.coref.mentions) {
+      NounPhraseGenderLabeler.process(mention.phrase)
+      NounPhraseNumberLabeler.process(mention.phrase)
+    }
+    //testDocs.foreach(d => { MentionPhraseGenderLabeler.process(d); MentionPhraseNumberLabeler.process(d) } )
 
     val mentPairClsf =
       if (opts.deserialize.wasInvoked){
@@ -218,9 +226,10 @@ object ForwardCorefTrainer extends HyperparameterMain{
 
 
     if(!useNerMentions){
-      val labeler = MentionEntityTypeLabeler
-      if(loadTrain)  trainDocs.foreach(labeler.process)
-      testDocs.foreach(labeler.process)
+      //val labeler = MentionPhraseEntityTypeLabeler
+      val labeler = NounPhraseEntityTypeLabeler
+      if (loadTrain)  for (doc <- trainDocs; mention <- doc.coref.mentions) labeler.process(mention.phrase)
+      for (doc <- testDocs; mention <- doc.coref.mentions) labeler.process(mention.phrase)
     }
     (trainDocs,trainMap,testDocs,testMap)
   }

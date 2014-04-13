@@ -9,7 +9,7 @@ import cc.factorie.util.BinarySerializer
 import cc.factorie.util.coref.GenericEntityMap
 import cc.factorie.variable.{VectorDomain, DiscreteDomain, CategoricalVectorDomain, CategoricalDomain}
 import cc.factorie.model.Parameters
-import cc.factorie.app.nlp.coref.mention.{Entity, Mention}
+import cc.factorie.app.nlp.coref._
 
 /**
  * User: apassos
@@ -57,7 +57,7 @@ trait PairwiseCorefModel extends app.classify.backend.OptimizablePredictor[Doubl
   def generateTrueMap(mentions: Seq[Mention]): GenericEntityMap[Mention] = {
     val trueMap = new GenericEntityMap[Mention]
     mentions.foreach(m => trueMap.addMention(m, trueMap.numMentions.toLong))
-    val entities = mentions.groupBy(_.attr[Entity])
+    val entities = mentions.groupBy(_.entity)
     entities.flatMap(_._2.sliding(2)).foreach(p => {
       if (p.size == 2) trueMap.addCoreferentPair(p(0), p(1))
     })

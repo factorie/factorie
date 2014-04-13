@@ -50,7 +50,7 @@ class EdgeVariable[A,B](initialSrc:A, initialDst:B) extends EdgeVar[A,B] with Mu
   }
 }
 
-/** An EdgeVariable in which the "src" is constant, and the "dst" is mutable.
+/** An EdgeVar in which the "src" is constant, and the "dst" is mutable.
     @author Andrew McCallum */
 class ArrowVariable[A<:AnyRef,B](val src:A, initialDst:B) extends EdgeVar[A,B] {
   private var _dst = initialDst
@@ -73,3 +73,7 @@ class ArrowVariable[A<:AnyRef,B](val src:A, initialDst:B) extends EdgeVar[A,B] {
     override def toString = "ArrowDiff(%s,%s)".format(oldDst, newDst)
   }
 }
+
+// TODO We should add an ArrowVariable in which the "src" is always "this"
+// I was thinking about this for Mention
+

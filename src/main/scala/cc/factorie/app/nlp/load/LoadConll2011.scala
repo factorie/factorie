@@ -2,14 +2,15 @@ package cc.factorie.app.nlp.load
 
 import cc.factorie.app.nlp._
 import cc.factorie.app.nlp.pos.{PennPosDomain, PennPosTag}
-import cc.factorie.app.nlp.coref.mention.{MentionEntityType, MentionList, Mention, Entity}
+//import cc.factorie.app.nlp.coref.mention.{MentionEntityType, MentionList, Mention, Entity}
+import cc.factorie.app.nlp.coref._ //{Mention,Mention,MentionList,Entity}
+import cc.factorie.app.nlp.phrase.{Phrase,OntonotesPhraseEntityType}
 import scala.collection.mutable.{ListBuffer, ArrayBuffer, Map, Stack}
 import scala.collection.mutable
 import scala.util.control.Breaks._
 
 class EntityKey(val name: String)
 
-// TODO This should be moved to app.nlp.LoadConll2011 -akm
 object LoadConll2011 {
 
   //this is used when loading gold entity type annotation. If this variable is set to true, the loader
@@ -54,14 +55,15 @@ object LoadConll2011 {
       entityTypeTokenizer.findAllIn(s).map(x => asteriskStripper.replaceAllIn(x,"")).toArray
     }
 
-    var mentionList = new ListBuffer[Mention]()
+    var coref: WithinDocCoref = null
+    var mentionList = new ListBuffer[Mention]() // TODO By using WithinDocCoref this should no longer be necessary
     var currDoc: Document = null
     var currSent: Sentence = null
     var currEntId: Int = 0
     var docTokInd: Int = -1
     val mentions = Map[String, Stack[Int]]() // map of (entityId, tokenIndex) of unfinished mentions in a sentence
     var numMentions = 0 // total number mentions in a document
-    val entities = Map[String, Entity]()
+    val entities = Map[String, WithinDocEntity]()
     val startMap = mutable.HashMap[String,Stack[Int]]()
     var sentenceId: Int = -1
     var tokenId: Int = -1
@@ -82,6 +84,7 @@ object LoadConll2011 {
         if (docs.length == limitNumDocuments) break()
         val fId = l.split("[()]")(1) + "-" + l.takeRight(3)
         currDoc = new Document("").setName(fId)
+        coref = currDoc.getTargetCoref // This also puts a newly created WithinDocCoref in currDoc.attr.
         currDoc.annotators(classOf[Token]) = UnknownDocumentAnnotator.getClass // register that we have token boundaries
         currDoc.annotators(classOf[Sentence]) = UnknownDocumentAnnotator.getClass // register that we have token boundaries
         //currDoc.attr += new FileIdentifier(fId, true, fId.split("/")(0), "CoNLL")
@@ -168,20 +171,19 @@ object LoadConll2011 {
             val parentPhrase = if(!parseStack.isEmpty) parseStack(0)._1 else ""
             if (phrase == "NP") {
               val span = new TokenSpan(currDoc.asSection, start, docTokInd - start + 1)
-              val m = new Mention(span, getHeadToken(span))
+              val m = span.document.coref.addMention(new Phrase(span, getHeadToken(span)))
               mentionList += m
               numMentions += 1
 
-              if(currentlyUnresolvedClosedEntityTypeBracket && (entityTypeStart >= start)){
+              if(currentlyUnresolvedClosedEntityTypeBracket && (entityTypeStart >= start)) {
                 val exactMatch = (entityTypeStart == start) && thisTokenClosedTheEntityType
-                if(!useExactEntTypeMatch ||(useExactEntTypeMatch && exactMatch)){
-                  m.attr += new MentionEntityType(m,currentEntityTypeStr)
-                }else{
-                  m.attr += new MentionEntityType(m,"O")
-                }
+                if (!useExactEntTypeMatch ||(useExactEntTypeMatch && exactMatch))
+                  m.phrase.attr += new OntonotesPhraseEntityType(m.phrase, currentEntityTypeStr)
+                else
+                  m.phrase.attr += new OntonotesPhraseEntityType(m.phrase, "O")
                 currentlyUnresolvedClosedEntityTypeBracket = false
-              }else
-                m.attr += new MentionEntityType(m,"O")
+              } else
+                m.phrase.attr += new OntonotesPhraseEntityType(m.phrase, "O")
 
               var i = 0
               var found = false
@@ -192,8 +194,9 @@ object LoadConll2011 {
                       found = true
                       val key = fields(0) + "-" + number
                       m.attr += new EntityKey(key)
-                      val ent = entities.getOrElseUpdate(key, new Entity(word))
-                      m.attr += ent
+                      //val ent = entities.getOrElseUpdate(key, new WithinDocEntity(currDoc))
+                      val ent = entities.getOrElseUpdate(key, coref.entityFromUniqueId(key)) // TODO I'm not sure that key is right argument here. -akm 
+                      ent += m
                       closedEntities(i) = null
                     }
                   case _ =>
@@ -204,8 +207,9 @@ object LoadConll2011 {
                 numNegEntities += 1
                 val key = fields(0) + "-" + (-numNegEntities)
                 m.attr += new EntityKey(key)
-                val ent = entities.getOrElseUpdate(key, new Entity(word))
-                m.attr += ent
+                //val ent = entities.getOrElseUpdate(key, new WithinDocEntity(currDoc))
+                val ent = entities.getOrElseUpdate(key, coref.entityFromUniqueId(key))
+                ent += m
               }
             }
             prevPhrase = phrase
@@ -214,38 +218,38 @@ object LoadConll2011 {
         //this makes mentions for the ground truth mentions that weren't NPs
         for ((number,start) <- closedEntities.filter(i =>  i ne null)) {
           val span = new TokenSpan(currDoc.asSection, start, docTokInd - start + 1)
-          val m = new Mention(span, getHeadToken(span))
+          val m = coref.mention(new Phrase(span, getHeadToken(span)))
           mentionList += m
           if(currentlyUnresolvedClosedEntityTypeBracket && (entityTypeStart >= start)){
             val exactMatch = (entityTypeStart == start) && thisTokenClosedTheEntityType
             if(!useExactEntTypeMatch ||(useExactEntTypeMatch && exactMatch)){
-              m.attr += new MentionEntityType(m,currentEntityTypeStr)
+              m.phrase.attr += new OntonotesPhraseEntityType(m.phrase, currentEntityTypeStr)
             }else
-              m.attr += new MentionEntityType(m,"O")
+              m.phrase.attr += new OntonotesPhraseEntityType(m.phrase, "O")
             currentlyUnresolvedClosedEntityTypeBracket = false
           }else
-            m.attr += new MentionEntityType(m,"O")
+            m.attr += new OntonotesPhraseEntityType(m.phrase, "O")
 
           numMentions += 1
           val key = fields(0) + "-" + number
           m.attr += new EntityKey(key)
-          val ent = entities.getOrElseUpdate(key, new Entity(word))
+          val ent = entities.getOrElseUpdate(key, coref.entityFromUniqueId(key))
           m.attr += ent
         }
         prevWord = word
       }
 
     }} // closing "breakable"
-    if(disperseEntityTypes){
+    if (disperseEntityTypes) {
       for(doc <- docs){
-        val entities = doc.attr[MentionList].groupBy(m => m.attr[Entity]).filter(x => x._2.length > 1)
+        val entities = doc.attr[MentionList].groupBy(m => m.entity).filter(x => x._2.length > 1)
         for(ent <- entities){
-          val entityTypes = ent._2.map(m => m.attr[MentionEntityType].categoryValue).filter(t => t != "O").distinct
+          val entityTypes = ent._2.map(m => m.phrase.attr[OntonotesPhraseEntityType].categoryValue).filter(t => t != "O").distinct
           if(entityTypes.length > 1){
            // println("warning: there were coreferent mentions with different annotated entity types: " + entityTypes.mkString(" ") + "\n" + ent._2.map(m => m.span.string).mkString(" "))
           }else if(entityTypes.length == 1){
             val newType = entityTypes(0)
-            ent._2.foreach(m => m.attr[MentionEntityType].target.setCategory(newType)(null))
+            ent._2.foreach(m => m.phrase.attr[OntonotesPhraseEntityType].target.setCategory(newType)(null))
           }
 
         }

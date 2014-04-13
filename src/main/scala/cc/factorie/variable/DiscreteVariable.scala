@@ -87,7 +87,6 @@ trait DiscreteVar extends VectorVar with VarWithDomain {
 /** A single discrete variable whose value can be changed. */
 trait MutableDiscreteVar extends DiscreteVar with MutableVar with IterableSettings with VarWithDomain {
   private var __value: Int = -1
-  def domain: DiscreteDomain
   @inline final protected def _value = __value
   protected def _initialize(newValue:Int): Unit = if (__value == -1 && newValue >= 0) __value = newValue else throw new Error("_initialize method called after MutableDiscreteVar value already set; or newValue negative.")
   override def intValue = __value
