@@ -12,7 +12,7 @@ package cc.factorie.app.nlp.phrase
 import cc.factorie._
 import cc.factorie.app.nlp._
 import cc.factorie.app.nlp.pos._
-import cc.factorie.app.nlp.ner.OntonotesEntityTypeDomain
+import cc.factorie.app.nlp.ner.{ConllNerDomain, OntonotesEntityTypeDomain}
 import cc.factorie.util.BinarySerializer
 import java.io._
 import cc.factorie.variable.{LabeledCategoricalVariable, BinaryFeatureVectorVariable, CategoricalVectorDomain, CategoricalDomain}
@@ -21,11 +21,24 @@ import cc.factorie.app.classify.backend.LinearMulticlassClassifier
 //import cc.factorie.app.nlp.coref.mention.Entity
 import cc.factorie.app.nlp.load.LoadConll2011
 
-/** Categorical variable indicating whether the noun phrase is person, location, organization, etc. */
+
+/** Categorical variable indicating whether the noun phrase is person, location, organization, etc. 
+    according to the CoNLL 2003 entity type domain: PER, ORG, LOC, MISC. */
+class ConllEntityType(targetValue:String) extends LabeledCategoricalVariable(targetValue) {
+  def domain = ConllNerDomain
+}
+class ConllPhraseEntityType(val phrase:Phrase, targetValue:String) extends ConllEntityType(targetValue)
+
+
+/** Categorical variable indicating whether the noun phrase is person, location, organization, etc. 
+    according to the Ontonotes entity type domain. */
 class OntonotesEntityType(targetValue:String) extends LabeledCategoricalVariable(targetValue) {
   def domain = OntonotesEntityTypeDomain
 }
 class OntonotesPhraseEntityType(val phrase:Phrase, targetValue:String) extends OntonotesEntityType(targetValue)
+
+
+
 
 
 class OntonotesPhraseEntityTypeLabeler extends DocumentAnnotator {

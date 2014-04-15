@@ -2,9 +2,15 @@ package cc.factorie.app.nlp.phrase
 import cc.factorie.app.nlp._
 import scala.collection.mutable.ListBuffer
 
-/** Find noun phrases merely by contiguous nouns (possibly prefixed by adjectives) and pronouns. */
+/** Find noun phrases merely by contiguous nouns (possibly prefixed by adjectives) and pronouns.
+    This is simple but much less accurate than ChainChunker.
+    @author Andrew McCallum */
 object PosBasedNounPhraseFinder extends DocumentAnnotator {
   def process(document:Document): Document = {
+    document.attr += new NounPhraseList(phrases(document))
+    document
+  }
+  def phrases(document:Document): Seq[Phrase] = {
     val phrases = new ListBuffer[Phrase]()
     var tempSpan: Phrase = null
     for (section <- document.sections; token <- section.tokens) {
@@ -18,8 +24,7 @@ object PosBasedNounPhraseFinder extends DocumentAnnotator {
         else { phrases += tempSpan; tempSpan = null}
       }
     }
-    document.attr += new NounPhraseList(phrases)
-    document
+    phrases
   }
   override def tokenAnnotationString(token:Token): String = {
     val phrases = token.document.attr[NounPhraseList].spansContaining(token)

@@ -19,15 +19,22 @@ import cc.factorie.variable._
 
 /** A sub-sequence of Tokens within a Section (which is in turn part of a Document). */
 class TokenSpan(theSection:Section, initialStart:Int, initialLength:Int) extends SpanVariable[Section,Token](theSection, initialStart, initialLength) with Attr {
+  /** The Document Section of which this TokenSpan is a subsequence. */
   final def section = chain  // Just a convenient alias
+  /** The Document to which this TokenSpan belongs. */
   final def document = chain.document
+  /** The indexed sequence of tokens contained in this TokenSpan. */
   final def tokens = this.toIndexedSeq //value
   /** The Sentence to which the first Token in this TokenSpan belongs. */
   def sentence = tokens(0).sentence
+  // TODO Implement something like this? def containsSentenceIndex(i:Int): Boolean // Does this TokenSpan contain the token in the ith position of the sentence containing this TokenSpan.
+  
   @deprecated("Use 'string' instead.") def phrase: String = phrase
   /** Return the substring of the Document covered by this TokenSpan.
       If this is a multi-Token TokenSpan, this will include all original characters in the Document, including those skipped by tokenization. */
-  def string: String = if (length == 1) tokens.head.string else document.string.substring(tokens.head.stringStart, tokens.last.stringEnd) // TODO Handle Token.attr[TokenString] changes
+  def string: String = if (length == 1) chain(0).string else document.string.substring(tokens.head.stringStart, tokens.last.stringEnd) // TODO Handle Token.attr[TokenString] changes
+  /** Return a String representation of this TokenSpan, concatenating each Token.string, separated by the given separator. */
+  def tokensString(separator:String): String = if (length == 1) chain(0).string else tokens.map(_.string).mkString(separator)
   /** Returns true if this span contain the words of argument span in order. */
   def containsStrings(span:TokenSpan): Boolean = {
     for (i <- 0 until length) {

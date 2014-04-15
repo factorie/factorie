@@ -4,8 +4,8 @@ import cc.factorie._
 import cc.factorie.app.nlp._
 import cc.factorie.app.nlp.phrase._
 import cc.factorie.app.nlp.ner.OntonotesEntityTypeDomain
-import cc.factorie.util.coref.GenericEntityMap
-import cc.factorie.util.{Attr,UniqueId,ImmutableArrayIndexedSeq}
+//import cc.factorie.util.EvaluatableClustering
+import cc.factorie.util.{Attr,UniqueId,ImmutableArrayIndexedSeq,EvaluatableClustering}
 import cc.factorie.variable._
 import scala.collection.mutable.ArrayBuffer
 
@@ -56,10 +56,11 @@ abstract class Mention(val phrase:Phrase) extends AbstractMention {
   protected[coref] def _setEntity(e:WithinDocEntity): Unit = _entity = e
   def entity: ParentType = _entity
   def parent: ParentType = _entity
-  def string = phrase.string
+  lazy val string = phrase.tokensString(" ")
   // If number, gender and entity type are needed, put a CategoricalVariable subclass in the Attr
 }
 
+// TODO All three of these classes should be removed. -akm
 /** A collection of Mentions, either immutable or mutable. */
 trait MentionCollection extends Iterable[Mention]
 /** An immutable ordered collection of Mentions. */
@@ -93,20 +94,11 @@ abstract class WithinDocEntity(val document:Document) extends AbstractEntity {
     _mentions -= mention
     mention._setEntity(null)
   }
-  var canonicalName: String = null
+  var canonicalName: String = null // TODO Is this necessary?
   var canonicalMention: Mention = null // TODO Is this necessary?
   // If number, gender and entity type are needed, put a CategoricalVariable subclass in the Attr
 }
 
-
-/** A generic trait for coreference solution containers that can be evaluated. */
-trait EvaluatableCoref[EntityIdType,MentionIdType] {
-  def evalEntityIds: Iterable[EntityIdType]
-  def evalMentionIds: Iterable[MentionIdType]
-  def evalMentionIds(entityId:EntityIdType): Iterable[MentionIdType]
-  def evalIntersectionSize(entityId1:EntityIdType, entityId2:EntityIdType): Int
-  def evalEntityId(mentionId:MentionIdType): EntityIdType
-}
 
 
 /** Container for a within-document coreference solution, typically stored as an attr of the Document.
@@ -114,7 +106,7 @@ trait EvaluatableCoref[EntityIdType,MentionIdType] {
     Concrete instances of Mention and WithinDocEntity are created here.
     @author Andrew McCallum
     */
-class WithinDocCoref(val document:Document) extends EvaluatableCoref[WithinDocEntity,Phrase] {
+class WithinDocCoref(val document:Document) extends EvaluatableClustering[WithinDocEntity,Phrase] {
   /** When we have labeled gold-standard truth for coref, it is stored here. */
   var target: WithinDocCoref = null // ...the alternative would have been to create different subclasses of WithinDocCoref so they could be stored separately in the Document.attr, but I chose this as cleaner. -akm
   /** A mapping from (the Phrase's span value) to Mention */
@@ -128,39 +120,53 @@ class WithinDocCoref(val document:Document) extends EvaluatableCoref[WithinDocEn
   /** A string that will be used as a prefix on the uniqueIds of the Mentions and WithinDocEntities created here. */
   def uniqueId: String = document.uniqueId // TODO Perhaps this should be something more safely unique if we save more than one WithinDocCoref objects per Document? -akm 
   /** Concrete implementation of WithinDocEntity that automatically stores itself in WithinDocCoref.entities. */
-  class WithinDocEntity1(val uniqueId:String) extends WithinDocEntity(document) {
+  protected class WithinDocEntity1(val uniqueId:String) extends WithinDocEntity(document) {
     def this() = this(WithinDocCoref.this.uniqueId + "//WithinDocEntity" + _entityCount) // TODO Is this what we want? -akm
     _entityCount += 1
     _entities(uniqueId) = this
     def coref: WithinDocCoref = WithinDocCoref.this
   }
   /** Concrete implementation of Mention that automatically stores itself in WithinDocCoref.mentions. */
-  class Mention1(phrase:Phrase, entity:WithinDocEntity) extends Mention(phrase) {
+  protected class Mention1(phrase:Phrase, entity:WithinDocEntity) extends Mention(phrase) {
     def this(phrase:Phrase, entityKey:Int) = this(phrase, entityFromKey(entityKey)) // Typically used for labeled data
     def this(phrase:Phrase, entityUniqueId:String) = this(phrase, entityFromUniqueId(entityUniqueId)) // Typically used for deserialization
     def this(phrase:Phrase) = this(phrase, null.asInstanceOf[WithinDocEntity]) // Typically used for new inference // TODO Should this be null, or a newly created blank Entity; See LoadConll2011 also.
     assert(!_spanToMention.contains(phrase.value))
+    assert(entity == null || entity.asInstanceOf[WithinDocEntity1].coref == WithinDocCoref.this)
     _spanToMention(phrase.value) = this
     val uniqueId = WithinDocCoref.this.uniqueId + "//Mention(" + phrase.start + "," + phrase.length + ")" // TODO Is this what we want? -akm
     if (entity ne null) entity += this
     def coref: WithinDocCoref = WithinDocCoref.this
   }
+  
   /** Given Span (typically the value of a Phrase), return the corresponding Mention.
       Note that Span is a case class, so the lookup is done by the span's boundaries, not by its identity. */
   def mention(span:Span[Section,Token]): Mention = _spanToMention(span)
   /** Return the Mention corresponding to the given Phrase.  If none present, return null.
       Note that since the lookup happens by the Phrase's Span value, the returned mention.phrase may be different than this method's argument. */
   def mention(phrase:Phrase): Mention = _spanToMention(phrase.value)
+  
   /** Create a new Mention whose entity will be null. */
   def addMention(phrase:Phrase): Mention = _spanToMention.getOrElse(phrase.value, new Mention1(phrase))
   /** Create a new Mention with entity specified by given uniqueId. */
   def addMention(phrase:Phrase, entityId:String): Mention = { assert(!_spanToMention.contains(phrase.value)); new Mention1(phrase, entityId) }
   /** Create a new Mention with entity specified by given key. */
   def addMention(phrase:Phrase, entityKey:Int): Mention = { assert(!_spanToMention.contains(phrase.value)); new Mention1(phrase, entityKey) }
+  /** Create a new Mention with the given entity, which must also be in this WithinDocCoref */
+  def addMention(phrase:Phrase, entity:WithinDocEntity): Mention = new Mention1(phrase, entity)
+  
+  /** Remove a Mention from this coreference solution, and from its entity if it has one. */
+  def deleteMention(mention:Mention): Unit = {
+    if (mention.entity ne null) mention.entity -= mention
+    _spanToMention.remove(mention.phrase.value)
+  }
+  
   /** Return all Mentions in this coreference solution. */
   def mentions: Iterable[Mention] = _spanToMention.values
   /** Return a collection of WithinDocEntities managed by this coref solution.  Note that some of them may have no Mentions. */
   def entities: Iterable[WithinDocEntity] = _entities.values
+  /** Create and return a new WithinDocEntity with uniqueId determined by the number entities created so far. */
+  def newEntity(): WithinDocEntity = new WithinDocEntity1()
   /** Return the entity associated with the given uniqueId, or create a new entity if not found already among 'entities'. */
   def entityFromUniqueId(id:String): WithinDocEntity = _entities.getOrElse(id, new WithinDocEntity1(id))
   /** Return the entity associated with the given key, or create a new entity if not found alread among 'entities'. */
@@ -173,13 +179,13 @@ class WithinDocCoref(val document:Document) extends EvaluatableCoref[WithinDocEn
   /** Return the entity associated with the given uniqueId.  Return null if not found. */
   def idToEntity(id:String): WithinDocEntity = _entities(id)
   /** Remove from the list of entities all entities that contain no mentions. */
-  def trimEmptyEntities: Unit = _entities.values.filter(_.mentions.size == 0).map(_.uniqueId).foreach(_entities.remove(_))
+  def trimEmptyEntities: Unit = _entities.values.filter(_.mentions.size == 0).map(_.uniqueId).foreach(_entities.remove(_)) // TODO But note that this doesn't purge _entityKeyToId; perhaps it should.
   // Support for evaluation
-  def evalEntityIds: Iterable[WithinDocEntity] = _entities.values
-  def evalMentionIds: Iterable[Phrase] = _spanToMention.values.map(_.phrase)
-  def evalMentionIds(entityId:WithinDocEntity): Iterable[Phrase] = entityId.mentions.map(_.phrase)
-  def evalIntersectionSize(entityId1:WithinDocEntity, entityId2:WithinDocEntity): Int = entityId1.mentions.map(_.phrase).intersect(entityId2.mentions.map(_.phrase)).size
-  def evalEntityId(mentionId:Phrase): WithinDocEntity = _spanToMention(mentionId.value).entity
+  def clusterIds: Iterable[WithinDocEntity] = _entities.values
+  def pointIds: Iterable[Phrase] = _spanToMention.values.map(_.phrase)
+  def pointIds(entityId:WithinDocEntity): Iterable[Phrase] = entityId.mentions.map(_.phrase)
+  def intersectionSize(entityId1:WithinDocEntity, entityId2:WithinDocEntity): Int = entityId1.mentions.map(_.phrase.value).intersect(entityId2.mentions.map(_.phrase.value)).size
+  def clusterId(mentionId:Phrase): WithinDocEntity = _spanToMention(mentionId.value).entity
 }
 
 

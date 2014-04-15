@@ -4,12 +4,10 @@ import cc.factorie.util.coref.{GenericEntityMap, CorefEvaluator}
 import cc.factorie.app.nlp.{Document, TokenSpan}
 import cc.factorie.app.nlp.coref.Mention
 
-/**
- * User: apassos
- * Date: 6/27/13
- * Time: 12:25 PM
- */
 
+/** Various helper methods for printing coreference score Metrics.
+    Needs to be overhauled. -akm
+    @author Alexandre Passos */
 class CorefScorer[T] {
   // val macroB3 = new CorefEvaluator.Metric
   val macroMUC = new CorefEvaluator.Metric
