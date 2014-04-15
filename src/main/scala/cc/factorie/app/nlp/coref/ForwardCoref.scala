@@ -28,8 +28,8 @@ abstract class ForwardCorefBase extends CorefSystem {
     }
   }
 
-  def generateTrainingInstances(d: Document, map: GenericEntityMap[Mention]): Seq[MentionPairLabel] = {
-    generateFeatures(d.attr[MentionList].map(CorefMention.mentionToCorefMention), map)
+  def generateTrainingInstances(d: Document): Seq[Example] = {
+    generateFeatures(d.coref.mentions.map(CorefMention.mentionToCorefMention).toSeq).map(label => model.getExample(label,options.slackRescale))
   }
 
   protected def generateFeatures(mentions: Seq[CorefMention], map: GenericEntityMap[Mention] = null): Seq[MentionPairLabel] = {
@@ -64,6 +64,10 @@ abstract class ForwardCorefBase extends CorefSystem {
     labels
   }
 
+  class LeftRightParallelTrainer(model: PairwiseCorefModel, optimizer: GradientOptimizer, val pool: ExecutorService, miniBatchSize: Int = 1) extends ParallelTrainer[Document](model,optimizer,pool){
+    def map(d:Document): Seq[Example] = MiniBatchExample(miniBatchSize,generateTrainingInstances(d))
+  }
+
   def pruneMentionPairTraining(anaphor: CorefMention,antecedent: CorefMention,label:Boolean,numAntecedents:Int): Boolean = {
     var skip = false
     val cataphora = antecedent.isPRO && !anaphor.isPRO
@@ -86,31 +90,6 @@ abstract class ForwardCorefBase extends CorefSystem {
       assert(l.features.activeCategories.forall(!_.startsWith("NBR")))
       val mergeLeft = ArrayBuffer[MentionPairLabel]()
       mergeables.take(1).diff(mergeLeft).foreach(l.features ++= _.features.mergeableAllFeatures.map("NBRR_" + _))
-    }
-  }
-
-  case class CoarseMentionType(gender: String, number: String)
-
-  def doCorefOnPronounsUsingRules(predMap: GenericEntityMap[CorefMention],allMentions: Seq[CorefMention]): Unit = {
-    //first, make a map from entity ids in the predMap to sets of CoarseMentionTypes that appear somewhere in the entity.
-    val numGenderSetsForEntities = predMap.entities.map(kv => (kv._1,kv._2.map(m => CoarseMentionType(m.gender,m.number)).toSet))
-    //make such a set for every mention. For those mentions that aren't in entities, the set is just a singleton.
-    val numGenderSets = allMentions.map(m => numGenderSetsForEntities.getOrElse(predMap.getEntity(m),Set(CoarseMentionType(m.gender,m.number))))
-    for(i <- 0 until allMentions.length; if allMentions(i).isPRO){
-      val m1 = allMentions(i)
-      assert(numGenderSets(i).size == 1)
-      val numGender1 = numGenderSets(i).head
-      var j = i -1
-      var searching = true
-      while(j > 0 && searching){
-        val m2 = allMentions(j)
-        //find the first mention that isn't a pronoun and has a number-gender that is compatible with m1
-        if(!m2.isPRO &&  numGenderSets(j).contains(numGender1)){
-          predMap.addCoreferentPair(m1,m2)
-          searching = false
-        }
-        j -= 1
-      }
     }
   }
 
@@ -192,23 +171,60 @@ abstract class CorefSystem extends DocumentAnnotator{
 
   def processMention(mentions:Seq[CorefMention], i:Int, predMap:GenericEntityMap[Mention]): CorefMention
   def setTopTokenFrequencies(trainDocs:Seq[Document]):Unit
-  def generateTrainingInstances[T](t:T,map:GenericEntityMap[Mention]):Seq[Example]
+  def generateTrainingInstances[T](t:T):Seq[Example]
 
-  abstract class LeftRightParallelTrainer[T](model: PairwiseCorefModel, optimizer: GradientOptimizer, trainTrueMaps: Map[String, GenericEntityMap[Mention]], val pool: ExecutorService, miniBatchSize: Int = 1){
-    def pool:ExecutorService = pool
-    def map(t: T,d:Document): Seq[Example] = MiniBatchExample(miniBatchSize,
-      generateTrainingInstances(t, trainTrueMaps(d.name)).map(i => model.getExample(i, options.slackRescale)))
+  abstract class ParallelTrainer[T](model:PairwiseCorefModel, optimizer: GradientOptimizer, val pool: ExecutorService){
+      //def pool: ExecutorService
+    def map(in: T): Seq[Example]
     def reduce(states: Iterable[Seq[Example]]) {
       for (examples <- states) {
         val trainer = new OnlineTrainer(model.parameters, optimizer, maxIterations = 1, logEveryN = examples.length - 1)
         trainer.trainFromExamples(examples)
       }
     }
-    def runParallel(ins: Seq[Document]) {
+    def runParallel(ins: Seq[T]){
       reduce(cc.factorie.util.Threading.parMap(ins, pool)(map))
     }
-    def runSequential(ins: Seq[(T,Document)]) {
+    def runSequential(ins: Seq[T]){
       reduce(ins.map(map))
+    }
+  }
+
+  def getTrainFormatting[T](trainDocs:Seq[Document]):Seq[T]
+  def instantiateModel[T](model:PairwiseCorefModel,optimizer: GradientOptimizer,pool:ExecutorService):ParallelTrainer[T]
+
+  def train[T](trainDocs: Seq[Document], testDocs: Seq[Document], wn: WordNet, rng: scala.util.Random, trainTrueMaps: Map[String, GenericEntityMap[Mention]], testTrueMaps: Map[String, GenericEntityMap[Mention]],saveModelBetweenEpochs: Boolean,saveFrequency: Int,filename: String, learningRate: Double = 1.0): Double =  {
+    val trainTrueMaps = trainDocs.map(d => d.name -> model.generateTrueMap(d.attr[MentionList])).toMap
+    val optimizer = if (options.useAverageIterate) new AdaGrad(learningRate) with ParameterAveraging else if (options.useMIRA) new AdaMira(learningRate) with ParameterAveraging else new AdaGrad(rate = learningRate)
+    setTopTokenFrequencies(trainDocs)
+    val trainingFormat: Seq[T] = getTrainFormatting[T](trainDocs)
+    val pool = java.util.concurrent.Executors.newFixedThreadPool(options.numThreads)
+    var accuracy = 0.0
+    try {
+      val trainer = instantiateModel[T](model, optimizer, pool)
+      for (iter <- 0 until options.numTrainingIterations) {
+        val shuffledDocs = rng.shuffle(trainingFormat)
+        val batches = shuffledDocs.grouped(options.featureComputationsPerThread*options.numThreads).toSeq
+        for ((batch, b) <- batches.zipWithIndex) {
+          if (options.numThreads > 1) trainer.runParallel(batch)
+          else trainer.runSequential(batch)
+        }
+        if (!model.MentionPairFeaturesDomain.dimensionDomain.frozen) model.MentionPairFeaturesDomain.dimensionDomain.freeze()
+        optimizer match {case o: ParameterAveraging => o.setWeightsToAverage(model.parameters) }
+        println("Train docs")
+        doTest(trainDocs.take((trainDocs.length*options.trainPortionForTest).toInt), wn, "Train")
+        println("Test docs")
+        accuracy = doTest(testDocs, wn, "Test")
+
+        if(saveModelBetweenEpochs && iter % saveFrequency == 0)
+          serialize(filename + "-" + iter)
+
+        optimizer match {case o: ParameterAveraging => o.unSetWeightsToAverage(model.parameters) }
+      }
+      optimizer match {case o: ParameterAveraging => o.setWeightsToAverage(model.parameters) }
+      accuracy
+    } finally {
+      pool.shutdown()
     }
   }
 
@@ -231,19 +247,19 @@ abstract class CorefSystem extends DocumentAnnotator{
       assert(mentions(i).mention.phrase.tokens.head.stringStart >= mentions(i-1).mention.phrase.tokens.head.stringStart, "the mentions are not sorted by their position in the document. Error at position " +i+ " of " + mentions.length)
   }
 
-  class CorefTester(model: PairwiseCorefModel, scorer: CorefScorer[Mention], scorerMutex: Object, testTrueMaps: Map[String, GenericEntityMap[Mention]], val pool: ExecutorService){
-    def getPredMap(doc: Document, model: PairwiseCorefModel): GenericEntityMap[Mention] = process(doc).attr[GenericEntityMap[Mention]]
+  class CorefTester(model: PairwiseCorefModel, scorer: CorefScorer[Mention], scorerMutex: Object, docs: Seq[Document], val pool: ExecutorService){
+    def getPredMap(doc: Document, model: PairwiseCorefModel): WithinDocCoref = process(doc).coref
     def reduce(states: Iterable[Null]):Unit = { }
     def map(doc: Document): Unit = {
       val fId = doc.name
-      val trueMap = testTrueMaps(fId)
+      val trueMap = doc.targetCoref
       val predMap = getPredMap(doc, model)
 
-      val gtMentions = trueMap.entities.values.flatten.toSet
-      val predMentions = predMap.entities.values.flatten.toSet
+      val gtMentions = trueMap.mentions.toSet
+      val predMentions = predMap.mentions.toSet
 
-      val nm = predMap.numMentions
-      gtMentions.diff(predMentions).seq.toSeq.zipWithIndex.foreach(mi =>  predMap.addMention(mi._1, mi._2+ nm))
+      val nm = predMentions.size
+      gtMentions.diff(predMentions).seq.toSeq.zipWithIndex.foreach(mi =>  predMap.addMention(mi._1.phrase, mi._2+ nm))
       val pw = CorefEvaluator.Pairwise.evaluate(predMap, trueMap)
       val b3 = CorefEvaluator.BCubedNoSingletons.evaluate(predMap, trueMap)
       val muc = CorefEvaluator.MUC.evaluate(predMap, trueMap)
@@ -261,13 +277,13 @@ abstract class CorefSystem extends DocumentAnnotator{
 
   }
 
-  def doTest(testDocs: Seq[Document], wn: WordNet, testTrueMaps: Map[String, GenericEntityMap[Mention]], name: String): Double = {
+  def doTest(testDocs: Seq[Document], wn: WordNet, name: String): Double = {
     val scorer = new CorefScorer[Mention]
     object ScorerMutex
     val pool = java.util.concurrent.Executors.newFixedThreadPool(options.numThreads)
     var accuracy = 0.0
     try {
-      val tester = new CorefTester(model, scorer, ScorerMutex, testTrueMaps, pool)
+      val tester = new CorefTester(model, scorer, ScorerMutex, pool,Seq[Document])
       tester.runParallel(testDocs)
       println("-----------------------")
       println("  * Overall scores")

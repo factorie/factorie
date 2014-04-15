@@ -37,7 +37,7 @@ object CorefMention{
         headTokenIndex
     }
     val docMention = span.document.getCoref.addMention(new Phrase(span, headInd))
-    docMention.phrase.attr += new NounPhraseType(docMention.phrase, mentionType)
+    docMention.phrase.attr += new Phrase(docMention.phrase, mentionType)
     new CorefMention(docMention, tokenNum,  sentenceNum)
   }
 

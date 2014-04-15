@@ -156,10 +156,10 @@ class MentionPairFeatures(val model: PairwiseCorefModel, val mention1: CorefMent
     else  addMergeableFeature("paf")
 
     val binTokenSentenceDistances = false
-    val sdist = bin(mention1.sentenceNum - mention2.sentenceNum, 1 to 10)
+    val sdist = bin(mention1.sentenceNum - mention2.sentenceNum, 0 to 10)
     if (binTokenSentenceDistances) for (sd <- 1 to sdist) addMergeableFeature("sd" + sd)
     else addMergeableFeature("sd" + sdist)
-    val tdist = bin(mention1.tokenNum - mention2.tokenNum, Seq(1, 2, 3, 4, 5, 10, 20, 50, 100, 200))
+    val tdist = bin(mention1.tokenNum - mention2.tokenNum, Seq(0,1, 2, 3, 4, 5, 10, 20, 50, 100, 200))
     if (binTokenSentenceDistances) for (td <- 1 to tdist) addMergeableFeature("td" + td)
     else addMergeableFeature("td" + tdist)
     if (mention1.demonym != "" && mention1.demonym == mention2.demonym) addMergeableFeature("dM") else addMergeableFeature("dMf")

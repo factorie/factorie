@@ -58,6 +58,33 @@ class Coref1Options {
 
   var mentionAlignmentShiftWidth = 0
   var learningRate = 1.0
+
+
+  def setParameterOptions(opts:ForwardCorefTrainerOpts){
+    useAverageIterate = opts.useAverageIterate.value
+    numTrainingIterations = opts.numTrainingIterations.value
+    trainPortionForTest = opts.trainPortionForTest.value
+    useEntityLR = opts.entityLR.value
+    saveFrequency =  opts.saveFrequency.value
+    numThreads = opts.numThreads.value
+    featureComputationsPerThread = opts.featureComputationsPerThread.value
+    pruneNegTrain = opts.numPositivePairsTrain.value > 0
+    pruneNegTest = opts.numPositivePairsTest.value > 0
+    numPositivePairsTrain = opts.numPositivePairsTrain.value
+    numPositivePairsTest = opts.numPositivePairsTest.value
+    useExactEntTypeMatch = opts.useExactEntTypeMatch.value
+    slackRescale = opts.slackRescale.value
+    mentionAlignmentShiftWidth = opts.mentionAlignmentShiftWidth.value
+    useNonGoldBoundaries = opts.useNonGoldBoundaries.value
+    mergeMentionWithApposition = opts.mergeAppositions.value
+    setConfig("usePronounRules",opts.usePronounRules.value)
+    numCompareToTheLeft = opts.numCompareToTheLeft.value
+    // options still in flux
+    mergeFeaturesAtAll = opts.mergeFeaturesAtAll.value
+    learningRate = opts.learningRate.value
+    conjunctionStyle = conjunctionStyle
+  }
+
 }
 
 object ConjunctionOptions {

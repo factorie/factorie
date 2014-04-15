@@ -99,31 +99,11 @@ object ForwardCorefTrainer extends HyperparameterMain{
     val options = lr.options
     //options that get serialized with the model
 
+    options.setParameterOptions(opts)
     options.setConfig("useEntityType",opts.useEntityType.value)
     options.setConfig("trainSeparatePronounWeights",opts.trainSeparatePronounWeights.value)
     // options which affect only learning
-    options.useAverageIterate = opts.useAverageIterate.value
-    options.numTrainingIterations = opts.numTrainingIterations.value
-    options.trainPortionForTest = opts.trainPortionForTest.value
-    options.useEntityLR = opts.entityLR.value
-    options.saveFrequency =  opts.saveFrequency.value
-    options.numThreads = opts.numThreads.value
-    options.featureComputationsPerThread = opts.featureComputationsPerThread.value
-    options.pruneNegTrain = opts.numPositivePairsTrain.value > 0
-    options.pruneNegTest = opts.numPositivePairsTest.value > 0
-    options.numPositivePairsTrain = opts.numPositivePairsTrain.value
-    options.numPositivePairsTest = opts.numPositivePairsTest.value
-    options.useExactEntTypeMatch = opts.useExactEntTypeMatch.value
-    options.slackRescale = opts.slackRescale.value
-    options.mentionAlignmentShiftWidth = opts.mentionAlignmentShiftWidth.value
-    options.useNonGoldBoundaries = opts.useNonGoldBoundaries.value
-    options.mergeMentionWithApposition = opts.mergeAppositions.value
-    options.setConfig("usePronounRules",opts.usePronounRules.value)
-    options.numCompareToTheLeft = opts.numCompareToTheLeft.value
-    // options still in flux
-    options.mergeFeaturesAtAll = opts.mergeFeaturesAtAll.value
-    options.learningRate = opts.learningRate.value
-    options.conjunctionStyle = conjunctionStyle
+
 
     println("** Arguments")
     val ignoreOpts = Set("config", "help", "version")
@@ -142,13 +122,11 @@ object ForwardCorefTrainer extends HyperparameterMain{
         NounPhraseGenderLabeler.process(mention.phrase)
         NounPhraseNumberLabeler.process(mention.phrase)
       }
-      //trainDocs.foreach(d => { MentionPhraseGenderLabeler.process(d); MentionPhraseNumberLabeler.process(d) } )
 
     for (doc <- trainDocs; mention <- doc.coref.mentions) {
       NounPhraseGenderLabeler.process(mention.phrase)
       NounPhraseNumberLabeler.process(mention.phrase)
     }
-    //testDocs.foreach(d => { MentionPhraseGenderLabeler.process(d); MentionPhraseNumberLabeler.process(d) } )
 
     val mentPairClsf =
       if (opts.deserialize.wasInvoked){

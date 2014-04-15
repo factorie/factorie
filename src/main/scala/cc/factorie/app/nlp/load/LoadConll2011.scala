@@ -218,8 +218,7 @@ object LoadConll2011 {
         //this makes mentions for the ground truth mentions that weren't NPs
         for ((number,start) <- closedEntities.filter(i =>  i ne null)) {
           val span = new TokenSpan(currDoc.asSection, start, docTokInd - start + 1)
-          val m = coref.mention(new Phrase(span, getHeadToken(span)))
-          mentionList += m
+          val m = span.document.coref.addMention(new Phrase(span, getHeadToken(span)))
           if(currentlyUnresolvedClosedEntityTypeBracket && (entityTypeStart >= start)){
             val exactMatch = (entityTypeStart == start) && thisTokenClosedTheEntityType
             if(!useExactEntTypeMatch ||(useExactEntTypeMatch && exactMatch)){
