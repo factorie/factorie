@@ -5,7 +5,7 @@ import cc.factorie.app.nlp.ner._
 
 /** A dead-simple deterministic coreference system that operates only on named entities
     and resolves coreference only by exact string match. */
-class DeterministicNamedCoref extends DocumentAnnotator {
+object DeterministicNamedCoref extends DocumentAnnotator {
   def prereqAttrs: Seq[Class[_]] = ConllProperNounPhraseFinder.prereqAttrs
   def postAttrs = Seq(classOf[WithinDocCoref])
   def tokenAnnotationString(token:Token): String = ???

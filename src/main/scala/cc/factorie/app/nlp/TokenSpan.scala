@@ -32,9 +32,12 @@ class TokenSpan(theSection:Section, initialStart:Int, initialLength:Int) extends
   @deprecated("Use 'string' instead.") def phrase: String = phrase
   /** Return the substring of the Document covered by this TokenSpan.
       If this is a multi-Token TokenSpan, this will include all original characters in the Document, including those skipped by tokenization. */
-  def string: String = if (length == 1) chain(0).string else document.string.substring(tokens.head.stringStart, tokens.last.stringEnd) // TODO Handle Token.attr[TokenString] changes
+  def documentString: String = document.string.substring(tokens.head.stringStart, tokens.last.stringEnd) // TODO Handle Token.attr[TokenString] changes
   /** Return a String representation of this TokenSpan, concatenating each Token.string, separated by the given separator. */
   def tokensString(separator:String): String = if (length == 1) chain(0).string else tokens.map(_.string).mkString(separator)
+  /** Return a String representation of this TokenSpan, concatenating each Token.string, separated by a space.
+      This nicely avoids newlines, HTML or other junk that might be in the phrase.documentString. */
+  def string: String = tokensString(" ")
   /** Returns true if this span contain the words of argument span in order. */
   def containsStrings(span:TokenSpan): Boolean = {
     for (i <- 0 until length) {
