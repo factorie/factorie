@@ -313,8 +313,8 @@ object CorefFeatures {
   def headWordsCross(m1: CorefMention, m2: CorefMention, model: PairwiseCorefModel): String = {
     val w1 = m2.headPhraseTrim
     val w2 = m1.headPhraseTrim
-    val rare1 = 1.0 / model.MentionPairLabelThing.tokFreq.getOrElse(w1.toLowerCase, 1).toFloat > 0.1
-    val rare2 = 1.0 / model.MentionPairLabelThing.tokFreq.getOrElse(w2.toLowerCase, 1).toFloat > 0.1
+    val rare1 = 1.0 / model.CorefTokenFrequencies.lexicalCounter.headWordCounts.getOrElse(w1.toLowerCase, 1).toFloat > 0.1
+    val rare2 = 1.0 / model.CorefTokenFrequencies.lexicalCounter.headWordCounts.getOrElse(w2.toLowerCase, 1).toFloat > 0.1
     if (rare1 && rare2 && w1.equalsIgnoreCase(w2))
       "Rare_Duplicate"
     else

@@ -141,7 +141,7 @@ object ForwardCorefTrainer extends HyperparameterMain{
         lr.options.setConfig("usePronounRules",options.usePronounRules) //this is safe to tweak at test time if you train separate weights for all the pronoun cases
 
         lr.model.MentionPairFeaturesDomain.freeze()
-        lr.doTest(testDocs, WordNet, testTrueMaps.toMap, "Test")
+        lr.doTest(testDocs, WordNet, "Test")
         lr
       }
       else{

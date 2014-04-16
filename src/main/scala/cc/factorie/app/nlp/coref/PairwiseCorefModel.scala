@@ -1,7 +1,8 @@
 package cc.factorie.app.nlp.coref
 
 import cc.factorie._
-import scala.collection.mutable
+import cc.factorie.la
+import cc.factorie.util.DoubleAccumulator
 import cc.factorie.la.{SparseBinaryTensor, DenseTensor1, WeightsMapAccumulator, Tensor1}
 import cc.factorie.optimize.{OptimizableObjectives, PredictorExample, Example}
 import java.io._
@@ -9,7 +10,6 @@ import cc.factorie.util.BinarySerializer
 import cc.factorie.util.coref.GenericEntityMap
 import cc.factorie.variable.{VectorDomain, DiscreteDomain, CategoricalVectorDomain, CategoricalDomain}
 import cc.factorie.model.Parameters
-import cc.factorie.app.nlp.coref._
 
 /**
  * User: apassos
@@ -17,7 +17,7 @@ import cc.factorie.app.nlp.coref._
  * Time: 12:20 PM
  */
 
-trait PairwiseCorefModel extends app.classify.backend.OptimizablePredictor[Double,Tensor1] with Parameters {
+trait CorefModel extends app.classify.backend.OptimizablePredictor[Double,Tensor1] with Parameters {
   val MentionPairFeaturesDomain = new CategoricalVectorDomain[String] {
     dimensionDomain.maxSize = 1e6.toInt
     dimensionDomain.growPastMaxSize = false
@@ -28,16 +28,17 @@ trait PairwiseCorefModel extends app.classify.backend.OptimizablePredictor[Doubl
 
   val MentionPairLabelDomain = new CategoricalDomain[String] { this += "YES"; this += "NO"; freeze() }
 
-  object MentionPairLabelThing {
-    val tokFreq = new mutable.HashMap[String, Int]()
+  object CorefTokenFrequencies{
+    var lexicalCounter:LexicalCounter = null
   }
-  def getExample(label: MentionPairLabel, scale: Double): Example = new PredictorExample(this, label.features.value, if (label.target.categoryValue == "YES") 1 else -1, OptimizableObjectives.hingeScaledBinary(1.0, 3.0))
 
   def deserialize(stream: DataInputStream) {
-    BinarySerializer.deserialize(MentionPairLabelThing.tokFreq, stream)
+    val headWordCounts = new DefaultHashMap[String,Int](0)
+    BinarySerializer.deserialize(headWordCounts, stream)
     BinarySerializer.deserialize(MentionPairFeaturesDomain, stream)
     BinarySerializer.deserialize(new CategoricalVectorDomain[String] { val domain = new CategoricalDomain[String]} , stream)
     BinarySerializer.deserialize(this, stream)
+    CorefTokenFrequencies.lexicalCounter = new LexicalCounter(headWordCounts)
     stream.close()
     MentionPairFeaturesDomain.freeze()
   }
@@ -47,7 +48,7 @@ trait PairwiseCorefModel extends app.classify.backend.OptimizablePredictor[Doubl
   }
 
   def serialize(stream: DataOutputStream) {
-    BinarySerializer.serialize(MentionPairLabelThing.tokFreq,stream)
+    BinarySerializer.serialize(CorefTokenFrequencies.lexicalCounter.headWordCounts,stream)
     MentionPairFeaturesDomain.freeze()
     BinarySerializer.serialize(MentionPairFeaturesDomain , stream)
     BinarySerializer.serialize(new CategoricalVectorDomain[String] { val domain = new CategoricalDomain[String]}, stream)
@@ -66,6 +67,11 @@ trait PairwiseCorefModel extends app.classify.backend.OptimizablePredictor[Doubl
 
 }
 
+abstract class PairwiseCorefModel extends CorefModel{
+  def getExample(label: MentionPairLabel, scale: Double): Example = new PredictorExample(this, label.features.value, if (label.target.categoryValue == "YES") 1 else -1, OptimizableObjectives.hingeScaledBinary(1.0, 3.0))
+
+}
+
 class BaseCorefModel extends PairwiseCorefModel {
   val pairwise = Weights(new la.DenseTensor1(MentionPairFeaturesDomain.dimensionDomain.maxSize))
   def predict(pairwiseStats: Tensor1) = pairwise.value dot pairwiseStats
@@ -81,13 +87,185 @@ class ImplicitCrossProductCorefModel extends PairwiseCorefModel {
   def accumulate(acc: WeightsMapAccumulator, pairwiseStats: Tensor1, f: Double) {
     acc.accumulate(pairwise, pairwiseStats, f)
     acc.accumulate(products, new ImplicitFeatureConjunctionTensor(
-        MentionPairCrossFeaturesDomain.dimensionSize, pairwiseStats.asInstanceOf[SparseBinaryTensor], domain), f)
+    MentionPairCrossFeaturesDomain.dimensionSize, pairwiseStats.asInstanceOf[SparseBinaryTensor], domain), f)
   }
 
   def accumulateObjectiveGradient(accumulator: WeightsMapAccumulator, features: Tensor1, gradient: Double, weight: Double) = {
     accumulator.accumulate(pairwise, features, gradient)
     accumulator.accumulate(products, new ImplicitFeatureConjunctionTensor(
-            MentionPairCrossFeaturesDomain.dimensionSize, features.asInstanceOf[SparseBinaryTensor], domain), gradient * weight)
+    MentionPairCrossFeaturesDomain.dimensionSize, features.asInstanceOf[SparseBinaryTensor], domain), gradient * weight)
+  }
+}
+
+
+
+class StructuredCorefModel extends CorefModel {
+  val pairwiseWeights = Weights(new la.DenseTensor1(MentionPairFeaturesDomain.dimensionDomain.size))
+
+  def predict(pairwiseStats: Tensor1) = pairwiseWeights.value dot pairwiseStats
+
+  def getExample(mentionGraph: MentionGraph): Seq[Example] = {
+    Seq(new GraphExample(this, mentionGraph))
+  }
+
+  def getExamples(graphs: Seq[MentionGraph]): Seq[Example] = {
+    graphs.map{g => new GraphExample(this,g)}
+  }
+
+  override def deserialize(stream: DataInputStream) {
+    val firstWordCounts = new DefaultHashMap[String,Int](0)
+    val headWordCounts = new DefaultHashMap[String,Int](0)
+    val lastWordCounts = new DefaultHashMap[String,Int](0)
+    val precWordCounts = new DefaultHashMap[String,Int](0)
+    val followWordCounts = new DefaultHashMap[String,Int](0)
+    val classCounts = new DefaultHashMap[String,Int](0)
+    val shapeCounts = new DefaultHashMap[String,Int](0)
+    BinarySerializer.deserialize(headWordCounts,stream)
+    BinarySerializer.deserialize(firstWordCounts,stream)
+    BinarySerializer.deserialize(lastWordCounts,stream)
+    BinarySerializer.deserialize(precWordCounts,stream)
+    BinarySerializer.deserialize(followWordCounts,stream)
+    BinarySerializer.deserialize(classCounts,stream)
+    BinarySerializer.deserialize(shapeCounts,stream)
+    BinarySerializer.deserialize(MentionPairFeaturesDomain, stream)
+    BinarySerializer.deserialize(new CategoricalVectorDomain[String] { val domain = new CategoricalDomain[String]} , stream)
+    BinarySerializer.deserialize(this, stream)
+    val newLexicalCounts = new LexicalCounter(headWordCounts,firstWordCounts,lastWordCounts,precWordCounts,followWordCounts,classCounts,shapeCounts)
+    stream.close()
+    model.CorefTokenFrequencies.lexicalCounter = newLexicalCounts
+    MentionPairFeaturesDomain.freeze()
+  }
+
+  override def serialize(stream: DataOutputStream) {
+    MentionPairFeaturesDomain.freeze()
+    BinarySerializer.serialize(CorefTokenFrequencies.lexicalCounter.headWordCounts,stream)
+    BinarySerializer.serialize(CorefTokenFrequencies.lexicalCounter.firstWordCounts,stream)
+    BinarySerializer.serialize(CorefTokenFrequencies.lexicalCounter.lastWordCounts,stream)
+    BinarySerializer.serialize(CorefTokenFrequencies.lexicalCounter.precedingWordCounts,stream)
+    BinarySerializer.serialize(CorefTokenFrequencies.lexicalCounter.followingWordCounts,stream)
+    BinarySerializer.serialize(CorefTokenFrequencies.lexicalCounter.shapeCounts,stream)
+    BinarySerializer.serialize(CorefTokenFrequencies.lexicalCounter.classCounts,stream)
+    BinarySerializer.serialize(MentionPairFeaturesDomain, stream)
+    BinarySerializer.serialize(new CategoricalVectorDomain[String] { val domain = new CategoricalDomain[String]}, stream)
+    BinarySerializer.serialize(this,stream)
+  }
+
+  def decodeAntecedents(mentionGraph: MentionGraph): Array[(Int,Double)] = {
+    val scores = scoreGraph(mentionGraph)
+    val cluster = findBestAntecedents(mentionGraph, (idx: Int) => {
+      val probs = scores(idx).map(Math.exp)
+      val total = probs.reduce(_+_)
+      var i = 0
+      while (i < probs.size) {
+        probs(i) /= total
+        i += 1
+      }
+      probs
+    })
+    cluster
+  }
+
+  def findBestAntecedents(mentionGraph: MentionGraph, scoreFunction: Int => Array[Double]): Array[(Int,Double)] = {
+    val backpointers = new Array[(Int,Double)](mentionGraph.graph.length)
+    for (currMentionIdx <- 0 until mentionGraph.graph.length) {
+      val allAnteCandidates = scoreFunction(currMentionIdx)
+      var bestIdx = -1
+      var bestProb = Double.NegativeInfinity
+      for (anteIdx <- 0 to currMentionIdx) {
+        val currProb = allAnteCandidates(anteIdx)
+        if (bestIdx == -1 || currProb > bestProb) {
+          bestIdx = anteIdx
+          bestProb = currProb
+        }
+      }
+      backpointers(currMentionIdx) = (bestIdx,bestProb)
+    }
+    backpointers
+  }
+
+  def scoreGraph(mentionGraph: MentionGraph): Array[Array[Double]] = {
+    val scores = new Array[Array[Double]](mentionGraph.graph.length)
+    for (i <- 0 until mentionGraph.graph.length) {
+      scores(i) = new Array[Double](i+1)
+      for (j <- 0 until mentionGraph.graph(i).length) {
+        require(mentionGraph.features(i)(j).domain.dimensionSize > 0)
+        scores(i)(j) = predict(mentionGraph.features(i)(j).value)
+      }
+    }
+    scores
+  }
+
+  def calculateMarginals(scores:Array[Array[Double]],mentionGraph: MentionGraph, gold: Boolean = false):Array[Array[Double]] = {
+    val marginals = new Array[Array[Double]](mentionGraph.graph.length)
+    for (i <- 0 until mentionGraph.graph.length) {
+      var normalizer = 0.0
+      val goldAntecedents = if (gold) mentionGraph.graph(i).filter(p => p.initialValue) else null
+      marginals(i) = Array.fill(mentionGraph.graph(i).length)(0.0)
+      for(edgeIdx<- 0 until mentionGraph.graph(i).length){
+        val edge = mentionGraph.graph(i)(edgeIdx)
+        if (!gold || goldAntecedents.contains(edge)) {
+          //pair loss score is set at graph generation
+          val unnormalizedProb = Math.exp(scores(i)(edgeIdx) - edge.lossScore)
+          marginals(i)(edgeIdx) = unnormalizedProb
+          normalizer += unnormalizedProb
+        } else {
+          marginals(i)(edgeIdx) = 0.0
+        }
+      }
+      for(edgeIdx<- 0 until mentionGraph.graph(i).length){
+        marginals(i)(edgeIdx) = if(normalizer == 0) 0.0 else marginals(i)(edgeIdx) / normalizer
+      }
+    }
+    marginals
+  }
+
+  def computeOverallLikelihood(trainMentionGraphs: Seq[MentionGraph]): Double = {
+    //trainMentionGraphs.foldLeft(0.0)((likelihood, mentionGraph) =>{
+
+    //val predictionMarginalScores = calculateMarginals( mentionGraph,false)
+    //val goldMarginalScores = calculateMarginals(mentionGraph,true)
+    //likelihood + computeLikelihood(mentionGraph,goldMarginalScores,predictionMarginalScores)
+    //})
+    -1.0
+  }
+
+  def computeLikelihood( mentionGraph: MentionGraph, goldMarginal: Array[Array[Double]],predictedMarginalScores: Array[Array[Double]]): Double = {
+    var likelihood = 0.0
+    for (currIdx <- 0 to mentionGraph.graph.length-1) {
+      var goldAntecedents = mentionGraph.doc.coref.mentions(mentionGraph.doc.coref.entityFromKey(mentionGraph.orderedMentionList(currIdx).mention))
+      if(goldAntecedents.isEmpty) goldAntecedents = Set(mentionGraph.orderedMentionList(currIdx).mention)//Set(currentMention.mention)
+      var currProb = 0.0
+      for (edgeLink <- goldAntecedents) {
+        val linkedIdx = mentionGraph.orderedMentionList.indexOf(edgeLink)
+        if(currIdx == -1 | linkedIdx == -1) currProb += 0.0
+        else currProb += goldMarginal(currIdx)(linkedIdx) - predictedMarginalScores(currIdx)(linkedIdx)
+      }
+      var currLogProb = Math.log(currProb)
+      if (currLogProb.isInfinite) {
+        currLogProb = -30
+      }
+      likelihood += currLogProb
+    }
+    likelihood
+  }
+}
+
+class GraphExample[Output, Prediction, Input<:MentionGraph](model: ProbabilisticCorefModel, input: Input) extends Example {
+  def accumulateValueAndGradient(value: DoubleAccumulator, gradient: WeightsMapAccumulator) {
+    val scores = model.scoreGraph(input)
+    //Add a parameter if we want to do gold only? Or should this be handled further up
+    val predictionMarginalScores = model.calculateMarginals(scores,input,false)
+    val goldMarginalScores = model.calculateMarginals(scores,input,true)
+    val likelihood = model.computeLikelihood(input,goldMarginalScores,predictionMarginalScores)
+    if (value != null) value.accumulate(likelihood)
+    //if (gradient != null) model.accumulateObjectiveGradient(gradient, input, ograd, weight)
+    for (i <- 0 until input.graph.length) {
+      for (edgeIdx <- 0 until input.graph(i).length) {
+        if(gradient != null){
+          gradient.accumulate(model.pairwiseWeights, input.features(i)(edgeIdx).value, goldMarginalScores(i)(edgeIdx) - predictionMarginalScores(i)(edgeIdx))
+        }
+      }
+    }
   }
 }
 

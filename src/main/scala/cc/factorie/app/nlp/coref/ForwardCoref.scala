@@ -38,7 +38,6 @@ abstract class ForwardCorefBase extends CorefSystem {
       if(!options.usePronounRules || !mentions(i).isPRO)
         labels ++= generateMentionPairLabelsForOneAnaphor(mentions, i, map)
     }
-    /*if (Options.debug) println("# of ex = " + labels.size)*/
     labels
   }
 
@@ -64,7 +63,7 @@ abstract class ForwardCorefBase extends CorefSystem {
     labels
   }
 
-  class LeftRightParallelTrainer(model: PairwiseCorefModel, optimizer: GradientOptimizer, val pool: ExecutorService, miniBatchSize: Int = 1) extends ParallelTrainer[Document](model,optimizer,pool){
+  class LeftRightParallelTrainer(model: PairwiseCorefModel, optimizer: GradientOptimizer, pool: ExecutorService, miniBatchSize: Int = 1) extends ParallelTrainer[Document](model,optimizer,pool){
     def map(d:Document): Seq[Example] = MiniBatchExample(miniBatchSize,generateTrainingInstances(d))
   }
 
@@ -81,9 +80,13 @@ abstract class ForwardCorefBase extends CorefSystem {
     skip
   }
 
-  def getTopTokenFrequencies(trainDocs:Seq[Document]) = {
-    model.MentionPairLabelThing.tokFreq  ++= trainDocs.flatMap(_.tokens).groupBy(_.string.trim.toLowerCase.replaceAll("\\n", " ")).mapValues(_.size)
+  def setTopTokenFrequencies(trainDocs:Seq[Document]) = {
+    val nonPronouns = trainDocs.flatMap(_.coref.mentions.map(CorefMention.mentionToCorefMention)).filter(m => !m.isPRO)
+    model.CorefTokenFrequencies.lexicalCounter = new LexicalCounter(LexicalCounter.countWordTypes(nonPronouns,(t) => t.lowerCaseHead))
   }
+
+  def getTrainFormatting[Document](trainDocs:Seq[Document]):Seq[Document] = trainDocs
+
 
   def mergeFeatures(l: MentionPairFeatures, mergeables: Seq[MentionPairFeatures]) {
     if (options.mergeFeaturesAtAll) {
@@ -161,7 +164,7 @@ abstract class CorefSystem extends DocumentAnnotator{
   val model:PairwiseCorefModel
   val options:Coref1Options
   def prereqAttrs: Seq[Class[_]] = Seq(classOf[MentionList], classOf[OntonotesPhraseEntityType], classOf[PhraseGender], classOf[PhraseNumber])
-  def postAttrs = Seq(classOf[GenericEntityMap[Mention]])
+  def postAttrs = Seq(classOf[WithinDocEntity])
   def process(document: Document) = {
     val mentions = document.attr[MentionList].map(CorefMention.mentionToCorefMention)
     assertSorted(mentions)
@@ -283,7 +286,7 @@ abstract class CorefSystem extends DocumentAnnotator{
     val pool = java.util.concurrent.Executors.newFixedThreadPool(options.numThreads)
     var accuracy = 0.0
     try {
-      val tester = new CorefTester(model, scorer, ScorerMutex, pool,Seq[Document])
+      val tester = new CorefTester(model, scorer, ScorerMutex, testDocs,pool)
       tester.runParallel(testDocs)
       println("-----------------------")
       println("  * Overall scores")

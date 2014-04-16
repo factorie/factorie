@@ -39,6 +39,8 @@ class Coref1Options {
 
   var conjunctionStyle = NO_CONJUNCTIONS
 
+  val featureSet = "factorie"
+
   var saveFrequency = 1
 
   var numThreads = 2
@@ -91,4 +93,5 @@ object ConjunctionOptions {
   val NO_CONJUNCTIONS = 1
   val HASH_CONJUNCTIONS = 2
   val SLOW_CONJUNCTIONS = 3
+  val PRON_CONJUNCTIONS = 4
 }
