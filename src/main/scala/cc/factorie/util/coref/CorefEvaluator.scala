@@ -9,6 +9,7 @@ import cc.factorie.util.AssignmentSolver
  * @author sameer
  * @see EntityMap
  */
+@deprecated("Use cc.factorie.app.nlp.coref.CorefEvaluation instead.")
 object CorefEvaluator {
 
   class Metric {

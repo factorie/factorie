@@ -22,9 +22,9 @@ import cc.factorie.variable._
 import cc.factorie.util.ImmutableArrayIndexedSeq
 
 /** An immutable value indicating a subsequence of a Chain (and whether this span is to be considered present or "active" now). */
-case class Span[C<:Chain[C,E],E<:ChainLink[E,C]](chain:C, start:Int, length:Int, present:Boolean = true) extends IndexedSeq[E] {
+final case class Span[C<:Chain[C,E],E<:ChainLink[E,C]](chain:C, start:Int, length:Int, present:Boolean = true) extends IndexedSeq[E] {
   def apply(i:Int) = chain.links(start + i)
-  def end: Int = start + length
+  @inline final def end: Int = start + length
   override def head: E = apply(0)
   def isAtStart: Boolean = start == 0
   def isAtEnd: Boolean = start + length == chain.length
@@ -32,6 +32,10 @@ case class Span[C<:Chain[C,E],E<:ChainLink[E,C]](chain:C, start:Int, length:Int,
   def hasPredecessor(i: Int) = (start - i) >= 0
   def successor(i: Int): E = if (hasSuccessor(i)) chain(start + length - 1 + i) else null.asInstanceOf[E]
   def predecessor(i: Int): E = if (hasPredecessor(i)) chain(start - i) else null.asInstanceOf[E]
+  /** Return true if the given index is within this Span (>= start and < end). */
+  def contains(index: Int): Boolean = index >= start && index < start + length
+  /** Return true if the given Span is equal to or falls entirely within this one. */
+  def contains(that: Span[C,E]): Boolean = that.start >= this.start && that.end <= this.end
   /** Given a span within the same chain as this one, return true if the two spans overlap by at least one element. */
   def overlaps(that: Span[C,E]): Boolean = {
     assert(this.chain eq that.chain)
@@ -42,7 +46,9 @@ case class Span[C<:Chain[C,E],E<:ChainLink[E,C]](chain:C, start:Int, length:Int,
   def prevWindow(n:Int): Seq[E] = for (i <- math.max(0,start-n) until start) yield chain(i)
   /** Return a sequence of n elements after the last element of this span.  May return a sequence of length less than n if there are insufficient elements. */
   def nextWindow(n:Int): Seq[E] = for (i <- end until math.min(chain.length,end+n)) yield chain(i)
+  /** Return a sequence of this.length+2*n elements before, including and after this Span. */
   def window(n:Int): Seq[E] = for (i <- math.max(0,start-n) until math.min(chain.length,end+n)) yield chain(i)
+  /** Return a sequence of 2*n elements before and after this Span, but not including the elements of this Span. */
   def windowWithoutSelf(n:Int): Seq[E] = for (i <- math.max(0,start-n) until math.min(chain.length,end+n); if i < start || i > end) yield chain(i)
   // Support for next/prev of elements within a span
   @inline private def requireInSpan(elt:E): Unit = { require(elt.chain eq chain, "Element not in chain."); require(elt.position >= start && elt.position < end, "Element outside span.") }

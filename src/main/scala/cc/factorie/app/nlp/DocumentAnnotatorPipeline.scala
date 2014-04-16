@@ -65,15 +65,15 @@ object DocumentAnnotatorPipeline extends FastLogging  {
     classOf[ner.NerTag] -> (() => ner.ConllChainNer), // TODO Should there be a different default?
     classOf[ner.BilouConllNerTag] -> (() => ner.NoEmbeddingsConllStackedChainNer),
     classOf[ner.BilouOntonotesNerTag] -> (() => ner.NER2),
-    classOf[coref.mention.NerMentionList] -> (() => coref.mention.NerAndPronounMentionFinder),
+    //classOf[coref.mention.NerMentionList] -> (() => coref.mention.NerAndPronounMentionFinder),
     classOf[coref.mention.ParseBasedMentionList] -> (() => coref.mention.ParseBasedMentionFinding),
     //classOf[phrase.GenderLabel[coref.Mention]] -> (() => phrase.GenderLabeler[]),
     classOf[phrase.Gender] -> (() => phrase.MentionPhraseGenderLabeler),
-    classOf[phrase.Number] -> (() => phrase.MentionPhraseNumberLabeler),
+    classOf[phrase.Number] -> (() => phrase.MentionPhraseNumberLabeler)
     //classOf[phrase.NumberLabel[phrase.NounPhrase]] -> (() => phrase.NounPhraseNumberLabeler),
     //classOf[MentionEntityType] ->  (() => coref.mention.MentionEntityTypeLabeler),
     //classOf[cc.factorie.util.coref.GenericEntityMap[coref.mention.Mention]] -> (() => coref.NerForwardCoref)
-    classOf[coref.WithinDocCoref] -> (() => coref.NerForwardCoref)
+    //classOf[coref.WithinDocCoref] -> (() => coref.NerForwardCoref)
   )
 
   //def apply(goal: Class[_]): DocumentAnnotationPipeline = apply(Seq(goal), defaultDocumentAnnotationMap)

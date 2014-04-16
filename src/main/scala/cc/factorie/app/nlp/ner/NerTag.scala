@@ -43,14 +43,8 @@ abstract class NerSpan(section:Section, start:Int, length:Int) extends TokenSpan
 // Note: There are currently no labeled counterparts to these SpanLabels.
 
 
-object ConllNerDomain extends CategoricalDomain[String] {
-  this ++= Vector(
-   "O",
-   "PER",
-   "ORG",
-   "LOC",
-   "MISC"
-  )
+object ConllNerDomain extends EnumDomain {
+  val O, PER, ORG, LOC, MISC = Value
   freeze()
 }
 class ConllNerTag(token:Token, initialCategory:String) extends NerTag(token, initialCategory) { def domain = ConllNerDomain }
@@ -75,6 +69,9 @@ object BioConllNerDomain extends CategoricalDomain[String] {
    "I-MISC"
   )
   freeze()
+  val B_PER = index("B-PER")
+  val I_PER = index("I-PER")
+  // TODO add more of these index vals
   def spanList(section:Section): ConllNerSpanBuffer = {
     val boundaries = iobBoundaries(section.tokens.map(_.attr[BioConllNerTag].categoryValue))
     new ConllNerSpanBuffer ++= boundaries.map(b => new ConllNerSpan(section, b._1, b._2, b._3))
@@ -119,36 +116,53 @@ class LabeledBilouConllNerTag(token:Token, initialCategory:String) extends Bilou
 //class BilouConllNerLabel(val token:Token, targetValue:String) extends NerLabel(targetValue) { def domain = BilouConllNerDomain }
 
 
-object OntonotesNerDomain extends CategoricalDomain[String] {
-  this ++= Vector(
-      "O",
-      "CARDINAL",
-      "DATE",
-      "EVENT",
-      "FAC",
-      "GPE",
-      "LANGUAGE",
-      "LAW",
-      "LOC",
-      "MONEY",
-      "NORP",
-      "ORDINAL",
-      "ORG",
-      "PERCENT",
-      "PERSON",
-      "PRODUCT",
-      "QUANTITY",
-      "TIME",
-      "WORK_OF_ART"
-  )
+object OntonotesNerDomain extends EnumDomain {
+  val O,
+      CARDINAL,
+      DATE,
+      EVENT,
+      FAC,
+      GPE,
+      LANGUAGE,
+      LAW,
+      LOC,
+      MONEY,
+      NORP,
+      ORDINAL,
+      ORG,
+      PERCENT,
+      PERSON,
+      PRODUCT,
+      QUANTITY,
+      TIME,
+      WORK_OF_ART = Value
   freeze()
 }
 
 /** Entity types used in coreference.
     @author Andrew McCallum */
-object OntonotesEntityTypeDomain extends CategoricalDomain[String] {
-  this ++= cc.factorie.app.nlp.ner.OntonotesNerDomain.categories
-  this += "MISC"
+object OntonotesEntityTypeDomain extends EnumDomain {
+  val O,
+      CARDINAL,
+      DATE,
+      EVENT,
+      FAC,
+      GPE,
+      LANGUAGE,
+      LAW,
+      LOC,
+      MONEY,
+      NORP,
+      ORDINAL,
+      ORG,
+      PERCENT,
+      PERSON,
+      PRODUCT,
+      QUANTITY,
+      TIME,
+      WORK_OF_ART,
+      MISC = Value
+  freeze()
 }
 // OntonotesEntityType is defined in cc.factorie.app.nlp.phrase
 
@@ -295,5 +309,5 @@ object BilouOntonotesNerDomain extends CategoricalDomain[String] {
 class BilouOntonotesNerTag(token:Token, initialCategory:String) extends NerTag(token, initialCategory) { def domain = BilouOntonotesNerDomain }
 class LabeledBilouOntonotesNerTag(token:Token, initialCategory:String) extends BilouOntonotesNerTag(token, initialCategory) with CategoricalLabeling[String]
 
-
+// TODO Remove this. -akm
 class OntonotesEntityMentionSpan

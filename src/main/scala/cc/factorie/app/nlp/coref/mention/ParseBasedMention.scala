@@ -151,7 +151,7 @@ class ParseBasedMentionFinding(val useNER: Boolean) extends DocumentAnnotator {
 
     //if NER has already been done, then convert the NER tags to NER spans
     //Note that this doesn't change the postAttrs for the annotator, since it may not necessarily add spans
-    if(useNER) docMentions ++=  NerAndPronounMentionFinder.getNerMentions(doc)
+    ??? // was: if(useNER) docMentions ++=  NerAndPronounMentionFinder.getNerMentions(doc)
 
     // NAM = proper noun, NOM = common noun, PRO = pronoun
     docMentions ++= personalPronounSpans(doc)           map(  m => {m.phrase.attr += new NounPhraseType(m.phrase,"PRO");m})
