@@ -69,22 +69,22 @@ class TestDocumentAnnotatorMap {
       def process(d: Document) = d
     }
     map += parseBasedMentionFinding
-    object coref1 extends DocumentAnnotator {
-      def tokenAnnotationString(token: Token) = ""
-      def prereqAttrs = Seq(classOf[MentionList], classOf[OntonotesPhraseEntityType], classOf[PhraseGender], classOf[PhraseNumber])
-      def postAttrs = Seq(classOf[GenericEntityMap[Mention]])
-      def process(document: Document) = document
-    }
-    map += coref1
-    map += MentionPhraseGenderLabeler
-    map += MentionPhraseNumberLabeler
-    object mentionEntityType extends DocumentAnnotator {
-      def tokenAnnotationString(token:Token): String = { val mentions = token.document.attr[MentionList].filter(_.phrase.contains(token)); mentions.map(_.phrase.attr[OntonotesPhraseEntityType].categoryValue).mkString(",") }
-      def prereqAttrs: Iterable[Class[_]] = List(classOf[MentionList])
-      def postAttrs: Iterable[Class[_]] = List(classOf[OntonotesPhraseEntityType])
-      def process(d: Document) = d
-    }
-    map += mentionEntityType
+//    object coref1 extends DocumentAnnotator {
+//      def tokenAnnotationString(token: Token) = ""
+//      def prereqAttrs = Seq(classOf[MentionList], classOf[OntonotesPhraseEntityType], classOf[PhraseGender], classOf[PhraseNumber])
+//      def postAttrs = Seq(classOf[GenericEntityMap[Mention]])
+//      def process(document: Document) = document
+//    }
+//    map += coref1
+//    map += MentionPhraseGenderLabeler
+//    map += MentionPhraseNumberLabeler
+//    object mentionEntityType extends DocumentAnnotator {
+//      def tokenAnnotationString(token:Token): String = { val mentions = token.document.attr[MentionList].filter(_.phrase.contains(token)); mentions.map(_.phrase.attr[OntonotesPhraseEntityType].categoryValue).mkString(",") }
+//      def prereqAttrs: Iterable[Class[_]] = List(classOf[MentionList])
+//      def postAttrs: Iterable[Class[_]] = List(classOf[OntonotesPhraseEntityType])
+//      def process(d: Document) = d
+//    }
+//    map += mentionEntityType
     for (key <- map.keys) {
       DocumentAnnotatorPipeline(map.toMap, Nil, Seq(key))
       // println(s"Pipeline for $key is ${pipeline.mkString(" ")}")
