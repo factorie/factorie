@@ -14,7 +14,7 @@
 
 package cc
 import scala.util.Random
-import cc.factorie.util.CubbieConversions
+import cc.factorie.util._
 import scala.language.implicitConversions
 import scala.reflect.ClassTag
 import cc.factorie.model.{IterableSingleFactor, Factor}

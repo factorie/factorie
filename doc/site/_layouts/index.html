@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <link rel="shortcut icon" href="assets/ico/favicon.ico">
+
+    <title>FACTORIE: Home</title>
+
+    <!-- Bootstrap core CSS -->
+    <link href="/assets/css/bootstrap-custom.css" rel="stylesheet">
+
+    <!-- Custom styles for this template -->
+    <link href="/assets/css/jumbotron.css" rel="stylesheet">
+
+  </head>
+    {% include navbar.html %}
+  <body>
+    <!-- Main jumbotron for a primary marketing message or call to action -->
+    <div class="jumbotron">
+      <div class="container">
+        <img src="/assets/images/factorie-logo-small.png"/><h1>FACTORIE</h1>
+        <p>is a toolkit for deployable probabilistic modeling, implemented as a software library in Scala. It provides its users with a succinct language for creating relational factor graphs, estimating parameters and performing inference.</p>
+        <div class="container">
+          <div class="row">
+            <div class="col-sm-3 col-md-2">
+              <p><a class="btn btn-success btn-lg" href="/download.html" role="button">Download &raquo;</a></p>
+            </div>
+            <div class="col-sm-3 col-md-2">
+              <p><a class="btn btn-warning btn-lg" href="/tutorials/UsersGuide25QuickStart.html" role="button">Quick start &raquo;</a></p>
+            </div>
+            <div class="col-sm-3 col-md-2">
+              <p><a class="btn btn-primary btn-lg" href="/tutorials/UsersGuide10Introduction.html" role="button">Learn more &raquo;</a></p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="container">
+      <!-- Example row of columns -->
+      <div class="row">
+        <div class="col-md-3">
+          <h2>Inference</h2>
+          <p>The basic use of a graphical model is to perform inference: making predictions about the values of unobserved variables, conditioned on the values of observed variables and the parameters. FACTORIE has implementations of many common inference algorithms based on both belief propagation and MCMC.</p>
+          <p><a class="btn btn-default" href="/tutorials/UsersGuide60Inference.html" role="button">Tutorial &raquo;</a></p>
+        </div>
+        <div class="col-md-3">
+          <h2>Learning</h2>
+          <p>Through a modular specification of inference, optimization, and learning objectives, FACTORIE supports various paradigms for parameter learning for structured prediction and classification tasks. These include maximum likelihood learning, maximum margin learning, learning with approximate inference, SampleRank, pseudo-likelihood, etc.</p>
+          <p><a class="btn btn-default" href="/tutorials/UsersGuide70LearningAndOptimization.html" role="button">Tutorial &raquo;</a></p>
+       </div>
+       <div class="col-md-3">
+          <h2>Optimization</h2>
+          <p>Many learning problems are posed as minimizing a sum of losses per training example plus a regularization term. The FACTORIE optimization package provides a modular framework for specifying per-example losses, regularization, online vs. batch optimization, parameter averaging, and parallel processing patterns. It also includes special-case implementations for modern composite minimization and adaptive step size algorithms.</p>
+          <p><a class="btn btn-default" href="/tutorials/UsersGuide70LearningAndOptimization.html" role="button">Tutorial &raquo;</a></p>
+       </div>
+        <div class="col-md-3">
+          <h2>Natural Language Processing</h2>
+          <p>FACTORIE supplies out-of-the-box tools for natural language processing and information integration such as segmentation, tokenization, part-of-speech tagging, named entity recognition, dependency parsing, mention finding, coreference, lexicon-matching, and latent Dirichlet allocation. The package provides state-of-the-art pre-trained models for many of these tasks.</p>
+          <p><a class="btn btn-default" href="/tutorials/UsersGuide25QuickStart.html" role="button">Get Started &raquo;</a></p>
+        </div>
+      </div>
+
+      {% include footer.html %}
+    </div> <!-- /container -->
+
+    <!-- Bootstrap core JavaScript
+    ================================================== -->
+    <!-- Placed at the end of the document so the pages load faster -->
+    <script src="https://code.jquery.com/jquery-1.10.2.min.js"></script>
+    <script src="/assets/js/bootstrap.js"></script>
+<!--     <script>
+	  $(document).ready(function() {
+	
+	   var docHeight = $(window).height();
+	   var footerHeight = $('#footer').height();
+	   var footerTop = $('#footer').position().top + footerHeight;
+	
+	   if (footerTop < docHeight) {
+	    $('#footer').css('margin-top', 10+ (docHeight - footerTop) + 'px');
+	   }
+	  });
+	 </script> -->
+  </body>
+</html>

@@ -103,7 +103,7 @@ object BibKB{
       var count=0
       for(fileName <- fileNames){
         val papers = RexaCitationLoader.loadFile(new File(fileName))
-        BibFeatures.decorate(papers,ldaOpt)
+        BibFeatures.decorate(papers,FeatureUtils.venueBag(_),ldaOpt)
         if(knowledgebase.paperColl.cubbieCollection.size==0)knowledgebase.addMentionsColdStartCoref(papers)
         else knowledgebase.addMentionsWarmStartCoref(papers)
         count+=1;if(count % 1000==0)print(".")
