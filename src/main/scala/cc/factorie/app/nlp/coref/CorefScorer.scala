@@ -2,7 +2,7 @@ package cc.factorie.app.nlp.coref
 
 import cc.factorie.util.coref.{GenericEntityMap, CorefEvaluator}
 import cc.factorie.app.nlp.{Document, TokenSpan}
-import cc.factorie.app.nlp.coref.Mention
+//import cc.factorie.app.nlp.coref.Mention
 
 
 /** Various helper methods for printing coreference score Metrics.
