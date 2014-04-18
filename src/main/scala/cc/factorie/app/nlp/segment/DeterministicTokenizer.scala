@@ -28,6 +28,7 @@ class DeterministicTokenizer(caseSensitive:Boolean = false, tokenizeSgml:Boolean
   val usphone = "(\\+?1[-\\. \u00A0]?)?(\\([0-9]{3}\\)[ \u00A0]?|[0-9]{3}[- \u00A0\\.])[0-9]{3}[\\- \u00A0\\.][0-9]{4}"; patterns += usphone
   val frphone = "(\\+33)?(\\s[012345][-\\. ])?[0-9]([-\\. ][0-9]{2}){3}"; patterns += frphone
   val date = "((((19|20)?[0-9]{2}[\\-/][0-3]?[0-9][\\-/][0-3]?[0-9])|([0-3]?[0-9][\\-/][0-3]?[0-9][\\-/](19|20)?[0-9]{2}))(?![0-9]))"; patterns += date // e.g. 3/4/1992 or 2012-04-05, but don't match just the first 8 chars of 12-25-1112
+  val decade = "(19|20)?[0-9]0s"; patterns += decade
   val currency = "(?:US|AU|NZ|C|CA|FJ|JY|HK|JM|KY|LR|NA|SB|SG|NT|BB|XC|BM|BN|BS|BZ|ZB|B)?\\$|&(euro|cent|pound);|\\p{Sc}|(USD|EUR|JPY|GBP|CHF|CAD|KPW|RMB|CNY|AD|GMT)(?![A-Z])"; patterns += currency
   val hashtag = "#[A-Za-z][A-Za-z0-9]+"; patterns += hashtag // For Twitter
   val atuser  = "@[A-Za-z][A-Za-z0-9]+"; patterns += atuser  // For Twitter
