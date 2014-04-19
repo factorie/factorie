@@ -14,9 +14,12 @@ import scala.Some
 class ParseBasedMentionList(spans:Iterable[Mention]) extends MentionList(spans)
 //class NerSpanList extends TokenSpanList[NerSpan]
 
+@deprecated("This functionality should be moved to cc.factorie.app.nlp.coref.ParseBasedMentionPhraseFinder.")
 object ParseBasedMentionFinding extends ParseBasedMentionFinding(false)
+@deprecated("This functionality should be moved to cc.factorie.app.nlp.coref.ParseBasedMentionPhraseFinder.")
 object ParseAndNerBasedMentionFinding extends ParseBasedMentionFinding(true)
 
+@deprecated("This functionality should be moved to cc.factorie.app.nlp.coref.ParseBasedMentionPhraseFinder.")
 class ParseBasedMentionFinding(val useNER: Boolean) extends DocumentAnnotator {
 
   private final val PERSONAL_PRONOUNS = Seq("PRP", "PRP$")
