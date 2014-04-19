@@ -82,9 +82,9 @@ abstract class WithinDocEntity(val document:Document) extends AbstractEntity {
   def children: Iterable[Mention] = _mentions
   def +=(mention:Mention): Unit = {
     assert(mention.phrase.document eq document)
-    assert(!_mentions.contains(mention)) // No reason to do this; might catch a bug.
+    //assert(!_mentions.contains(mention)) // No reason to do this; might catch a bug.
     if (mention.entity ne null) mention.entity._mentions -= mention
-    _mentions += mention
+    if(!_mentions.contains(mention))_mentions += mention
     mention._setEntity(WithinDocEntity.this)
   }
   def -=(mention:Mention): Unit = {
