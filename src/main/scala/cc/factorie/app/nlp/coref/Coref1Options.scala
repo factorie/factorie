@@ -24,6 +24,9 @@ class Coref1Options {
   def trainSeparatePronounWeights = configHash("trainSeparatePronounWeights")
   def usePronounRules = configHash("usePronounRules")
 
+  var maxPronDist = 6
+  var maxMentDist = 1000
+
   var mergeMentionWithApposition = false
   var useMIRA = true
   var useAverageIterate = false
@@ -59,10 +62,12 @@ class Coref1Options {
   var numPositivePairsTest = 100
 
   var mentionAlignmentShiftWidth = 0
+  var useNERMentions = false
   var learningRate = 1.0
 
 
   def setParameterOptions(opts:ForwardCorefTrainerOpts){
+    useNERMentions = opts.useNerMentions.value
     useAverageIterate = opts.useAverageIterate.value
     numTrainingIterations = opts.numTrainingIterations.value
     trainPortionForTest = opts.trainPortionForTest.value

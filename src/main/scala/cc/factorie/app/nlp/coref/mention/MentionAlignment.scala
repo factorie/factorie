@@ -20,7 +20,7 @@ import cc.factorie.app.nlp.coref.{Mention,WithinDocEntity}
  */
 
 object MentionAlignment {
-  def makeLabeledData(f: String, outfile: String ,portion: Double, useEntityTypes: Boolean, options: Coref1Options, map: DocumentAnnotatorMap): (Seq[Document],mutable.HashMap[String,GenericEntityMap[Mention]]) = {
+  def makeLabeledData(f: String, outfile: String ,portion: Double, useEntityTypes: Boolean, options: Coref1Options, map: DocumentAnnotatorMap): (Seq[Document]) = {
     //first, get the gold data (in the form of factorie Mentions)
     val documentsAll = LoadConll2011.loadWithParse(f)
     val documents = documentsAll.take((documentsAll.length*portion).toInt)
@@ -31,10 +31,12 @@ object MentionAlignment {
     //make sure that they have the same names, i.e. they were loaded in the same order and subspampled consistently
     documents.zip(documentsToBeProcessed).foreach(dd => assert(dd._1.name == dd._2.name))
 
-    documentsToBeProcessed.foreach( d => d.tokens.foreach(t => t.attr.remove[PennPosTag]))  //remove the gold POS annotation
-    documentsToBeProcessed.foreach(_.attr.remove[MentionList])
+    //documentsToBeProcessed.foreach( d => d.tokens.foreach(t => t.attr.remove[PennPosTag]))  //remove the gold POS annotation
+    //documents.foreach(_.attr.remove[MentionList])
     //now do POS tagging and parsing on the extracted tokens
-    cc.factorie.util.Threading.parForeach(documentsToBeProcessed, Runtime.getRuntime.availableProcessors())(findMentions(_)(map))
+    //if(options.useNonGoldBoundaries){
+    //  cc.factorie.util.Threading.parForeach(documentsToBeProcessed, Runtime.getRuntime.availableProcessors())(findMentions(_)(map))
+    //}
 
     //these are the offsets that mention boundary alignment will consider
     //the order of this array is very important, so that it will take exact string matches if they exist
@@ -58,7 +60,7 @@ object MentionAlignment {
     println("precision = " + numCorrect/numDetected)
     println("recall = " + numCorrect/numGT)
 
-    (documentsToBeProcessed  , entityMaps)
+    (documentsToBeProcessed)
   }
 
 

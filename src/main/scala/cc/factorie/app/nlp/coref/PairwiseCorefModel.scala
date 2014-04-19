@@ -10,6 +10,8 @@ import cc.factorie.util.BinarySerializer
 import cc.factorie.util.coref.GenericEntityMap
 import cc.factorie.variable.{VectorDomain, DiscreteDomain, CategoricalVectorDomain, CategoricalDomain}
 import cc.factorie.model.Parameters
+import scala.collection.mutable
+import cc.factorie.app.nlp.coref.DefaultHashMap
 
 /**
  * User: apassos
@@ -17,7 +19,7 @@ import cc.factorie.model.Parameters
  * Time: 12:20 PM
  */
 
-trait CorefModel extends app.classify.backend.OptimizablePredictor[Double,Tensor1] with Parameters {
+trait CorefModel extends Parameters {
   val MentionPairFeaturesDomain = new CategoricalVectorDomain[String] {
     dimensionDomain.maxSize = 1e6.toInt
     dimensionDomain.growPastMaxSize = false
@@ -67,7 +69,7 @@ trait CorefModel extends app.classify.backend.OptimizablePredictor[Double,Tensor
 
 }
 
-abstract class PairwiseCorefModel extends CorefModel{
+abstract class PairwiseCorefModel extends app.classify.backend.OptimizablePredictor[Double,Tensor1] with CorefModel{
   def getExample(label: MentionPairLabel, scale: Double): Example = new PredictorExample(this, label.features.value, if (label.target.categoryValue == "YES") 1 else -1, OptimizableObjectives.hingeScaledBinary(1.0, 3.0))
 
 }
@@ -132,7 +134,7 @@ class StructuredCorefModel extends CorefModel {
     BinarySerializer.deserialize(this, stream)
     val newLexicalCounts = new LexicalCounter(headWordCounts,firstWordCounts,lastWordCounts,precWordCounts,followWordCounts,classCounts,shapeCounts)
     stream.close()
-    model.CorefTokenFrequencies.lexicalCounter = newLexicalCounts
+    CorefTokenFrequencies.lexicalCounter = newLexicalCounts
     MentionPairFeaturesDomain.freeze()
   }
 
@@ -187,7 +189,7 @@ class StructuredCorefModel extends CorefModel {
     val scores = new Array[Array[Double]](mentionGraph.graph.length)
     for (i <- 0 until mentionGraph.graph.length) {
       scores(i) = new Array[Double](i+1)
-      for (j <- 0 until mentionGraph.graph(i).length) {
+      for (j <- 0 until mentionGraph.graph(i).length; if(!mentionGraph.prunedEdges(i)(j))) {
         require(mentionGraph.features(i)(j).domain.dimensionSize > 0)
         scores(i)(j) = predict(mentionGraph.features(i)(j).value)
       }
@@ -199,9 +201,10 @@ class StructuredCorefModel extends CorefModel {
     val marginals = new Array[Array[Double]](mentionGraph.graph.length)
     for (i <- 0 until mentionGraph.graph.length) {
       var normalizer = 0.0
-      val goldAntecedents = if (gold) mentionGraph.graph(i).filter(p => p.initialValue) else null
+      val goldAntecedents = if (gold) mentionGraph.graph(i).filter(p => p != null && p.initialValue) else null
       marginals(i) = Array.fill(mentionGraph.graph(i).length)(0.0)
       for(edgeIdx<- 0 until mentionGraph.graph(i).length){
+        if(!mentionGraph.prunedEdges(i)(edgeIdx)){
         val edge = mentionGraph.graph(i)(edgeIdx)
         if (!gold || goldAntecedents.contains(edge)) {
           //pair loss score is set at graph generation
@@ -210,7 +213,7 @@ class StructuredCorefModel extends CorefModel {
           normalizer += unnormalizedProb
         } else {
           marginals(i)(edgeIdx) = 0.0
-        }
+        } }else marginals(i)(edgeIdx) = 0.0
       }
       for(edgeIdx<- 0 until mentionGraph.graph(i).length){
         marginals(i)(edgeIdx) = if(normalizer == 0) 0.0 else marginals(i)(edgeIdx) / normalizer
@@ -232,13 +235,13 @@ class StructuredCorefModel extends CorefModel {
   def computeLikelihood( mentionGraph: MentionGraph, goldMarginal: Array[Array[Double]],predictedMarginalScores: Array[Array[Double]]): Double = {
     var likelihood = 0.0
     for (currIdx <- 0 to mentionGraph.graph.length-1) {
-      var goldAntecedents = mentionGraph.doc.coref.mentions(mentionGraph.doc.coref.entityFromKey(mentionGraph.orderedMentionList(currIdx).mention))
-      if(goldAntecedents.isEmpty) goldAntecedents = Set(mentionGraph.orderedMentionList(currIdx).mention)//Set(currentMention.mention)
+      var goldAntecedents = if(mentionGraph.orderedMentionList(currIdx).entity ne null) mentionGraph.orderedMentionList(currIdx).entity.mentions else Iterable.empty
+      if(goldAntecedents.isEmpty) goldAntecedents = Set(mentionGraph.doc.coref.mentions.toSeq(currIdx))//Set(currentMention.mention)
       var currProb = 0.0
       for (edgeLink <- goldAntecedents) {
-        val linkedIdx = mentionGraph.orderedMentionList.indexOf(edgeLink)
-        if(currIdx == -1 | linkedIdx == -1) currProb += 0.0
-        else currProb += goldMarginal(currIdx)(linkedIdx) - predictedMarginalScores(currIdx)(linkedIdx)
+        val edgeIdx = mentionGraph.orderedMentionList.indexOf(edgeLink)
+        if(currIdx == -1 || edgeIdx == -1 || mentionGraph.prunedEdges(currIdx)(edgeIdx)) currProb += 0.0
+        else currProb += goldMarginal(currIdx)(edgeIdx) - predictedMarginalScores(currIdx)(edgeIdx)
       }
       var currLogProb = Math.log(currProb)
       if (currLogProb.isInfinite) {
@@ -250,7 +253,7 @@ class StructuredCorefModel extends CorefModel {
   }
 }
 
-class GraphExample[Output, Prediction, Input<:MentionGraph](model: ProbabilisticCorefModel, input: Input) extends Example {
+class GraphExample[Output, Prediction, Input<:MentionGraph](model: StructuredCorefModel, input: Input) extends Example {
   def accumulateValueAndGradient(value: DoubleAccumulator, gradient: WeightsMapAccumulator) {
     val scores = model.scoreGraph(input)
     //Add a parameter if we want to do gold only? Or should this be handled further up

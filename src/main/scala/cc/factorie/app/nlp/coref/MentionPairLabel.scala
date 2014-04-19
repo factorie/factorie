@@ -2,13 +2,15 @@ package cc.factorie.app.nlp.coref
 
 import cc.factorie.la.{Tensor1, SparseTensor, GrowableSparseBinaryTensor1}
 import cc.factorie.variable.{LabeledCategoricalVariable, BinaryFeatureVectorVariable}
-import cc.factorie.app.nlp.coref.mention.{CorefFeatures,MentionCharacteristics}
+import cc.factorie.app.nlp.coref.{CorefFeatures,MentionCharacteristics}
+import scala.collection.mutable
+import cc.factorie.app.nlp.{Token, Document}
 
 /** A binary feature vector for the features of a mention pair.
     Here, mention1 is the mention to the right.
     @author Alexandre Passos
  */
-class MentionPairFeatures(val model: PairwiseCorefModel, val mention1:Mention, val mention2:Mention, mentions: Seq[Mention], options: Coref1Options) extends BinaryFeatureVectorVariable[String] {
+class MentionPairFeatures(val model: CorefModel, val mention1:Mention, val mention2:Mention, mentions: Seq[Mention], options: Coref1Options) extends BinaryFeatureVectorVariable[String] {
   {
     val t = new GrowableSparseBinaryTensor1(domain.dimensionDomain)
     t.sizeHint(if (options.conjunctionStyle == ConjunctionOptions.SLOW_CONJUNCTIONS) 650 else 70)
@@ -22,7 +24,7 @@ class MentionPairFeatures(val model: PairwiseCorefModel, val mention1:Mention, v
   val mergeableFeatures = collection.mutable.Set[String]()
   def bin(value: Int, bins: Seq[Int]): Int = math.signum(value) * (bins :+ Int.MaxValue).indexWhere(_ > math.abs(value))
   val pfx =  mentType(mention1) +":" + mentType(mention2)
-  def mentType(mention:Mention): String = if (mention.attr[MentionCharacteristics].isPRO) "pro" else "non"
+  def mentType(mention:Mention): String = if (mention.phrase.isPronoun) "pro" else "non"
 
   def addFeature(f: String) {
     if(options.trainSeparatePronounWeights){
@@ -51,7 +53,7 @@ class MentionPairFeatures(val model: PairwiseCorefModel, val mention1:Mention, v
       conjunctionCalculated = true
     }
   }
-  def computeFeatures() { computeBasicFeatures(); computeConjunctionFeatures() }
+  def computeFeatures() { computeBasicFeatures();}// computeConjunctionFeatures() }
 
   def addMergeableFeature(f: String) {
     if (options.mergeFeaturesAtAll) {
@@ -143,7 +145,7 @@ class MentionPairFeatures(val model: PairwiseCorefModel, val mention1:Mention, v
     addMergeableFeature("etm" + entityTypeMatch)
     addMergeableFeature("lhp" + CorefFeatures.headWordsCross(mention1, mention2, model))
     if (mention1.phrase.sentence == mention2.phrase.sentence) addMergeableFeature("ss") // false values of this feature are not included in Roth's system
-    CorefFeatures.matchingTokensRelations(mention1, mention2).foreach(r => addMergeableFeature("apr" + r))
+    //CorefFeatures.matchingTokensRelations(mention1, mention2).foreach(r => addMergeableFeature("apr" + r))
 
     if (mention1.phrase.head.string.toLowerCase == mention2.phrase.head.string.toLowerCase)
       addMergeableFeature("bM")
@@ -179,4 +181,194 @@ class MentionPairLabel(val model: PairwiseCorefModel, val mention1:Mention, val 
   val features = new MentionPairFeatures(model, mention1, mention2, mentions, options)
 }
 
+
+
+
+object LexicalCounter {
+  // Used for definiteness ablations
+  val dets1 = Set("the", "a", "an")
+  val dets2 = Set("some", "all", "more", "no", "one", "two", "three", "any", "other", "many", "such", "both")
+  val dems = Set("this", "that", "these", "those")
+  val poss = Set("his", "their", "its", "our", "her", "my", "your")
+  val mods = Set("new", "last", "former", "public", "political", "vice");
+  val nats = Set ("china", "u.s.", "foreign", "taiwan", "israeli", "national", "american", "palestinian", "chinese", "federal", "japan")
+  val roles = Set("mr.", "reporter", "president")
+  val defaultCutoff = 20
+
+  def countWordTypes(nonPronouns: Seq[MentionCharacteristics],specificWordFunc: (MentionCharacteristics) => String, cutoff:Int = defaultCutoff): DefaultHashMap[String,Int] = {
+    countAndPrune(nonPronouns.map(specificWordFunc),cutoff)
+  }
+
+  def countLexicalItems(mentionList:Seq[Mention],trainDocs:Seq[Document], cutoff: Int):LexicalCounter = {
+    val nonPronouns = mentionList.filter(!_.attr[MentionCharacteristics].isPRO)
+    // HEAD WORDS
+    val allHeadWordsInTrain = nonPronouns.map(_.attr[MentionCharacteristics].lowerCaseHead)
+    val headWordCounts = countAndPrune(allHeadWordsInTrain, cutoff)
+    // FIRST WORDS
+    val allFirstWordsInTrain = nonPronouns.flatMap(mention => {
+      val words = mention.phrase.tokens
+      if (words.size > 1) Seq[String](words(0).string.toLowerCase) else Seq[String]()
+    })
+    val firstWordCounts = countAndPrune(allFirstWordsInTrain, cutoff)
+
+    // LAST WORDS
+    val allLastWordsInTrain = nonPronouns.flatMap(mention => {
+      val words = mention.phrase.tokens
+      if (words.size > 1 && mention.phrase.last.position - 1 != mention.phrase.start) Seq[String](words(words.size - 1).string.toLowerCase) else Seq[String]()
+    })
+    val lastWordCounts = countAndPrune(allLastWordsInTrain, cutoff)
+    // PENULTIMATE WORDS
+    val allPenultimateWordsInTrain = nonPronouns.flatMap(mention => {
+      val words = mention.phrase.tokens
+      if (words.size > 2) Seq[String](words(words.size - 2).string.toLowerCase) else Seq[String]()
+    })
+    val penultimateWordCounts = countAndPrune(allPenultimateWordsInTrain, cutoff)
+    // SECOND WORDS
+    val allSecondWordsInTrain = nonPronouns.flatMap(mention => {
+      val words = mention.phrase.tokens
+      if (words.size > 3) Seq[String](words(1).string.toLowerCase) else Seq[String]()
+    })
+    val secondWordCounts = countAndPrune(allSecondWordsInTrain, cutoff)
+    // PRECEDING WORDS
+    val allPrecedingWordsInTrain = mentionList.map(m => getTokenAtOffset(m.phrase.tokens(0),-1).toLowerCase)
+    val precedingWordCounts = countAndPrune(allPrecedingWordsInTrain, cutoff)
+    // FOLLOWING WORDS
+    val allFollowingWordsInTrain = mentionList.map(mention => getTokenAtOffset(mention.phrase.last,+1).toLowerCase)
+    val followingWordCounts = countAndPrune(allFollowingWordsInTrain, cutoff)
+    // PRECEDING BY 2 WORDS
+    val allPrecedingBy2WordsInTrain = mentionList.map(m=> getTokenAtOffset(m.phrase.tokens(0),-2).toLowerCase)
+    val precedingBy2WordCounts = countAndPrune(allPrecedingBy2WordsInTrain, cutoff)
+    // FOLLOWING BY 2 WORDS
+    val allFollowingBy2WordsInTrain = mentionList.map(mention => getTokenAtOffset(mention.phrase.last,+1).toLowerCase)
+    val followingBy2WordCounts = countAndPrune(allFollowingBy2WordsInTrain, cutoff)
+    // GOVERNOR WORDS
+    //val allGovernorWordsInTrain = mentionList.map(mention => mention.governor.toLowerCase)
+    //val governorWordCounts = countAndPrune(allGovernorWordsInTrain, cutoff);
+
+    // PREFIXES AND SUFFIXES
+    val allPrefixCounts = new DefaultHashMap[String,Int](0)
+    val allSuffixCounts = new DefaultHashMap[String,Int](0)
+    val allShapeCounts = new DefaultHashMap[String,Int](0)
+    val allClassCounts = new DefaultHashMap[String,Int](0)
+
+    for (trainDoc <- trainDocs; sentence <- trainDoc.sentences; word <- sentence) {
+      val text = word.string
+      allShapeCounts(cc.factorie.app.strings.stringShape(text,2)) += 1//incrementCount(NerExample.shapeFor(word), 1.0)
+      allClassCounts(classFor(word).toString())+=1
+      if (text.size >= 1) {
+        allPrefixCounts(text.substring(0, 1).toString())+=1
+        allSuffixCounts(text.substring(text.length - 1))+=1
+      }
+      if (text.size >= 2) {
+        allPrefixCounts(text.substring(0, 2)) += 1
+        allSuffixCounts(text.substring(text.size - 2))+=1
+      }
+      if (text.size >= 3) {
+        allPrefixCounts(text.substring(0, 2)) += 1
+        allSuffixCounts(text.substring(text.size - 2))+=1
+      }
+    }
+    prune(allPrefixCounts,cutoff)
+    prune(allSuffixCounts,cutoff)
+    prune(allShapeCounts,cutoff)
+    prune(allClassCounts,cutoff)
+    //println(allPrefixCounts.size + " prefixes: top 100 = " + GUtil.getTopNKeysSubCounter(allPrefixCounts, 100).toString)
+    //Logger.logss(allSuffixCounts.size + " suffixes: top 100 = " + GUtil.getTopNKeysSubCounter(allSuffixCounts, 100).toString)
+    //Logger.logss(allShapeCounts.size + " shapes: top 100 = " + GUtil.getTopNKeysSubCounter(allShapeCounts, 100).toString)
+    //Logger.logss(allClassCounts.size + " classes: top 100 = " + GUtil.getTopNKeysSubCounter(allClassCounts, 100).toString)
+    new LexicalCounter(headWordCounts, firstWordCounts, lastWordCounts, /*penultimateWordCounts, secondWordCounts*/ precedingWordCounts, followingWordCounts, /*precedingBy2WordCounts, followingBy2WordCounts,  allPrefixCounts, allSuffixCounts, */allShapeCounts,allClassCounts)
+  }
+  private def countAndPrune(words: Seq[String], cutoff: Int): DefaultHashMap[String,Int] = {
+    val counts = new DefaultHashMap[String,Int](0)
+    words.foreach(key=>counts(key) += 1)
+    counts.foreach{case (key,value) => if(value < cutoff) counts.remove(key)}
+    counts
+  }
+
+  private def prune(counts: DefaultHashMap[String,Int],cutoff:Int):DefaultHashMap[String,Int]={
+    counts.foreach{case (key,value) => if(value < cutoff) counts.remove(key)}
+    counts
+  }
+
+  def getTokenAtOffset(token: Token,offset:Int): String = { val t = token.next(offset); "W@"+offset+(if (t ne null) t.string else null) }
+
+  def classFor(word:Token):String = {
+    val sb = new StringBuilder
+    val wlen = word.string.length()
+    val numCaps = (word.string: Seq[Char]).count(_.isUpper)
+    val hasDigit = word.containsDigit
+    val hasDash = word.string.contains('-')
+    val hasLower = numCaps < wlen
+    val ch0 = word.string(0)
+    val lowered = word.string.toLowerCase
+    if (Character.isUpperCase(ch0)|| Character.isTitleCase(ch0)) {
+      if (numCaps == 1) {
+        sb.append("-INITC")
+      } else {
+        sb.append("-CAPS")
+      }
+    } else if (!Character.isLetter(ch0) && numCaps > 0) {
+      sb.append("-CAPS")
+    } else if (hasLower) {
+      sb.append("-LC")
+    }
+
+    if (hasDigit) {
+      sb.append("-NUM")
+    }
+    if (hasDash) {
+      sb.append("-DASH")
+    }
+    if (lowered.endsWith("s") && wlen >= 3) {
+      // here length 3, so you don't miss out on ones like 80s
+      val ch2 = lowered.charAt(wlen - 2)
+      // not -ess suffixes or greek/latin -us, -is
+      if (ch2 != 's' && ch2 != 'i' && ch2 != 'u') {
+        sb.append("-s")
+      }
+    } else if (word.string.length() >= 5 && !hasDash && !(hasDigit && numCaps > 0)) {
+      if (lowered.endsWith("ed")) {
+        sb.append("-ed")
+      } else if (lowered.endsWith("ing")) {
+        sb.append("-ing")
+      } else if (lowered.endsWith("ion")) {
+        sb.append("-ion")
+      } else if (lowered.endsWith("er")) {
+        sb.append("-er")
+      } else if (lowered.endsWith("est")) {
+        sb.append("-est")
+      } else if (lowered.endsWith("ly")) {
+        sb.append("-ly")
+      } else if (lowered.endsWith("ity")) {
+        sb.append("-ity")
+      } else if (lowered.endsWith("y")) {
+        sb.append("-y")
+      } else if (lowered.endsWith("al")) {
+        sb.append("-al")
+      }
+    }
+    sb.toString()
+  }
+
+}
+class LexicalCounter(val headWordCounts: DefaultHashMap[String,Int],
+                     val firstWordCounts: DefaultHashMap[String,Int] = null,
+                     val lastWordCounts: DefaultHashMap[String,Int] = null,
+                     //val penultimateWordCounts: DefaultHashMap[String,Int],
+                     //val secondWordCounts: DefaultHashMap[String,Int],
+                     val precedingWordCounts: DefaultHashMap[String,Int] = null,
+                     val followingWordCounts: DefaultHashMap[String,Int] = null,
+                     //val precedingBy2WordCounts: DefaultHashMap[String,Int],
+                     //val followingBy2WordCounts: DefaultHashMap[String,Int],
+                     //val commonGovernorWordCounts: DefaultHashMap[String,Int],
+                     //val prefixCounts: DefaultHashMap[String,Int],
+                     //val suffixCounts: DefaultHashMap[String,Int],
+                     val shapeCounts: DefaultHashMap[String,Int] = null,
+                     val classCounts: DefaultHashMap[String,Int] = null
+                      ) extends Serializable {
+}
+
+class DefaultHashMap[String,Int](val defaultValue: Int) extends mutable.HashMap[String,Int] {
+  override def default(key:String) = defaultValue
+}
 

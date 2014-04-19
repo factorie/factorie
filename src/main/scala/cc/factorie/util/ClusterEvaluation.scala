@@ -31,11 +31,11 @@ object PairwiseClusterEvaluation extends ClusterF1Evaluation with FastLogging {
     for (mid <- points) {
       // get the clusters
       val predId = predicted.clusterId(mid)
-      val predCluster = predicted.pointIds(predId)
+      val predCluster = if(predId != null)predicted.pointIds(predId) else Iterable.empty
       val trueId = truth.clusterId(mid)
-      val trueCluster = truth.pointIds(trueId)
+      val trueCluster = if(trueId != null)truth.pointIds(trueId) else Iterable.empty
       // calculate overlap
-      val clusterOverlap: Double = predicted.intersectionSize(predId, trueId).doubleValue // This is very slow.  We should cache these intersectionSizes
+      val clusterOverlap: Double =  if(trueId != null&&predId!=null)predicted.intersectionSize(predId, trueId).doubleValue else 0.0 // This is very slow.  We should cache these intersectionSizes
       // update metrics
       tp += clusterOverlap - 1.0
       tn += total - predCluster.size - trueCluster.size + clusterOverlap
@@ -61,21 +61,130 @@ object BCubedClusterEvaluation extends ClusterF1Evaluation with FastLogging {
       for (mid <- predicted.pointIds) {
         // get pred and true clusters
         val predId = predicted.clusterId(mid)
-        val predCluster = predicted.pointIds(predId)
+        val predCluster = if(predId != null) predicted.pointIds(predId) else Iterable.empty
         val trueId = truth.clusterId(mid)
-        val trueCluster = truth.pointIds(trueId)
+        val trueCluster = if(trueId != null) truth.pointIds(trueId) else Iterable.empty
         // calculate overlap between the two
-        val clusterOverlap: Int = predicted.intersectionSize(predId, trueId)
-        // add to metric
+        val clusterOverlap: Int = if(trueId != null&&predId!=null)predicted.intersectionSize(predId, trueId) else 0
+        // add to metric                                             123
         // prec = overlap / pred.size
         result.precisionNumerator += clusterOverlap.doubleValue / predCluster.size.doubleValue
         // rec = overlap / truth.size
-        result.recallNumerator += clusterOverlap.doubleValue / trueCluster.size.doubleValue
+        result.recallNumerator += (if(trueCluster.size ==0) 0.0 else clusterOverlap.doubleValue / trueCluster.size.doubleValue)
       }
       result
     }
   }
 
+object BCubedNoSingletonClusterEvaluation extends ClusterF1Evaluation with FastLogging {
+  def apply[E,M](predicted: EvaluatableClustering[E,M], truth: EvaluatableClustering[E,M]): F1Evaluation = {
+    val result = new F1Evaluation
+    //val kIndex = Indexa(keys)
+    //val rIndex = Indexa(response)
+    var acumP = 0//result.precisionNumerator
+    var acumR = 0
+    for(rChain <- predicted.clusterIds; m <- predicted.pointIds(rChain)) {
+      val kChain = truth.clusterId(m)
+      var ci = 0
+      val ri = predicted.pointIds(rChain).size
+      val ki = if (kChain != null) truth.pointIds(kChain).size else 0
 
+      ci += predicted.intersectionSize(rChain, kChain)
+
+      acumP += (if(ri != 0) ci / ri else 0)
+      acumR += (if(ki != 0) ci / ki else 0)
+    }
+
+    // Mentions in key
+    var keyMentions = 0
+    for(kEntity <- truth.clusterIds) {
+      keyMentions += truth.pointIds(kEntity).size
+    }
+
+    // Mentions in response
+    var resMentions = 0
+    for(rEntity <- predicted.clusterIds) {
+      resMentions += predicted.pointIds(rEntity).size
+    }
+    result.recallNumerator += acumR //$denpre ? $numpre / $denpre : 0;
+    result.recallDenominator += keyMentions
+    result.precisionNumerator += acumP
+    result.precisionDenominator += resMentions
+    //my $recall = $denrec ? $numrec / $denrec : 0;
+
+//      if ($recall + $precisio) {
+//        $f1 = 2 * $precisio * $recall / ($precisio + $recall);
+//      }
+//    }
+
+//    print "Recall: ($numrec / $denrec) " . int($recall*10000)/100 . '%';
+//    print "\tPrecision: ($numpre / $denpre) " . int($precisio*10000)/100 . '%';
+//    print "\tF1: " . int($f1*10000)/100 . "\%\n";
+
+    //ShowRPF($acumR, $keymentions, $acumP, $resmentions) if ($VERBOSE);
+  //(acumR, keyMentions, acumP, resMentions)
+  result
+  }
+}
+/*
+foreach document {
+           foreach cluster in returned answer {
+                   foreach mention in cluster {
+                           val truth = trueCluster(mention);
+                           val ci = overlap(truth, cluster)
+                           val ri = size(cluster);
+                           val ki = size(truth);
+
+                           Prec += ci / ri;
+                           Rec += ci / ki;
+                   }
+           }
+      }
+
+
+{
+  my ($keys, $response) = @_;
+  my $kIndex = Indexa($keys);
+  my $rIndex = Indexa($response);
+  my $acumP = 0;
+  my $acumR = 0;
+  foreach my $rChain (@$response) {
+    foreach my $m (@$rChain) {
+      my $kChain = (defined($kIndex->{$m})) ? $keys->[$kIndex->{$m}] : [];
+      my $ci = 0;
+      my $ri = scalar(@$rChain);
+      my $ki = scalar(@$kChain);
+
+      # common mentions in rChain and kChain => Ci
+      foreach my $mr (@$rChain) {
+        foreach my $mk (@$kChain) {
+          if ($mr == $mk) {
+            $ci++;
+            last;
+          }
+        }
+      }
+
+      $acumP += $ci / $ri if ($ri);
+      $acumR += $ci / $ki if ($ki);
+    }
+  }
+
+  # Mentions in key
+  my $keymentions = 0;
+  foreach my $kEntity (@$keys) {
+    $keymentions += scalar(@$kEntity);
+  }
+
+  # Mentions in response
+  my $resmentions = 0;
+  foreach my $rEntity (@$response) {
+    $resmentions += scalar(@$rEntity);
+  }
+
+  ShowRPF($acumR, $keymentions, $acumP, $resmentions) if ($VERBOSE);
+  return($acumR, $keymentions, $acumP, $resmentions);
+}
+ */
 
 // TODO Move BCubedNoSingletons, MUC and CEAF, etc. here from cc.factorie.util.coref. -akm

@@ -15,7 +15,7 @@ object LoadConll2011 {
 
   //this is used when loading gold entity type annotation. If this variable is set to true, the loader
   // only uses the entity type if its boundaries exactly match the boundaries of the annotated mention
-  val useExactEntTypeMatch = true
+  val useExactEntTypeMatch = false
 
   // to be used with test-with-gold-mention-boundaries
   val autoFileFilter = new java.io.FileFilter() {
@@ -56,7 +56,6 @@ object LoadConll2011 {
     }
 
     var coref: WithinDocCoref = null
-    var mentionList = new ListBuffer[Mention]() // TODO By using WithinDocCoref this should no longer be necessary
     var currDoc: Document = null
     var currSent: Sentence = null
     var currEntId: Int = 0
@@ -84,14 +83,16 @@ object LoadConll2011 {
         if (docs.length == limitNumDocuments) break()
         val fId = l.split("[()]")(1) + "-" + l.takeRight(3)
         currDoc = new Document("").setName(fId)
+        currDoc.getCoref
         coref = currDoc.getTargetCoref // This also puts a newly created WithinDocCoref in currDoc.attr.
         currDoc.annotators(classOf[Token]) = UnknownDocumentAnnotator.getClass // register that we have token boundaries
         currDoc.annotators(classOf[Sentence]) = UnknownDocumentAnnotator.getClass // register that we have token boundaries
         //currDoc.attr += new FileIdentifier(fId, true, fId.split("/")(0), "CoNLL")
         docs += currDoc
       } else if (l.startsWith("#end document")) {
-        currDoc.attr += new MentionList(mentionList.toList)
-        mentionList.clear()
+        //currDoc.attr += new MentionList(mentionList.toList)
+        //mentionList.clear()
+        coref = null
         currDoc = null
         currEntId = 0
         mentions.clear()
@@ -171,8 +172,8 @@ object LoadConll2011 {
             val parentPhrase = if(!parseStack.isEmpty) parseStack(0)._1 else ""
             if (phrase == "NP") {
               val span = new TokenSpan(currDoc.asSection, start, docTokInd - start + 1)
-              val m = span.document.coref.addMention(new Phrase(span, getHeadToken(span)))
-              mentionList += m
+              val m = coref.addMention(new Phrase(span, getHeadToken(span)))
+              //mentionList += m
               numMentions += 1
 
               if(currentlyUnresolvedClosedEntityTypeBracket && (entityTypeStart >= start)) {
@@ -218,7 +219,7 @@ object LoadConll2011 {
         //this makes mentions for the ground truth mentions that weren't NPs
         for ((number,start) <- closedEntities.filter(i =>  i ne null)) {
           val span = new TokenSpan(currDoc.asSection, start, docTokInd - start + 1)
-          val m = span.document.coref.addMention(new Phrase(span, getHeadToken(span)))
+          val m = coref.addMention(new Phrase(span, getHeadToken(span)))
           if(currentlyUnresolvedClosedEntityTypeBracket && (entityTypeStart >= start)){
             val exactMatch = (entityTypeStart == start) && thisTokenClosedTheEntityType
             if(!useExactEntTypeMatch ||(useExactEntTypeMatch && exactMatch)){
@@ -227,7 +228,7 @@ object LoadConll2011 {
               m.phrase.attr += new OntonotesPhraseEntityType(m.phrase, "O")
             currentlyUnresolvedClosedEntityTypeBracket = false
           }else
-            m.attr += new OntonotesPhraseEntityType(m.phrase, "O")
+            m.phrase.attr += new OntonotesPhraseEntityType(m.phrase, "O")
 
           numMentions += 1
           val key = fields(0) + "-" + number

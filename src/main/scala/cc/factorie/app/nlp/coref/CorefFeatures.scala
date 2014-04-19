@@ -1,4 +1,4 @@
-package cc.factorie.app.nlp.coref.mention
+package cc.factorie.app.nlp.coref
 
 import cc.factorie.app.nlp.coref._
 import cc.factorie.app.nlp.phrase._
@@ -7,6 +7,7 @@ import cc.factorie.app.nlp.{Token, TokenSpan}
 import cc.factorie.app.strings.Stopwords
 import scala.collection.mutable
 import cc.factorie.app.nlp.phrase.{Number, Gender}
+import cc.factorie.app.nlp.ner.OntonotesEntityTypeDomain
 
 //object CorefMention{
 //  def mentionToCorefMention(m: Mention): CorefMention = {
@@ -124,7 +125,7 @@ class MentionCharacteristics(val mention: Mention) {
   lazy val initials: String =
       mention.phrase.tokens.map(_.string).filterNot(lexicon.iesl.OrgSuffix.contains).filter(t => t(0).isUpper).map(_(0)).mkString("")
   //lazy val predictEntityType: String = m.mention.attr[MentionEntityType].categoryValue
-  lazy val predictEntityType: String = mention.phrase.attr[OntonotesEntityType].categoryValue // TODO Why not just name this "entityTypeCategory"? And we should use the intValue instead anyway! -akm?
+  lazy val predictEntityType: Int = mention.phrase.attr[OntonotesPhraseEntityType].intValue // TODO Why not just name this "entityTypeCategory"? And we should use the intValue instead anyway! -akm?
   lazy val demonym: String = lexicon.iesl.DemonymMap.getOrElse(headPhraseTrim, "")
 
   lazy val capitalization: Char = {
@@ -328,11 +329,11 @@ object CorefFeatures {
     val g2 = m1.phrase.attr[Gender].intValue
     import GenderDomain._
     // TODO This condition could be much simplified 
-    if (g1 == UNKNOWN || g2 == UNKNOWN)
+    if (g1 == GenderDomain.UNKNOWN || g2 == GenderDomain.UNKNOWN)
       'u'
-    else if (g1 == PERSON && (g2 == MALE || g2 == FEMALE || g2 == PERSON))
+    else if (g1 == GenderDomain.PERSON && (g2 == GenderDomain.MALE || g2 == GenderDomain.FEMALE || g2 == GenderDomain.PERSON))
       'u'
-    else if (g2 == PERSON && (g1 == MALE || g1 == FEMALE || g1 == PERSON))
+    else if (g2 == GenderDomain.PERSON && (g1 == GenderDomain.MALE || g1 == GenderDomain.FEMALE || g1 == GenderDomain.PERSON))
       'u'
     else if (g1 == g2)
       't'
@@ -340,11 +341,11 @@ object CorefFeatures {
       'f'
   }
 
-  def headWordsCross(m1:Mention, m2:Mention, model: PairwiseCorefModel): String = {
+  def headWordsCross(m1:Mention, m2:Mention, model: CorefModel): String = {
     val w1 = m2.attr[MentionCharacteristics].headPhraseTrim
     val w2 = m1.attr[MentionCharacteristics].headPhraseTrim
-    val rare1 = 1.0 / model.MentionPairLabelThing.tokFreq.getOrElse(w1.toLowerCase, 1).toFloat > 0.1
-    val rare2 = 1.0 / model.MentionPairLabelThing.tokFreq.getOrElse(w2.toLowerCase, 1).toFloat > 0.1
+    val rare1 = 1.0 / model.CorefTokenFrequencies.lexicalCounter.headWordCounts.getOrElse(w1.toLowerCase, 1).toFloat > 0.1
+    val rare2 = 1.0 / model.CorefTokenFrequencies.lexicalCounter.headWordCounts.getOrElse(w2.toLowerCase, 1).toFloat > 0.1
     if (rare1 && rare2 && w1.equalsIgnoreCase(w2))
       "Rare_Duplicate"
     else
@@ -397,20 +398,20 @@ object CorefFeatures {
     val eType1 = m2c.predictEntityType
     val eType2 = m1c.predictEntityType
 
-    val m1head = m2.phrase
-    val m2head = m1.phrase
-    val m1Words = m1head.phrase.split("\\s")
-    val m2Words = m2head.phrase.split("\\s")
+    val m1head = m2c.lowerCaseHead
+    val m2head = m1c.lowerCaseHead
+    val m1Words = m1.phrase.tokens.map(_.string)
+    val m2Words = m2.phrase.tokens.map(_.string)
 
-    if (m2c.isProper && m1c.isProper && m2c.predictEntityType.equals(m1c.predictEntityType) && (m2c.predictEntityType.equals("PERSON") || m2c.predictEntityType.equals("GPE")))
+    if (m2c.isProper && m1c.isProper && m2c.predictEntityType.equals(m1c.predictEntityType) && (m2c.predictEntityType.equals(OntonotesEntityTypeDomain.PERSON) || m2c.predictEntityType.equals(OntonotesEntityTypeDomain.GPE)))
       return m2.phrase.last.string.toLowerCase equals m1.phrase.last.string.toLowerCase
 
-    else if ((eType1.equals("ORG") || eType1.equals("unknown")) && (eType2.equals("ORG") || eType2.equals("unknown"))) {
+    else if ((eType1.equals(OntonotesEntityTypeDomain.ORG) || eType1.equals(OntonotesEntityTypeDomain.O)) && (eType2.equals(OntonotesEntityTypeDomain.ORG) || eType2.equals(OntonotesEntityTypeDomain.O))) {
       val (initials, shorter) =
         if (m1Words.length < m2Words.length)
-          (m2c.initials, m1head.phrase)
+          (m2c.initials, m1head)
         else
-          (m1c.initials, m2head.phrase)
+          (m1c.initials, m2head)
       return shorter.replaceAll("[., ]", "") equalsIgnoreCase initials
     }
 
