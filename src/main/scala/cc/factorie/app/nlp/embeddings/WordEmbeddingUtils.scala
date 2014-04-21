@@ -39,7 +39,6 @@ class FastLineReader(file: String, skipBytes: Long = 0, encoding: String = "ISO-
     case false => new BufferedReader(new InputStreamReader(new FileInputStream(file), encoding))
     case true => new BufferedReader(new InputStreamReader(new GZIPInputStream(new FileInputStream(file)), encoding))
   }
-  //println("Default charset of this JVM : " + in.getEncoding() + ", so using " + in.getEncoding() +  " to read the input file")
   in.skip(skipBytes)
   moveToNext()
 
@@ -59,10 +58,6 @@ class FastLineReader(file: String, skipBytes: Long = 0, encoding: String = "ISO-
 
   def hasNext(): Boolean = {
     return sb.length() > 0
-   // val ans = line !=  null && line.size > 0
-   // println("line: " + line + " ans : " + ans)
-   //if (ans == false) in.close()
-   //  return ans
   }
   def next(): String = { moveToNext; sb.toString }
 
