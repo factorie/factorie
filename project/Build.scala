@@ -33,7 +33,7 @@ object Build extends sbt.Build {
     settings(
       organization := "cc.factorie",
       version := "1.0-SNAPSHOT",
-      scalaVersion := "2.10.1",
+      scalaVersion := "2.10.4",
       scalacOptions := Seq("-deprecation", "-unchecked", "-encoding", "utf8"),
       resolvers ++= Dependencies.resolutionRepos,
       libraryDependencies ++= Seq(
@@ -75,7 +75,7 @@ object Dependencies {
     val akka = "com.typesafe.akka" % "akka-actor_2.10" % "2.1.4"
     val jregex = "net.sourceforge.jregex" % "jregex" % "1.2_01"
     val colt = "org.jblas" % "jblas" % "1.2.3"
-    val compiler = "org.scala-lang" % "scala-compiler" % "2.10.1"
+    val compiler = "org.scala-lang" % "scala-compiler" % "2.10.4"
     val junit = "junit" % "junit" % "4.10"
   }
 

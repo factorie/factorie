@@ -1,0 +1,21 @@
+/* Move down content because we have a fixed navbar that is 50px tall */
+body {
+  padding-top: 50px;
+  padding-bottom: 20px;
+}
+.bs-sidebar {
+	padding-top: 30px;
+  padding-bottom: 20px;
+}
+@media (max-width: 767px) {
+  .bs-sidebar.affix {
+    width: 158px;
+    top: 25px;
+  }
+  .bs-sidebar {
+  padding-left: 50px;
+  white-space: normal;
+  word-wrap: normal;
+  word-break: normal;
+}
+}

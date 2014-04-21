@@ -1,23 +1,21 @@
+/*& Factor */
+
 /*&
  * Factor Tutorial
  * ==============
  * 
- * Factors are a container for an ordered set of neighboring variables, 
+ * A Factor is a container for an ordered set of neighboring variables, 
  * and can return "scores" and "statistics" based on values for those neighbors.
  **/
-
 package cc.factorie.tutorial
-
-import org.junit.Assert._
-import cc.factorie._
-import cc.factorie.la._
-import cc.factorie.variable._
-import scala.Tuple2
-import cc.factorie.model._
-import scala.Tuple2
-
-object TutorialFactors {
-  def main(args:Array[String]): Unit = {
+object TutorialFactors extends App {
+  import org.junit.Assert._
+  import cc.factorie._
+  import cc.factorie.la._
+  import cc.factorie.variable._
+  import scala.Tuple2
+  import cc.factorie.model._
+  import scala.Tuple2
     
     // First we'll create some variables for us as Factor neighbors. 
     val v1 = new IntegerVariable(1)
@@ -45,7 +43,7 @@ object TutorialFactors {
      * NegInfinity indicates "impossible values on neighbors".
      * More positive scores indicate higher likelihood.
      * In terms of probabilities these scores can be interpreted as "unnormalized log-probabilities".
-     * If you do have a normalized probability for a factor, the score should be math.log(probability). 
+     * If you do have a normalized probability for a factor, the score should be `math.log(probability)`. 
      **/
     
     // Naturally, then we can get the factor's score for particular values of the neighboring variable(s).
@@ -211,9 +209,7 @@ object TutorialFactors {
       override def statistics(lv1:Label#Value, lv2:Label#Value, lv3:Label#Value, fv2:BooleanValue): Tensor = 
         if (flag1.booleanValue) lv1 outer lv2 else lv1 outer lv3
     }
-    
-
-    
+   
     // Naturally, we can define a class of Factors all sharing the same "score" method
     class MyFactor(n1:IntegerVariable, n2:IntegerVariable) extends Factor2(n1, n2) {
       def score(i:Int, j:Int) = if (i == j) 1.0 else -1.0
@@ -277,7 +273,7 @@ object TutorialFactors {
       }
     }
     println("When scoring "+a1+" the highest scoring label value is "+maxLabeling)
-    
+}
     /*&
      * Of course there is much more rich and efficient support for classification
      * (including pre-built large-vocabulary document classification) available in FACTORIE.
@@ -288,9 +284,3 @@ object TutorialFactors {
      * FACTORIE has special support for representing commonalities between Factors
      * that belong to the same "Family".
      **/
-    
-  }
-  
-}
-
-

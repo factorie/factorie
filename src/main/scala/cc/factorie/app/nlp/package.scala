@@ -39,7 +39,20 @@ package object nlp {
     result
   }
   
-  def bioBoundaries(labels:Seq[String]): Seq[(Int,Int)] = ???
+  def bioBoundaries(labels:Seq[String]): Seq[(Int,Int,String)] = {
+    val result = new scala.collection.mutable.ArrayBuffer[(Int,Int,String)]
+    val strings = labels.map(_.split('-'))
+    val bios = strings.map(_.apply(0))
+    val types = strings.map(a => if (a.length > 1) a(1) else "")
+    var start = -1; var length = 0; var prevType = ""
+    for (i <- 0 until labels.length) {
+      val atBoundary = bios(i) == "B"
+      if (start >= 0 && atBoundary) { result.+=((start, i-start, types(i))); start = -1 }
+      if (types(i) != "" && atBoundary) start = i
+      prevType = types(i)
+    }
+    result
+  }
 
 
   /** Command-line options available on all NLP model trainers.

@@ -53,7 +53,7 @@ $ ./sbt -J-Xmx2G with-nlp-resources:assembly
 
 To get an idea what a simple FACTORIE program might look like, open one of the class files in the tutorial package
 ```
-$ ls factorie/main/scala/cc/factorie/tutorial
+$ ls src/main/scala/cc/factorie/tutorial
 ```
 To run one of these examples using maven type
 ```
