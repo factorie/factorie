@@ -14,8 +14,7 @@ object GoogleEmbedding {
              var D = in.readInt()
              D = if (takeTopN == -1 || D < takeTopN) D else takeTopN
              println("Vocab Size : ${V} dim : ${D}")
-             
-             var i = 0; var j = 0;
+            
              var arr =  new Array[DenseTensor1](V)
              val vocab = new Array[String](V)
              for (v <- 0 until V) { 
