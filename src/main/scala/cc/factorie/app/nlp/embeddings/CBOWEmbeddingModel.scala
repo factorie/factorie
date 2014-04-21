@@ -43,7 +43,7 @@ class CBOWNegSamplingEmbeddingModel(override val opts: EmbeddingOpts) extends Wo
     else return word
   }
 }
-class CBOWNegSamplingExample(model: CBOWNegSamplingEmbeddingModel, word: Int, contexts: Seq[Int], label: Int) extends Example {
+class CBOWNegSamplingExample(model: WordEmbeddingModel, word: Int, contexts: Seq[Int], label: Int) extends Example {
 
   // to understand the gradient and objective refer to : http://arxiv.org/pdf/1310.4546.pdf
   def accumulateValueAndGradient(value: DoubleAccumulator, gradient: WeightsMapAccumulator): Unit = {
