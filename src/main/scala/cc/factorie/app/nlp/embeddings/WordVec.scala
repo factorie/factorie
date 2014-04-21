@@ -1,4 +1,5 @@
 package cc.factorie.app.nlp.embeddings
+import java.nio.charset.Charset
 object WordVec {
   def main(args: Array[String]) {
     val opts = new EmbeddingOpts
