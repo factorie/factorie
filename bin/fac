@@ -41,7 +41,7 @@ FACTORIE commands:
 
   nlp                run NLP server listening on a socket (pos, ner, parse, coref,... available)
   lda                train and use a latent Dirichlet allocation model
-  word2vec           train and learn word embeddings using Skip-Gram and Continuous Bag-Of-Words (CBOW) models
+  word2vec           learn word embeddings using Skip-Gram and Continuous Bag-Of-Words (CBOW) models
 
 Include --help with any option for more information
 EOF
