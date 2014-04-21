@@ -152,7 +152,11 @@ class VocabBuilder(vocab_hash_size: Int = 20e6.toInt, sampling_table_size: Int =
     var running_word_proportion: Double = 0
     for (a <- 0 until vocab_size) {
       train_words_pow += math.pow(vocab(a).cn, power).toLong
-      if (train_words_pow < 0) println("went negative")
+      if (train_words_pow < 0) {
+        println("train_words_pow went negative")
+        println("ERROR: buildSamplingTable failed")
+        return 
+      }
     }
     i = 0
     running_word_proportion = math.pow(vocab(i).cn, power) / train_words_pow.toDouble
