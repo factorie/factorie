@@ -44,7 +44,7 @@ class SkipGramNegSamplingEmbeddingModel(override val opts: EmbeddingOpts) extend
     else return word
   }
 }
-class SkipGramNegSamplingExample(model: WordEmbeddingModel, word: Int, context: Int, label: Int) extends Example {
+class SkipGramNegSamplingExample(model:WordEmbeddingModel, word: Int, context: Int, label: Int) extends Example {
 
   // to understand the gradient and objective refer to : http://arxiv.org/pdf/1310.4546.pdf
   def accumulateValueAndGradient(value: DoubleAccumulator, gradient: WeightsMapAccumulator): Unit = {
