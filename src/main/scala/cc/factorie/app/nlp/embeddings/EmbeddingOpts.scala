@@ -18,7 +18,7 @@ class EmbeddingOpts extends CmdOptions {
   val delta = new CmdOption("delta", 0.1, "DOUBLE", "delta for adaGrad")
 
   // IO Related (MUST GIVE Options)
-  val encoding = new CmdOption("encoding", "ISO-8859-15", "STRING", "use <string> for encoding option. ISO-8859-15 is default")
+  val encoding = new CmdOption("encoding", "UTF8", "STRING", "use <string> for encoding option. ISO-8859-15 is default")
   val saveVocabFile = new CmdOption("save-vocab", "", "STRING", "save vocab file")
   val loadVocabFile = new CmdOption("load-vocab", "", "STRING", "load the vocab file")
   val corpus = new CmdOption("train", "", "STRING", "train file")

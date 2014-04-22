@@ -5,7 +5,7 @@ import java.io.{FileReader, BufferedReader, FileInputStream, InputStreamReader}
 import java.nio.charset.Charset
 import java.util.zip.GZIPInputStream
 
-class FastWordReader(file: String, encoding: String = "ISO-8859-15") extends Iterator[String] {
+class FastWordReader(file: String, encoding: String = "UTF8") extends Iterator[String] {
   private var in = file.endsWith(".gz") match {
     case false => new BufferedReader(new InputStreamReader(new FileInputStream(file), encoding))
     case true => new BufferedReader(new InputStreamReader(new GZIPInputStream(new FileInputStream(file)), encoding))
@@ -31,7 +31,7 @@ class FastWordReader(file: String, encoding: String = "ISO-8859-15") extends Ite
 
 }
 
-class FastLineReader(file: String, skipBytes: Long = 0, encoding: String = "ISO-8859-15") extends Iterator[String] {
+class FastLineReader(file: String, skipBytes: Long = 0, encoding: String = "UTF8") extends Iterator[String] {
   //private var in = new FileReader(file)
   private var sb: StringBuilder = null
   private var line: String = null
@@ -52,8 +52,7 @@ class FastLineReader(file: String, skipBytes: Long = 0, encoding: String = "ISO-
     while (c != -1 && c != '\n') {
       sb.+=(c.toChar) // add the good char
       c = in.read() //  read next char
-    } 
-   // line = in.readLine()
+    }
   }
 
   def hasNext(): Boolean = {

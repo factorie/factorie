@@ -26,8 +26,7 @@ abstract class WordEmbeddingModel(val opts: EmbeddingOpts) extends Parameters {
   private val storeInBinary = opts.binary.value // binary=1 will make both vocab file (optional) and embeddings in .gz file
   private val loadVocabFilename = opts.loadVocabFile.value // load the vocab file. Very useful for large corpus should you run multiple times 
   private val saveVocabFilename = opts.saveVocabFile.value // save the vocab into a file. Next time for the same corpus, load it . Saves lot of time on large corpus
-  private val encoding = opts.encoding.value // Default is ISO-8859-15. Note: Blake server follows iso-5589-1 (david's GoogleEmbeddingcode has this. shouldn;t be ISO-8859-15) or  iso-5589-15 encoding (I see this) ??
-
+  private val encoding = opts.encoding.value // Default is UTF8
   // data structures
   protected var vocab: VocabBuilder = null
   protected var trainer: LiteHogwildTrainer = null // modified version of factorie's hogwild trainer for speed by removing logging and other unimportant things. Expose processExample() instead of processExamples()

@@ -114,7 +114,7 @@ class VocabBuilder(vocab_hash_size: Int = 20e6.toInt, sampling_table_size: Int =
 
   }
   // Vocab IO . Default option of storing is plain txt 
-  def saveVocab(filename: String, binary: Int = 0, encoding: String = "ISO-8859-15"): Unit = {
+  def saveVocab(filename: String, binary: Int = 0, encoding: String = "UTF8"): Unit = {
     var out = binary match {
       case 0 => new java.io.PrintWriter(filename, encoding)
       case 1 => new OutputStreamWriter(new GZIPOutputStream(new BufferedOutputStream(new FileOutputStream(filename))), encoding)
@@ -130,7 +130,7 @@ class VocabBuilder(vocab_hash_size: Int = 20e6.toInt, sampling_table_size: Int =
   // load the vocab file 
   // format should be <word><space><count><newline>
   // will also figure out if filename is binary or not based on filetype
-  def loadVocab(filename: String, encoding: String = "ISO-8859-15"): Unit = {
+  def loadVocab(filename: String, encoding: String = "UTF8"): Unit = {
     var in = filename.endsWith(".gz") match {
       case true => io.Source.fromInputStream(new GZIPInputStream(new FileInputStream(filename)), encoding).getLines
       case false => io.Source.fromFile(filename, encoding).getLines
