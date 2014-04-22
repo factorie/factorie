@@ -35,7 +35,7 @@ class CBOWNegSamplingEmbeddingModel(override val opts: EmbeddingOpts) extends Wo
     }
     return wordCount
   }
-  // subsampling : rejection sampling 
+  // subsampling
   def subSample(word: Int): Int = {
     val prob = vocab.getSubSampleProb(word) // pre-computed to avoid sqrt call every time. Improvement of 10 secs on 100MB data ~ 15 MINs on 10GB
     val alpha = rng.nextInt(0xFFFF) / 0xFFFF.toDouble
