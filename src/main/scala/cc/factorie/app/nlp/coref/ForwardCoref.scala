@@ -106,7 +106,8 @@ abstract class ForwardCorefBase extends CorefSystem[Seq[MentionPairLabel]] {
   }
 
   def infer(coref:WithinDocCoref): WithinDocCoref = {
-    val mentions = coref.mentions.toSeq
+    val mentions = coref.mentions.toSeq//.distinct
+    assert(mentions.forall(m => mentions.count(m2=> m2.phrase.value == m.phrase.value) < 2))
     for (i <- 0 until coref.mentions.size) {
       val m1 = mentions(i)
       val bestCand = getBestCandidate(coref, m1)
@@ -273,11 +274,10 @@ abstract class CorefSystem[CoreferenceStructure] extends DocumentAnnotator{
 
   class CorefTester(scorer: CorefScorer, scorerMutex: Object, val pool: ExecutorService){
     def map(doc: Document): Unit = {
-       val fId = doc.name
+      val fId = doc.name
       assert(doc.targetCoref ne null,"Cannot perform test on document without test key.")
       val trueCoref = doc.targetCoref
       val predCoref = doc.coref
-      //should the tester really call mention detection every time?
       //val newCoref = new WithinDocCoref(doc)
       //assert(predCoref.mentions.forall(m=>m.attr[MentionCharacteristics] ne null))
       assert(trueCoref.mentions.forall(m=>m.phrase.attr[OntonotesPhraseEntityType] ne null))
@@ -299,10 +299,11 @@ abstract class CorefSystem[CoreferenceStructure] extends DocumentAnnotator{
         case (gtM, idx) =>
           if(!predCoref.mentions.exists(m => m.phrase.value == gtM.phrase.value)) predCoref.addMention(gtM.phrase,nm+idx)
       }
-      //gtMentions.map(_.phrase.value).diff(predMentions.map(_.phrase.value)).seq.toSeq.zipWithIndex.foreach(mi => newCoref.addMention(new Phrase(mi._1.chain,m1._1.start,mi._1.length,mi._1.h),m1._2+nm))
       val pw = PairwiseClusterEvaluation(predCoref, trueCoref)
       val b3 = BCubedNoSingletonClusterEvaluation(predCoref, trueCoref)
-      //val muc = CorefEvaluator.MUC.evaluate(predMap, trueMap)
+      val ce = CEAFClusterEvaluation(predCoref,trueCoref)
+      val muc = MucClusterEvaluation(predCoref, trueCoref)
+      //gtMentions.map(_.phrase.value).diff(predMentions.map(_.phrase.value)).seq.toSeq.zipWithIndex.foreach(mi => newCoref.addMention(new Phrase(mi._1.chain,m1._1.start,mi._1.length,mi._1.h),m1._2+nm))
 
       //      scorerMutex.synchronized {
       //        pwScore.microAppend(pw)
@@ -313,8 +314,10 @@ abstract class CorefSystem[CoreferenceStructure] extends DocumentAnnotator{
       scorerMutex.synchronized {
         // scorer.macroMUC.macroAppend(muc)
         scorer.macroPW.macroAppend(pw)
+        scorer.macroMUC.microAppend(muc)
         scorer.microB3.microAppend(b3)
-        //scorer.microMUC.microAppend(muc)
+        scorer.microCE.microAppend(ce)
+        scorer.microMUC.microAppend(muc)
         scorer.microPW.microAppend(pw)
       }
     }

@@ -21,7 +21,7 @@ trait ForwardCorefTrainerOpts extends CorefTrainerOpts{
   val numPositivePairsTest = new CmdOption("prune-test", 100, "INT", "number of positive pairs before pruning instances in testing")
   val numThreads = new CmdOption("num-threads", 4, "INT", "Number of threads to use")
   val featureComputationsPerThread = new CmdOption("feature-computations-per-thread", 2, "INT", "Number of feature computations per thread to run in parallel during training")
-  val numTrainingIterations = new CmdOption("num-training-iterations", 3, "INT", "Number of passes through the training data")
+  val numTrainingIterations = new CmdOption("num-training-iterations", 4, "INT", "Number of passes through the training data")
   val writeConllFormat = new CmdOption("write-conll-format", false, "BOOLEAN", "Write CoNLL format data.")
   val useAverageIterate = new CmdOption("use-average-iterate", true, "BOOLEAN", "Use the average iterate instead of the last iterate?")
   val useMIRA = new CmdOption("use-mira", false, "BOOLEAN", "Whether to use MIRA as an optimizer")
@@ -103,17 +103,16 @@ object ForwardCorefTrainer extends CorefTrainer{
         lr
       }
 
-
     if (opts.serialize.wasInvoked && !opts.deserialize.wasInvoked)
       mentPairClsf.serialize(opts.serialize.value)
-    /*
-    if (opts.writeConllFormat.value) {
-      val conllFormatPrinter = new CorefScorer[Mention]
-      val conllFormatGold = new java.io.PrintStream(new java.io.File("conll-test.filteredgold"))
-      testDocs.foreach(d => conllFormatPrinter.printConll2011Format(d, testTrueMaps(d.name), conllFormatGold))
+
+    //if (opts.writeConllFormat.value) {
+      val conllFormatPrinter = new CorefScorer
+      val conllFormatGold = new java.io.PrintStream(new java.io.File("eval-test.filtpred"))
+      testDocs.foreach(d => conllFormatPrinter.printConll2011Format(d.getCoref, conllFormatGold,true))
       conllFormatGold.flush()
       conllFormatGold.close()
-
+   /*
       val conllFormatGold2 = new java.io.PrintStream(new java.io.File("conll-test.nonfilteredgold"))
       testDocs.foreach(d => printConll2011Format(d, testTrueMaps(d.name), conllFormatGold2))
       conllFormatGold2.flush()
