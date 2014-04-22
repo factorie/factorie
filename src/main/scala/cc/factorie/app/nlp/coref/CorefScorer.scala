@@ -1,23 +1,24 @@
 package cc.factorie.app.nlp.coref
 
-import cc.factorie.util.coref.{GenericEntityMap, CorefEvaluator}
+import cc.factorie.util.F1Evaluation
+import cc.factorie.util.coref.CorefEvaluator
 import cc.factorie.app.nlp.{Document, TokenSpan}
 //import cc.factorie.app.nlp.coref.Mention
 
 
 /** Various helper methods for printing coreference score Metrics.
-    Needs to be overhauled. -akm
-    @author Alexandre Passos */
-class CorefScorer[T] {
-  // val macroB3 = new CorefEvaluator.Metric
-  val macroMUC = new CorefEvaluator.Metric
-  val macroPW = new CorefEvaluator.Metric
-  val microPW = new CorefEvaluator.Metric
-  val microB3 = new CorefEvaluator.Metric
-  val microMUC = new CorefEvaluator.Metric
-  val microCE = new CorefEvaluator.Metric
-  val microCM = new CorefEvaluator.Metric
-  val macroBlanc = new CorefEvaluator.Metric
+    @author Alexandre Passos
+    @author Caitlin Cellier - updated April*/
+class CorefScorer {
+  // val macroB3 = new F1Evaluation.Metric
+  val macroMUC = new F1Evaluation
+  val macroPW = new F1Evaluation
+  val microPW = new F1Evaluation
+  val microB3 = new F1Evaluation
+  val microMUC = new F1Evaluation
+  val microCE = new F1Evaluation
+  val microCM = new F1Evaluation
+  val macroBlanc = new F1Evaluation
 
   def textualOrder(ts1: TokenSpan, ts2: TokenSpan): Int = {
     val (s1, e1) = (ts1.head.stringStart, ts1.last.stringEnd)
@@ -36,18 +37,20 @@ class CorefScorer[T] {
   }
 
 
-  def printConll2011Format(doc: Document, map: GenericEntityMap[Mention], out: java.io.PrintStream) {
-    val mappedMentions = map.entities.filterNot(_._2.size == 1).toSeq.flatMap(_._2).sortWith((s, t) => beforeInTextualOrder(s, t))
+  def printConll2011Format(coref: WithinDocCoref, out: java.io.PrintStream,filtered:Boolean = true) {
+    val entities = coref.entities.toSeq
+    val mappedMentions = if(filtered) coref.entities.filterNot(_.mentions.size == 1).toSeq.flatMap(_.mentions).distinct.sortWith((s, t) => beforeInTextualOrder(s, t))
+    else entities.flatMap(_.mentions).sortWith((s, t) => beforeInTextualOrder(s, t))
     val (singleTokMents, multiTokMents) = mappedMentions.partition(_.phrase.length == 1)
     val beginningTokMap = multiTokMents.groupBy(_.phrase.head)
     val endingTokMap = multiTokMents.groupBy(_.phrase.last)
     val singleTokMap = singleTokMents.groupBy(_.phrase.head)
-    val fId = doc.name
+    val fId = coref.document.name
     val docName = fId.substring(0, fId.length() - 4)
     val partNum = fId.takeRight(3)
 
     out.println("#begin document (" + docName + "); part " + partNum)
-    for (s <- doc.sentences) {
+    for (s <- coref.document.sentences) {
       for (ti <- 0 until s.tokens.size) {
         val beginningMents = beginningTokMap.get(s(ti))
         val endingMents = endingTokMap.get(s(ti))
@@ -55,9 +58,9 @@ class CorefScorer[T] {
         assert(singleTokMents.size <= 1)
         out.print(docName + " " + partNum.toInt + " " + (ti + 1) + " " + s(ti).string + " " + s(ti).posTag.value + " - - - - - - - ")
         var ments = List[String]()
-        if (beginningMents.isDefined) ments = beginningMents.get.reverse.map(m => "(" + map.reverseMap(m)).mkString("|") :: ments
-        if (singleTokMents.isDefined) ments = singleTokMents.get.map(m => "(" + map.reverseMap(m) + ")").mkString("|") :: ments
-        if (endingMents.isDefined) ments = endingMents.get.reverse.map(m => map.reverseMap(m) + ")").mkString("|") :: ments
+        if (beginningMents.isDefined) ments = beginningMents.get.reverse.map(m => "(" + entities.indexOf(m.entity)).mkString("|") :: ments
+        if (singleTokMents.isDefined) ments = singleTokMents.get.map(m => "(" + entities.indexOf(m.entity)+ ")").mkString("|") :: ments
+        if (endingMents.isDefined) ments = endingMents.get.reverse.map(m => entities.indexOf(m.entity) + ")").mkString("|") :: ments
         if (ments.size > 0) out.println(ments.mkString("|"))
         else out.println("-")
       }
