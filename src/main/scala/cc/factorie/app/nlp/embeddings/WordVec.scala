@@ -14,10 +14,10 @@ object WordVec {
     wordEmbedding.learnEmbeddings()
     val en = System.currentTimeMillis() - st
     println("time taken to learn embeddings : " + en / 1000.0)
-    val st_store = System.currentTimeMillis()
+    val st2 = System.currentTimeMillis()
     wordEmbedding.store()
-    val en1 = System.currentTimeMillis() - st_store()
-    println("time taken to store embeddings :" + en_store / 1000.0)
+    val en1 = System.currentTimeMillis() - st2
+    println("time taken to store embeddings :" + en1 / 1000.0)
 
   }
 }
