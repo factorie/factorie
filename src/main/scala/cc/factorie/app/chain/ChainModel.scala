@@ -115,7 +115,7 @@ class ChainModel[Label <: MutableDiscreteVar, Features <: CategoricalVectorVar[S
  
   def maximize(vars: Seq[Label])(implicit d: DiffList): Unit = {
     if (vars.isEmpty) return
-    val result = ChainHelper.viterbiFast(vars, getCliqueValues(vars))
+    val result = ChainHelper.viterbiFast(getCliqueValues(vars))
     for (i <- 0 until vars.length) vars(i).set(result.mapValues(i))
   }
 
@@ -145,15 +145,16 @@ class ChainModel[Label <: MutableDiscreteVar, Features <: CategoricalVectorVar[S
   }
 
   def inferFast(varying: Seq[Label], addToLocalScoresOpt: Option[Array[Tensor1]] = None): ChainForwardBackwardResults =
-    ChainHelper.inferFast(varying, getCliqueValues(varying, addToLocalScoresOpt))
+    ChainHelper.inferFast(getCliqueValues(varying, addToLocalScoresOpt))
 
   def viterbiFast(varying: Seq[Label], addToLocalScoresOpt: Option[Array[Tensor1]] = None): ChainViterbiResults =
-    ChainHelper.viterbiFast(varying, getCliqueValues(varying, addToLocalScoresOpt))
+    ChainHelper.viterbiFast(getCliqueValues(varying, addToLocalScoresOpt))
 
   def getCliqueValues(varying: Seq[Label], addToLocalScoresOpt: Option[Array[Tensor1]] = None): ChainCliqueValues = {
     val markovScoresT = markov.weights.value
     val localScores = getLocalScores(varying)
     addToLocalScoresOpt.foreach(l => (0 until varying.length).foreach(i => localScores(i) += l(i)))
+    // WARNING: for efficiency we duplicate the transition scores by reference here. FIX -luke
     ChainCliqueValues(localScores, Seq.fill(math.max(1, varying.size - 1))(markovScoresT.asInstanceOf[DenseTensor2]))
   }
 
@@ -165,7 +166,7 @@ class ChainModel[Label <: MutableDiscreteVar, Features <: CategoricalVectorVar[S
     def accumulateValueAndGradient(value: DoubleAccumulator, gradient: WeightsMapAccumulator): Unit = {
       if (varying.length == 0) return
       val scores = getCliqueValues(varying, addToLocalScoresOpt())
-      val ChainViterbiResults(mapScore, mapValues, _) = ChainHelper.viterbiFast(varying, scores)
+      val ChainViterbiResults(mapScore, mapValues, _) = ChainHelper.viterbiFast(scores)
       val transScores = markov.weights.value
       if (value ne null)
         value.accumulate(-mapScore)
@@ -208,7 +209,7 @@ class ChainModel[Label <: MutableDiscreteVar, Features <: CategoricalVectorVar[S
     def accumulateValueAndGradient(value: DoubleAccumulator, gradient: WeightsMapAccumulator): Unit = {
       if (varying.length == 0) return
       val scores = getCliqueValues(varying, addToLocalScoresOpt())
-      val ChainForwardBackwardResults(logZ, alphas, betas, _) = ChainHelper.inferFast(varying, scores)
+      val ChainForwardBackwardResults(logZ, alphas, betas, _) = ChainHelper.inferFast(scores)
       val transScoresT = markov.weights.value
       val transScores = transScoresT.asArray
       val domainSize = transScoresT.dim1
@@ -262,6 +263,7 @@ class ChainModel[Label <: MutableDiscreteVar, Features <: CategoricalVectorVar[S
 case class ChainViterbiResults(mapScore: Double, mapValues: Array[Int], scores: ChainCliqueValues)
 case class ChainForwardBackwardResults(logZ: Double, alphas: Array[DenseTensor1], betas: Array[DenseTensor1], scores: ChainCliqueValues)
 
+// WARNING: transition values might point to the same underlying array for speed. FIX -luke
 case class ChainCliqueValues(localValues: Seq[DenseTensor1], transitionValues: Seq[DenseTensor2]) {
   def +=(other: ChainCliqueValues, f: Double) = {
     for ((m, s) <- localValues.zip(other.localValues)) m +=(s, f)
@@ -296,7 +298,7 @@ case class ChainCliqueValues(localValues: Seq[DenseTensor1], transitionValues: S
 }
 
 object ChainHelper {
-  def inferFast(varying: Seq[DiscreteVar], scores: ChainCliqueValues): ChainForwardBackwardResults = {
+  def inferFast(scores: ChainCliqueValues): ChainForwardBackwardResults = {
     val d1 = scores.transitionValues(0).dim1
     val markovScores = scores.transitionValues
     val localScores = scores.localValues
@@ -342,15 +344,15 @@ object ChainHelper {
     val logZ = maths.sumLogProbs(alphas.last.asArray)
     ChainForwardBackwardResults(logZ, alphas, betas, ChainCliqueValues(localScores, markovScores))
   }
-  def viterbiFast(varying: Seq[DiscreteVar], scores: ChainCliqueValues): ChainViterbiResults = {
+  def viterbiFast(scores: ChainCliqueValues): ChainViterbiResults = {
     val markovScores = scores.transitionValues
     val localScores = scores.localValues
     val domainSize = markovScores.head.dim1
-    val costs = Array.fill(varying.size)(new DenseTensor1(domainSize, Double.NegativeInfinity))
-    val backPointers = Array.fill(varying.size)(Array.fill[Int](domainSize)(-1))
+    val costs = Array.fill(scores.localValues.size)(new DenseTensor1(domainSize, Double.NegativeInfinity))
+    val backPointers = Array.fill(scores.localValues.size)(Array.fill[Int](domainSize)(-1))
     costs(0) := localScores(0)
     var i = 1
-    while (i < varying.size) {
+    while (i < scores.localValues.size) {
       val curMarkovScores = markovScores(i - 1)
       val curLocalScores = localScores(i)
       val curCost = costs(i)
@@ -378,7 +380,7 @@ object ChainHelper {
       }
       i += 1
     }
-    val mapValues = Array.fill[Int](varying.size)(0)
+    val mapValues = Array.fill[Int](scores.localValues.size)(0)
     mapValues(mapValues.size - 1) = costs.last.maxIndex
     var j = mapValues.size - 2
     while (j >= 0) {
