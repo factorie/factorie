@@ -9,8 +9,8 @@ class EmbeddingOpts extends CmdOptions {
   val threads = new CmdOption("threads", 12, "INT", "use <int> threads")
   val negative = new CmdOption("negative", 1, "INT", "use <int> number of negative examples")
   val minCount = new CmdOption("min-count", 5, "INT", "This will discard words that appear less than <int> times; default is 5")
-  val ignoreStopWords = new CmdOption("ignore-stopwords", 0, "INT", "use <int> to include or discard stopwords. Use 1 for discarding stopwords")
-  val cbow = new CmdOption("cbow", 0, "INT", "user cbow=1 for cbow and cbow=0 for skip-gram") // 1 would be SkipGram // default method is skipgram 
+  val ignoreStopWords = new CmdOption("ignore-stopwords", false, "BOOLEAN", "use <bool> to include or discard stopwords. Use 1 for discarding stopwords")
+  val cbow = new CmdOption("cbow", false, "BOOLEAN", "user cbow=true for cbow and cbow=false for skip-gram") // 1 would be SkipGram // default method is skipgram 
   val sample = new CmdOption("sample", 0.001, "DOUBLE", "use <double> subsampling")
   
   // Optimization related (Don't change if you do not understand how vectors are initialized)
@@ -20,10 +20,10 @@ class EmbeddingOpts extends CmdOptions {
   // IO Related (MUST GIVE Options)
   val encoding = new CmdOption("encoding", "UTF8", "STRING", "use <string> for encoding option. ISO-8859-15 is default")
   val saveVocabFile = new CmdOption("save-vocab", "", "STRING", "save vocab file")
-  val loadVocabFile = new CmdOption("load-vocab", "", "STRING", "load the vocab file")
+  val loadVocabFile = new CmdOption("load-vocab", "", "STRING", "load the vocab file") // atleast one of them  should be given. save-vocab or load-vocab
   val corpus = new CmdOption("train", "", "STRING", "train file")
   val output = new CmdOption("output", "", "STRING", "Use <file> to save the resulting word vectors")
-  val binary = new CmdOption("binary", 0, "INT", "use 1 for storing .gz format and 0 for plain txt format. Both stores in ISO-8859-15 Encoding")
+  val binary = new CmdOption("binary", false, "BOOLEAN", "use true for storing .gz format and false for plain txt format. Both stores in ISO-8859-15 Encoding")
 
   // Vocabulary related
   // Maximum 14.3M * 0.7 = 10M words in the vocabulary (Don;t change if you understand how vocabBuilder works)

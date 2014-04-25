@@ -15,7 +15,7 @@ abstract class WordEmbeddingModel(val opts: EmbeddingOpts) extends Parameters {
   protected val adaGradDelta = opts.delta.value // default value is 0.1
   protected val adaGradRate = opts.rate.value //  default value is 0.025 
   protected val minCount = opts.minCount.value // default value is 5
-  protected val ignoreStopWords = opts.ignoreStopWords.value // default value is 0
+  protected val ignoreStopWords = if (opts.ignoreStopWords.value == true) 1 else 0 // default value is 0
   protected val vocabHashSize = opts.vocabHashSize.value // default value is 20 M. load factor is 0.7. So, Vocab size = 0.7 * 20M = 14M vocab supported which is sufficient enough for large amounts of data
   protected val samplingTableSize = opts.samplingTableSize.value // default value is 100 M
   protected val maxVocabSize = opts.vocabSize.value
@@ -23,7 +23,7 @@ abstract class WordEmbeddingModel(val opts: EmbeddingOpts) extends Parameters {
   // IO Related
   val corpus = opts.corpus.value // corpus input filename. Code takes cares of .gz extension 
   protected val outputFilename = opts.output.value // embeddings output filename
-  private val storeInBinary = opts.binary.value // binary=1 will make both vocab file (optional) and embeddings in .gz file
+  private val storeInBinary = if(opts.binary.value == true) 1 else 0 // binary=1 will make both vocab file (optional) and embeddings in .gz file
   private val loadVocabFilename = opts.loadVocabFile.value // load the vocab file. Very useful for large corpus should you run multiple times 
   private val saveVocabFilename = opts.saveVocabFile.value // save the vocab into a file. Next time for the same corpus, load it . Saves lot of time on large corpus
   private val encoding = opts.encoding.value // Default is UTF8
