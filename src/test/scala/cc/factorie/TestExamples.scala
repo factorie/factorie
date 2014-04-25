@@ -125,7 +125,7 @@ class TestExamples {
   }
 
   @Test def testTutorial040() {
-    cc.factorie.tutorial.Tutorial090ParallelismAndHyperparameters.main(emptyArgs)
+    cc.factorie.tutorial.Tutorial90ParallelismAndHyperparameters.main(emptyArgs)
   }
 
   @Test def testWordSegmenter() {

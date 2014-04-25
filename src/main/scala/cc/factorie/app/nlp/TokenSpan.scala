@@ -19,13 +19,25 @@ import cc.factorie.variable._
 
 /** A sub-sequence of Tokens within a Section (which is in turn part of a Document). */
 class TokenSpan(theSection:Section, initialStart:Int, initialLength:Int) extends SpanVariable[Section,Token](theSection, initialStart, initialLength) with Attr {
+  /** The Document Section of which this TokenSpan is a subsequence. */
   final def section = chain  // Just a convenient alias
+  /** The Document to which this TokenSpan belongs. */
   final def document = chain.document
+  /** The indexed sequence of tokens contained in this TokenSpan. */
   final def tokens = this.toIndexedSeq //value
   /** The Sentence to which the first Token in this TokenSpan belongs. */
   def sentence = tokens(0).sentence
-  def phrase: String = if (length == 1) tokens.head.string else document.string.substring(tokens.head.stringStart, tokens.last.stringEnd) // TODO Handle Token.attr[TokenString] changes
-  def string: String = phrase
+  // TODO Implement something like this? def containsSentenceIndex(i:Int): Boolean // Does this TokenSpan contain the token in the ith position of the sentence containing this TokenSpan.
+  
+  @deprecated("Use 'string' instead.") def phrase: String = string
+  /** Return the substring of the Document covered by this TokenSpan.
+      If this is a multi-Token TokenSpan, this will include all original characters in the Document, including those skipped by tokenization. */
+  def documentString: String = document.string.substring(tokens.head.stringStart, tokens.last.stringEnd) // TODO Handle Token.attr[TokenString] changes
+  /** Return a String representation of this TokenSpan, concatenating each Token.string, separated by the given separator. */
+  def tokensString(separator:String): String = if (length == 1) chain(0).string else tokens.map(_.string).mkString(separator)
+  /** Return a String representation of this TokenSpan, concatenating each Token.string, separated by a space.
+      This nicely avoids newlines, HTML or other junk that might be in the phrase.documentString. */
+  def string: String = tokensString(" ")
   /** Returns true if this span contain the words of argument span in order. */
   def containsStrings(span:TokenSpan): Boolean = {
     for (i <- 0 until length) {
@@ -33,7 +45,7 @@ class TokenSpan(theSection:Section, initialStart:Int, initialLength:Int) extends
       var result = true
       var i2 = i; var j = 0
       while (j < span.length && i2 < this.length && result) {
-        if (span.tokens(j).string != tokens(i2)) result = false
+        if (span.tokens(j).string != tokens(i2).string) result = false
         j += 1; i2 += 1
       }
       if (result) return true
@@ -43,6 +55,7 @@ class TokenSpan(theSection:Section, initialStart:Int, initialLength:Int) extends
   override def toString = "TokenSpan("+start+","+end+":"+this.phrase+")"
   // TODO This seems unsafe.  Can we delete it? -akm
   /** A short name for this span */
+  @deprecated("This method will be deleted in the near future.")
   def name: String = attr.values.head match {
     case label:LabeledCategoricalVariable[String @unchecked] => label.categoryValue
     case x => x.toString

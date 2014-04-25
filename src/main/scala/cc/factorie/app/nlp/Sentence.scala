@@ -16,7 +16,6 @@ package cc.factorie.app.nlp
 import cc.factorie._
 import scala.collection.mutable.ArrayBuffer
 
-// TODO We should really remove the DiffList implicit argument because adding a Sentence to a Section cannot be undone.
 
 /** A span of Tokens making up a sentence within a Section of a Document.
     A Sentence is a special case of a TokenSpan, stored in its Section, and available through the Section.sentences method.
@@ -30,7 +29,8 @@ class Sentence(sec:Section, initialStart:Int, initialLength:Int) extends TokenSp
   /** Construct a new 0-length Sentence that begins just past the current last token of the Section, and add it to the Section automatically.
       This constructor is typically used when reading labeled training data one token at a time, where we need Sentence and Token objects. */
   def this(sec:Section) = this(sec, sec.length, 0)
-  /** Construct a new Sentence  */
+  /** Construct a new 0-length Sentence that begins just past the current last token of the doc.asSection, and add it to the Section automatically.
+      This constructor is typically used when reading labeled training data one token at a time, where we need Sentence and Token objects. */
   def this(doc:Document) = this(doc.asSection)
 
   // Initialization
@@ -38,16 +38,22 @@ class Sentence(sec:Section, initialStart:Int, initialLength:Int) extends TokenSp
   sec.addSentence(this)
   private val _indexInSection: Int = sec.sentences.length - 1
 
+  /** Returns the number of Sentences before this one in the Section. */
   def indexInSection: Int = _indexInSection
 
+  /** Returns true if the given Token is inside this Sentence. */
   def contains(element:Token) = tokens.contains(element) // TODO Re-implement this to be faster avoiding search using token.stringStart bounds 
 
   // Parse attributes
+  /** If this Sentence has a ParseTree, return it; otherwise return null. */
   def parse = attr[cc.factorie.app.nlp.parse.ParseTree]
+  /** Return the Token at the root of this Sentence's ParseTree. Will throw an exception if there is no ParseTree. */
   def parseRootChild: Token = attr[cc.factorie.app.nlp.parse.ParseTree].rootChild
 
   // common labels
+  /** Returns the sequence of PennPosTags attributed to the sequence of Tokens in this Sentence. */
   def posTags: IndexedSeq[pos.PennPosTag] = tokens.map(_.posTag)
+  /** Returns the sequence of NerTags attributed to the sequence of Tokens in this Sentence. */
   def nerTags: IndexedSeq[ner.NerTag] = tokens.map(_.nerTag)
 }
 

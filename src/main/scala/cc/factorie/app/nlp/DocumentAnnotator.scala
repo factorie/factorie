@@ -15,7 +15,7 @@
 package cc.factorie.app.nlp
 import cc.factorie.app.nlp.phrase.Phrase
 import cc.factorie.util.Threading
-import cc.factorie.app.nlp.coref.mention.Mention
+import cc.factorie.app.nlp.coref.Mention
 
 trait DocumentAnnotator {
   def process(document: Document): Document  // NOTE: this method may mutate and return the same document that was passed in

@@ -60,7 +60,7 @@ trait MutableDiscreteSeqVar[A<:DiscreteValue] extends MutableVar with cc.factori
     def length = arr.length
     def apply(i:Int) = arr(i).asInstanceOf[A]
    //_toSeq.map(i => domain.elementDomain.getValue(i)) // TODO make this more efficient 
-  }.asInstanceOf
+  }.asInstanceOf[Value]
   def set(newValue:Value)(implicit d:DiffList): Unit = _set(Array.tabulate(newValue.length)(i => newValue(i).intValue))
   def trimCapacity(): Unit = _trimCapacity
   def clear(): Unit = _clear()

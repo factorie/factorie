@@ -1,0 +1,12 @@
+<ul class="nav nav-list">
+  <li class="nav-header">Users Guide</li>
+  {% assign group = 'usersguide' %}
+  {% include tutorial_pages_list %}
+  <li class="nav-header">Tutorials</li>
+  {% assign group = 'tutorial' %}
+  {% include tutorial_pages_list %}
+  <li class="nav-divider"></li>
+  <li class="nav-noindent"><a href="http://www.iesl.cs.umass.edu">IESL</a></li>
+  <li class="nav-noindent"><a href="https://groups.google.com/a/factorie.cs.umass.edu/forum/#!forum/discuss">Mailing List</a></li>  
+  {% include suffix_pages_list %}
+</ul>

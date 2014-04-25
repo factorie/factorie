@@ -43,14 +43,8 @@ abstract class NerSpan(section:Section, start:Int, length:Int) extends TokenSpan
 // Note: There are currently no labeled counterparts to these SpanLabels.
 
 
-object ConllNerDomain extends CategoricalDomain[String] {
-  this ++= Vector(
-   "O",
-   "PER", // even though this never occurs in the CoNLL-2003 training data, it could occur in some other training data
-   "ORG",
-   "LOC",
-   "MISC"
-  )
+object ConllNerDomain extends EnumDomain {
+  val O, PER, ORG, LOC, MISC = Value
   freeze()
 }
 class ConllNerTag(token:Token, initialCategory:String) extends NerTag(token, initialCategory) { def domain = ConllNerDomain }
@@ -75,6 +69,9 @@ object BioConllNerDomain extends CategoricalDomain[String] {
    "I-MISC"
   )
   freeze()
+  val B_PER = index("B-PER")
+  val I_PER = index("I-PER")
+  // TODO add more of these index vals
   def spanList(section:Section): ConllNerSpanBuffer = {
     val boundaries = iobBoundaries(section.tokens.map(_.attr[BioConllNerTag].categoryValue))
     new ConllNerSpanBuffer ++= boundaries.map(b => new ConllNerSpan(section, b._1, b._2, b._3))
@@ -119,38 +116,62 @@ class LabeledBilouConllNerTag(token:Token, initialCategory:String) extends Bilou
 //class BilouConllNerLabel(val token:Token, targetValue:String) extends NerLabel(targetValue) { def domain = BilouConllNerDomain }
 
 
-object OntonotesNerDomain extends CategoricalDomain[String] {
-  this ++= Vector(
-      "O",
-      "CARDINAL",
-      "DATE",
-      "EVENT",
-      "FAC",
-      "GPE",
-      "LANGUAGE",
-      "LAW",
-      "LOC",
-      "MONEY",
-      "NORP",
-      "ORDINAL",
-      "ORG",
-      "PERCENT",
-      "PERSON",
-      "PRODUCT",
-      "QUANTITY",
-      "TIME",
-      "WORK_OF_ART"
-  )
-
+object OntonotesNerDomain extends EnumDomain {
+  val O,
+      CARDINAL,
+      DATE,
+      EVENT,
+      FAC,
+      GPE,
+      LANGUAGE,
+      LAW,
+      LOC,
+      MONEY,
+      NORP,
+      ORDINAL,
+      ORG,
+      PERCENT,
+      PERSON,
+      PRODUCT,
+      QUANTITY,
+      TIME,
+      WORK_OF_ART = Value
   freeze()
 }
+
+/** Entity types used in coreference.
+    @author Andrew McCallum */
+object OntonotesEntityTypeDomain extends EnumDomain {
+  val O,
+      CARDINAL,
+      DATE,
+      EVENT,
+      FAC,
+      GPE,
+      LANGUAGE,
+      LAW,
+      LOC,
+      MONEY,
+      NORP,
+      ORDINAL,
+      ORG,
+      PERCENT,
+      PERSON,
+      PRODUCT,
+      QUANTITY,
+      TIME,
+      WORK_OF_ART,
+      MISC = Value
+  freeze()
+}
+// OntonotesEntityType is defined in cc.factorie.app.nlp.phrase
+
 class OntonotesNerTag(token:Token, initialCategory:String) extends NerTag(token, initialCategory) { def domain = OntonotesNerDomain }
 class LabeledOntonotesNerTag(token:Token, initialCategory:String) extends OntonotesNerTag(token, initialCategory) with CategoricalLabeling[String]
 
 class OntonotesNerSpanLabel(span:TokenSpan, initialCategory:String) extends NerSpanLabel(span, initialCategory) { def domain = OntonotesNerDomain }
 class OntonotesNerSpan(section:Section, start:Int, length:Int, category:String) extends NerSpan(section, start, length) { val label = new OntonotesNerSpanLabel(this, category) }
 class OntonotesNerSpanBuffer(spans:Iterable[OntonotesNerSpan]) extends TokenSpanBuffer[OntonotesNerSpan]
-//class OntonotesNerLabel(val token:Token, targetValue:String) extends NerLabel(targetValue) { def domain = OntonotesNerDomain }
 
 
 object BioOntonotesNerDomain extends CategoricalDomain[String] {
@@ -277,9 +298,9 @@ object BilouOntonotesNerDomain extends CategoricalDomain[String] {
       "L-WORK_OF_ART",
       "U-WORK_OF_ART"
   )
+  freeze()
   // Convert from an intValue in this domain to an intValue in the OntonotesNerDomain
   def bilouSuffixIntValue(bilouIntValue:Int): Int = if (bilouIntValue == 0) 0 else ((bilouIntValue - 1) / 4) + 1 
-  freeze()
   def spanList(section:Section): OntonotesNerSpanBuffer = {
     val boundaries = bilouBoundaries(section.tokens.map(_.attr[BilouOntonotesNerTag].categoryValue))
     new OntonotesNerSpanBuffer(boundaries.map(b => new OntonotesNerSpan(section, b._1, b._2, b._3)))
@@ -288,3 +309,5 @@ object BilouOntonotesNerDomain extends CategoricalDomain[String] {
 class BilouOntonotesNerTag(token:Token, initialCategory:String) extends NerTag(token, initialCategory) { def domain = BilouOntonotesNerDomain }
 class LabeledBilouOntonotesNerTag(token:Token, initialCategory:String) extends BilouOntonotesNerTag(token, initialCategory) with CategoricalLabeling[String]
 
+// TODO Remove this. -akm
+class OntonotesEntityMentionSpan

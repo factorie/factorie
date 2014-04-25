@@ -171,6 +171,19 @@ class CategoricalDomain[C] extends DiscreteDomain(0) with IndexedSeq[Categorical
     freeze()
     origEntries.size - size
   }
+  /** Returns the number of unique entries trimmed */
+  def trimAboveCount(threshold:Int): Int = {
+    assert(!frozen)
+    if (!someCountsGathered) throw new Error("Can't trim without first gathering any counts.")
+    val origEntries = _elements.clone()
+    clear()
+    gatherCounts = false
+    for (i <- 0 until origEntries.size)
+      if (_apply(i) <= threshold) indexOnly(origEntries(i).category.asInstanceOf[C])
+    _clear()
+    freeze()
+    origEntries.size - size
+  }
   /** Returns the count threshold below which entries were discarded. */
   def trimBelowSize(target:Int): Int = {
     assert(!frozen)
