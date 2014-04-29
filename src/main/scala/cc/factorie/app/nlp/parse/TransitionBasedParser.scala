@@ -630,9 +630,9 @@ class TransitionBasedParserArgs extends cc.factorie.util.DefaultCmdOptions with 
   val saveModel = new CmdOption("save-model", true,"BOOLEAN","whether to write out a model file or not")
   val l1 = new CmdOption("l1", 0.000001,"FLOAT","l1 regularization weight")
   val l2 = new CmdOption("l2", 0.00001,"FLOAT","l2 regularization weight")
-  val rate = new CmdOption("rate", 10.0,"FLOAT","base learning rate")
+  val rate = new CmdOption("rate", 1.0,"FLOAT","base learning rate")
   val maxIters = new CmdOption("max-iterations", 5, "INT", "iterations of training per round")
-  val delta = new CmdOption("delta", 100.0,"FLOAT","learning rate decay")
+  val delta = new CmdOption("delta", 0.1,"FLOAT","learning rate decay")
 }
 
 object TransitionBasedParserTrainer extends cc.factorie.util.HyperparameterMain {
@@ -650,7 +650,7 @@ object TransitionBasedParserTrainer extends cc.factorie.util.HyperparameterMain 
       if (dirOpt.wasInvoked) fileList ++= FileUtils.getFileListFromDir(dirOpt.value)
       fileList.flatMap(fname => {
         if(opts.wsj.value)
-          load.LoadWSJMalt.fromFilename(fname, loadLemma=load.AnnotationTypes.AUTO, loadPos=load.AnnotationTypes.AUTO).head.sentences.toSeq 
+          load.LoadWSJMalt.fromFilename(fname, loadPos=load.AnnotationTypes.AUTO).head.sentences.toSeq 
         else if (opts.ontonotes.value)
           load.LoadOntonotes5.fromFilename(fname, loadLemma=load.AnnotationTypes.AUTO, loadPos=load.AnnotationTypes.AUTO).head.sentences.toSeq 
         else
@@ -789,10 +789,10 @@ object TransitionBasedParserOptimizer {
     val l1 = cc.factorie.util.HyperParameter(opts.l1, new cc.factorie.util.LogUniformDoubleSampler(1e-10, 1e2))
     val l2 = cc.factorie.util.HyperParameter(opts.l2, new cc.factorie.util.LogUniformDoubleSampler(1e-10, 1e2))
     val rate = cc.factorie.util.HyperParameter(opts.rate, new cc.factorie.util.LogUniformDoubleSampler(1e-4, 1e4))
-    val delta = cc.factorie.util.HyperParameter(opts.delta, new cc.factorie.util.LogUniformDoubleSampler(1e-4, 1e4))
+    //val delta = cc.factorie.util.HyperParameter(opts.delta, new cc.factorie.util.LogUniformDoubleSampler(1e-4, 1e4))
     val cutoff = cc.factorie.util.HyperParameter(opts.cutoff, new cc.factorie.util.SampleFromSeq[Int](Seq(0, 1, 2)))
-    val bootstrap = cc.factorie.util.HyperParameter(opts.bootstrapping, new cc.factorie.util.SampleFromSeq[Int](Seq(0, 1, 2)))
-    val maxit = cc.factorie.util.HyperParameter(opts.maxIters, new cc.factorie.util.SampleFromSeq[Int](Seq(2, 5, 8)))
+    //val bootstrap = cc.factorie.util.HyperParameter(opts.bootstrapping, new cc.factorie.util.SampleFromSeq[Int](Seq(0, 1, 2)))
+    val maxit = cc.factorie.util.HyperParameter(opts.maxIters, new cc.factorie.util.SampleFromSeq[Int](Seq(3, 5, 7)))
     /*
     val ssh = new cc.factorie.util.SSHActorExecutor("apassos",
       Seq("avon1", "avon2"),
@@ -801,8 +801,8 @@ object TransitionBasedParserOptimizer {
       "cc.factorie.app.nlp.parse.TransitionBasedParser",
       10, 5)
       */
-    val qs = new cc.factorie.util.QSubExecutor(32, "cc.factorie.app.nlp.parse.TransitionBasedParserTrainer")
-    val optimizer = new cc.factorie.util.HyperParameterSearcher(opts, Seq(l1, l2, rate, delta, cutoff, bootstrap, maxit), qs.execute, 200, 180, 60)
+    val qs = new cc.factorie.util.QSubExecutor(48, "cc.factorie.app.nlp.parse.TransitionBasedParserTrainer")
+    val optimizer = new cc.factorie.util.HyperParameterSearcher(opts, Seq(l1, l2, rate, cutoff, maxit), qs.execute, 250, 180, 60)
     val result = optimizer.optimize()
     println("Got results: " + result.mkString(" "))
     opts.saveModel.setValue(true)
