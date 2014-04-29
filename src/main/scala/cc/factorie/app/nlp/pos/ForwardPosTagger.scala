@@ -16,7 +16,7 @@ import cc.factorie.app.classify.backend.LinearMulticlassClassifier
 class ForwardPosTagger extends DocumentAnnotator {
   // Different ways to load saved parameters
   def this(stream:InputStream) = { this(); deserialize(stream) }
-  def this(file: File) = this(new FileInputStream(file))
+  def this(file: File) = {this(new FileInputStream(file)); println("ForwardPosTagger loading from "+file.getAbsolutePath)}
   def this(url:java.net.URL) = {
     this()
     val stream = url.openConnection.getInputStream
@@ -423,7 +423,7 @@ class ForwardPosOptions extends cc.factorie.util.DefaultCmdOptions with SharedNL
   val saveModel = new CmdOption("save-model", false, "BOOL", "Whether to save the trained model.")
   val runText = new CmdOption("run", "", "FILENAME", "Plain text file on which to run.")
   val numIters = new CmdOption("num-iterations","5","INT","number of passes over the data for training")
-  val wsj = new CmdOption("wsj", false, "BOOL", "Whether the data is WSJ or otherwise (Ontonotes)")
+  val owpl = new CmdOption("owpl", false, "BOOL", "Whether the data is WSJ or otherwise (Ontonotes)")
 }
 
 object ForwardPosTester {
@@ -437,7 +437,7 @@ object ForwardPosTester {
 	// otherwise ontonotes model
 	val pos = {
 	  if(opts.modelFile.wasInvoked) new ForwardPosTagger(new File(opts.modelFile.value))
-	  else if(opts.wsj.value) WSJForwardPosTagger
+	  else if(opts.owpl.value) WSJForwardPosTagger
 	  else OntonotesForwardPosTagger
 	}
 	
@@ -449,9 +449,13 @@ object ForwardPosTester {
       testFileList =  opts.testFiles.value.split(",")
     }
   
+	def posLabelMaker(tok: Token, labels: Seq[String]): LabeledPennPosTag = {
+      new LabeledPennPosTag(tok, if(labels(0) == "XX") "PUNC" else labels(0))
+    }
+	
 	val testPortionToTake =  if(opts.testPortion.wasInvoked) opts.testPortion.value else 1.0
 	val testDocs = testFileList.map(fname => {
-	  if(opts.wsj.value) load.LoadWSJMalt.fromFilename(fname).head
+	  if(opts.owpl.value) load.LoadOWPL.fromFilename(fname, posLabelMaker).head
 	  else load.LoadOntonotes5.fromFilename(fname).head
 	})
     val testSentencesFull = testDocs.flatMap(_.sentences)
@@ -487,12 +491,16 @@ object ForwardPosTrainer extends HyperparameterMain {
       testFileList =  opts.testFiles.value.split(",")
     }
     
+    def posLabelMaker(tok: Token, labels: Seq[String]): LabeledPennPosTag = {
+      new LabeledPennPosTag(tok, if(labels(0) == "XX") "PUNC" else labels(0))
+    }
+    
     val trainDocs = trainFileList.map(fname => {
-	  if(opts.wsj.value) load.LoadWSJMalt.fromFilename(fname).head
+	  if(opts.owpl.value) load.LoadOWPL.fromFilename(fname, posLabelMaker).head
 	  else load.LoadOntonotes5.fromFilename(fname).head
 	})
     val testDocs = testFileList.map(fname => {
-	  if(opts.wsj.value) load.LoadWSJMalt.fromFilename(fname).head
+	  if(opts.owpl.value) load.LoadOWPL.fromFilename(fname, posLabelMaker).head
 	  else load.LoadOntonotes5.fromFilename(fname).head
 	})
 
