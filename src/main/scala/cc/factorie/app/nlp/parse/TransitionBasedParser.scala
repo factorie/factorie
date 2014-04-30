@@ -109,7 +109,7 @@ class TransitionBasedParser extends DocumentAnnotator {
   }
   
   
-  def train(trainSentences:Iterable[Sentence], testSentences:Iterable[Sentence], numBootstrappingIterations:Int = 2, l1Factor:Double = 0.00001, l2Factor:Double = 0.00001, nThreads: Int = 1)(implicit random: scala.util.Random): Unit = {
+  def train(trainSentences:Seq[Sentence], testSentences:Seq[Sentence], numBootstrappingIterations:Int = 2, l1Factor:Double = 0.00001, l2Factor:Double = 0.00001, nThreads: Int = 1)(implicit random: scala.util.Random): Unit = {
     featuresDomain.dimensionDomain.gatherCounts = true
     var trainingVars: Iterable[ParseDecisionVariable] = generateDecisions(trainSentences, ParserConstants.TRAINING, nThreads)
     println("Before pruning # features " + featuresDomain.dimensionDomain.size)
@@ -130,7 +130,7 @@ class TransitionBasedParser extends DocumentAnnotator {
     }
   }
   
-  def trainDecisions(trainDecisions:Iterable[ParseDecisionVariable], optimizer:optimize.GradientOptimizer, trainSentences:Iterable[Sentence], testSentences:Iterable[Sentence])(implicit random: scala.util.Random): Unit = {
+  def trainDecisions(trainDecisions:Iterable[ParseDecisionVariable], optimizer:optimize.GradientOptimizer, trainSentences:Seq[Sentence], testSentences:Seq[Sentence])(implicit random: scala.util.Random): Unit = {
     def evaluate(c: LinearMulticlassClassifier) {
       println(model.weights.value.toSeq.count(_ == 0).toFloat/model.weights.value.length +" sparsity")
       println(" TRAIN "+testString(trainSentences))
@@ -139,16 +139,23 @@ class TransitionBasedParser extends DocumentAnnotator {
     new OnlineLinearMulticlassTrainer(optimizer=optimizer, maxIterations=2).baseTrain(model, trainDecisions.map(_.target.intValue).toSeq, trainDecisions.map(_.features.value).toSeq, trainDecisions.map(v => 1.0).toSeq, evaluate=evaluate)
   }
   
-  def testString(testSentences:Iterable[Sentence]): String = {
+  def testString(testSentences:Seq[Sentence]): String = {
     val(las, uas, tokSpeed, sentSpeed) = test(testSentences)
-    "LAS="+las+" UAS="+uas+s"  ${tokSpeed} tokens/sec"
+    "LAS="+las+" UAS="+uas+s" ${tokSpeed} tokens/sec ${sentSpeed} sentences/sec"
   }
   
-  def test(testSentences:Iterable[Sentence]): (Double, Double, Double, Double) = {
-    val t0 = System.currentTimeMillis()
-    testSentences.par.foreach(process)
-    val totalTime = System.currentTimeMillis() - t0
-    val totalTokens = testSentences.map(_.tokens.length).sum
+  def test(testSentences:Seq[Sentence]): (Double, Double, Double, Double) = {
+    var i = 0
+    val numSentences = testSentences.size
+    var t0: Long = 0
+    var totalTime: Long = 0
+    while(i < numSentences){
+      t0 = System.currentTimeMillis()
+      process(testSentences(i))
+      totalTime += System.currentTimeMillis() - t0
+      i += 1
+    }
+    val totalTokens = testSentences.map(_.length).sum
     val totalSentences = testSentences.size
     val pred = testSentences.map(_.attr[ParseTree])
     (ParserEval.calcLas(pred), ParserEval.calcUas(pred), totalTokens*1000.0/totalTime, totalSentences*1000.0/totalTime)
@@ -733,13 +740,15 @@ object TransitionBasedParserTrainer extends cc.factorie.util.HyperparameterMain 
       c.boosting(sentences, nThreads=opts.nThreads.value, trainer=trainer, evaluate=evaluate)
     }
     
-    testSentences.par.foreach(c.process)
+    //testSentences.par.foreach(c.process)
+    testSentences.foreach(c.process)
     
     if (opts.saveModel.value) {
       val modelUrl: String = if (opts.modelDir.wasInvoked) opts.modelDir.value else opts.modelDir.defaultValue + System.currentTimeMillis().toString + ".factorie"
       c.serialize(new java.io.File(modelUrl))
       val d = new TransitionBasedParser
       d.deserialize(new java.io.File(modelUrl))
+      testSentences.foreach(d.process)
       testSingle(d, testSentences, "Post serialization accuracy ")
     }
     val testLAS = ParserEval.calcLas(testSentences.map(_.attr[ParseTree]))
@@ -802,7 +811,7 @@ object TransitionBasedParserOptimizer {
       10, 5)
       */
     val qs = new cc.factorie.util.QSubExecutor(48, "cc.factorie.app.nlp.parse.TransitionBasedParserTrainer")
-    val optimizer = new cc.factorie.util.HyperParameterSearcher(opts, Seq(l1, l2, rate, cutoff, maxit), qs.execute, 250, 180, 60)
+    val optimizer = new cc.factorie.util.HyperParameterSearcher(opts, Seq(l1, l2, rate, cutoff, maxit), qs.execute, 250, 220, 60)
     val result = optimizer.optimize()
     println("Got results: " + result.mkString(" "))
     opts.saveModel.setValue(true)
