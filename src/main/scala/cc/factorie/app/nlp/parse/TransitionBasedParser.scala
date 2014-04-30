@@ -741,14 +741,13 @@ object TransitionBasedParserTrainer extends cc.factorie.util.HyperparameterMain 
     }
     
     //testSentences.par.foreach(c.process)
-    testSentences.foreach(c.process)
+    //testSentences.foreach(c.process)
     
     if (opts.saveModel.value) {
       val modelUrl: String = if (opts.modelDir.wasInvoked) opts.modelDir.value else opts.modelDir.defaultValue + System.currentTimeMillis().toString + ".factorie"
       c.serialize(new java.io.File(modelUrl))
       val d = new TransitionBasedParser
       d.deserialize(new java.io.File(modelUrl))
-      testSentences.foreach(d.process)
       testSingle(d, testSentences, "Post serialization accuracy ")
     }
     val testLAS = ParserEval.calcLas(testSentences.map(_.attr[ParseTree]))
