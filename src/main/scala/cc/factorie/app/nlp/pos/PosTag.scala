@@ -73,6 +73,14 @@ object PennPosDomain extends CategoricalDomain[String] {
       "XX" // in Ontonotes, but not WSJ
   )
   freeze()
+  // Short-cuts for a few commonly-queried tags
+  val posIndex = index("POS")
+  val nnpIndex = index("NNP")
+  val nnpsIndex = index("NNPS")
+  val prpIndex = index("PRP")
+  val prpdIndex = index("PRP$")
+  val wpIndex = index("WP")
+  val wpdIndex = index("WP$")
 
   def isNoun(pos:String): Boolean = pos(0) == 'N' 
   def isProperNoun(pos:String) = { pos == "NNP" || pos == "NNPS" }

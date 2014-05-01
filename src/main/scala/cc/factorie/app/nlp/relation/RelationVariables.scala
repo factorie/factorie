@@ -13,6 +13,7 @@ import scala.Some
  * @author sameer, brian, sebastian
  */
 
+@deprecated("This is no longer in use and will likely be removed.")
 object RelationVariables {
   var fewFeatures: Boolean = false
 

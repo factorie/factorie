@@ -219,7 +219,7 @@ The following is a selection of FACTORIE's most widely-used variable classes.
 `DoubleVariable`
 : has value with Scala type Double.
 `TensorVariable`
-: has value of type Tensor, which is defined in the FACTORIE linear algebra package `cc.factorie.la`.  This variable class makes no restritions on the dimensionality of the tensor, nor the lengths of its dimensions.
+: has value of type Tensor, which is defined in the FACTORIE linear algebra package `cc.factorie.la`.  This variable class makes no restrictions on the dimensionality of the tensor, nor the lengths of its dimensions.
 `VectorVariable`
 : has value of type Tensor1, which is a one-dimensional Tensor (also traditionally called a "vector").  In addition each `VectorVariable` is associated with a `DiscreteDomain` (further described below) whose size matches the length of the variable's vector value.
 `DiscreteVariable extends VectorVar`
@@ -267,7 +267,7 @@ Common `LabeledVar` sub-classes include:
 All the above variable types are common in existing graphical models.
 However, FACTORIE also has random variables for representing less
 traditional values.  Although these may seem like peculiar value types
-for a graphical model, they nontheless can be scored by a factor, and
+for a graphical model, they nonetheless can be scored by a factor, and
 are often useful in FACTORIE programs.
 
 `StringVariable`
@@ -305,9 +305,9 @@ of possible values the variable can take on, i.e. from 0 to N-1.
 provides not only its `size` but also a one-to-one mapping between the
 categories and the integers 0 to N-1.  For example, if `cd1` is a
 `CategoricalDomain[String]` then `cd1.category(3)` returns the String
-corresponding at index in the domain.  `cd1.index("apple")` returns
-the integer index corresponding to the cateogry value `"apple"`.  If
-`"apple"` is not yet in the domain, it will be added, assigned the
+corresponding to index 3 in the domain.  `cd1.index("apple")` returns
+the integer index corresponding to the category value `"apple"`.  If
+`"apple"` is not yet in the domain, it will be automatically added, assigned the
 next integer value, and the size of the domain will be increased by
 one (assuming that `cd1` has not previously been frozen).
 
@@ -320,10 +320,11 @@ inference, in which a proposed change to variable values is made, but
 may be rejected, requiring a reversion to previous values.)
 
 A `Diff` instance represents a change in value to a single variable.
-It has methods `undo` and `redo`, as well as the `variable` method for
-getting the changed variable.  A `DiffList` stores an ordered list of
-`Diff`s.
+It has methods `undo` and `redo`, as well as the `variable` method which
+returns the variable whose value was changed.  
+A `DiffList` stores an ordered list of `Diff`s.
 
+The `:=` method for assigning the value of a `MutableVar` was described above.
 An alternative method for changing the value of a `MutableVar` is
 `set`, which, in addition to the new value, also takes a `DiffList` as
 an implicit argument.  The `set` method will then automatically
@@ -376,16 +377,16 @@ sufficient statistics.
 
 For example, in the class `DotFactor2` the abstract method
 `statistics` must return sufficient statistics of type `Tensor`.  The
-`statisticsScore` method is then defined to be the dot-product of the
-sufficient statistics with a `Tensor` of scoring parameters returned
-by the abstract method `weights`.
+`statisticsScore` method is then defined to be the dot-product of these
+sufficient statistics with another `Tensor` of scoring parameters, which
+is returned by the abstract method `weights`.
 
 The `DotFactorWithStatistics2` class inherits from `DotFactor2` but
-requires that both its neighbors inhert frim `TensorVar`.  It then
+requires that both its neighbors inherit from `TensorVar`.  It then
 defines its `statistics` method to return the outer-product of the
 tensor values of its two neighbors.
 
-The naming convension is that classes having suffix `WithStatistics`
+The naming convention is that classes having the suffix `WithStatistics`
 define the `statistics` method for the user.  Most other classes have
 an abstract `statistics` method that must be defined by the user.
 
@@ -421,7 +422,7 @@ belong the same "family" of factors.  The trait `Family` defines a
 For example, the `DotFamily` provides a `weights` method for accessing
 the dot-product parameters shared by all member factors.
 
-In parallel to the numbered `Factor` subclasses there are numbered
+Analogous to the numbered `Factor` subclasses there are numbered
 families, `Family1`, `Family2`, `Family3`, `Family4`, each defining an
 inner factor classes with the corresponding number of neighbors.
 
@@ -432,7 +433,7 @@ method takes as input a variable, and uses its knowledge about the
 "pattern of relational data" to create and return the `Template`'s
 factors that neighbor the given variable.  
 
-Note that for multi-neighbored factors this requires traversing some
+Note that for factors with more than one neighbor this requires traversing some
 relational pattern to find the *other* variables that are also
 neighbors of these factors.  This knowledge is flexibly encoded in the
 implementation of numbered "unroll" methods.  For example `Template2`
@@ -488,7 +489,7 @@ There are several concrete subclasses of `Model`.  A `TemplateModel`'s
 factors come entirely from a collection of `Template`s.  By contrast,
 an `ItemizedModel` stores a set of factors created beforehand. A
 `CombinedModel` returns the union of the sets of factors returned by
-many submodels. There are also specialized models, such as the
+multiple submodels. There are also specialized models, such as the
 `ChainModel` for linear-chain conditional random fields, with
 specialized inference and learning algorithms.
 
@@ -506,7 +507,7 @@ the parameters of one family.  For example, `DotFamily` has a
 factor scores.
 
 A `WeightsSet` is then a collection of `Weights`, typically holding
-all the parameters of a model based on dot-products.
+all the parameters of a model (across multiple families) based on dot-products.
 
 To declare that an object has a `WeightsSet` holding parameters we use
 the `Parameters` trait, which defines a `parameters` method returning
@@ -546,6 +547,49 @@ and `different` to determine if the element-wise distance between two
 
 ### Searching for solutions with inference
 
+Once we have a way to represent a possible world (variables, with
+their possible values) and a way to represent preferences over
+different possible worlds (factors provided by a model) we can address
+the problem of searching for the most highly preferred possible world
+(MAP inference) or finding the probabilities of subsets of all
+possible worlds (marginal inference).
+
+A `Marginal` represents a joint distribution over a subset of the
+variables.  For example, a `DiscreteMarginal2` specifies two
+`DiscreteVar`s and a `Proportion2` which contains their marginal
+distribution.  A `RealGaussianMarginal1` represents a univariate
+Gaussian distribution with a specified mean and variance.  Naturally a marginal 
+
+A `FactorMarginal` is `Marginal` associated with a `Factor`.  Its
+marginal distribution may cover all the neighboring variables of the
+factor, or, in the case in which inference varied some but not all of
+the neighbors, the marginal distribution will be over a subset of the
+neighboring variables of the factor.  Its `tensorStatistics` method
+returns the expected sufficient statistics of the factor, which always
+covers all the neighboring variables of the factor; this is useful for
+parameter estimation.
+
+A request for inference on a model results in a `Summary` which is a
+collection of `Marginal`s .
+
+
+Inference
+
+Marginal
+
+Summary
+
+Infer
+
+Not automatically selected.
+
+Sampling
+
+Belief propagation
+
+MPLP
+
+
 
 
 ### Estimating parameters 
@@ -571,4 +615,3 @@ This package is not yet implemented, but will be in the future.
 
  */
 
-// TODO We should explain why Family is needed rather than just defining a Factor subclass. -akm

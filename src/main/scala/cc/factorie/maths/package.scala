@@ -408,12 +408,13 @@ package object maths {
       }
       i += 1
     }
+    if (max == Double.NegativeInfinity) return max
     var anyAdded = false
     var intermediate = 0.0
     val cutoff = max - LOGTOLERANCE
     i = 0
     while (i < len) {
-      if (vals(i) >= cutoff && i != maxIdx) {
+      if (vals(i) >= cutoff && i != maxIdx && !vals(i).isInfinite) {
         anyAdded = true
         intermediate += math.exp(vals(i) - max)
       }
@@ -440,12 +441,13 @@ package object maths {
       }
       i += 1
     }
+    if (max == Double.NegativeInfinity) return max
     var anyAdded = false
     var intermediate = 0.0
     val cutoff = max - LOGTOLERANCE
     i = 0
     while (i < len) {
-      if (vals(i) >= cutoff && i != maxIdx) {
+      if (vals(i) >= cutoff && i != maxIdx && !vals(i).isInfinite) {
         anyAdded = true
         intermediate += math.exp(vals(i) - max)
       }

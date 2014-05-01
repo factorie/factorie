@@ -35,12 +35,14 @@ trait Trainer {
  * @param weightsSet The parameters to be optimized
  * @param optimizer The optimizer
  */
-class BatchTrainer(val weightsSet: WeightsSet, val optimizer: GradientOptimizer = new LBFGS with L2Regularization) extends Trainer with FastLogging {
+class BatchTrainer(val weightsSet: WeightsSet, val optimizer: GradientOptimizer = new LBFGS with L2Regularization, val maxIterations: Int = -1) extends Trainer with FastLogging {
+  var iteration = 0
   val gradientAccumulator = new LocalWeightsMapAccumulator(weightsSet.blankDenseMap)
   val valueAccumulator = new LocalDoubleAccumulator(0.0)
   // TODO This is sad:  The optimizer determines which of gradient/value/margin it needs, but we don't know here
   // so we create them all, possibly causing the Example to do more work.
   def processExamples(examples: Iterable[Example]): Unit = {
+    iteration += 1
     if (isConverged) return
     gradientAccumulator.tensorSet.zero()
     valueAccumulator.value = 0.0
@@ -50,7 +52,7 @@ class BatchTrainer(val weightsSet: WeightsSet, val optimizer: GradientOptimizer 
     logger.info(TrainerHelpers.getBatchTrainerStatus(gradientAccumulator.tensorSet.oneNorm, valueAccumulator.value, ellapsedTime))
     optimizer.step(weightsSet, gradientAccumulator.tensorSet, valueAccumulator.value)
   }
-  def isConverged = optimizer.isConverged
+  def isConverged = (maxIterations != -1 && iteration >= maxIterations) || optimizer.isConverged
 }
 
 /**
@@ -109,11 +111,13 @@ class TwoStageTrainer(firstTrainer: Trainer, secondTrainer: Trainer) {
 // It is useful when computing the gradient in each example is more expensive than
 // adding this gradient to the accumulator.
 // If it performs slowly then minibatches should help, or the ThreadLocalBatchTrainer.
-class ParallelBatchTrainer(val weightsSet: WeightsSet, val optimizer: GradientOptimizer = new LBFGS with L2Regularization, val nThreads: Int = Runtime.getRuntime.availableProcessors())
+class ParallelBatchTrainer(val weightsSet: WeightsSet, val optimizer: GradientOptimizer = new LBFGS with L2Regularization, val nThreads: Int = Runtime.getRuntime.availableProcessors(), val maxIterations: Int = -1)
   extends Trainer with FastLogging {
+  var iteration = 0
   val gradientAccumulator = new SynchronizedWeightsMapAccumulator(weightsSet.blankDenseMap)
   val valueAccumulator = new SynchronizedDoubleAccumulator
   def processExamples(examples: Iterable[Example]): Unit = {
+    iteration += 1
     if (isConverged) return
     gradientAccumulator.l.tensorSet.zero()
     valueAccumulator.l.value = 0
@@ -123,7 +127,7 @@ class ParallelBatchTrainer(val weightsSet: WeightsSet, val optimizer: GradientOp
     logger.info(TrainerHelpers.getBatchTrainerStatus(gradientAccumulator.l.tensorSet.oneNorm, valueAccumulator.l.value, ellapsedTime))
     optimizer.step(weightsSet, gradientAccumulator.tensorSet, valueAccumulator.l.value)
   }
-  def isConverged = optimizer.isConverged
+  def isConverged = (maxIterations != -1 && iteration >= maxIterations) || optimizer.isConverged
 }
 
 // This parallel batch trainer keeps a per-thread gradient to which examples add weights.
@@ -379,8 +383,8 @@ object Trainer {
     val actualEx: Seq[Example] = if (miniBatch == -1) examples else MiniBatchExample(miniBatch, examples).toSeq
     val trainer = if (useOnlineTrainer && useParallelTrainer) new ParallelOnlineTrainer(parameters, optimizer=optimizer, maxIterations=maxIterations, logEveryN=logEveryN, nThreads=nThreads)
       else if (useOnlineTrainer && !useParallelTrainer) new OnlineTrainer(parameters, optimizer=optimizer, maxIterations=maxIterations, logEveryN=logEveryN)
-      else if (!useOnlineTrainer && useParallelTrainer) new ParallelBatchTrainer(parameters, optimizer=optimizer, nThreads=nThreads)
-      else new BatchTrainer(parameters, optimizer=optimizer)
+      else if (!useOnlineTrainer && useParallelTrainer) new ParallelBatchTrainer(parameters, optimizer=optimizer, maxIterations=maxIterations, nThreads=nThreads)
+      else new BatchTrainer(parameters, optimizer=optimizer, maxIterations=maxIterations)
     trainer match { case t: ParallelOnlineTrainer => t.replaceTensorsWithLocks(); case _ => }
     try {
       while (!trainer.isConverged) {

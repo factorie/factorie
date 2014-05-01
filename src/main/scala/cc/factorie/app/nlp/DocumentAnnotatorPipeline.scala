@@ -3,7 +3,8 @@ package cc.factorie.app.nlp
 import cc.factorie.util.FastLogging
 
 import scala.reflect.ClassTag
-import cc.factorie.app.nlp.coref.mention.{MentionEntityTypeLabeler, MentionEntityType}
+
+//import cc.factorie.app.nlp.coref.mention.{MentionEntityTypeLabeler, MentionEntityType}
 
 /**
  * User: apassos
@@ -64,14 +65,15 @@ object DocumentAnnotatorPipeline extends FastLogging  {
     classOf[ner.NerTag] -> (() => ner.ConllChainNer), // TODO Should there be a different default?
     classOf[ner.BilouConllNerTag] -> (() => ner.NoEmbeddingsConllStackedChainNer),
     classOf[ner.BilouOntonotesNerTag] -> (() => ner.NER2),
-    classOf[coref.mention.NerMentionList] -> (() => coref.mention.NerAndPronounMentionFinder),
+    //classOf[coref.mention.NerMentionList] -> (() => coref.mention.NerAndPronounMentionFinder),
     classOf[coref.mention.ParseBasedMentionList] -> (() => coref.mention.ParseBasedMentionFinding),
-    classOf[phrase.GenderLabel[coref.mention.Mention]] -> (() => phrase.MentionGenderLabeler),
-    classOf[phrase.GenderLabel[phrase.NounPhrase]] -> (() => phrase.NounPhraseGenderLabeler),
-    classOf[phrase.NumberLabel[coref.mention.Mention]] -> (() => phrase.MentionNumberLabeler),
-    classOf[phrase.NumberLabel[phrase.NounPhrase]] -> (() => phrase.NounPhraseNumberLabeler),
-    classOf[MentionEntityType] ->  (() => coref.mention.MentionEntityTypeLabeler),
-    classOf[cc.factorie.util.coref.GenericEntityMap[coref.mention.Mention]] -> (() => coref.NerForwardCoref)
+    //classOf[phrase.GenderLabel[coref.Mention]] -> (() => phrase.GenderLabeler[]),
+    classOf[phrase.Gender] -> (() => phrase.MentionPhraseGenderLabeler),
+    classOf[phrase.Number] -> (() => phrase.MentionPhraseNumberLabeler)
+    //classOf[phrase.NumberLabel[phrase.NounPhrase]] -> (() => phrase.NounPhraseNumberLabeler),
+    //classOf[MentionEntityType] ->  (() => coref.mention.MentionEntityTypeLabeler),
+    //classOf[cc.factorie.util.coref.GenericEntityMap[coref.mention.Mention]] -> (() => coref.NerForwardCoref)
+    //classOf[coref.WithinDocCoref] -> (() => coref.NerForwardCoref)
   )
 
   //def apply(goal: Class[_]): DocumentAnnotationPipeline = apply(Seq(goal), defaultDocumentAnnotationMap)

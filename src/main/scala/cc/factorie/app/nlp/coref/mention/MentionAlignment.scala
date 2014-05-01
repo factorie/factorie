@@ -4,12 +4,14 @@ import cc.factorie.app.nlp.wordnet.WordNet
 import scala.collection.mutable
 import cc.factorie.util.coref.GenericEntityMap
 import cc.factorie.app.nlp._
+import cc.factorie.app.nlp.coref._
 import cc.factorie.app.nlp.pos.PennPosTag
 import collection.mutable.{ArrayBuffer, HashMap}
 import cc.factorie.app.nlp.parse.ParseTree
 import scala.Some
 import cc.factorie.app.nlp.load.LoadConll2011
 import cc.factorie.app.nlp.coref.Coref1Options
+import cc.factorie.app.nlp.coref.{Mention,WithinDocEntity}
 
 /**
  * User: apassos
@@ -63,13 +65,13 @@ object MentionAlignment {
   //for each of the mentions in detectedMentions, this adds a reference to a ground truth entity
   //the alignment is based on an **exact match** between the mention boundaries
   def alignMentions(gtDoc: Document, detectedDoc: Document,wn: WordNet, useEntityTypes: Boolean, options: Coref1Options, shifts: Seq[Int]): ((String,GenericEntityMap[Mention]),PrecRecReport) = {
-    val groundTruthMentions: MentionList = gtDoc.attr[MentionList]
-    val detectedMentions: MentionList = detectedDoc.attr[MentionList]
+    val groundTruthMentions = gtDoc.attr[MentionList]
+    val detectedMentions = detectedDoc.attr[MentionList]
 
     val name = detectedDoc.name
 
     val gtSpanHash = mutable.HashMap[(Int,Int),Mention]()
-    gtSpanHash ++= groundTruthMentions.map(m => ((m.start,m.length),m))
+    gtSpanHash ++= groundTruthMentions.map(m => ((m.phrase.start, m.phrase.length), m))
     val gtHeadHash = mutable.HashMap[Int,Mention]()
     gtHeadHash ++= groundTruthMentions.map(m => (getHeadTokenInDoc(m),m))
 
@@ -81,23 +83,24 @@ object MentionAlignment {
     var debug = false
     //here, we create a bunch of new entity objects, that differ from the entities that the ground truth mentions point to
     //however, we index them by the same uIDs that the ground mentions use
-    val entityHash = groundTruthMentions.groupBy(m => m.attr[Entity]).toMap
+    val entityHash = groundTruthMentions.groupBy(m => m.entity).toMap
     val falsePositives1 = ArrayBuffer[Mention]()
     detectedMentions.foreach(m => {
       val alignment = checkContainment(gtSpanHash,gtHeadHash,m, options, shifts)
       if(alignment.isDefined){
         val gtMention = alignment.get
-        m.attr +=  gtMention.attr[Entity]
-        if(entityHash(gtMention.attr[Entity]).length > 1) relevantExactMatches += 1
+        m.attr +=  gtMention.entity
+        if(entityHash(gtMention.entity).length > 1) relevantExactMatches += 1
         exactMatches += 1
         //val predictedEntityType = if(useEntityTypes) MentionEntityTypeAnnotator1Util.classifyUsingRules(m.span.tokens.map(_.lemmaString))  else "O"
         //m.attr += new MentionEntityType(m,predictedEntityType)
         gtAligned(gtMention) = true
-        if(debug) println("aligned: " + gtMention.string +":" + gtMention.start   + "  " + m.string + ":" + m.start)
+        if(debug) println("aligned: " + gtMention.string +":" + gtMention.phrase.start   + "  " + m.phrase.string + ":" + m.phrase.start)
       }else{
-        if(debug) println("not aligned: "  +  m.string + ":" + m.start)
-        val entityUID = m.document.name + unAlignedEntityCount
-        val newEntity = new Entity(entityUID)
+        if(debug) println("not aligned: "  +  m.string + ":" + m.phrase.start)
+        val entityUID = m.phrase.document.name + unAlignedEntityCount
+        // TODO We still have to examine all this carefully concerning which Mentions are created in the target and non-target WithinDocCoref. -akm
+        val newEntity = detectedDoc.getTargetCoref.entityFromUniqueId(entityUID) // was: new Entity(entityUID)
         m.attr += newEntity
        // val predictedEntityType = if(useEntityTypes) MentionEntityTypeAnnotator1Util.classifyUsingRules(m.span.tokens.map(_.lemmaString))  else "O"
        // m.attr += new MentionEntityType(m,predictedEntityType)
@@ -114,23 +117,23 @@ object MentionAlignment {
 
     allCorefMentions.foreach(m => entityMap.addMention(m, entityMap.numMentions.toLong))
 
-    val corefEntities = allCorefMentions.groupBy(_.attr[Entity])
+    val corefEntities = allCorefMentions.groupBy(_.entity)
     corefEntities.flatMap(_._2.sliding(2)).foreach(p => {
       if (p.size == 2) entityMap.addCoreferentPair(p(0), p(1))
     })
 
 
-    val relevantGTMentions = groundTruthMentions.count(m => entityHash(m.attr[Entity]).length > 1)
+    val relevantGTMentions = groundTruthMentions.count(m => entityHash(m.entity).length > 1)
     ((name,entityMap),new PrecRecReport(relevantExactMatches,relevantGTMentions,detectedMentions.length))
   }
 
   def getHeadTokenInDoc(m: Mention): Int = {
-    m.start + m.headTokenIndex
+    m.phrase.start + m.phrase.headTokenOffset
   }
   def checkContainment(startLengthHash: mutable.HashMap[(Int,Int),Mention], headHash: mutable.HashMap[Int,Mention] ,m: Mention, options: Coref1Options, shifts: Seq[Int]): Option[Mention] = {
-    val start = m.start
-    val length = m.length
-    val headTokIdxInDoc = m.headTokenIndex + m.start
+    val start = m.phrase.start
+    val length = m.phrase.length
+    val headTokIdxInDoc = m.phrase.headTokenOffset + m.phrase.start
     val startIdx = start
     val endIdx = start + length
 
