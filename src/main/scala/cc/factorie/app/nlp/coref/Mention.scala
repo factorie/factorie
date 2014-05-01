@@ -171,7 +171,7 @@ class WithinDocCoref(val document:Document) extends EvaluatableClustering[Within
   def entityFromUniqueId(id:String): WithinDocEntity = _entities.getOrElse(id, new WithinDocEntity1(id))
   /** Return the entity associated with the given key, or create a new entity if not found alread among 'entities'. */
   def entityFromKey(key:Int): WithinDocEntity = { 
-    val id = _entityKeyToId(key)
+    val id = _entityKeyToId.getOrElse(key,null)
     val result = if (id eq null) new WithinDocEntity1 else _entities(id)
     _entityKeyToId(key) = result.uniqueId
     result
@@ -179,13 +179,28 @@ class WithinDocCoref(val document:Document) extends EvaluatableClustering[Within
   /** Return the entity associated with the given uniqueId.  Return null if not found. */
   def idToEntity(id:String): WithinDocEntity = _entities(id)
   /** Remove from the list of entities all entities that contain no mentions. */
-  def trimEmptyEntities: Unit = _entities.values.filter(_.mentions.size == 0).map(_.uniqueId).foreach(_entities.remove(_)) // TODO But note that this doesn't purge _entityKeyToId; perhaps it should.
+  def trimEmptyEntities: Unit = _entities.values.filter(_.mentions.size == 0).map(_.uniqueId).foreach(_entities.remove) // TODO But note that this doesn't purge _entityKeyToId; perhaps it should.
+  /** Remove from all entities and mentions assosciated with entities that contain only one mention. */
+  def removeSingletons:Unit ={
+    _entities.values.filter(_.mentions.size == 1).map(_.uniqueId).foreach{
+      id =>
+        _entities(id).mentions.foreach(m => deleteMention(m))
+        _entities.remove(id)
+//        _entityKeyToId.remove(_entityKeyToId.find{case (intId,stringId) => id == stringId}.get._1)
+    }
+  }
   // Support for evaluation
   def clusterIds: Iterable[WithinDocEntity] = _entities.values
   def pointIds: Iterable[Phrase] = _spanToMention.values.map(_.phrase)
   def pointIds(entityId:WithinDocEntity): Iterable[Phrase] = entityId.mentions.map(_.phrase)
   def intersectionSize(entityId1:WithinDocEntity, entityId2:WithinDocEntity): Int = entityId1.mentions.map(_.phrase.value).intersect(entityId2.mentions.map(_.phrase.value)).size
-  def clusterId(mentionId:Phrase): WithinDocEntity = _spanToMention(mentionId.value).entity
+  def clusterId(mentionId:Phrase): WithinDocEntity = {
+    val mention = _spanToMention.getOrElse(mentionId.value,null)
+    if(mention eq null) null
+    else mention.entity
+  }
+
+
 }
 
 

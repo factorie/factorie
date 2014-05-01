@@ -32,10 +32,11 @@ class ConllPhraseEntityType(val phrase:Phrase, targetValue:String) extends Conll
 
 /** Categorical variable indicating whether the noun phrase is person, location, organization, etc. 
     according to the Ontonotes entity type domain. */
-class OntonotesEntityType(targetValue:String) extends LabeledCategoricalVariable(targetValue) {
+class OntonotesEntityType(targetValue:String,val exactMatch:Boolean = false) extends LabeledCategoricalVariable(targetValue) {
   def domain = OntonotesEntityTypeDomain
+
 }
-class OntonotesPhraseEntityType(val phrase:Phrase, targetValue:String) extends OntonotesEntityType(targetValue)
+class OntonotesPhraseEntityType(val phrase:Phrase, targetValue:String,exactMatch:Boolean = false) extends OntonotesEntityType(targetValue,exactMatch)
 
 
 

@@ -2,15 +2,16 @@ package cc.factorie.app.nlp.coref
 
 import cc.factorie.la.{Tensor1, SparseTensor, GrowableSparseBinaryTensor1}
 import cc.factorie.variable.{LabeledCategoricalVariable, BinaryFeatureVectorVariable}
-import cc.factorie.app.nlp.coref.{CorefFeatures,MentionCharacteristics}
 import scala.collection.mutable
 import cc.factorie.app.nlp.{Token, Document}
+import cc.factorie.app.nlp.ner.OntonotesEntityTypeDomain
 
 /** A binary feature vector for the features of a mention pair.
     Here, mention1 is the mention to the right.
     @author Alexandre Passos
  */
 class MentionPairFeatures(val model: CorefModel, val mention1:Mention, val mention2:Mention, mentions: Seq[Mention], options: Coref1Options) extends BinaryFeatureVectorVariable[String] {
+ // def this(label:MentionPairLabel) = this(label.model,label.mention1,label.mention2,label.mentions,label.options)
   {
     val t = new GrowableSparseBinaryTensor1(domain.dimensionDomain)
     t.sizeHint(if (options.conjunctionStyle == ConjunctionOptions.SLOW_CONJUNCTIONS) 650 else 70)
@@ -79,9 +80,9 @@ class MentionPairFeatures(val model: CorefModel, val mention1:Mention, val menti
     val m2c = mention2.attr[MentionCharacteristics] 
     val t1 = m2c.predictEntityType
     val t2 = m1c.predictEntityType
-    if (t1.equals("unknown") || t2.equals("unknown"))
+    if (t1 == OntonotesEntityTypeDomain.O || t2 == OntonotesEntityTypeDomain.O)
       "unknown"
-    else if (t1.equals(t2))
+    else if (t1 == t2)
       "true"
     else
       "false"
@@ -100,9 +101,10 @@ class MentionPairFeatures(val model: CorefModel, val mention1:Mention, val menti
 
 
   def computeBasicFeatures() {
-    val m1 = mention1.attr[MentionCharacteristics]
-    val m2 = mention2.attr[MentionCharacteristics]
+    val m1 = if(mention1.attr[MentionCharacteristics] eq null){ mention1.attr += new MentionCharacteristics(mention1); mention1.attr[MentionCharacteristics]} else mention1.attr[MentionCharacteristics]
+    val m2 = if(mention2.attr[MentionCharacteristics] eq null){ mention2.attr += new MentionCharacteristics(mention1); mention2.attr[MentionCharacteristics]} else mention2.attr[MentionCharacteristics]
     if (basicFeatureCalculated) return
+
 
     addMergeableFeature("BIAS")
     addMergeableFeature("gmc" + m1.gender + "" +  m2.gender)
@@ -139,13 +141,13 @@ class MentionPairFeatures(val model: CorefModel, val mention1:Mention, val menti
     if (CorefFeatures.areRelative(mention1, mention2))
       addMergeableFeature("rpf")
     else addMergeableFeature("rpff")
-    for (cm <- CorefFeatures.countCompatibleMentionsBetween(mention1, mention2, mentions)) addMergeableFeature("cmc" + cm)
+    for (cm <- CorefFeatures.countCompatibleMentionsBetween(mention1, mention2, mentions.toSeq)) addMergeableFeature("cmc" + cm)
     addMergeableFeature("mtpw" + (if (m2.isPRO) m2.headPos + mention1.phrase.headToken.string else m2.headPos + m1.headPos))
     addMergeableFeature("pwhe" + proWordHead)
     addMergeableFeature("etm" + entityTypeMatch)
     addMergeableFeature("lhp" + CorefFeatures.headWordsCross(mention1, mention2, model))
     if (mention1.phrase.sentence == mention2.phrase.sentence) addMergeableFeature("ss") // false values of this feature are not included in Roth's system
-    //CorefFeatures.matchingTokensRelations(mention1, mention2).foreach(r => addMergeableFeature("apr" + r))
+    CorefFeatures.matchingTokensRelations(mention1, mention2).foreach(r => addMergeableFeature("apr" + r))
 
     if (mention1.phrase.head.string.toLowerCase == mention2.phrase.head.string.toLowerCase)
       addMergeableFeature("bM")
@@ -178,7 +180,8 @@ class MentionPairFeatures(val model: CorefModel, val mention1:Mention, val menti
 
 class MentionPairLabel(val model: PairwiseCorefModel, val mention1:Mention, val mention2:Mention, mentions: Seq[Mention], val initialValue: Boolean, options: Coref1Options) extends LabeledCategoricalVariable(if (initialValue) "YES" else "NO")  {
   def domain = model.MentionPairLabelDomain
-  val features = new MentionPairFeatures(model, mention1, mention2, mentions, options)
+  def features:MentionPairFeatures = new MentionPairFeatures(model, mention1, mention2, mentions, options)
+  //lazy val features =
 }
 
 
@@ -254,9 +257,9 @@ object LexicalCounter {
     for (trainDoc <- trainDocs; sentence <- trainDoc.sentences; word <- sentence) {
       val text = word.string
       allShapeCounts(cc.factorie.app.strings.stringShape(text,2)) += 1//incrementCount(NerExample.shapeFor(word), 1.0)
-      allClassCounts(classFor(word).toString())+=1
+      allClassCounts(classFor(word))+=1
       if (text.size >= 1) {
-        allPrefixCounts(text.substring(0, 1).toString())+=1
+        allPrefixCounts(text.substring(0, 1))+=1
         allSuffixCounts(text.substring(text.length - 1))+=1
       }
       if (text.size >= 2) {

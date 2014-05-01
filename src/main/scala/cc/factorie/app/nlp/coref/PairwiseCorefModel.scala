@@ -70,7 +70,7 @@ trait CorefModel extends Parameters {
 }
 
 abstract class PairwiseCorefModel extends app.classify.backend.OptimizablePredictor[Double,Tensor1] with CorefModel{
-  def getExample(label: MentionPairLabel, scale: Double): Example = new PredictorExample(this, label.features.value, if (label.target.categoryValue == "YES") 1 else -1, OptimizableObjectives.hingeScaledBinary(1.0, 3.0))
+  def getExample(label: MentionPairLabel,features:MentionPairFeatures, scale: Double): Example = new PredictorExample(this, label.features.value, if (label.target.categoryValue == "YES") 1 else -1, OptimizableObjectives.hingeScaledBinary(1.0, 3.0))
 
 }
 
@@ -235,8 +235,16 @@ class StructuredCorefModel extends CorefModel {
   def computeLikelihood( mentionGraph: MentionGraph, goldMarginal: Array[Array[Double]],predictedMarginalScores: Array[Array[Double]]): Double = {
     var likelihood = 0.0
     for (currIdx <- 0 to mentionGraph.graph.length-1) {
-      var goldAntecedents = if(mentionGraph.orderedMentionList(currIdx).entity ne null) mentionGraph.orderedMentionList(currIdx).entity.mentions else Iterable.empty
-      if(goldAntecedents.isEmpty) goldAntecedents = Set(mentionGraph.doc.coref.mentions.toSeq(currIdx))//Set(currentMention.mention)
+      val currMention = mentionGraph.orderedMentionList(currIdx)
+      var goldAntecedents = if(currMention.entity ne null) currMention.entity.mentions.filter(m => mentionGraph.orderedMentionList.indexOf(m) < currIdx) else Iterable.empty
+      if(goldAntecedents.isEmpty) goldAntecedents = Set(mentionGraph.coref.mentions.toSeq(currIdx))//Set(currentMention.mention)
+      if(!goldAntecedents.forall(a => mentionGraph.orderedMentionList.indexOf(a) <= currIdx)){
+        println("Stop here1")
+        //println(edgeLink)
+        println(goldAntecedents.map(_.phrase.start).mkString(" "))
+      }
+      val edgeIdx = mentionGraph.orderedMentionList.indexOf(goldAntecedents.head)
+
       var currProb = 0.0
       for (edgeLink <- goldAntecedents) {
         val edgeIdx = mentionGraph.orderedMentionList.indexOf(edgeLink)
@@ -263,7 +271,7 @@ class GraphExample[Output, Prediction, Input<:MentionGraph](model: StructuredCor
     if (value != null) value.accumulate(likelihood)
     //if (gradient != null) model.accumulateObjectiveGradient(gradient, input, ograd, weight)
     for (i <- 0 until input.graph.length) {
-      for (edgeIdx <- 0 until input.graph(i).length) {
+      for (edgeIdx <- 0 until input.graph(i).length; if !input.prunedEdges(i)(edgeIdx)) {
         if(gradient != null){
           gradient.accumulate(model.pairwiseWeights, input.features(i)(edgeIdx).value, goldMarginalScores(i)(edgeIdx) - predictionMarginalScores(i)(edgeIdx))
         }
