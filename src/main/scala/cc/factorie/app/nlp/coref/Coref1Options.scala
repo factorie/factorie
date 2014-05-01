@@ -57,7 +57,7 @@ class Coref1Options {
   var allowNegCataphora = false
   var allowTestCataphora = false // allow cataphora in test?
   var pruneNegTrain = true // setting to true means only one positive pair is created for each mention, compatible with uiuc implementation
-  var numPositivePairsTrain = 2 // number of positive pairs to create before stopping examining further back
+  var numPositivePairsTrain = 75 // number of positive pairs to create before stopping examining further back
   var pruneNegTest = false // setting to true means only one positive pair is created for each mention, compatible with uiuc implementation
   var numPositivePairsTest = 100
 

@@ -4,7 +4,7 @@ import cc.factorie.app.nlp.{DocumentAnnotatorPipeline, MutableDocumentAnnotatorM
 import cc.factorie.util.coref.GenericEntityMap
 import cc.factorie.app.nlp.wordnet.WordNet
 import cc.factorie.app.nlp.ner.{ConllChainNer, NerTag}
-import cc.factorie.util.HyperparameterMain
+import cc.factorie.util.{TimingCollector, Trackers, CmdOption, HyperparameterMain}
 import cc.factorie.app.nlp.coref.mention._
 import cc.factorie.app.nlp.phrase._ //{NounPhraseGenderLabeler,NounPhraseNumberLabeler,NounPhraseEntityTypeLabeler}
 import cc.factorie.app.nlp.load.LoadConll2011
@@ -21,11 +21,11 @@ trait ForwardCorefTrainerOpts extends CorefTrainerOpts{
   val numPositivePairsTest = new CmdOption("prune-test", 100, "INT", "number of positive pairs before pruning instances in testing")
   val numThreads = new CmdOption("num-threads", 4, "INT", "Number of threads to use")
   val featureComputationsPerThread = new CmdOption("feature-computations-per-thread", 2, "INT", "Number of feature computations per thread to run in parallel during training")
-  val numTrainingIterations = new CmdOption("num-training-iterations", 4, "INT", "Number of passes through the training data")
+  val numTrainingIterations = new CmdOption("num-training-iterations", 1, "INT", "Number of passes through the training data")
   val writeConllFormat = new CmdOption("write-conll-format", false, "BOOLEAN", "Write CoNLL format data.")
   val useAverageIterate = new CmdOption("use-average-iterate", true, "BOOLEAN", "Use the average iterate instead of the last iterate?")
   val useMIRA = new CmdOption("use-mira", false, "BOOLEAN", "Whether to use MIRA as an optimizer")
-  val saveFrequency = new CmdOption("save-frequency", 4, "INT", "how often to save the model between epochs")
+  val saveFrequency = new CmdOption("save-frequency", 1, "INT", "how often to save the model between epochs")
   val trainPortionForTest = new CmdOption("train-portion-for-test", 0.1, "DOUBLE", "When testing on train, what portion to use.")
   val mergeFeaturesAtAll = new CmdOption("merge-features-at-all", true, "BOOLEAN", "Whether to merge features")
   val conjunctionStyle = new CmdOption("conjunction-style", "NONE", "NONE|HASH|SLOW", "What types of conjunction features to use - options are NONE, HASH, and SLOW (use slow string-based conjunctions).")
@@ -64,23 +64,18 @@ object ForwardCorefTrainer extends CorefTrainer{
     println("** Arguments")
     val ignoreOpts = Set("config", "help", "version")
     for (o <- opts.values.toSeq.sortBy(_.name); if !ignoreOpts(o.name)) println(o.name + " = " + o.value)
-    println()
+
+    val timer = new TimingCollector()
+    Trackers += timer
+
 
     val rng = new scala.util.Random(opts.randomSeed.value)
     val loadTrain = !opts.deserialize.wasInvoked
     val (trainDocs,testDocs) =  if(opts.useNonGoldBoundaries.value ) makeTrainTestDataNonGold(opts.trainFile.value,opts.testFile.value,options, loadTrain, opts.useNerMentions.value)
     else makeTrainTestData(opts.trainFile.value,opts.testFile.value, loadTrain)
 
-    if(loadTrain)
-      for (doc <- trainDocs; mention <- doc.coref.mentions) {
-        NounPhraseGenderLabeler.process(mention.phrase)
-        NounPhraseNumberLabeler.process(mention.phrase)
-      }
-
-    for (doc <- testDocs; mention <- doc.coref.mentions) {
-      NounPhraseGenderLabeler.process(mention.phrase)
-      NounPhraseNumberLabeler.process(mention.phrase)
-    }
+    addGenderNumberLabeling(trainDocs,testDocs)
+    println(timer.timings)
 
     val mentPairClsf =
       if (opts.deserialize.wasInvoked){
@@ -95,29 +90,33 @@ object ForwardCorefTrainer extends CorefTrainer{
         lr.options.setConfig("usePronounRules",options.usePronounRules) //this is safe to tweak at test time if you train separate weights for all the pronoun cases
 
         lr.model.MentionPairFeaturesDomain.freeze()
+        //Add Cached Mention Features
+        for(doc <- testDocs; mention <- doc.coref.mentions) mention.attr += new MentionCharacteristics(mention)
+
         lr.doTest(testDocs, WordNet, "Test")
         lr
       }
       else{
         lr.train(trainDocs, testDocs, WordNet, rng, opts.saveFrequency.wasInvoked,opts.saveFrequency.value,opts.serialize.value, opts.learningRate.value)
+        println(timer.timings)
         lr
       }
 
     if (opts.serialize.wasInvoked && !opts.deserialize.wasInvoked)
       mentPairClsf.serialize(opts.serialize.value)
 
-    //if (opts.writeConllFormat.value) {
+    if (opts.writeConllFormat.value) {
       val conllFormatPrinter = new CorefScorer
-      val conllFormatGold = new java.io.PrintStream(new java.io.File("eval-test.filtpred"))
-      testDocs.foreach(d => conllFormatPrinter.printConll2011Format(d.getCoref, conllFormatGold,true))
-      conllFormatGold.flush()
-      conllFormatGold.close()
-   /*
-      val conllFormatGold2 = new java.io.PrintStream(new java.io.File("conll-test.nonfilteredgold"))
-      testDocs.foreach(d => printConll2011Format(d, testTrueMaps(d.name), conllFormatGold2))
-      conllFormatGold2.flush()
-      conllFormatGold2.close()
-    }     */
+      val conllFormatFilt = new java.io.PrintStream(new java.io.File("eval-test.filtpred"))
+      testDocs.foreach(d => conllFormatPrinter.printConll2011Format(d.getCoref, conllFormatFilt,true))
+      conllFormatFilt.flush()
+      conllFormatFilt.close()
+
+      val conllFormatNonFilt = new java.io.PrintStream(new java.io.File("eval-test-key.filtgold"))
+      testDocs.foreach{d => d.targetCoref.removeSingletons; conllFormatPrinter.printConll2011Format(d.getTargetCoref, conllFormatNonFilt,true)}
+      conllFormatNonFilt.flush()
+      conllFormatNonFilt.close()
+    }
     val accuracy = 0.0
     if(opts.targetAccuracy.wasInvoked) cc.factorie.assertMinimalAccuracy(accuracy,opts.targetAccuracy.value.toDouble)
 
@@ -154,7 +153,7 @@ object StructuredCorefTrainer extends CorefTrainer{
     val (trainDocs,testDocs) =   if(options.useNonGoldBoundaries) makeTrainTestDataNonGold(opts.trainFile.value,opts.testFile.value,options, loadTrain, opts.useNerMentions.value)
     else makeTrainTestData(opts.trainFile.value, opts.testFile.value, loadTrain)
 
-    if(loadTrain)
+    /*if(loadTrain)
       for (doc <- trainDocs; mention <- doc.coref.mentions) {
         NounPhraseGenderLabeler.process(mention.phrase)
         NounPhraseNumberLabeler.process(mention.phrase)
@@ -163,7 +162,10 @@ object StructuredCorefTrainer extends CorefTrainer{
     for (doc <- testDocs; mention <- doc.coref.mentions) {
       NounPhraseGenderLabeler.process(mention.phrase)
       NounPhraseNumberLabeler.process(mention.phrase)
-    }
+    }  */
+
+    addGenderNumberLabeling(trainDocs,testDocs)
+
     var accuracy = 0.0
     if (opts.deserialize.wasInvoked){
       //copy over options that are tweakable at test time

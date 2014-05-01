@@ -164,7 +164,13 @@ object CorefFeatures {
   val properSet = Set("NNP", "NNPS")
   val nounSet = Seq("NN", "NNS")
   val posSet = Seq("POS")
-  
+
+
+  trait Ternary
+  case object True extends Ternary
+  case object False extends Ternary
+  case object Unknown extends Ternary
+
   def getPairRelations(s1: Mention, s2: Mention): String = {
     val l1 = s1.phrase.headToken.string.toLowerCase
     val l2 = s2.phrase.headToken.string.toLowerCase
@@ -209,7 +215,7 @@ object CorefFeatures {
     var numMatches = 0
     while (numMatches <= 2 && iter.hasNext) {
       val m = iter.next()
-      if (CorefFeatures.gendersMatch(m, m1).equals("t") && CorefFeatures.numbersMatch(m, m1).equals("t")) numMatches += 1
+      if (CorefFeatures.gendersMatch(m, m1) == True && CorefFeatures.numbersMatch(m, m1) == True) numMatches += 1
     }
 
     if (numMatches <= 2) (0 to numMatches).map(_.toString)
@@ -228,7 +234,7 @@ object CorefFeatures {
   val allPronouns = maleHonors ++ femaleHonors ++ neuterWN ++ malePron ++ femalePron ++ neuterPron ++ personPron
   // TODO: this cache is not thread safe if we start making GenderMatch not local
   // val cache = scala.collection.mutable.Map[String, Char]()
-  import cc.factorie.app.nlp.lexicon
+  /*import cc.factorie.app.nlp.lexicon
   def namGender(m: Mention): Char = {
     val fullhead = m.phrase.string.trim.toLowerCase // TODO Is this change with "string" correct? -akm 2/28/2014
     var g = 'u'
@@ -278,8 +284,8 @@ object CorefFeatures {
     }
 
     g
-  }
-
+  } */
+  /*
   def nomGender(m: Mention, wn: WordNet): Char = {
     val fullhead = m.phrase.string.toLowerCase
     if (wn.isHypernymOf("male", fullhead))
@@ -292,9 +298,9 @@ object CorefFeatures {
       'n'
     else
       'u'
-  }
+  }*/
 
-
+  /*
   def proGender(m: Mention): Char = {
     val pronoun = m.phrase.string.toLowerCase
     if (malePron.contains(pronoun))
@@ -307,38 +313,39 @@ object CorefFeatures {
       'p'
     else
       'u'
-  }
+  }*/
 
 
-  def strongerOf(g1: Char, g2: Char): Char = {
-    if ((g1 == 'm' || g1 == 'f') && (g2 == 'p' || g2 == 'u'))
+  def strongerOf(g1: Int, g2: Int): Int = {
+    if ((g1 == GenderDomain.MALE || g1 == GenderDomain.FEMALE) && (g2 == GenderDomain.PERSON || g2 == GenderDomain.UNKNOWN))
       g1
-    else if ((g2 == 'm' || g2 == 'f') && (g1 == 'p' || g1 == 'u'))
+    else if ((g2 == GenderDomain.MALE || g2 == GenderDomain.FEMALE) && (g1 == GenderDomain.PERSON || g1 == GenderDomain.UNKNOWN))
       g2
-    else if ((g1 == 'n' || g1 == 'p') && g2 == 'u')
+    else if ((g1 == GenderDomain.NEUTER || g1 == GenderDomain.PERSON) && g2 == GenderDomain.UNKNOWN)
       g1
-    else if ((g2 == 'n' || g2 == 'p') && g1 == 'u')
+    else if ((g2 == GenderDomain.NEUTER || g2 == GenderDomain.PERSON) && g1 == GenderDomain.UNKNOWN)
       g2
     else
       g2
   }
 
+
   // TODO Do we really want to return a Char here?
-  def gendersMatch(m1:Mention, m2:Mention): Char = {
+  def gendersMatch(m1:Mention, m2:Mention): Ternary = {
     val g1 = m2.phrase.attr[Gender].intValue
     val g2 = m1.phrase.attr[Gender].intValue
     import GenderDomain._
     // TODO This condition could be much simplified 
     if (g1 == GenderDomain.UNKNOWN || g2 == GenderDomain.UNKNOWN)
-      'u'
+      Unknown
     else if (g1 == GenderDomain.PERSON && (g2 == GenderDomain.MALE || g2 == GenderDomain.FEMALE || g2 == GenderDomain.PERSON))
-      'u'
+      Unknown
     else if (g2 == GenderDomain.PERSON && (g1 == GenderDomain.MALE || g1 == GenderDomain.FEMALE || g1 == GenderDomain.PERSON))
-      'u'
+      Unknown
     else if (g1 == g2)
-      't'
+      True
     else
-      'f'
+      False
   }
 
   def headWordsCross(m1:Mention, m2:Mention, model: CorefModel): String = {
@@ -357,22 +364,22 @@ object CorefFeatures {
   val singDet = Set("a ", "an ", "this ")
   val pluDet = Set("those ", "these ", "some ")
 
-  def numbersMatch(m1:Mention, m2:Mention): Char = {
+  def numbersMatch(m1:Mention, m2:Mention): Ternary = {
     val n1 = m2.phrase.attr[Number].intValue
     val n2 = m1.phrase.attr[Number].intValue
     import NumberDomain._
     if (n1 == n2 && n1 != UNKNOWN)
-      't'
+      True
     else if (n1 != n2 && n1 != UNKNOWN && n2 != UNKNOWN)
-      'f'
+      False
     else if (n1 == UNKNOWN || n2 == UNKNOWN) {
       if (m1.phrase.toSeq.map(t => t.string.trim).mkString(" ").equals(m2.phrase.toSeq.map(t => t.string.trim).mkString(" ")))
-        't'
+        True
       else
-        'u'
+        Unknown
     }
     else
-      'u'
+      Unknown
   }
 
   val relativizers = Set("who", "whom", "which", "whose", "whoever", "whomever", "whatever", "whichever", "that")
