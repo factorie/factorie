@@ -5,6 +5,7 @@ import cc.factorie.util.coref.GenericEntityMap
 import cc.factorie.la.DenseTensor2
 import scala.Tuple2
 import scala.Iterable
+import scala.Tuple2
 
 /** A generic trait for clustering solution containers that can be evaluated.
     intersectionSize must be implemented such that it will work when passed clusters from different EvaluatableClustering instances. */
@@ -127,12 +128,12 @@ object BCubedClusterEvaluation extends ClusterF1Evaluation with FastLogging {
       for (mid <- predicted.pointIds) {
         // get pred and true clusters
         val predId = predicted.clusterId(mid)
-        val predCluster = if(predId != null) predicted.pointIds(predId) else Iterable.empty
+        val predCluster = predicted.pointIds(predId)
         val trueId = truth.clusterId(mid)
         val trueCluster = if(trueId != null) truth.pointIds(trueId) else Iterable.empty
         // calculate overlap between the two
         val clusterOverlap: Int = if(trueId != null&&predId!=null)predicted.intersectionSize(predId, trueId) else 0
-        // add to metric                                             123
+        // add to metric
         // prec = overlap / pred.size
         result.precisionNumerator += clusterOverlap.doubleValue / predCluster.size.doubleValue
         // rec = overlap / truth.size
@@ -145,11 +146,9 @@ object BCubedClusterEvaluation extends ClusterF1Evaluation with FastLogging {
 object BCubedNoSingletonClusterEvaluation extends ClusterF1Evaluation with FastLogging {
   def apply[E,M](predicted: EvaluatableClustering[E,M], truth: EvaluatableClustering[E,M]): F1Evaluation = {
     val result = new F1Evaluation
-    //val kIndex = Indexa(keys)
-    //val rIndex = Indexa(response)
     var acumP = 0.0//result.precisionNumerator
     var acumR = 0.0
-    for(rChain <- predicted.clusterIds.toSeq.filterNot(e => predicted.pointIds(e).size == 1); m <- predicted.pointIds(rChain)) {
+    for(rChain <- predicted.clusterIds; m <- predicted.pointIds(rChain)) {
       val kChain = truth.clusterId(m)
       var ci = 0
       val ri = predicted.pointIds(rChain).size
@@ -172,6 +171,7 @@ object BCubedNoSingletonClusterEvaluation extends ClusterF1Evaluation with FastL
     for(rEntity <- predicted.clusterIds) {
       resMentions += predicted.pointIds(rEntity).size
     }
+
     result.recallNumerator = acumR //$denpre ? $numpre / $denpre : 0;
     result.recallDenominator = keyMentions
     result.precisionNumerator = acumP
@@ -180,7 +180,7 @@ object BCubedNoSingletonClusterEvaluation extends ClusterF1Evaluation with FastL
   }
 }
 
-object CEAFClusterEvaluation extends ClusterF1Evaluation with FastLogging {
+object CEAFEClusterEvaluation extends ClusterF1Evaluation with FastLogging {
   def apply[E,M](predicted: EvaluatableClustering[E,M], truth: EvaluatableClustering[E,M]): F1Evaluation = {
     val ignoreSingletons = true
     val result = new F1Evaluation
@@ -202,96 +202,59 @@ object CEAFClusterEvaluation extends ClusterF1Evaluation with FastLogging {
   }
 }
 
+object CEAFMClusterEvaluation extends ClusterF1Evaluation with FastLogging {
+  def apply[E,M](predicted: EvaluatableClustering[E,M], truth: EvaluatableClustering[E,M]): F1Evaluation = {
+    val ignoreSingletons = true
+    val result = new F1Evaluation
+    val predEntities = if (ignoreSingletons) predicted.clusterIds.filterNot(e => predicted.pointIds(e).size == 1).toSeq else predicted.clusterIds.toSeq
+    val truthEntities = if (ignoreSingletons) truth.clusterIds.filterNot(e => truth.pointIds(e).size == 1).toSeq else truth.clusterIds.toSeq
+    val weights = new DenseTensor2(predEntities.length, truthEntities.length)
+    for (i <- 0 until predEntities.length; j <- 0 until truthEntities.length) {
+      val ei = predicted.pointIds(predEntities(i)).toSeq
+      val ej = truth.pointIds(truthEntities(j)).toSeq
+      weights(i, j) = ei.intersect(ej).size
+    }
+    val matching = new AssignmentSolver(weights).solve()
+    val num = matching.map(e => weights(e._1,e._2)).sum
+    result.precisionNumerator = num
+    result.recallNumerator = num
+    result.precisionDenominator = predEntities.map(e => predicted.pointIds(e).size).sum
+    result.recallDenominator = truthEntities.map(e => truth.pointIds(e).size).sum
+    result
+  }
+}
+
 object MucClusterEvaluation extends ClusterF1Evaluation with FastLogging {
   def apply[E,M](predicted: EvaluatableClustering[E,M], truth: EvaluatableClustering[E,M]): F1Evaluation = {
     val result = new F1Evaluation
     // Recall:
     // go through each true cluster
     for (trueId <- truth.clusterIds) {
-      // find out how many unique predicted entities the mentions belong to
-      val predEntities = truth.pointIds(trueId).map(m => predicted.clusterId(m))
-      //for (mid <- truth.pointIds(trueId)) {
-      //  predEntities += predicted.clusterId(mid))
-      //}
-      // set metrics
-      result.recallNumerator += truth.pointIds(trueId).size - predEntities.size
+      val predEntities: Set[E] = new HashSet
+      var singleClusters = 0
+      for (mid <- truth.pointIds(trueId)) {
+        if (predicted.clusterId(mid) != null) predEntities.add(predicted.clusterId(mid))
+        else singleClusters += 1
+      }
+      result.recallNumerator += truth.pointIds(trueId).size - (predEntities.size + singleClusters)
       result.recallDenominator += truth.pointIds(trueId).size - 1
     }
     // Precision:
     // go through each predicted cluster
     for (predId <- predicted.clusterIds) {
       // find out how many unique true entities the mentions belong to
-      val trueEntities= truth.pointIds(predId).map(m => truth.clusterId(m))
-
-     // for (mid <- predicted.pointIds(predId)) {
-      //  trueEntities += (truth.clusterId(mid))
-      //}
-      // set metrics
-      result.precisionNumerator += predicted.pointIds(predId).size - trueEntities.size
+      val truthEntities: Set[E] = new HashSet
+      var singleClusters = 0
+      for (mid <- predicted.pointIds(predId)) {
+        if (truth.clusterId(mid) != null) truthEntities.add(truth.clusterId(mid))
+        else singleClusters += 1
+      }
+      result.precisionNumerator += predicted.pointIds(predId).size - (truthEntities.size + singleClusters)
       result.precisionDenominator += predicted.pointIds(predId).size - 1
     }
+
     result
   }
 }
-/*
-foreach document {
-           foreach cluster in returned answer {
-                   foreach mention in cluster {
-                           val truth = trueCluster(mention);
-                           val ci = overlap(truth, cluster)
-                           val ri = size(cluster);
-                           val ki = size(truth);
-
-                           Prec += ci / ri;
-                           Rec += ci / ki;
-                   }
-           }
-      }
-
-
-{
-  my ($keys, $response) = @_;
-  my $kIndex = Indexa($keys);
-  my $rIndex = Indexa($response);
-  my $acumP = 0;
-  my $acumR = 0;
-  foreach my $rChain (@$response) {
-    foreach my $m (@$rChain) {
-      my $kChain = (defined($kIndex->{$m})) ? $keys->[$kIndex->{$m}] : [];
-      my $ci = 0;
-      my $ri = scalar(@$rChain);
-      my $ki = scalar(@$kChain);
-
-      # common mentions in rChain and kChain => Ci
-      foreach my $mr (@$rChain) {
-        foreach my $mk (@$kChain) {
-          if ($mr == $mk) {
-            $ci++;
-            last;
-          }
-        }
-      }
-
-      $acumP += $ci / $ri if ($ri);
-      $acumR += $ci / $ki if ($ki);
-    }
-  }
-
-  # Mentions in key
-  my $keymentions = 0;
-  foreach my $kEntity (@$keys) {
-    $keymentions += scalar(@$kEntity);
-  }
-
-  # Mentions in response
-  my $resmentions = 0;
-  foreach my $rEntity (@$response) {
-    $resmentions += scalar(@$rEntity);
-  }
-
-  ShowRPF($acumR, $keymentions, $acumP, $resmentions) if ($VERBOSE);
-  return($acumR, $keymentions, $acumP, $resmentions);
-}
- */
 
 // TODO Move BCubedNoSingletons, MUC and CEAF, etc. here from cc.factorie.util.coref. -akm
