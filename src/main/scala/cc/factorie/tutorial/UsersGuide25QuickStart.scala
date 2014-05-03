@@ -59,7 +59,7 @@ which then produces the output:
 14      3       his             PRP$    5       poss    O
 15      4       Australian      JJ      5       amod    U-MISC
 16      5       wife            NN      6       nsubj   O
-17      6       moved           VBD     0       rooat    O
+17      6       moved           VBD     0       root    O
 18      7       from            IN      6       prep    O
 19      8       New             NNP     9       nn      B-LOC
 20      9       South           NNP     10      nn      I-LOC
