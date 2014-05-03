@@ -14,7 +14,14 @@ class MentionPairFeatures(val model: CorefModel, val mention1:Mention, val menti
  // def this(label:MentionPairLabel) = this(label.model,label.mention1,label.mention2,label.mentions,label.options)
   {
     val t = new GrowableSparseBinaryTensor1(domain.dimensionDomain)
-    t.sizeHint(if (options.conjunctionStyle == ConjunctionOptions.SLOW_CONJUNCTIONS) 650 else 70)
+    val sizeBoundary = if (options.featureSet == "conventional"){
+      if (options.conjunctionStyle == ConjunctionOptions.SLOW_CONJUNCTIONS) 650
+      else  70
+    } else{                        // if (options.featureSet == "lexical")
+      if (options.conjunctionStyle == ConjunctionOptions.PRON_CONJUNCTIONS) 40
+      else 16
+    }
+    t.sizeHint(sizeBoundary)
     set(t)(null)
   }
   def domain = model.MentionPairFeaturesDomain
@@ -34,9 +41,18 @@ class MentionPairFeatures(val model: CorefModel, val mention1:Mention, val menti
       features += f
   }
 
-
-
   computeFeatures()
+
+  def computeFeatures() {
+    if(options.featureSet == "lexical")
+      computeShallowFeatures();
+    else computeBasicFeatures()
+  }// computeConjunctionFeatures() }
+
+
+
+
+
   def computeConjunctionFeatures() {
     if (basicFeatureCalculated && !conjunctionCalculated) {
       if (options.conjunctionStyle == ConjunctionOptions.SLOW_CONJUNCTIONS) {
@@ -54,8 +70,6 @@ class MentionPairFeatures(val model: CorefModel, val mention1:Mention, val menti
       conjunctionCalculated = true
     }
   }
-  def computeFeatures() { computeBasicFeatures();}// computeConjunctionFeatures() }
-
   def addMergeableFeature(f: String) {
     if (options.mergeFeaturesAtAll) {
       assert(mergeableFeatures ne null)
@@ -104,7 +118,6 @@ class MentionPairFeatures(val model: CorefModel, val mention1:Mention, val menti
     val m1 = if(mention1.attr[MentionCharacteristics] eq null){ mention1.attr += new MentionCharacteristics(mention1); mention1.attr[MentionCharacteristics]} else mention1.attr[MentionCharacteristics]
     val m2 = if(mention2.attr[MentionCharacteristics] eq null){ mention2.attr += new MentionCharacteristics(mention1); mention2.attr[MentionCharacteristics]} else mention2.attr[MentionCharacteristics]
     if (basicFeatureCalculated) return
-
 
     addMergeableFeature("BIAS")
     addMergeableFeature("gmc" + m1.gender + "" +  m2.gender)
@@ -176,6 +189,90 @@ class MentionPairFeatures(val model: CorefModel, val mention1:Mention, val menti
     addMergeableFeature("am" + acronymMatch)
     basicFeatureCalculated = true
   }
+
+  def generateConjunctionFeatures(featLabel: String)={
+    val currConjunction = "&C=" + {
+      mention1.attr[MentionCharacteristics].computeCanonicalPronounsConjunctionStr
+    }
+
+    features += featLabel
+    val featAndCurrConjunction = featLabel + currConjunction
+    features += featAndCurrConjunction
+    if (mention1 != mention2) {
+      val prevConjunction = "&P=" + {
+        mention2.attr[MentionCharacteristics].computeCanonicalPronounsConjunctionStr
+      }
+      features += featAndCurrConjunction + prevConjunction
+    }
+  }
+
+  def computeShallowFeatures(): Unit = {
+    val m1 = if(mention1.attr[MentionCharacteristics] eq null){ mention1.attr += new MentionCharacteristics(mention1); mention1.attr[MentionCharacteristics]} else mention1.attr[MentionCharacteristics]
+    val m2 = if(mention2.attr[MentionCharacteristics] eq null){ mention2.attr += new MentionCharacteristics(mention1); mention2.attr[MentionCharacteristics]} else mention2.attr[MentionCharacteristics]
+    if (basicFeatureCalculated) return
+
+    features += "Bias" //+ currMention.mType
+    val newEntity = mention1 == mention2
+    generateConjunctionFeatures("MentLen=" + mention1.phrase.tokens.size + "-NC=" + newEntity)
+    val counts = model.CorefTokenFrequencies.lexicalCounter
+    generateConjunctionFeatures("HdWd=" + fetchWordOrPosDefault(mention1.phrase.headToken,counts.headWordCounts) + "-NC=" + newEntity)
+    generateConjunctionFeatures("MentFirst=" + fetchWordOrPosDefault(mention1.phrase(0),counts.firstWordCounts) + "-NC=" + newEntity)
+    generateConjunctionFeatures("MentLast=" + fetchWordOrPosDefault(mention1.phrase.tokens.last,counts.lastWordCounts) + "-NC=" + newEntity)
+    generateConjunctionFeatures("MentionClass=" + fetchClass(mention1.phrase(0),counts.classCounts) + "-NC=" +newEntity)
+    features += "MentPos=" + mention1.phrase.sentence.indexInSection + "-NC=" + newEntity
+    if(!newEntity){
+      features += "PrevMLen=" + mention2.phrase.tokens.size
+      generateConjunctionFeatures("PrevMHead=" + fetchWordOrPosDefault(mention2.phrase.headToken,counts.headWordCounts))
+      generateConjunctionFeatures("PrevMHeadShape=" + fetchShapeOrPosDefault(mention2.phrase.headToken,counts.shapeCounts))
+      generateConjunctionFeatures("PrevMFir=" + fetchWordOrPosDefault(mention2.phrase(0),counts.firstWordCounts))
+      generateConjunctionFeatures("PrevMLast=" + fetchWordOrPosDefault(mention2.phrase.last,counts.lastWordCounts))
+      generateConjunctionFeatures("PrevMPrec=" + fetchWordOrPosDefault(getTokenAtOffset(mention2.phrase(0),-1),counts.precedingWordCounts))
+      generateConjunctionFeatures("PrevMFollow=" + fetchWordOrPosDefault(getTokenAtOffset(mention2.phrase.last,+1),counts.followingWordCounts))
+
+      //Pair Features
+      var dist = mention1.phrase.sentence.indexInSection - mention2.phrase.sentence.indexInSection
+      if(dist <10)  features += "sent_dist=" + dist.toString
+      dist = mention1.phrase.start - mention2.phrase.start
+      if(dist < 10)  features += "mention_dist=" + dist.toString
+
+      if(m1.lowerCaseString == m2.lowerCaseString) features +="String_Match"
+      else features += "No_String_Match"
+      if(m1.lowerCaseHead == m2.lowerCaseHead) features += "Head_Match"
+      else features += "No_Head_Match"
+      //features += "curr-type" + currMention.mType + "link-type" + anteMention.mType
+
+    }
+  }
+
+  private def fetchWordOrPosDefault(word: Token, counter:collection.mutable.HashMap[String,Int]):String = {
+    if(word == null){
+      "NA"
+    }
+    else if (counter.contains(word.string)) {
+      word.string
+    }
+    else {
+      word.posTag.printName
+    }
+  }
+  private def fetchShapeOrPosDefault(t: Token, counter:collection.mutable.HashMap[String,Int]):String = {
+    val shape = cc.factorie.app.strings.stringShape(t.string, 2)
+    if (counter.contains(shape)) {
+      shape
+    }
+    else {
+      ""
+    }
+  }
+  private def fetchClass(token: Token,counter:collection.mutable.HashMap[String,Int]) = {
+    if (counter.contains(LexicalCounter.classFor(token))) {
+      LexicalCounter.classFor(token)
+    } else {
+      ""
+    }
+  }
+  def getTokenAtOffset(token: Token,offset:Int):Token = { val t = token.next(offset); if (t ne null) t else null }
+
 }
 
 class MentionPairLabel(val model: PairwiseCorefModel, val mention1:Mention, val mention2:Mention, mentions: Seq[Mention], val initialValue: Boolean, options: Coref1Options) extends LabeledCategoricalVariable(if (initialValue) "YES" else "NO")  {

@@ -166,7 +166,7 @@ object NounPhraseEntityTypeLabeler extends OntonotesPhraseEntityTypeLabeler(cc.f
 object NounPhraseEntityTypeLabelerTrainer {
   def main(args:Array[String]): Unit = {
     if (args.length == 0) println("usage: trainfile [modelfile]")
-    var trainDocs = LoadConll2011.loadWithParse(args(0), loadSingletons=false, disperseEntityTypes=true)
+    var trainDocs = LoadConll2011.loadWithParse(args(0), loadSingletons=false, callDisperseEntityTypes=true)
     val testDocs = trainDocs.takeRight(20)
     trainDocs = trainDocs.dropRight(20)
     val labeler = new OntonotesPhraseEntityTypeLabeler
