@@ -54,7 +54,7 @@ class NPChunkMentionFinder[L<:ChunkTag](implicit m: Manifest[L]) extends Documen
       val s = labelSpan
       val p = new Phrase(s, s.length-1)
       val m = coref.addMention(p)
-      p.attr += new OntonotesPhraseEntityType(p,"") // TODO Why the empty string here?? -akm
+      p.attr += new OntonotesPhraseEntityType(p,"O") // TODO Why the empty string here?? -akm
       m
     }
   }
