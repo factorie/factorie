@@ -54,21 +54,15 @@ object LoadConll2011 {
 
   //val corefEntityTokenizer = """(\(|[^\)]+|\)|)""".r
 
-
   val asteriskStripper = """\*""".r
-
-
 
   private def tokenizeEntityType(s: String): Array[String] = {
     entityTypeTokenizer.findAllIn(s).map(x => asteriskStripper.replaceAllIn(x,"")).map(_.toString).toArray
   }
 
-
-
-
   // disperseEntityTypes optionally gives entity type information to all things that are coreferent with something that has entity type annotation
   //2 Documents in Train: 161.5 mentions/doc
-  def loadWithParse(f: String, loadSingletons: Boolean = true, limitNumDocuments:Int = -1, disperseEntityTypes:Boolean = false): Seq[Document] = {
+  def loadWithParse(f: String, loadSingletons: Boolean = true, limitNumDocuments:Int = -1, callDisperseEntityTypes:Boolean = false): Seq[Document] = {
     // println("loading " + f)
     val docs = ArrayBuffer[Document]()
 
@@ -77,16 +71,12 @@ object LoadConll2011 {
     var currSent: Sentence = null
     var currEntId: Int = 0
     var docTokInd: Int = -1
-    val mentions = Map[String, Stack[Int]]() // map of (entityId, tokenIndex) of unfinished mentions in a sentence
     var numMentions = 0 // total number mentions in a document
     val entities = Map[String, WithinDocEntity]()
-    val startMap = mutable.HashMap[String,Stack[Int]]()
     var sentenceId: Int = -1
     var tokenId: Int = -1
-    var numNegEntities = 1
 
     val parseStack = collection.mutable.Stack[(String,Int)]()
-    var parseTrees = new ArrayBuffer[ConstituencyParse]()
     var currParseTree:ConstituencyParse = null
 
     val source = scala.io.Source.fromFile(f)
@@ -94,14 +84,10 @@ object LoadConll2011 {
     var prevWord = ""
 
     val goldMentionBoundaries = new scala.collection.mutable.LinkedHashMap[Span[Section,Token],CoreferentEntityChunk]
-
     val _spanToEntityType = new scala.collection.mutable.LinkedHashMap[Span[Section,Token],String]
     var unResolvedEntityType:EntityTypeChunk = null
 
     val openEntityStack = mutable.Stack[CoreferentEntityChunk]()
-
-    val currentlyInEntityTypeBracket = false  //Todo: I want to remove these
-
 
     breakable { for (l <- source.getLines()) {
       if (l.startsWith("#begin document ")) {
@@ -118,17 +104,16 @@ object LoadConll2011 {
         coref = null
         currDoc = null
         currEntId = 0
-        mentions.clear()
+
         _spanToEntityType.clear()
         goldMentionBoundaries.clear()
         openEntityStack.clear()
         entities.clear()
         parseStack.clear()
-        startMap.clear()
         docTokInd = -1
         sentenceId = -1
         tokenId = -1
-        assert(!currentlyInEntityTypeBracket)
+
       } else if (l.length == 0) {
         currDoc.appendString("\n")
         parseStack.clear()
@@ -142,7 +127,6 @@ object LoadConll2011 {
         if (tokId == 0) {
           currSent = new Sentence(currDoc)
           currParseTree = new ConstituencyParse(currSent,0,"TOP")
-          parseTrees += currParseTree
           prevPhrase = ""
           prevWord = ""
         }
@@ -152,7 +136,6 @@ object LoadConll2011 {
         tokenId += 1
         if (tokId == 0) sentenceId += 1
 
-        //resolveEntityType(fields(10),docTokInd,currentlyInEntityTypeBracket)
 
         val entityTypeTokens = tokenizeEntityType(fields(10)).filterNot(_.isEmpty)
         entityTypeTokens match {
@@ -166,31 +149,6 @@ object LoadConll2011 {
           case _ =>
         }
 
-
-        /*
-        for(i<- 0 until entityTypeTokens.length){
-          val t = entityTypeTokens(i)
-          if(t == "("){
-            entityTypeStart = docTokInd
-            currentEntityTypeStr = entityTypeTokens(i+1)
-            assert(!currentlyInEntityTypeBracket) //this makes sure that the data doesn't have nested entity types
-            currentlyInEntityTypeBracket = true
-          }
-          if(t == ")"){
-            thisTokenClosedTheEntityType = true
-            currentlyInEntityTypeBracket = false
-            currentlyUnresolvedClosedEntityTypeBracket = true
-          }
-        }*/
-        //parse the info for entity types
-        //var thisTokenClosedTheEntityType = false
-
-
-
-
-
-
-        //val closedEntities = ArrayBuffer[(String,Int)]()
         val entityLabels = fields.last.split('|').map(_.trim)
         //println(entityLabels.mkString(" "))
         for(label <- entityLabels){
@@ -204,22 +162,6 @@ object LoadConll2011 {
             case _ =>
           }
         }
-        //val entityTokens = tokenizer.findAllIn(fields.last).toArray
-        //for (i <- 0 until entityTokens.length) {
-        //  val t = entityTokens(i)
-          //t match {
-          //  case
-          //}
-        //  if (t == "(") {
-        //    val number = entityTokens(i+1)
-        //    startMap.getOrElseUpdate(number, Stack[Int]()).push(docTokInd)
-        //  } else if (t == ")") {
-        //    val number = entityTokens(i-1)
-        //    val start = startMap.getOrElseUpdate(number, Stack[Int]()).pop()
-        //    closedEntities.append((number,start))
-            // println("Adding entity " + number + " " + start + " " + docTokInd)
-        //  }
-        //}
 
         val constituencyLabels = fields(5).split("\\*")
         if (constituencyLabels.length >= 1 && loadSingletons) {
@@ -236,59 +178,27 @@ object LoadConll2011 {
             currParseTree.current.setEnd(docTokInd)
             if (phrase == "NP") {
               val span = new TokenSpan(currDoc.asSection, start, docTokInd - start + 1)
-              //parseTree.push((phrase,new TokenSpan(currDoc.asSection, start, docTokInd - start + 1)))
-
-              val newMention = coref.addMention(new Phrase(span, span.tokens.indexOf(currParseTree.current.getHeadToken(docTokInd))))//getHeadToken(span)))
-              //println(m.string + ": " + m.phrase.headToken.string)
-
+              val newMention = coref.addMention(new Phrase(span, span.tokens.indexOf(currParseTree.current.getHeadToken(docTokInd))))
               numMentions += 1
               currParseTree.closeLabel(docTokInd)
+
               val entityTypesForSpan = _spanToEntityType.filterKeys(span.value.contains)
               if(!entityTypesForSpan.isEmpty){
-              //val exactMatchEntity = entityTypesForSpan.
-              //if(currentlyUnresolvedClosedEntityTypeBracket && (entityTypeStart >= start)) {
                 val exactMatch = entityTypesForSpan.find(entitySpan => (entitySpan._1.start == start) && (entitySpan._1.end == docTokInd) )
                 val exactMatchExists = exactMatch ne null
                 if (!useExactEntTypeMatch ||(useExactEntTypeMatch && exactMatchExists))
                   newMention.phrase.attr += new OntonotesPhraseEntityType(newMention.phrase, entityTypesForSpan.find(s => s._1.exists(t=> t == newMention.phrase.headToken)).getOrElse(entityTypesForSpan.head)._2,exactMatchExists)
                 else
                   newMention.phrase.attr += new OntonotesPhraseEntityType(newMention.phrase, "O",exactMatchExists)
-                //currentlyUnresolvedClosedEntityTypeBracket = false
               } else
                 newMention.phrase.attr += new OntonotesPhraseEntityType(newMention.phrase, "O")
 
-              //var i = 0
-              //var found = false
-              //val entitiesClosedThisLine = goldMentionBoundaries.filterKeys(_.end == docTokInd)
               val entityChunkForMention = goldMentionBoundaries.getOrElse(newMention.phrase.value,new CoreferentEntityChunk(fields(0)+"-"+(-coref.mentions.size),start,true))
+              //Register that we have found this mention
               entityChunkForMention.found = true
               newMention.attr += new EntityKey(entityChunkForMention.entityId)
               val corefEntity = entities.getOrElseUpdate(entityChunkForMention.entityId,coref.entityFromUniqueId(entityChunkForMention.entityId))
               corefEntity += newMention
-              //for(entity <- entitiesClosedThisLine) {
-              /*  entity match {
-                  case (entitySpan, entityId) =>
-                    if (entitySpan.start == start) {
-                      found = true
-                      val key = fields(0) + "-*" + entityId
-                      m.attr += new EntityKey(key)
-                      //val ent = entities.getOrElseUpdate(key, new WithinDocEntity(currDoc))
-                      val ent = entities.getOrElseUpdate(key, coref.entityFromUniqueId(key)) // TODO I'm not sure that key is right argument here. -akm 
-                      ent += m
-                      closedEntities(i) = null
-                    }
-                  case _ =>
-                }
-                i += 1
-              }
-              if (!found) {
-                numNegEntities += 1
-                val key = fields(0) + "-" + (-numNegEntities)
-                m.attr += new EntityKey(key)
-                //val ent = entities.getOrElseUpdate(key, new WithinDocEntity(currDoc))
-                val ent = entities.getOrElseUpdate(key, coref.entityFromUniqueId(key))
-                ent += m
-              } */
             }else currParseTree.closeLabel(docTokInd)
             prevPhrase = phrase
           }
@@ -297,35 +207,17 @@ object LoadConll2011 {
         for ((goldMentionSpan,goldMentionEntityInfo) <- goldMentionBoundaries.filter{case (mentionSpan,mentionEntityInfo) =>  !mentionEntityInfo.found}) {
           //assert(currParseTree.current.parent.start == start,"Not in Parent")
           val span = new TokenSpan(currDoc.asSection, goldMentionSpan.start, goldMentionSpan.length)
-
           val newMention = coref.addMention(new Phrase(span, getSimpleHeadToken(span)))
-
           val entityTypesForSpan = _spanToEntityType.filterKeys(span.value.contains)
           if(!entityTypesForSpan.isEmpty){
-            //val exactMatchEntity = entityTypesForSpan.
-            //if(currentlyUnresolvedClosedEntityTypeBracket && (entityTypeStart >= start)) {
             val exactMatch = entityTypesForSpan.getOrElse(span.value,null)//.find(entitySpan => (entitySpan._1.start == start) && (entitySpan._1.end == docTokInd) )
             val exactMatchExists = exactMatch ne null
             if (!useExactEntTypeMatch ||(useExactEntTypeMatch && exactMatchExists))
               newMention.phrase.attr += new OntonotesPhraseEntityType(newMention.phrase, entityTypesForSpan.find(s => s._1.exists(t=> t == newMention.phrase.headToken)).getOrElse(entityTypesForSpan.head)._2,exactMatchExists)
             else
               newMention.phrase.attr += new OntonotesPhraseEntityType(newMention.phrase, "O",exactMatchExists)
-            //currentlyUnresolvedClosedEntityTypeBracket = false
           } else
             newMention.phrase.attr += new OntonotesPhraseEntityType(newMention.phrase, "O")
-
-          /*
-          if(currentlyUnresolvedClosedEntityTypeBracket && (entityTypeStart >= start)){
-            val exactMatch = (entityTypeStart == start) && thisTokenClosedTheEntityType
-            if(!useExactEntTypeMatch ||(useExactEntTypeMatch && exactMatch)){
-              m.phrase.attr += new OntonotesPhraseEntityType(m.phrase, currentEntityTypeStr)
-            }else
-              m.phrase.attr += new OntonotesPhraseEntityType(m.phrase, "O")
-            currentlyUnresolvedClosedEntityTypeBracket = false
-          }else
-            m.phrase.attr += new OntonotesPhraseEntityType(m.phrase, "O")
-          */
-
 
           numMentions += 1
 
@@ -335,75 +227,35 @@ object LoadConll2011 {
           val corefEntity = entities.getOrElseUpdate(entityChunkForMention.entityId,coref.entityFromUniqueId(entityChunkForMention.entityId))
           corefEntity += newMention
 
-
-          //val key = fields(0) + "-" + number
-          //m.attr += new EntityKey(key)
-          //val ent = entities.getOrElseUpdate(key, coref.entityFromUniqueId(key))
-          //m.attr += ent
         }
         prevWord = word
       }
 
     }} // closing "breakable"
-    if (disperseEntityTypes) {
-      for(doc <- docs){
-        val entities = doc.attr[MentionList].groupBy(m => m.entity).filter(x => x._2.length > 1)
-        for(ent <- entities){
-          val entityTypes = ent._2.map(m => m.phrase.attr[OntonotesPhraseEntityType].categoryValue).filter(t => t != "O").distinct
-          if(entityTypes.length > 1){
-           // println("warning: there were coreferent mentions with different annotated entity types: " + entityTypes.mkString(" ") + "\n" + ent._2.map(m => m.span.string).mkString(" "))
-          }else if(entityTypes.length == 1){
-            val newType = entityTypes(0)
-            ent._2.foreach(m => m.phrase.attr[OntonotesPhraseEntityType].target.setCategory(newType)(null))
-          }
-
-        }
-      }
-    }
+    if (callDisperseEntityTypes) disperseEntityTypes(docs.map(_.getTargetCoref))
     source.close()
     docs
   }
-  /*
-  def resolveEntityType(entityTypeField:String,currTokenIdx:Int,currentlyInEntityTypeBracket:Boolean)={
-    var thisTokenClosedTheEntityType = false
-    val entityTypeTokens = tokenizeEntityType(fields(10))
 
-    for(i<- 0 until entityTypeTokens.length){
-      val t = entityTypeTokens(i)
-      if(t == "("){
-        entityTypeStart = docTokInd
-        currentEntityTypeStr = entityTypeTokens(i+1)
-        assert(!currentlyInEntityTypeBracket) //this makes sure that the data doesn't have nested entity types
-        currentlyInEntityTypeBracket = true
-      }
-      if(t == ")"){
-        thisTokenClosedTheEntityType = true
-        currentlyInEntityTypeBracket = false
-        currentlyUnresolvedClosedEntityTypeBracket = true
-      }
-    }
-
-
-
-    val closedEntities = ArrayBuffer[(String,Int)]()
-    val entityTokens = tokenizer.findAllIn(fields.last).toArray
-    for (i <- 0 until entityTokens.length) {
-      val t = entityTokens(i)
-      if (t == "(") {
-        val number = entityTokens(i+1)
-        startMap.getOrElseUpdate(number, Stack[Int]()).push(docTokInd)
-      } else if (t == ")") {
-        val number = entityTokens(i-1)
-        val start = startMap.getOrElseUpdate(number, Stack[Int]()).pop()
-        closedEntities.append((number,start))
-        println("Adding entity " + number + " " + start + " " + docTokInd)
-      }
-    }
-
-  } */
   case class CoreferentEntityChunk(entityId:String,mentionStart:Int,var found:Boolean = false)
   case class EntityTypeChunk(entityType:String, start:Int)
-  //this is a span-level offset. Since we don't have a dep parse, we just take the final noun in the span
+
+  def disperseEntityTypes(corefDocs:Seq[WithinDocCoref]):Unit = {
+    for(corefDoc <- corefDocs){
+      val entities = corefDoc.mentions.toSeq.groupBy(m => m.entity).filter(x => x._2.length > 1)
+      for(ent <- entities){
+        val entityTypes = ent._2.map(m => m.phrase.attr[OntonotesPhraseEntityType].categoryValue).filter(t => t != "O").distinct
+        if(entityTypes.length > 1){
+          // println("warning: there were coreferent mentions with different annotated entity types: " + entityTypes.mkString(" ") + "\n" + ent._2.map(m => m.span.string).mkString(" "))
+        }else if(entityTypes.length == 1){
+          val newType = entityTypes(0)
+          ent._2.foreach(m => m.phrase.attr[OntonotesPhraseEntityType].target.setCategory(newType)(null))
+        }
+      }
+    }
+  }
+
+  /**This is a span-level offset. Since we don't have a dep parse, we just take the final noun in the span */
   def getSimpleHeadToken(span: TokenSpan): Int = {
     //val interiorNP = parseTree.current.children.find(_.label == "NP")
     val toReturn = span.value.lastIndexWhere(_.posTag.categoryValue.startsWith("NN"))
@@ -411,12 +263,9 @@ object LoadConll2011 {
     if(toReturn == -1){
       span.length - 1
     }else{
-
       toReturn
     }
-
   }
-
 }
 
 

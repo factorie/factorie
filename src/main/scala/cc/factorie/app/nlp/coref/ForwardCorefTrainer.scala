@@ -154,17 +154,6 @@ object StructuredCorefTrainer extends CorefTrainer{
     val (trainDocs,testDocs) =   if(options.useNonGoldBoundaries) makeTrainTestDataNonGold(opts.trainFile.value,opts.testFile.value,options, loadTrain, opts.useNerMentions.value)
     else makeTrainTestData(opts.trainFile.value, opts.testFile.value, loadTrain)
 
-    /*if(loadTrain)
-      for (doc <- trainDocs; mention <- doc.coref.mentions) {
-        NounPhraseGenderLabeler.process(mention.phrase)
-        NounPhraseNumberLabeler.process(mention.phrase)
-      }
-
-    for (doc <- testDocs; mention <- doc.coref.mentions) {
-      NounPhraseGenderLabeler.process(mention.phrase)
-      NounPhraseNumberLabeler.process(mention.phrase)
-    }  */
-
     addGenderNumberLabeling(trainDocs,testDocs)
 
     var accuracy = 0.0

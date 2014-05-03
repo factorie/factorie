@@ -205,7 +205,6 @@ abstract class CorefSystem[CoreferenceStructure] extends DocumentAnnotator with 
   def postAttrs = Seq(classOf[WithinDocEntity])
   def process(document: Document) = {
     val phrases = getPhrases(document)
-    //assertSorted(mentions)
     val coref = new WithinDocCoref(document)
     phrases.foreach(coref.addMention)
     document.attr += infer(coref)
@@ -263,7 +262,7 @@ abstract class CorefSystem[CoreferenceStructure] extends DocumentAnnotator with 
         val shuffledDocs = rng.shuffle(trainingFormat)
         val batches = shuffledDocs.grouped(options.featureComputationsPerThread*options.numThreads).toSeq
         for ((batch, b) <- batches.zipWithIndex) {
-          if (options.numThreads > 1) trainer.runParallel(batch)
+          if (options.numThreads > 1) trainer.runSequential(batch)
           else trainer.runSequential(batch)
         }
         if (!model.MentionPairFeaturesDomain.dimensionDomain.frozen) model.MentionPairFeaturesDomain.dimensionDomain.freeze()
@@ -294,11 +293,6 @@ abstract class CorefSystem[CoreferenceStructure] extends DocumentAnnotator with 
 
       //assert(trueCoref.mentions.forall(m=>m.phrase.attr[OntonotesPhraseEntityType] ne null))
       predCoref.mentions.foreach(m=>m._setEntity(null))
-
-      //this will add any old mention from our predicted mentions which may include entity information
-      //trueCoref.mentions.foreach{m => predCoref.addMention(m.phrase).phrase.attr += m.phrase.attr[OntonotesPhraseEntityType];newCoref.mention(m.phrase).attr += m.attr[PhraseGender];newCoref.mention(m.phrase).attr += m.attr[PhraseNumber]}
-      //predCoref.mentions.foreach{m => newCoref.mention(m.phrase).attr += m.attr[MentionCharacteristics]}
-      //Reset any old predicted coreference solution for this test iteration
       for(mention <- doc.coref.mentions) mention.attr += new MentionCharacteristics(mention)
 
       doc.attr += infer(predCoref)
@@ -312,16 +306,13 @@ abstract class CorefSystem[CoreferenceStructure] extends DocumentAnnotator with 
       //}
       trueCoref.removeSingletons
       predCoref.removeSingletons
-//      assert(trueCoref.entities.forall(e=> e.mentions.size > 1),"Singleton entity found")
-//      assert(trueCoref.clusterIds.forall(e=> trueCoref.pointIds(e).size > 1), "Truth entity singleton")
-//      assert(predCoref.clusterIds.forall(e=> predCoref.pointIds(e).size > 1), "Truth entity singleton")
 
-      //println("-------------"+doc.name+"----------------")
+      println("-------------"+doc.name+"----------------")
       val pw = PairwiseClusterEvaluation(predCoref, trueCoref)
       val b3 = BCubedClusterEvaluation(predCoref, trueCoref)
       val ce = CEAFEClusterEvaluation(predCoref,trueCoref)
       val muc = MucClusterEvaluation(predCoref, trueCoref)
-      //val cm = CEAFMClusterEvaluation(predCoref,trueCoref)
+      val cm = CEAFMClusterEvaluation(predCoref,trueCoref)
       //gtMentions.map(_.phrase.value).diff(predMentions.map(_.phrase.value)).seq.toSeq.zipWithIndex.foreach(mi => newCoref.addMention(new Phrase(mi._1.chain,m1._1.start,mi._1.length,mi._1.h),m1._2+nm))
       //println("=======================================================")
 
@@ -330,7 +321,7 @@ abstract class CorefSystem[CoreferenceStructure] extends DocumentAnnotator with 
         scorer.macroPW.macroAppend(pw)
         scorer.microB3.microAppend(b3)
         scorer.microCE.microAppend(ce)
-        //scorer.microCM.microAppend(cm)
+        scorer.microCM.microAppend(cm)
         scorer.microMUC.microAppend(muc)
         scorer.microPW.microAppend(pw)
       }
@@ -346,7 +337,6 @@ abstract class CorefSystem[CoreferenceStructure] extends DocumentAnnotator with 
     var accuracy = 0.0
     try {
       val tester = new CorefTester(scorer, ScorerMutex, pool)
-
       tester.runSequential(testDocs)
       println("-----------------------")
       println("  * Overall scores")

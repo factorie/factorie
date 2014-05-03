@@ -213,8 +213,7 @@ object CorefEvaluator {
           predEntities.add(pred.getEntity(mid))
         }
         // set metrics
-        m.recallNumerator +=
-          truth.getMentions(trueId).size - predEntities.size
+        m.recallNumerator += truth.getMentions(trueId).size - predEntities.size
         m.recallDenominator += truth.getMentions(trueId).size - 1
       }
       // Precision:
