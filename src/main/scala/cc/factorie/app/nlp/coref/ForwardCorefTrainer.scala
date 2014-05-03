@@ -132,6 +132,7 @@ object StructuredCorefTrainer extends CorefTrainer{
     val numTrainingIterations = new CmdOption("num-training-iterations", 20, "INT", "Number of iterations to use for training")
     val saveFrequency = new CmdOption("save-frequency", 4, "INT", "how often to save the model between epochs")
     val learningRate = new CmdOption("learning-rate",1.0,"FLOAT","learning rate")
+    val featureSet = new CmdOption("feature-set","LEXICAL","LEXICAL|CONVENTIONAL","u")
   }
   val opts = ProbCorefTrainerOpts
   def evaluateParameters(args:Array[String]):Double = {
@@ -141,7 +142,7 @@ object StructuredCorefTrainer extends CorefTrainer{
     val loadTrain = !opts.deserialize.wasInvoked
     val coreferenceSystem = new StructuredCoref
     val options = coreferenceSystem.options
-
+    options.featureSet="lexical"
     //options.learningRate = opts.learningRate.value
     options.numTrainingIterations = opts.numTrainingIterations.value
 

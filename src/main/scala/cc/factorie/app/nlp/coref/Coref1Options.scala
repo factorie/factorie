@@ -42,7 +42,7 @@ class Coref1Options {
 
   var conjunctionStyle = NO_CONJUNCTIONS
 
-  val featureSet = "factorie"
+  var featureSet = "factorie"
 
   var saveFrequency = 1
 
