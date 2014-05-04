@@ -7,7 +7,7 @@ import cc.factorie.la.{SparseBinaryTensor, DenseTensor1, WeightsMapAccumulator, 
 import cc.factorie.optimize.{OptimizableObjectives, PredictorExample, Example}
 import java.io._
 import cc.factorie.util.BinarySerializer
-import cc.factorie.util.coref.GenericEntityMap
+import cc.factorie.util.BasicEvaluatableClustering
 import cc.factorie.variable.{VectorDomain, DiscreteDomain, CategoricalVectorDomain, CategoricalDomain}
 import cc.factorie.model.Parameters
 import scala.collection.mutable
@@ -57,15 +57,15 @@ trait CorefModel extends Parameters {
     BinarySerializer.serialize(this,stream)
   }
 
-  def generateTrueMap(mentions: Seq[Mention]): GenericEntityMap[Mention] = {
-    val trueMap = new GenericEntityMap[Mention]
-    mentions.foreach(m => trueMap.addMention(m, trueMap.numMentions.toLong))
-    val entities = mentions.groupBy(_.entity)
-    entities.flatMap(_._2.sliding(2)).foreach(p => {
-      if (p.size == 2) trueMap.addCoreferentPair(p(0), p(1))
-    })
-    trueMap
-  }
+//  def generateTrueClustering(mentions: Seq[Mention]): BasicEvaluatableClustering = {
+//    val trueMap = new GenericEntityMap[Mention]
+//    mentions.foreach(m => trueMap.addMention(m, trueMap.numMentions.toLong))
+//    val entities = mentions.groupBy(_.entity)
+//    entities.flatMap(_._2.sliding(2)).foreach(p => {
+//      if (p.size == 2) trueMap.addCoreferentPair(p(0), p(1))
+//    })
+//    trueMap
+//  }
 
 }
 
