@@ -181,6 +181,7 @@ object MentionAlignment {
 
     //do some analysis of the accuracy of this alignment
     val prReports = alignmentInfo.map(_._2)
+    (documents,entityMaps)
   }
   def findMentions(d: Document)(implicit annotatorMap: DocumentAnnotatorMap) {
     cc.factorie.app.nlp.coref.mention.ParseBasedMentionFinding.FILTER_APPOS = true
@@ -243,7 +244,7 @@ object MentionAlignment {
       if (p.size == 2) entityMap.mergeClosure(p(0).uniqueId, p(1).uniqueId)
     })
     val relevantGTMentions = groundTruthMentions.count(m => entityHash(m.entity).length > 1)
-    (entityMap,new PrecRecReport(relevantExactMatches,relevantGTMentions,detectedMentions.length))
+    ((name,entityMap),new PrecRecReport(relevantExactMatches,relevantGTMentions,detectedMentions.length))
   }
 
   def checkContainment(startLengthHash: mutable.HashMap[(Int,Int),Mention], headHash: mutable.HashMap[Int,Mention] ,m: Mention, options: Coref1Options, shifts: Seq[Int]): Option[Mention] = {
