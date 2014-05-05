@@ -46,6 +46,7 @@ trait Assignment {
 /** An Assignment in which variable-value mappings can be changed.
     @author Andrew McCallum */
 trait MutableAssignment extends Assignment {
+  def update[V<:Var](variable:V, value:V#Value): Unit
 }
 
 /** For LabeledVar return the targetValue, otherwise return the current global assignment.
@@ -88,10 +89,13 @@ trait AbstractAssignment1[A<:Var] extends Assignment {
 }
 
 /** An efficient Assignment of one variable.
+    Values for variables not in this assignment are taken from those variables themselves (the "global" assignment).
     @author Andrew McCallum */
 class Assignment1[A<:Var](val _1:A, var value1:A#Value) extends AbstractAssignment1[A]
 
-/** An efficient Assignment of one DiscreteVar. */
+/** An efficient Assignment of one DiscreteVar.
+    Values for variables not in this assignment are taken from those variables themselves (the "global" assignment).
+    @author Andrew McCallum */
 class DiscreteAssignment1[A<:DiscreteVar](override val _1:A, initialIntValue1:Int) extends AbstractAssignment1[A] with MutableAssignment {
   def this(variable:A, initialValue:A#Value) = this(variable, initialValue.intValue)
   private var _intValue1 = initialIntValue1
@@ -99,7 +103,8 @@ class DiscreteAssignment1[A<:DiscreteVar](override val _1:A, initialIntValue1:In
   def intValue1_=(i:Int): Unit = _intValue1 = i
   def value1: A#Value = _1.domain(_intValue1).asInstanceOf[A#Value]
   def value1_=(v:A#Value): Unit = _intValue1 = v.intValue
-  def update[V<:Var, U<:V#Value](variable:V, value:U): Unit = if (variable eq _1) _intValue1 = value.asInstanceOf[DiscreteValue].intValue else throw new Error("Cannot update DiscreteAssignment1 value for variable not present.")
+  //def update[V<:Var, U<:V#Value](variable:V, value:U): Unit = if (variable eq _1) _intValue1 = value.asInstanceOf[DiscreteValue].intValue else throw new Error("Cannot update DiscreteAssignment1 value for variable not present.")
+  def update[V<:Var](variable:V, value:V#Value): Unit = if (variable eq _1) _intValue1 = value.asInstanceOf[DiscreteValue].intValue else throw new Error("Cannot update DiscreteAssignment1 value for variable not present.")
 }
 
 /** An efficient abstract Assignment of two variables.
@@ -120,10 +125,12 @@ trait AbstractAssignment2[A<:Var,B<:Var] extends Assignment {
   }
 }
 /** An efficient Assignment of two variables.
+    Values for variables not in this assignment are taken from those variables themselves (the "global" assignment).
     @author Andrew McCallum */
 class Assignment2[A<:Var,B<:Var](val _1:A, var value1:A#Value, val _2:B, var value2:B#Value) extends AbstractAssignment2[A,B]
 
 /** An efficient abstract Assignment of three variables.
+    Values for variables not in this assignment are taken from those variables themselves (the "global" assignment).
     @author Andrew McCallum */
 trait AbstractAssignment3[A<:Var,B<:Var,C<:Var] extends Assignment {
   def _1: A
@@ -143,10 +150,12 @@ trait AbstractAssignment3[A<:Var,B<:Var,C<:Var] extends Assignment {
   }
 }
 /** An efficient Assignment of three variables.
+    Values for variables not in this assignment are taken from those variables themselves (the "global" assignment).
     @author Andrew McCallum */
 class Assignment3[A<:Var,B<:Var,C<:Var](val _1:A, var value1:A#Value, val _2:B, var value2:B#Value, val _3:C, var value3:C#Value) extends AbstractAssignment3[A,B,C]
 
 /** An efficient abstract Assignment of three variables.
+    Values for variables not in this assignment are taken from those variables themselves (the "global" assignment).
     @author Andrew McCallum */
 trait AbstractAssignment4[A<:Var,B<:Var,C<:Var,D<:Var] extends Assignment {
   def _1: A
@@ -169,12 +178,13 @@ trait AbstractAssignment4[A<:Var,B<:Var,C<:Var,D<:Var] extends Assignment {
   }
 }
 /** An efficient Assignment of three variables.
+    Values for variables not in this assignment are taken from those variables themselves (the "global" assignment).
     @author Andrew McCallum */
 class Assignment4[A<:Var,B<:Var,C<:Var,D<:Var](val _1:A, var value1:A#Value, val _2:B, var value2:B#Value, val _3:C, var value3:C#Value, val _4:D, var value4:D#Value) extends AbstractAssignment4[A,B,C,D]
 
 
 
-// TODO Consider making this inherit from MutableAssignment
+// TODO Consider making this inherit from MutableAssignment -akm
 /** An Assignment whose values are those stored inside the variables themselves. 
     @author Andrew McCallum */
 object GlobalAssignment extends Assignment {
@@ -207,10 +217,9 @@ class AssignmentStack(val assignment:Assignment, val next:AssignmentStack = null
   def +:(a:Assignment): AssignmentStack = new AssignmentStack(a, this)
 }
 
-/**
- * Allows an iterator over the assignments to the neighbors of a factor (optionally specifying the variables that should vary)
- * @author Sameer
- */
+/** Allows an iterator over the assignments to the neighbors of a factor (optionally specifying the variables that should vary)
+    @author Sameer Singh */
+@deprecated("May be removed in future due to inefficiency.")
 object AssignmentIterator {
   def assignments1[N1 <: Var](f1: Factor1[N1], varying: Set[Var]): Iterator[Assignment] = assignments1(f1._1, varying)
 
