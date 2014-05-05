@@ -1,7 +1,6 @@
 package cc.factorie.app.nlp.coref
 
 import cc.factorie.util.F1Evaluation
-import cc.factorie.util.coref.CorefEvaluator
 import cc.factorie.app.nlp.{Document, TokenSpan}
 //import cc.factorie.app.nlp.coref.Mention
 

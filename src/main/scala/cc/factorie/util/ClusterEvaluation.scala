@@ -1,8 +1,6 @@
 package cc.factorie.util
 
 import scala.collection.mutable._
-import cc.factorie.la.DenseTensor2
-import scala.Tuple2
 import scala.Iterable
 import scala.Tuple2
 
@@ -184,9 +182,9 @@ object ClusterF1Evaluation {
         val predId = predicted.clusterId(mid)
         val predCluster = predicted.pointIds(predId)
         val trueId = truth.clusterId(mid)
-        val trueCluster = truth.pointIds(trueId)
+        val trueCluster = if(trueId != null)truth.pointIds(trueId) else Iterable.empty
         // calculate overlap
-        val clusterOverlap = intersection((predId, trueId))
+        val clusterOverlap = if(trueId != null) intersection((predId, trueId)) else 0
         //val clusterOverlap: Double = predicted.pointIds(predId).toSet.intersect(truth.pointIds(trueId).toSet).size // This is very slow.  We should cache these intersectionSizes
         // update metrics
         tp += clusterOverlap - 1.0
@@ -220,9 +218,9 @@ object ClusterF1Evaluation {
           val predId = predicted.clusterId(mid)
           val predCluster = predicted.pointIds(predId)
           val trueId = truth.clusterId(mid)
-          val trueCluster = truth.pointIds(trueId)
+          val trueCluster = if(trueId != null)truth.pointIds(trueId) else Iterable.empty
           // calculate overlap between the two
-          val clusterOverlap: Int = intersection((predId, trueId))
+          val clusterOverlap: Int = if(trueId != null) intersection((predId, trueId)) else 0
           // add to metric
           // prec = overlap / pred.size
           result.precisionNumerator += clusterOverlap.doubleValue / predCluster.size.doubleValue
@@ -254,8 +252,9 @@ object ClusterF1Evaluation {
         recall the number of true mentions
      }
      The source script is in http://conll.bbn.com/download/scorer.v4.tar.gz
+    Version 4 Scorer
     */
-  object BCubedNoSingletons extends ClusterF1Evaluation with FastLogging {
+  object OldBCubedNoSingletons extends ClusterF1Evaluation with FastLogging {
     def apply[C,P](predicted: EvaluatableClustering[C,P], truth: EvaluatableClustering[C,P]): F1Evaluation = {
       val result = new F1Evaluation
       val predNonSingletons = predicted.pointIds.filter(m => predicted.pointIds(predicted.clusterId(m)).size > 1).toSet
@@ -273,17 +272,7 @@ object ClusterF1Evaluation {
         val predId = predicted.clusterId(mid)
         val predCluster = predicted.pointIds(predId)
         val trueId = truth.clusterId(mid)
-//<<<<<<< HEAD
-//        val trueCluster = if(trueId != null) truth.pointIds(trueId) else Iterable.empty
-//        // calculate overlap between the two
-//        val clusterOverlap: Int = if(trueId != null&&predId!=null)predicted.intersectionSize(predId, trueId) else 0
-//        // add to metric
-//        // prec = overlap / pred.size
-//        result.precisionNumerator += clusterOverlap.doubleValue / predCluster.size.doubleValue
-//        // rec = overlap / truth.size
-//        result.recallNumerator += (if(trueCluster.size ==0) 0.0 else clusterOverlap.doubleValue / trueCluster.size.doubleValue)
-//=======
-        val trueCluster = truth.pointIds(trueId)
+        val trueCluster = if(trueId != null) truth.pointIds(trueId) else Iterable.empty
         if (predCluster.size > 1 || trueCluster.size > 1) {
           // calculate overlap between the two
           val clusterOverlap: Int = intersection(predId, trueId)
@@ -330,35 +319,6 @@ object ClusterF1Evaluation {
       result
     }
   }
-  //McCallum's MUC
-//  object MUC extends ClusterF1Evaluation {
-//    def apply[C,P](predicted: EvaluatableClustering[C,P], truth: EvaluatableClustering[C,P]): F1Evaluation = {
-//      val result = new F1Evaluation
-//      // Recall:
-//      // go through each true cluster
-//      for (trueId <- truth.clusterIds) {
-//        // find out how many unique predicted entities the mentions belong to
-//        val predEntities = new scala.collection.mutable.HashSet[C]
-//        for (mid <- truth.pointIds(trueId)) predEntities.add(predicted.clusterId(mid))
-//        // set metrics
-//        result.recallNumerator +=
-//          truth.pointIds(trueId).size - predEntities.size
-//        result.recallDenominator += truth.pointIds(trueId).size - 1
-//      }
-//      // Precision:
-//      // go through each predicted cluster
-//      for (predId <- predicted.clusterIds) {
-//        // find out how many unique true entities the mentions belong to
-//        val trueEntities = new scala.collection.mutable.HashSet[C]
-//        for (mid <- predicted.pointIds(predId)) trueEntities.add(truth.clusterId(mid))
-//        // set metrics
-//        result.precisionNumerator +=
-//          predicted.pointIds(predId).size - trueEntities.size
-//        result.precisionDenominator += predicted.pointIds(predId).size - 1
-//      }
-//      result
-//    }
-//  }
   
   class CeafE(val ignoreSingletons: Boolean = true) extends ClusterF1Evaluation {
     def apply[C,P](predicted: EvaluatableClustering[C,P], truth: EvaluatableClustering[C,P]): F1Evaluation = {
@@ -407,8 +367,11 @@ object ClusterF1Evaluation {
   object CeafM extends CeafM(false)
   object CeafMNoSingletons extends CeafM(true)
 
-
-  object BCubedNoSingletonClusterEvaluation extends ClusterF1Evaluation with FastLogging {
+  /**
+   *
+   * Version 7 Scorer Bcubed calculation.  Matches logic from the official conll scorer
+   */
+  object BCubedNoSingletons extends ClusterF1Evaluation with FastLogging {
     def apply[E,M](predicted: EvaluatableClustering[E,M], truth: EvaluatableClustering[E,M]): F1Evaluation = {
       val result = new F1Evaluation
       var acumP = 0.0//result.precisionNumerator
@@ -495,6 +458,8 @@ object ClusterF1Evaluation {
 
 
 
+
+
 // TODO Is there a way to do this without F1Evaluation.overrideF1? -akm
 
 //  // Following the specification in http://stel.ub.edu/semeval2010-coref/sites/default/files/blanc-draft3.pdf
@@ -530,5 +495,3 @@ object ClusterF1Evaluation {
 //      m
 //    }
 //  }
-
-
