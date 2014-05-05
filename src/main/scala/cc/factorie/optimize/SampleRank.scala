@@ -21,7 +21,8 @@ import util.DoubleAccumulator
 import cc.factorie.model.{WeightsSet, Parameters, Model, DotFamily}
 import cc.factorie.infer.ProposalSampler
 
-/** Provides a gradient that encourages the model.score to rank its best proposal the same as the objective.score would, with a margin. */
+/** Provides a gradient that encourages the model.score to rank its best proposal the same as the objective.score would, with a margin.
+    @author Andrew McCallum */
 class SampleRankExample[C](val context: C, val sampler: ProposalSampler[C]) extends Example {
   var learningMargin = 1.0
   def accumulateValueAndGradient(value: DoubleAccumulator, gradient: WeightsMapAccumulator): Unit = {
@@ -63,6 +64,8 @@ class SampleRankExample[C](val context: C, val sampler: ProposalSampler[C]) exte
   }
 }
 
+/** A Trainer that packages together the SampleRankExample and a GradientOptimizer.
+    @author Andrew McCallum */
 class SampleRankTrainer[C](weightsSet: WeightsSet, sampler: ProposalSampler[C], optimizer: GradientOptimizer = new optimize.AdaGrad, logEveryN: Int = Int.MaxValue)
  extends optimize.OnlineTrainer(weightsSet,optimizer,maxIterations=10000, logEveryN=logEveryN) {
   def this(sampler: ProposalSampler[C], optimizer: GradientOptimizer) = this(sampler.model.asInstanceOf[Model with Parameters].parameters, sampler, optimizer)

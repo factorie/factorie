@@ -6,13 +6,6 @@ import util._
 import cc.factorie.model.{WeightsMap, WeightsSet}
 
 /**
- * User: apassos
- * Date: 4/8/13
- * Time: 5:54 PM
- */
-
-
-/**
  * The AdaGrad regularized dual averaging algorithm from Duchi et al, Adaptive Subgradient Algorithms
  * for Online Learning and Stochastic Optimization.
  *
@@ -28,6 +21,7 @@ import cc.factorie.model.{WeightsMap, WeightsSet}
  * @param l1 The strength of l1 regularization
  * @param l2 The strength of l2 regularization
  * @param numExamples The number of examples for online training, used to scale regularizers
+ * @author Alexandre Passos
  */
 class AdaGradRDA(val delta: Double = 0.1, val rate: Double = 0.1, val l1: Double = 0.0, val l2: Double = 0.0, val numExamples: Int = 1) extends GradientOptimizer {
   var initialized = false

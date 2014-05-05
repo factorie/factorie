@@ -24,7 +24,8 @@ import cc.factorie.model.{WeightsMap, WeightsSet}
 // TODO What kind of regularization would be used with LBFGS other than L2?
 // If nothing, then incorporate it directly into LBFGS. -akm
 
-/**Maximize using Limited-memory BFGS, as described in Byrd, Nocedal, and Schnabel, "Representations of Quasi-Newton Matrices and Their Use in Limited Memory Methods" */
+/** A quasi-Newton batch gradient optimizer.
+    Limited-memory BFGS, as described in Byrd, Nocedal, and Schnabel, "Representations of Quasi-Newton Matrices and Their Use in Limited Memory Methods" */
 class LBFGS(var numIterations: Double = 1000,
             var maxIterations: Int = 1000,
             var tolerance: Double = 0.0001,
