@@ -35,8 +35,8 @@ trait CategoricalValue[C] extends DiscreteValue {
 /** A domain for categorical variables.  It stores not only a size,
     but also the mapping from category values (of type T = this.CategoryType)
     to densely packed integers suitable for indices into parameter
-    vectors.  For example, a common use case is mapping words (from
-    NLP or document classification) into indices, and back. 
+    vectors.  For example, a common use case is mapping Strings (NLP or 
+    document classification words) into indices, and back. 
 
     Furthermore if domain.gatherCounts = true, this domain will count
     the number of calls to 'index'.  Then you can reduce the size of
@@ -55,7 +55,7 @@ class CategoricalDomain[C] extends DiscreteDomain(0) with IndexedSeq[Categorical
     def domain = CategoricalDomain.this
     def dim1 = CategoricalDomain.this.size
   }
-  type Value <: CategoricalValue
+  type Value <: variable.CategoricalValue[C]
   def this(values:Iterable[C]) = { this(); values.foreach(value(_)); freeze() }
 
   private val __indices: mutable.Map[C, Value] = JavaHashMap[C, Value]()
