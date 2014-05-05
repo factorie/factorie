@@ -65,6 +65,10 @@ class AssignmentSolver(val weights: Tensor2) {
     }
     val returnSet = collection.mutable.ListBuffer[(Int,Int)]()
     @tailrec def addEdges(right: Int) {
+      if(returnSet.length >= weights.dim1) {
+        println("Warning, Cycle in CM, CE calculation");
+        return
+      }
       val left = rightParents(right)
       returnSet += ((left,right))
       assert(returnSet.length <= weights.dim1)
