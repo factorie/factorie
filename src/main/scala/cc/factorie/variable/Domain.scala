@@ -28,7 +28,6 @@ package cc.factorie.variable
 trait Domain {
   type Value <: Any
 }
-
 // TODO Consider removing type argument from Domain?  
 // It does provide a nice check between Value of Var and Domain, but I'm not sure how useful a check it is? -akm
 
