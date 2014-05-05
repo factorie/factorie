@@ -111,7 +111,7 @@ trait CanopySampling[E<:HierEntity with CanopyAttribute[E]]{
   }
 }
 */
-
+@deprecated("HierCorefSampler is deprecated in favor of @see cc.factorie.app.nlp.xcoref.HierarchicalCorefSampler","May 4, 2014")
 abstract class HierCorefSampler[T<:HierEntity](model:Model) extends SettingsSampler[Null](model, null) {
   def timeAndProcess(n:Int):Unit = super.process(n) //temporary fix to no longer being able to override process.
   def newEntity:T
