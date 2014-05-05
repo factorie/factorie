@@ -228,7 +228,11 @@ object NerForwardCoref extends NerForwardCoref {
 }
 
 
-/
+/**
+ * Base class for any coreference system
+ * @tparam CoreferenceStructure The type used as a training instance, ex. MentionPairLabel or MentionGraph,
+ *                              In the examples above, the training instance is either one pair or the whole document respectively
+ */
 abstract class CorefSystem[CoreferenceStructure] extends DocumentAnnotator with Trackable{
   val model:CorefModel
   val options:Coref1Options
@@ -261,6 +265,10 @@ abstract class CorefSystem[CoreferenceStructure] extends DocumentAnnotator with 
     }
   }
 
+  /**
+   * Perform any preprocess
+   * @param trainDocs
+   */
   def preprocessCorpus(trainDocs: Seq[Document]): Unit
   def getCorefStructure(coref:WithinDocCoref):CoreferenceStructure
   def instantiateModel(optimizer: GradientOptimizer,pool:ExecutorService):ParallelTrainer

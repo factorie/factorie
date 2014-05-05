@@ -1,7 +1,6 @@
 package cc.factorie.app.nlp.coref
 
 import cc.factorie.app.nlp.{DocumentAnnotatorPipeline, MutableDocumentAnnotatorMap, Document}
-import cc.factorie.util.coref.GenericEntityMap
 import cc.factorie.app.nlp.coref.mention._
 import cc.factorie.app.nlp.load.LoadConll2011
 import cc.factorie.app.nlp.ner.{ConllChainNer, NerTag}
@@ -25,6 +24,8 @@ trait CorefTrainerOpts extends cc.factorie.util.DefaultCmdOptions with cc.factor
   val deserialize = new CmdOption("deserialize", "N/A", "FILE", "Filename from which to deserialize classifier.")
   val useNerMentions = new CmdOption("use-ner-mentions", false, "BOOLEAN", "Whether to use NER mentions instead of noun phrase mentions")
   val randomSeed = new CmdOption("random-seed", 0, "INT", "Seed for the random number generator")
+  val writeConllFormat = new CmdOption("write-conll-format", true, "BOOLEAN", "Write CoNLL format data.")
+
 }
 
 trait CorefTrainer extends HyperparameterMain with Trackable{
@@ -70,7 +71,7 @@ trait CorefTrainer extends HyperparameterMain with Trackable{
       println("Train: "+trainDocs.length+" documents, " + trainDocs.map(d => d.coref.mentions.size).sum.toFloat / trainDocs.length + " mentions/doc")
     }
     val allTestDocs  =  LoadConll2011.loadWithParse(testFile)
-    val testDocs = allTestDocs.take(/*(allTestDocs.length*opts.portion.value).toInt*/3)
+    val testDocs = allTestDocs.take((allTestDocs.length*opts.portion.value).toInt)
     for(doc <- testDocs; mention <- doc.getTargetCoref.mentions){
       assert(mention.phrase.attr[OntonotesPhraseEntityType] ne null,"missing entity type")
       doc.coref.addMention(mention.phrase).phrase.attr += mention.phrase.attr[OntonotesPhraseEntityType]

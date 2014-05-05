@@ -1,7 +1,6 @@
 package cc.factorie.app.nlp.coref
 
 import cc.factorie.app.nlp.{DocumentAnnotatorPipeline, MutableDocumentAnnotatorMap, Document}
-import cc.factorie.util.coref.GenericEntityMap
 import cc.factorie.app.nlp.wordnet.WordNet
 import cc.factorie.app.nlp.ner.{ConllChainNer, NerTag}
 import cc.factorie.util.{TimingCollector, Trackers, CmdOption, HyperparameterMain}
@@ -22,7 +21,6 @@ trait ForwardCorefTrainerOpts extends CorefTrainerOpts{
   val numThreads = new CmdOption("num-threads", 4, "INT", "Number of threads to use")
   val featureComputationsPerThread = new CmdOption("feature-computations-per-thread", 2, "INT", "Number of feature computations per thread to run in parallel during training")
   val numTrainingIterations = new CmdOption("num-training-iterations", 1, "INT", "Number of passes through the training data")
-  val writeConllFormat = new CmdOption("write-conll-format", false, "BOOLEAN", "Write CoNLL format data.")
   val useAverageIterate = new CmdOption("use-average-iterate", true, "BOOLEAN", "Use the average iterate instead of the last iterate?")
   val useMIRA = new CmdOption("use-mira", false, "BOOLEAN", "Whether to use MIRA as an optimizer")
   val saveFrequency = new CmdOption("save-frequency", 1, "INT", "how often to save the model between epochs")
@@ -173,6 +171,20 @@ object StructuredCorefTrainer extends CorefTrainer{
       if (opts.serialize.wasInvoked && !opts.deserialize.wasInvoked)
         coreferenceSystem.serialize(opts.serialize.value)
     }
+
+    if (opts.writeConllFormat.value) {
+      val conllFormatPrinter = new CorefScorer
+      val conllFormatFilt = new java.io.PrintStream(new java.io.File("eval-test.filtpred"))
+      testDocs.foreach(d => conllFormatPrinter.printConll2011Format(d.getCoref, conllFormatFilt,true))
+      conllFormatFilt.flush()
+      conllFormatFilt.close()
+
+      val conllFormatNonFilt = new java.io.PrintStream(new java.io.File("eval-test-key.filtgold"))
+      testDocs.foreach{d => d.targetCoref.removeSingletons; conllFormatPrinter.printConll2011Format(d.getTargetCoref, conllFormatNonFilt,true)}
+      conllFormatNonFilt.flush()
+      conllFormatNonFilt.close()
+    }
+
     accuracy
   }
 }
