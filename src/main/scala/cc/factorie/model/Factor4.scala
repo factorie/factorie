@@ -24,7 +24,8 @@ import cc.factorie.util.Substitutions
 import java.io._
 import cc.factorie.variable._
 
-/** The only abstract things are _1, _2, _3, statistics(Values), and StatisticsType */
+/** The only abstract things are _1, _2, _3, statistics(Values), and StatisticsType 
+    @author Andrew McCallum */
 abstract class Factor4[N1<:Var,N2<:Var,N3<:Var,N4<:Var](val _1:N1, val _2:N2, val _3:N3, val _4:N4) extends Factor {
   factor =>
   type NeighborType1 = N1
@@ -57,7 +58,8 @@ abstract class Factor4[N1<:Var,N2<:Var,N3<:Var,N4<:Var](val _1:N1, val _2:N2, va
 }
 
 /** A 4-neighbor Factor whose statistics have type Tuple2.
-    Only "score" method is abstract. */
+    Only "score" method is abstract. 
+    @author Andrew McCallum */
 abstract class TupleFactorWithStatistics4[N1<:Var,N2<:Var,N3<:Var,N4<:Var](override val _1:N1, override val _2:N2, override val _3:N3, override val _4:N4) extends Factor4[N1,N2,N3,N4](_1, _2, _3, _4) {
   type StatisticsType = ((N1#Value, N2#Value, N3#Value, N4#Value))
   final def statistics(v1:N1#Value, v2:N2#Value, v3:N3#Value, v4:N4#Value) = (v1, v2, v3, v4)
@@ -65,7 +67,8 @@ abstract class TupleFactorWithStatistics4[N1<:Var,N2<:Var,N3<:Var,N4<:Var](overr
 }
 
 /** A 4-neighbor Factor whose statistics have type Tensor.
-    Only "statistics" and "score" methods are abstract. */
+    Only "statistics" and "score" methods are abstract. 
+    @author Andrew McCallum */
 abstract class TensorFactor4[N1<:TensorVar,N2<:TensorVar,N3<:TensorVar,N4<:TensorVar](override val _1:N1, override val _2:N2, override val _3:N3, override val _4:N4) extends Factor4[N1,N2,N3,N4](_1, _2, _3, _4) {
   type StatisticsType = Tensor
   override def statistics(v1:N1#Value, v2:N2#Value, v3:N3#Value, v4:N4#Value): Tensor
@@ -79,7 +82,8 @@ abstract class TensorFactor4[N1<:TensorVar,N2<:TensorVar,N3<:TensorVar,N4<:Tenso
 
 /** A trait for 4-neighbor Factor whose neighbors have Tensor values,
     and whose statistics are the outer product of those values.
-    Only "statisticsScore" method is abstract.  DotFactorWithStatistics2 is also a subclass of this. */
+    Only "statisticsScore" method is abstract.  DotFactorWithStatistics2 is also a subclass of this. 
+    @author Andrew McCallum */
 trait TensorFactorStatistics4[N1<:TensorVar,N2<:TensorVar,N3<:TensorVar,N4<:TensorVar] extends TensorFactor4[N1,N2,N3,N4] {
   final def statistics(v1:N1#Value, v2:N2#Value, v3:N3#Value, v4:N4#Value) = cc.factorie.la.Tensor.outer(v1, v2, v3, v4)
   final override def valuesStatistics(tensor:Tensor): Tensor = tensor
@@ -88,12 +92,14 @@ trait TensorFactorStatistics4[N1<:TensorVar,N2<:TensorVar,N3<:TensorVar,N4<:Tens
 
 /** A 4-neighbor Factor whose neighbors have Tensor values, 
     and whose statistics are the outer product of those values.
-    Only "statisticsScore" method is abstract. */
+    Only "statisticsScore" method is abstract. 
+    @author Andrew McCallum */
 abstract class TensorFactorWithStatistics4[N1<:TensorVar,N2<:TensorVar,N3<:TensorVar,N4<:TensorVar](override val _1:N1, override val _2:N2, override val _3:N3, override val _4:N4) extends TensorFactor4[N1,N2,N3,N4](_1, _2, _3, _4) with TensorFactorStatistics4[N1,N2,N3,N4]
 
 /** A 4-neighbor Factor whose statistics have type Tensor, 
     and whose score is the dot product between this Tensor and a "weightsSet" parameter Tensor.
-    Only "statistics" and "weightsSet" methods are abstract. */
+    Only "statistics" and "weightsSet" methods are abstract. 
+    @author Andrew McCallum */
 abstract class DotFactor4[N1<:TensorVar,N2<:TensorVar,N3<:TensorVar,N4<:TensorVar](override val _1:N1, override val _2:N2, override val _3:N3, override val _4:N4) extends TensorFactor4[N1,N2,N3,N4](_1, _2, _3, _4) {
   def weights: Tensor
   def statisticsScore(t:Tensor): Double = weights dot t
@@ -102,13 +108,15 @@ abstract class DotFactor4[N1<:TensorVar,N2<:TensorVar,N3<:TensorVar,N4<:TensorVa
 /** A 4-neighbor Factor whose neighbors have Tensor values, 
     and whose statistics are the outer product of those values,
     and whose score is the dot product between this Tensor and a "weightsSet" parameter Tensor.
-    Only "weightsSet" method is abstract. */
+    Only "weightsSet" method is abstract. 
+    @author Andrew McCallum */
 abstract class DotFactorWithStatistics4[N1<:TensorVar,N2<:TensorVar,N3<:TensorVar,N4<:TensorVar](override val _1:N1, override val _2:N2, override val _3:N3, override val _4:N4) extends DotFactor4[N1,N2,N3,N4](_1, _2, _3, _4) with TensorFactorStatistics4[N1,N2,N3,N4] {
   override def valuesScore(valueTensor:Tensor) = weights dot valueTensor
 }
 
 
-
+/** Family containing Factor4 (Families of Factors having four neighbors).
+    @author Andrew McCallum */
 trait Family4[N1<:Var,N2<:Var,N3<:Var,N4<:Var] extends FamilyWithNeighborDomains {
   type NeighborType1 = N1
   type NeighborType2 = N2

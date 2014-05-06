@@ -495,7 +495,7 @@ specialized inference and learning algorithms.
 
 #### Parameters and Weights
 
-The case in which templated factor scores are calculated by
+The situation in which templated factor scores are calculated by
 dot-products is so common (and so relevant to our typical parameter
 estimation procedures) that FACTORIE provides special support for this
 case.
@@ -554,14 +554,27 @@ the problem of searching for the most highly preferred possible world
 (MAP inference) or finding the probabilities of subsets of all
 possible worlds (marginal inference).
 
+In FACTORIE terminology, inference is a process which takes a list of
+variables and a `Model` and produces a `Summary`, which contains a
+collection of `Marginals` and which also has a marginalization
+constant, accessible as `logZ`.
+
+#### Marginals
+
 A `Marginal` represents a joint distribution over a subset of the
 variables.  For example, a `DiscreteMarginal2` specifies two
-`DiscreteVar`s and a `Proportion2` which contains their marginal
+`DiscreteVar`s and a `Proportions2` which contains their marginal
 distribution.  A `RealGaussianMarginal1` represents a univariate
-Gaussian distribution with a specified mean and variance.  Naturally a marginal 
+Gaussian distribution with a specified mean and variance.  Naturally a
+marginal
 
-A `FactorMarginal` is `Marginal` associated with a `Factor`.  Its
-marginal distribution may cover all the neighboring variables of the
+A `FactorMarginal` is `Marginal` associated with a `Factor`.  These
+are mainly used for learning, 
+
+providing the expectations in the
+gradient for the factor's parameters.
+
+Its marginal distribution may cover all the neighboring variables of the
 factor, or, in the case in which inference varied some but not all of
 the neighbors, the marginal distribution will be over a subset of the
 neighboring variables of the factor.  Its `tensorStatistics` method

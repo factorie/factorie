@@ -17,6 +17,8 @@ package cc.factorie.model
 import cc.factorie.la._
 import cc.factorie.variable.Domain
 
+/** A Family contains a Factor definition for Factors that share the same scoring function and statistics functions.
+    @author Andrew McCallum */
 trait Family {
   type FamilyType <: Family // like a self-type
   //type FactorType <: Factor // TODO Remove this?
@@ -42,10 +44,14 @@ trait Family {
   def statisticsScore(tensor:Tensor): Double = throw new Error("Not yet implemented.")
 }
 
+/** A Family for which the Domains of the neighboring variables are known. 
+    @author Andrew McCallum */
 trait FamilyWithNeighborDomains extends Family {
   def neighborDomains: Seq[Domain]
 }
 
+/** A Family for which the classes of the neighboring variables are known.
+    @author Andrew McCallum */
 trait FamilyWithNeighborClasses extends Family {
   def neighborClasses: Seq[Class[_]]
 }
@@ -56,14 +62,16 @@ trait Statistics[A] extends Family {
   type StatisticsType = A
 }
 
-/** A Family whose Factors have statistics that are WeightsMap. */
+/** A Family whose Factors have statistics that are WeightsMap. 
+    @author Andrew McCallum */
 trait TensorFamily extends Family {
   type FamilyType <: TensorFamily
   type StatisticsType = Tensor
   //trait Statistics extends super.Statistics { def tensor: Tensor }
 }
 
-/** A Family whose Factors have scores calculated as a dot-product between sufficient statistics WeightsMap and the Family's weightsSet Tensor. */
+/** A Family whose Factors have scores calculated as a dot-product between sufficient statistics WeightsMap and the Family's weightsSet Tensor. 
+    @author Andrew McCallum */
 trait DotFamily extends TensorFamily {
   type FamilyType <: DotFamily
   /** This can only be set given a Parameters. Code will look like
