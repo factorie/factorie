@@ -63,14 +63,6 @@ class Logger(val name:String, outputStream: => OutputStream = System.err, @volat
 }
 
 object Logger {
-  val loggerMap = new scala.collection.mutable.HashMap[String,Logger]
-  val globalLogger = new Logger("cc.factorie", System.err, INFO)
-  val neverLogger = new Logger("null", System.err, Int.MinValue) {
-    override def log(theLevel: Int)(x: => Any): Unit = {}
-  }
-  def logger(name:String) = loggerMap.getOrElseUpdate(name, new Logger(name, System.err, INFO))
-  def getLogger(name:String) = logger(name) // Alias for similarity to log4j
-  def getRootLogger = globalLogger // for similarity to log4j
   val NEVER = -1
   val FATAL = 10
   val ERROR = 20
@@ -83,11 +75,19 @@ object Logger {
   val DEBUG = 90
   val TRACE = 100
 
+  val loggerMap = new scala.collection.mutable.HashMap[String,Logger]
+  val globalLogger = new Logger("cc.factorie", System.err, INFO)
+  val neverLogger = new Logger("null", System.err, Int.MinValue) {
+    override def log(theLevel: Int)(x: => Any): Unit = {}
+  }
+  def logger(name:String) = loggerMap.getOrElseUpdate(name, new Logger(name, System.err, INFO))
+  def getLogger(name:String) = logger(name) // Alias for similarity to log4j
+  def getRootLogger = globalLogger // for similarity to log4j
+
   @noinline protected def sourceDescription(framesUp:Int): String = {
     val e = new Exception().getStackTrace()(framesUp+1)
     e.getFileName + ":" + e.getLineNumber
   }
-
 }
 
 /** Uses no per-instance memory, but slow because it does a hash lookup for each call on the logger. */

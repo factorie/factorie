@@ -24,7 +24,7 @@ limitations under the License.
   <inceptionYear>2009</inceptionYear>
 
   <properties>
-    <scala.version>2.10.4</scala.version>
+    <scala.version>2.11.0</scala.version>
     <scalatest.version>1.9.1</scalatest.version>
     <junit.version>4.10</junit.version>
   </properties>
@@ -191,7 +191,7 @@ limitations under the License.
       <plugin>
         <groupId>net.alchim31.maven</groupId>
         <artifactId>scala-maven-plugin</artifactId>
-        <version>3.1.0</version>
+        <version>3.1.6</version>
         <executions>
           <execution>
             <goals>
@@ -201,7 +201,8 @@ limitations under the License.
           </execution>
         </executions>
         <configuration>
-          <recompileMode>incremental</recompileMode>
+          <!-- Have to disable Maven's incremental compilation for now for Scala 2.11 -->
+          <!--<recompileMode>incremental</recompileMode>-->
           <useZincServer>true</useZincServer>
           <scalaVersion>${scala.version}</scalaVersion>
           <jvmArgs>
