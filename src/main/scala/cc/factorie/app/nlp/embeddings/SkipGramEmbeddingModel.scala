@@ -38,20 +38,18 @@ class SkipGramNegSamplingEmbeddingModel(override val opts: EmbeddingOpts) extend
   }
 
   def subSample(word: Int): Int = {
-    val ran = vocab.getSubSampleProb(word) // pre-computed to avoid sqrt call every time. Improvement of 10 secs on 100MB data ~ 15 MINs on 10GB
-    //val cnt = vocab.getCount(word)
-    //val ran = (math.sqrt(cnt / (sample * train_words)) + 1) * (sample * train_words) / cnt
-    val real_ran = rng.nextInt(0xFFFF) / 0xFFFF.toDouble
-    if (ran < real_ran) { return -1 }
+    val prob = vocab.getSubSampleProb(word) // pre-computed to avoid sqrt call every time.
+    val alpha = rng.nextInt(0xFFFF) / 0xFFFF.toDouble
+    if (prob < alpha) { return -1 }
     else return word
   }
 }
-class SkipGramNegSamplingExample(model: SkipGramNegSamplingEmbeddingModel, word: Int, context: Int, label: Int) extends Example {
+class SkipGramNegSamplingExample(model:WordEmbeddingModel, word: Int, context: Int, label: Int) extends Example {
 
   // to understand the gradient and objective refer to : http://arxiv.org/pdf/1310.4546.pdf
   def accumulateValueAndGradient(value: DoubleAccumulator, gradient: WeightsMapAccumulator): Unit = {
     val wordEmbedding = model.weights(word).value // access the word's embedding 
-    val contextEmbedding = model.weights(context).value // acess the context's embedding 
+    val contextEmbedding = model.weights(context).value // access the context's embedding 
     val score: Double = wordEmbedding.dot(contextEmbedding)
     val exp: Double = math.exp(-score) // TODO : pre-compute exp table
     var objective: Double = 0.0
