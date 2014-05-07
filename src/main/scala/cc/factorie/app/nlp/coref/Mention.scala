@@ -179,15 +179,19 @@ class WithinDocCoref(val document:Document) extends EvaluatableClustering[Within
   /** Return the entity associated with the given uniqueId.  Return null if not found. */
   def idToEntity(id:String): WithinDocEntity = _entities(id)
   /** Remove from the list of entities all entities that contain no mentions. */
-  def trimEmptyEntities: Unit = _entities.values.filter(_.mentions.size == 0).map(_.uniqueId).foreach(_entities.remove) // TODO But note that this doesn't purge _entityKeyToId; perhaps it should.
+  def trimEmptyEntities(): Unit = _entities.values.filter(_.mentions.size == 0).map(_.uniqueId).foreach(_entities.remove) // TODO But note that this doesn't purge _entityKeyToId; perhaps it should.
   /** Remove from all entities and mentions assosciated with entities that contain only one mention. */
-  def removeSingletons:Unit ={
+  def removeSingletons():Unit ={
     _entities.values.filter(_.mentions.size == 1).map(_.uniqueId).foreach{
       id =>
         _entities(id).mentions.foreach(m => deleteMention(m))
         _entities.remove(id)
 //        _entityKeyToId.remove(_entityKeyToId.find{case (intId,stringId) => id == stringId}.get._1)
     }
+  }
+  def resetPredictedMapping():Unit = {
+    _entities.clear()
+    mentions.foreach(_._setEntity(null))
   }
   // Support for evaluation
   def clusterIds: Iterable[WithinDocEntity] = _entities.values

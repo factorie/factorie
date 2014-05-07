@@ -16,7 +16,7 @@ class MentionPairFeatures(val model: CorefModel, val mention1:Mention, val menti
     val t = new GrowableSparseBinaryTensor1(domain.dimensionDomain)
     val sizeBoundary = if (options.featureSet == "conventional"){
       if (options.conjunctionStyle == ConjunctionOptions.SLOW_CONJUNCTIONS) 650
-      else  70
+      else 70
     } else{                        // if (options.featureSet == "lexical")
       if (options.conjunctionStyle == ConjunctionOptions.PRON_CONJUNCTIONS) 40
       else 16
@@ -45,13 +45,9 @@ class MentionPairFeatures(val model: CorefModel, val mention1:Mention, val menti
 
   def computeFeatures() {
     if(options.featureSet == "lexical")
-      computeShallowFeatures();
+      computeShallowFeatures()
     else computeBasicFeatures()
-  }// computeConjunctionFeatures() }
-
-
-
-
+  }
 
   def computeConjunctionFeatures() {
     if (basicFeatureCalculated && !conjunctionCalculated) {
@@ -77,6 +73,7 @@ class MentionPairFeatures(val model: CorefModel, val mention1:Mention, val menti
       mergeableFeatures += f
     }
     addFeature(f)
+
   }
 
   lazy val mergeableAllFeatures = mergeableFeatures
@@ -116,7 +113,7 @@ class MentionPairFeatures(val model: CorefModel, val mention1:Mention, val menti
 
   def computeBasicFeatures() {
     val m1 = if(mention1.attr[MentionCharacteristics] eq null){ mention1.attr += new MentionCharacteristics(mention1); mention1.attr[MentionCharacteristics]} else mention1.attr[MentionCharacteristics]
-    val m2 = if(mention2.attr[MentionCharacteristics] eq null){ mention2.attr += new MentionCharacteristics(mention1); mention2.attr[MentionCharacteristics]} else mention2.attr[MentionCharacteristics]
+    val m2 = if(mention2.attr[MentionCharacteristics] eq null){ mention2.attr += new MentionCharacteristics(mention2); mention2.attr[MentionCharacteristics]} else mention2.attr[MentionCharacteristics]
     if (basicFeatureCalculated) return
 
     addMergeableFeature("BIAS")
@@ -130,7 +127,7 @@ class MentionPairFeatures(val model: CorefModel, val mention1:Mention, val menti
     if (!m1.nounWords.intersect(m2.nounWords).isEmpty)
       addMergeableFeature("pmhm")
     else addMergeableFeature("pmhmf")
-    if (m1.lowerCaseHead.contains(m2.lowerCaseHead) || m2.lowerCaseHead.contains(m1.lowerCaseHead))
+    if (m1.lowerCaseString.contains(m2.lowerCaseString) || m2.lowerCaseString.contains(m1.lowerCaseString))
       addMergeableFeature("sh")
     else addMergeableFeature("shf")
     if (CorefFeatures.canBeAliases(mention1, mention2)) addMergeableFeature("sapetc") else addMergeableFeature("soonAliasPredETypeCached:false")
@@ -208,7 +205,7 @@ class MentionPairFeatures(val model: CorefModel, val mention1:Mention, val menti
 
   def computeShallowFeatures(): Unit = {
     val m1 = if(mention1.attr[MentionCharacteristics] eq null){ mention1.attr += new MentionCharacteristics(mention1); mention1.attr[MentionCharacteristics]} else mention1.attr[MentionCharacteristics]
-    val m2 = if(mention2.attr[MentionCharacteristics] eq null){ mention2.attr += new MentionCharacteristics(mention1); mention2.attr[MentionCharacteristics]} else mention2.attr[MentionCharacteristics]
+    val m2 = if(mention2.attr[MentionCharacteristics] eq null){ mention2.attr += new MentionCharacteristics(mention2); mention2.attr[MentionCharacteristics]} else mention2.attr[MentionCharacteristics]
     if (basicFeatureCalculated) return
 
     features += "Bias" //+ currMention.mType
@@ -239,7 +236,7 @@ class MentionPairFeatures(val model: CorefModel, val mention1:Mention, val menti
       else features += "No_String_Match"
       if(m1.lowerCaseHead == m2.lowerCaseHead) features += "Head_Match"
       else features += "No_Head_Match"
-      //features += "curr-type" + currMention.mType + "link-type" + anteMention.mType
+      features += "curr-type" + m1.predictEntityType + "link-type" + m2.predictEntityType
 
     }
   }
@@ -372,10 +369,6 @@ object LexicalCounter {
     prune(allSuffixCounts,cutoff)
     prune(allShapeCounts,cutoff)
     prune(allClassCounts,cutoff)
-    //println(allPrefixCounts.size + " prefixes: top 100 = " + GUtil.getTopNKeysSubCounter(allPrefixCounts, 100).toString)
-    //Logger.logss(allSuffixCounts.size + " suffixes: top 100 = " + GUtil.getTopNKeysSubCounter(allSuffixCounts, 100).toString)
-    //Logger.logss(allShapeCounts.size + " shapes: top 100 = " + GUtil.getTopNKeysSubCounter(allShapeCounts, 100).toString)
-    //Logger.logss(allClassCounts.size + " classes: top 100 = " + GUtil.getTopNKeysSubCounter(allClassCounts, 100).toString)
     new LexicalCounter(headWordCounts, firstWordCounts, lastWordCounts, /*penultimateWordCounts, secondWordCounts*/ precedingWordCounts, followingWordCounts, /*precedingBy2WordCounts, followingBy2WordCounts,  allPrefixCounts, allSuffixCounts, */allShapeCounts,allClassCounts)
   }
   private def countAndPrune(words: Seq[String], cutoff: Int): DefaultHashMap[String,Int] = {

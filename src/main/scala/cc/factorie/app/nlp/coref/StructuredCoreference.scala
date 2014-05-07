@@ -37,16 +37,14 @@ class StructuredCoref extends CorefSystem[MentionGraph]{
   val options = new Coref1Options
   val model: StructuredCorefModel = new StructuredCorefModel
   override def prereqAttrs: Seq[Class[_]] = Seq(classOf[Sentence],classOf[PennPosTag])
-  def tokenAnnotationString(token:Token):String = {
-    ""
-  }
+  def tokenAnnotationString(token:Token):String = ???
 
-  //requires coref on document first
   def infer(coref:WithinDocCoref):WithinDocCoref = {
     val instance = new MentionGraph(model,coref,options)
     instance.generateGraph(false)
     getPredCorefClusters(instance)
   }
+
   var numDocs = 0
   def instantiateModel(optimizer:GradientOptimizer,pool:ExecutorService) = new SoftMaxParallelTrainer(optimizer,pool)
   def preprocessCorpus(trainDocs:Seq[Document]) = model.CorefTokenFrequencies.lexicalCounter = LexicalCounter.countLexicalItems(trainDocs.flatMap{_.coref.mentions},trainDocs,20)
@@ -58,7 +56,6 @@ class StructuredCoref extends CorefSystem[MentionGraph]{
   }
 
   def getPredCorefClusters(graph:MentionGraph): WithinDocCoref = {
-    val corefMentions = graph.coref.mentions
     //If we add the best mention within a range, then it will have it's own matches and we can have a chain works well.
     val bestMatches = model.decodeAntecedents(graph)
     for(edgeIdx <- 0 until graph.graph.length){
@@ -72,11 +69,7 @@ class StructuredCoref extends CorefSystem[MentionGraph]{
   }
 
   class SoftMaxParallelTrainer(optimizer: GradientOptimizer, pool: ExecutorService) extends ParallelTrainer(optimizer,pool){
-    def map(d:MentionGraph): Seq[Example] = {
-      println("Document: " +d.coref.document.name + "   " + numDocs)
-      numDocs += 1
-      model.getExample(d)
-    }
+    def map(d:MentionGraph): Seq[Example] = model.getExample(d)
   }
 }
 
@@ -89,7 +82,7 @@ class MentionGraph(model:CorefModel,val coref: WithinDocCoref,options:Coref1Opti
   var orderedMentionList = coref.mentions.toSeq
   var graph = new Array[Array[MentionGraphLabel]](orderedMentionList.size)
   val features = new Array[Array[MentionPairFeatures]](orderedMentionList.size)
-  var prunedEdges = new Array[Array[Boolean]](orderedMentionList.size)  //toTensor2
+  var prunedEdges = new Array[Array[Boolean]](orderedMentionList.size)
 
   for (i <- 0 until orderedMentionList.size) {
     features(i) = Array.fill(i+1)(null.asInstanceOf[MentionPairFeatures])

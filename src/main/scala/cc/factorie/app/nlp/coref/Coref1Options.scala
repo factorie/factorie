@@ -42,7 +42,7 @@ class Coref1Options {
 
   var conjunctionStyle = NO_CONJUNCTIONS
 
-  var featureSet = "factorie"
+  var featureSet = "conventional"
 
   var saveFrequency = 1
 

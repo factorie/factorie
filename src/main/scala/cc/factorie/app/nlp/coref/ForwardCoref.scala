@@ -338,13 +338,10 @@ abstract class CorefSystem[CoreferenceStructure] extends DocumentAnnotator with 
       val trueCoref = doc.targetCoref
       val predCoref = doc.coref
 
-      //assert(trueCoref.mentions.forall(m=>m.phrase.attr[OntonotesPhraseEntityType] ne null))
-      predCoref.mentions.foreach(m=>m._setEntity(null))
+      predCoref.resetPredictedMapping()
       for(mention <- predCoref.mentions) if(mention.attr[MentionCharacteristics] eq null) mention.attr += new MentionCharacteristics(mention)
 
-      doc.attr += infer(predCoref)
-      val gtMentions = trueCoref.mentions.toSet
-      val predMentions = predCoref.mentions.toSet
+      infer(predCoref)
       predCoref.mentions.zipWithIndex.foreach{case(mention,idx) => if(mention.entity eq null) predCoref.deleteMention(mention)}
       trueCoref.mentions.zipWithIndex.foreach{case(mention,idx) => if(mention.entity eq null) trueCoref.deleteMention(mention)}
 
@@ -352,8 +349,8 @@ abstract class CorefSystem[CoreferenceStructure] extends DocumentAnnotator with 
       //  case (gtM, idx) =>
       //    if(!predCoref.mentions.exists(m => m.phrase.value == gtM.phrase.value)) predCoref.addMention(gtM.phrase,predMentions.size)
       //}
-      trueCoref.removeSingletons
-      predCoref.removeSingletons
+      trueCoref.removeSingletons()
+      predCoref.removeSingletons()
 
 
       val pw = ClusterF1Evaluation.Pairwise(predCoref, trueCoref)

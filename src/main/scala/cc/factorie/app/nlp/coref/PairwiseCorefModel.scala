@@ -237,14 +237,8 @@ class StructuredCorefModel extends CorefModel {
     for (currIdx <- 0 to mentionGraph.graph.length-1) {
       val currMention = mentionGraph.orderedMentionList(currIdx)
       var goldAntecedents = if(currMention.entity ne null) currMention.entity.mentions.filter(m => mentionGraph.orderedMentionList.indexOf(m) < currIdx) else Iterable.empty
-      if(goldAntecedents.isEmpty) goldAntecedents = Set(mentionGraph.coref.mentions.toSeq(currIdx))//Set(currentMention.mention)
-      if(!goldAntecedents.forall(a => mentionGraph.orderedMentionList.indexOf(a) <= currIdx)){
-        println("Stop here1")
-        //println(edgeLink)
-        println(goldAntecedents.map(_.phrase.start).mkString(" "))
-      }
+      if(goldAntecedents.isEmpty) goldAntecedents = Set(currMention)
       val edgeIdx = mentionGraph.orderedMentionList.indexOf(goldAntecedents.head)
-
       var currProb = 0.0
       for (edgeLink <- goldAntecedents) {
         val edgeIdx = mentionGraph.orderedMentionList.indexOf(edgeLink)
