@@ -35,24 +35,12 @@ object EmptyStringSet extends StringSet {
   def +=(s:String): Unit = throw new Error("Cannot add strings to the EmptyStringSet")
 }
 
-class SetBasedStopwords extends StringSet {
-  private val wordSet = new collection.mutable.HashSet[String]()
-  def contains(s: String): Boolean = wordSet(s)
-  def +=(s: String): Unit = wordSet += s
-}
-
 class Stopwords extends StringSet {
   
-  def contains(s:String) = asIndex.contains(s)
-  //def index(s:String) = asIndex.index(s)
-  def +=(s:String): Unit = asIndex.index(s)
-  
-  private lazy val asIndex = {
-    val index = new cc.factorie.util.Index[String] {}
-    index indexAll this.asArray
-    //index.freeze0
-    index
-  } 
+  def contains(s:String) = asSet.contains(s)
+  def +=(s:String): Unit = asSet += s
+
+  lazy val asSet: scala.collection.mutable.Set[String] = new scala.collection.mutable.HashSet[String] ++= asArray
   
   val asArray = Array(
   "a",
