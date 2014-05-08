@@ -2,7 +2,7 @@ package cc.factorie.tutorial
 
 import cc.factorie.app.nlp.hcoref.BagOfWordsVariable
 import cc.factorie.app.nlp.xcoref._
-import cc.factorie.variable.{BOWCubbie, Var, DiffList}
+import cc.factorie.variable.{Var, DiffList}
 import scala.util.Random
 import com.mongodb.{DB, MongoClient}
 
