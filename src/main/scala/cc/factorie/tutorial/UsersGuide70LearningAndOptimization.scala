@@ -125,16 +125,17 @@ or noun phrase chunking. The linear chain will be our running example, but gener
 of graphical model.
 
 First we need to set up a basic model, features, and single training example:
-
-```scala
+*/
 package cc.factorie.tutorial
-object Tutorial60Learning extends App {
+
+object UsersGuide70LearningAndOptimization extends App {
   import cc.factorie._
   import variable._
   import cc.factorie.app.nlp._
   import cc.factorie.app.chain._
   import cc.factorie.optimize.{SynchronizedOptimizerOnlineTrainer, Trainer, SampleRankTrainer}
   import cc.factorie.infer.{GibbsSampler, InferByBPChain}
+  import cc.factorie.optimize.OnlineTrainer
 
   implicit val random = new scala.util.Random(0)
 
@@ -175,11 +176,9 @@ object Tutorial60Learning extends App {
     // And one feature for its capitalization
     features += "IsCapitalized=" + t.string(0).isUpper.toString
   })
-```
-
+/*&
 Now we can demonstrate several ways to learn parameters for this model:
-
-```scala
+*/
   // This example calculates the maximum likelihood (CRF) gradient for an example
   val example = new optimize.LikelihoodExample(document.tokens.toSeq.map(_.attr[Label]), model, InferByBPChain)
 
@@ -197,10 +196,7 @@ Now we can demonstrate several ways to learn parameters for this model:
   val sampleRankExamples = document.tokens.toSeq.map(t => new optimize.SampleRankExample(t.attr[Label], sampler))
   Trainer.onlineTrain(model.parameters, sampleRankExamples, optimizer = optimizer0)
 }
-```
-
+/*&
 Many other choices of inference, optimizers, and examples can be swapped into the above format
 to optimize different training objectives with minimal code changes.
-
  */
-
