@@ -16,7 +16,6 @@ package cc.factorie.app.classify
 
 import cc.factorie._
 import app.classify
-import app.strings.SetBasedStopwords
 import java.io._
 import cc.factorie.util.{ScriptingUtils, BinarySerializer}
 import scala.language.postfixOps
@@ -27,6 +26,7 @@ import cc.factorie.variable._
 import scala.Some
 import cc.factorie.app.classify.backend._
 import scala.Some
+import scala.collection.mutable
 
 // Feature and Label classes
 
@@ -136,9 +136,9 @@ object Classify {
       scala.io.Source.fromFile(f, opts.readTextEncoding.value).mkString
     }
 
-    def readStoplist(fileName: String): SetBasedStopwords = {
+    def readStoplist(fileName: String): scala.collection.mutable.Set[String] = {
       val stopListFile = new File(fileName)
-      val stopwords = new SetBasedStopwords
+      val stopwords = new mutable.HashSet[String]()
       fileToString(stopListFile).split("\n").foreach(stopwords +=)
       stopwords
     }
@@ -153,7 +153,7 @@ object Classify {
         cc.factorie.app.strings.Stopwords.asArray.foreach(stopWords +=)
         stopWords
       } else {
-        cc.factorie.app.strings.Stopwords
+        cc.factorie.app.strings.Stopwords.asSet
       }
     val labels = new ArrayBuffer[Label]()
     val trainingLabels = new ArrayBuffer[Label]()
