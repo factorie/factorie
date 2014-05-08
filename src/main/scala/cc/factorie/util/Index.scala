@@ -46,7 +46,7 @@ import scala.collection.mutable._
  * @author Andrew McCallum (multiple changes from original)
  */
 //@serializable 
-trait Index[T] extends scala.collection.IndexedSeq[T] {
+trait Index[T] {
   /**Forward map from int to object */
   private var _objects = new ArrayBuffer[T]
 
@@ -81,9 +81,9 @@ trait Index[T] extends scala.collection.IndexedSeq[T] {
   def size0 = _indices.size
   def length = size0
 
-  override def iterator = _objects.iterator
+  def iterator = _objects.iterator
 
-  override def contains[A1 >: T](entry: A1) = _indices.contains(entry.asInstanceOf[T])
+  def contains[A1 >: T](entry: A1) = _indices.contains(entry.asInstanceOf[T])
   /*entry match {
   	case e:T => _indices.contains(e)
   	case _ => false
