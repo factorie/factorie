@@ -83,7 +83,7 @@ trait Index[T] extends scala.collection.IndexedSeq[T] {
 
   override def iterator = _objects.iterator
 
-  override def contains(entry: Any) = _indices.contains(entry.asInstanceOf[T])
+  override def contains[A1 >: T](entry: A1) = _indices.contains(entry.asInstanceOf[T])
   /*entry match {
   	case e:T => _indices.contains(e)
   	case _ => false

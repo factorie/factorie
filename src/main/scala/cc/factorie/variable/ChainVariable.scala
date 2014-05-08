@@ -14,6 +14,8 @@
 
 package cc.factorie.variable
 
+import scala.annotation.unchecked.uncheckedVariance
+
 /** A simple superclass of ChainLink that has a self-type argument, but (unlike ChainLink) not the type of the Chain.
     Used by app.chain.Observation and app.chain.Lexicon.LexiconToken.
     @author Andrew McCallum */
@@ -128,7 +130,7 @@ trait ChainLink[This<:ChainLink[This,C],C<:Chain[C,This]] extends AbstractChainL
  */
 trait ThisType[+This<:AnyRef] {
   this: This =>
-  type ThisType = This
+  type ThisType = (This @uncheckedVariance)
 }
 
 /** A chain of elements, each of which has methods "next", "prev", etc.

@@ -15,13 +15,14 @@
 package cc.factorie.variable
 
 import scala.collection.mutable.ArrayBuffer
+import scala.annotation.unchecked.uncheckedVariance
 
 // Variables for holding sequences.
 
 /** A trait for setting the member type ElementType in SeqVar classes.
     @author Andrew McCallum */
 trait ElementType[+ET] {
-  type ElementType = ET
+  type ElementType = (ET @uncheckedVariance)
 }
 
 /** A trait with many of the same methods as Seq, but not actually a Seq itself.

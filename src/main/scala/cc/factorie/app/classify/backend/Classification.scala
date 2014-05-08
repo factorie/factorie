@@ -139,7 +139,7 @@ trait MulticlassClassifierTrainer[C <: MulticlassClassifier[Tensor1]] extends Ba
     baseTrain(classifier, labels.map(_.target.intValue), features.map(_.value), weights, evaluate)
   def train(classifier: C, labels: Seq[LabeledDiscreteVar], features: Seq[VectorVar], evaluate: C => Unit): Unit =
     baseTrain(classifier, labels.map(_.target.intValue), features.map(_.value), labels.map(i => 1.0), evaluate)
-  def train[Label<:LabeledDiscreteVar](classifier: C, labels: Seq[Label], l2f: Label => VectorVar, testLabels: Seq[Label], l2w: Label => Double = (l: Label) => 1.0): Unit =
+  def train[Label<:LabeledDiscreteVar](classifier: C, labels: Seq[Label], l2f: Label => VectorVar, testLabels: Seq[Label], l2w: Label => Double): Unit =
     train(classifier, labels, labels.map(l2f), labels.map(l2w), testLabels, testLabels.map(l2f))
   def train[Label<:LabeledDiscreteVar](classifier: C, labels: Seq[Label], l2f: Label => VectorVar, l2w: Label => Double): Unit =
     train(classifier, labels, labels.map(l2f), labels.map(l2w))
