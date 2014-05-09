@@ -5,9 +5,7 @@ This file describes the process of generating the Factorie website from the mark
 
 You should only need to do this if you are working on the design of the website and would like to test your work.
 
-To update documentation and content, you should make the desired changes and then run `generate-and-push-documentation.sh` in the `bin` directory.
-
-**If you want to make changes to the tutorials / users guide, update the Scala files in cc.factorie.tutorial and then run the above script, do NOT change the Markdown or HTML files, they are automatically generated.**
+To update documentation and content, you should make the desired changes and then run `generate-and-push-documentation.sh` in the `bin` directory. 
 
 Prerequisites
 ---
