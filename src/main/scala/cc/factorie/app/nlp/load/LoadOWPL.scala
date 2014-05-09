@@ -8,19 +8,18 @@ import cc.factorie.app.nlp.Token
 import cc.factorie.app.nlp.UnknownDocumentAnnotator
 
 /**
- * Author: martin
- * Date: 2/25/12
+ * Author: martin, strubell
+ * Date: 2/25/12, 4/28/14
  *
- * On each line, there should be a space-separated label and word.
+ * On each line, there should be a whitespace-delimited list of the form:
+ * word label1 label2 label3 ...
+ * 
  * Sentences are separated by blank lines.
  * Returns all data in a single document.
  */
 
-// TODO I want to change this so that the expected format is:
-// word label1 label2 label3...
-
 object LoadOWPL {
-  def fromFilename(file: String, labelMaker: (Token, String) => LabeledMutableCategoricalVar[String], limitSentenceCount: Int = -1): Seq[Document] = {
+  def fromFilename(file: String, labelMaker: (Token, Seq[String]) => LabeledMutableCategoricalVar[String], limitSentenceCount: Int = -1): Seq[Document] = {
     val doc = new Document
     doc.annotators(classOf[Token]) = UnknownDocumentAnnotator.getClass // register that we have token boundaries
     doc.annotators(classOf[Sentence]) = UnknownDocumentAnnotator.getClass // register that we have sentence boundaries
@@ -34,11 +33,10 @@ object LoadOWPL {
           return Seq(doc)
       }
       else {
-        val fields = line.split(" ")
-        val label = fields(0)
-        val word = fields(1).substring(5)
+        val fields = line.split("\\s+")
+        val word = fields(0)
         val token = new Token(sentence, word)
-        token.attr += labelMaker(token, label)
+        token.attr += labelMaker(token, fields)
         doc.appendString(" ")
       }
     }

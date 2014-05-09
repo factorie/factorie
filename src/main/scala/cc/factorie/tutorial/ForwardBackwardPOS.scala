@@ -114,7 +114,7 @@ object ForwardBackwardPOS {
     try { PennPosDomain.categories.head }
     catch { case e: NoSuchElementException => throw new Error("The domain must be loaded before it is accessed.") }
   }
-  def labelMaker(t: Token, l: String = defaultCategory) = new LabeledPennPosTag(t, l)
+  def labelMaker(t: Token, l: Seq[String] = Seq(defaultCategory)) = new LabeledPennPosTag(t, l(0))
 
   def main(args: Array[String]): Unit = {
     object opts extends cc.factorie.util.DefaultCmdOptions {

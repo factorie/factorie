@@ -1,4 +1,4 @@
-/*& Learning and Optimization */
+/*& Optimization */
 /*&
 
 # Optimization
