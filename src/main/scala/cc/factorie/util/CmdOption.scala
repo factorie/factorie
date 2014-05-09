@@ -91,7 +91,7 @@ class CmdOptions {
   def usageString: String = {
     val sb = new StringBuffer
     sb append "Usage: "
-    opts.values.foreach(o => { if (o.hasValue) sb.append(o.name+"="+o.valueName) else sb.append(o.name); sb.append(" ") })
+    opts.values.foreach(o => { if (o.hasValue) sb.append("--"+o.name+"="+o.valueName) else sb.append(o.name); sb.append(" ") })
     sb.toString
   }
   /** The arguments that were unqualified by dashed options. */
