@@ -1,24 +1,14 @@
 package cc.factorie.app.nlp.phrase
 
-///** Categorical variable indicating whether the noun phrase is person, location, organization, etc. */
-//class NounPhraseEntityType(val phrase:NounPhrase, targetValue:String) extends LabeledCategoricalVariable(targetValue) {
-//  def domain = OntonotesNounPhraseEntityTypeDomain
-//}
-//object OntonotesNounPhraseEntityTypeDomain extends CategoricalDomain[String]{
-//  this ++= ner.OntonotesNerDomain.categories
-//  this += "MISC"
-//}
-
 import cc.factorie._
 import cc.factorie.app.nlp._
 import cc.factorie.app.nlp.pos._
 import cc.factorie.app.nlp.ner.{ConllNerDomain, OntonotesEntityTypeDomain}
 import cc.factorie.util.BinarySerializer
 import java.io._
-import cc.factorie.variable.{LabeledCategoricalVariable, BinaryFeatureVectorVariable, CategoricalVectorDomain, CategoricalDomain}
+import cc.factorie.variable.{LabeledCategoricalVariable, BinaryFeatureVectorVariable, CategoricalVectorDomain}
 import cc.factorie.optimize.{PredictorExample, Trainer, OptimizableObjectives}
 import cc.factorie.app.classify.backend.LinearMulticlassClassifier
-//import cc.factorie.app.nlp.coref.mention.Entity
 import cc.factorie.app.nlp.load.LoadConll2011
 
 

@@ -3,7 +3,6 @@ package cc.factorie.app.nlp
 import java.io._
 import cc.factorie.app.nlp.parse._
 import java.net.{ServerSocket,Socket,SocketException}
-//import cc.factorie.app.nlp.coref.mention.{PhraseEntityTypeLabeler, NerAndPronounMentionFinder, ParseBasedMentionFinding}
 import cc.factorie.app.nlp.coref.MentionList
 import cc.factorie.app.nlp.phrase._
 
