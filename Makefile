@@ -6,8 +6,8 @@ default:
 
 
 strip-first-comment:
-	#perl -0777 -i -p -e 's,^/\*.*Copyright[^\*]*\*/,,sm' `find src -name '*.java'`
-	perl -0777 -i -p -e 's,^/\*.*Copyright[^\*]*\*/,,sm' `find src -name '*.scala'`
+	#perl -0777 -i -p -e 's,^/\*.*Copyright[^\*]*\*/\n,,sm' `find src -name '*.java'`
+	perl -0777 -i -p -e 's,^/\*.*Copyright[^\*]*\*/\n,,sm' `find src -name '*.scala'`
 
 update-license-year:
 	perl -0777 -i -p -e 's,2008-2014,2008-2014,sm' `find src -name '*.java'`
