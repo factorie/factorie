@@ -1,7 +1,5 @@
 package cc.factorie.app.nlp.coref
 import cc.factorie.app.nlp._
-import cc.factorie.app.nlp.phrase._
-import cc.factorie.app.nlp.ner._
 
 /** A dead-simple deterministic coreference system that operates only on named entities
     and resolves coreference only by exact string match. */

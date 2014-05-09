@@ -1,33 +1,31 @@
-package cc.factorie.app.nlp.coref.mention
+package cc.factorie.app.nlp.coref
 
 import cc.factorie.app.nlp.wordnet.WordNet
 import scala.collection.mutable
-import cc.factorie.util.BasicEvaluatableClustering
 import cc.factorie.app.nlp._
-import cc.factorie.app.nlp.coref._
 import cc.factorie.app.nlp.pos.{PennPosDomain, PennPosTag}
 import collection.mutable.ArrayBuffer
 import cc.factorie.app.nlp.phrase.{NounPhraseEntityTypeLabeler, Phrase, OntonotesPhraseEntityType}
 import cc.factorie.app.nlp.ner.OntonotesEntityTypeDomain
 import cc.factorie.app.nlp.load.{EntityKey, LoadConll2011}
 import cc.factorie.app.nlp.parse.OntonotesTransitionBasedParser
+import cc.factorie.app.nlp.phrase.ParseAndNerBasedPhraseFinder
 
-/**
- * @author: apassos
+/** Used for training with predicted mentions.
+ * If the predicted mention is equal to or within some specified alignment width in options we add the true spans entity label if any
+ * Otherwise we add the mention to the ground truth coref as a ground truth singleton.
+ * @author apassos
  * Date: 6/27/13
  * Time: 12:51 PM
- * @note: Updated Cellier April 2014
+ * @note Updated Cellier April 2014
  */
 
+object MentionAlignment {
+  def makeLabeledData(documents:Seq[Document], outfile: String, useEntityTypes: Boolean, options: CorefOptions, map: DocumentAnnotatorMap): (Seq[Document]) = {
+    documents.foreach(d=>assert(d.targetCoref.mentions.forall(_.entity != null),"ERRRRORRR"))
 
-object MentionAlignmentCreation {
-  def makeLabeledData(f: String, outfile: String ,portion: Double, useEntityTypes: Boolean, options: Coref1Options, map: DocumentAnnotatorMap): (Seq[Document]) = {
-    //first, get the gold data (in the form of factorie Mentions)
-    val documentsAll = LoadConll2011.loadWithParse(f)
-    val documents = documentsAll.take((documentsAll.length*portion).toInt)
-    //Gold Mentions are now stored in the target coref mentions
-    if(useEntityTypes)
-    documents.foreach( d => d.tokens.foreach(t => t.attr.remove[PennPosTag]))  //remove the gold POS annotation
+    if(!options.useGoldBoundaries) documents.foreach( d => d.tokens.foreach(t => t.attr.remove[PennPosTag]))  //remove the gold POS annotation
+    if(!options.useEntityType) documents.foreach( d => d.tokens.foreach(t => t.attr.remove[PennPosTag]))
     val shifts =  ArrayBuffer[Int]()
     shifts += 0
     for(i <- 1 to options.mentionAlignmentShiftWidth){
@@ -47,15 +45,21 @@ object MentionAlignmentCreation {
 
     documents
   }
-  def findMentions(d: Document,options:Coref1Options,annotatorMap: DocumentAnnotatorMap = null) {
-    if(!options.useNonGoldBoundaries){
-      d.getTargetCoref.mentions.foreach(m => d.coref.addMention(m.phrase).phrase.attr += m.phrase.attr[OntonotesPhraseEntityType])
+
+  def findMentions(doc: Document,options:CorefOptions,annotatorMap: DocumentAnnotatorMap = null) {
+    if(options.useGoldBoundaries){
+
+      doc.getTargetCoref.mentions.foreach(m => doc.coref.addMention(m.phrase).phrase.attr += m.phrase.attr[OntonotesPhraseEntityType])
     }else if(!options.useNERMentions){
-      cc.factorie.app.nlp.coref.mention.ParseBasedMentionFinding.FILTER_APPOS = true
+      ParseAndNerBasedPhraseFinder.FILTER_APPOS = true
       val map = if(annotatorMap eq null) DocumentAnnotatorPipeline.defaultDocumentAnnotationMap else annotatorMap
-      DocumentAnnotatorPipeline[MentionList](map).process(d)
+      DocumentAnnotatorPipeline(map,ParseAndNerBasedPhraseFinder.prereqAttrs.toSeq).process(doc)
+      ParseAndNerBasedPhraseFinder.getPhrases(doc).foreach(doc.coref.addMention)
     }else {
-      (ConllProperNounPhraseFinder(d) ++ PronounFinder(d) ++ AcronymNounPhraseFinder(d)).foreach(d.getCoref.addMention)
+      val map = if(annotatorMap eq null) DocumentAnnotatorPipeline.defaultDocumentAnnotationMap else annotatorMap
+      val prereqs = ConllProperNounPhraseFinder.prereqAttrs ++ PronounFinder.prereqAttrs ++ AcronymNounPhraseFinder.prereqAttrs
+      DocumentAnnotatorPipeline(map,prereqs).process(doc)
+      (ConllProperNounPhraseFinder(doc) ++ PronounFinder(doc) ++ AcronymNounPhraseFinder(doc)).foreach(doc.getCoref.addMention)
     }
   }
 
@@ -63,7 +67,7 @@ object MentionAlignmentCreation {
 
   //for each of the mentions in detectedMentions, this adds a reference to a ground truth entity
   //the alignment is based on an **exact match** between the mention boundaries
-  def alignMentions(gtDoc: Document, wn: WordNet, useEntityTypes: Boolean, options: Coref1Options, shifts: Seq[Int],annotatorMap:DocumentAnnotatorMap = null): (PrecRecReport) = {
+  def alignMentions(gtDoc: Document, wn: WordNet, useEntityTypes: Boolean, options: CorefOptions, shifts: Seq[Int],annotatorMap:DocumentAnnotatorMap = null): (PrecRecReport) = {
     val groundTruthMentions = gtDoc.getTargetCoref.mentions.toSeq
     //Set predicted mentions on the coref attribute of the document
     if(gtDoc.coref.mentions.isEmpty) findMentions(gtDoc,options)
@@ -76,6 +80,7 @@ object MentionAlignmentCreation {
 
     val gtAligned = mutable.HashMap[Mention,Boolean]()
     gtAligned ++= groundTruthMentions.map(m => (m,false))
+    assert(gtDoc.targetCoref.mentions.forall(_.entity != null),"ERRRRORRR")
     var exactMatches = 0
     var relevantExactMatches = 0
     var unAlignedEntityCount = 0
@@ -88,31 +93,35 @@ object MentionAlignmentCreation {
       val alignment = checkContainment(gtSpanHash,gtHeadHash,m, options, shifts)
       if(alignment.isDefined){
           val gtMention = alignment.get
-          gtDoc.getTargetCoref.addMention(m.phrase,gtMention.entity)
-          gtDoc.getTargetCoref.deleteMention(gtMention)
+          //Todo:If we didn't get a correct alignment do we want to make the close alignment the new ground truth?
+          if(gtMention.phrase.value != m.phrase.value){
+            gtDoc.getTargetCoref.addMention(m.phrase,gtMention.entity)
+            gtDoc.getTargetCoref.deleteMention(gtMention)
+          }
           m.attr +=  new EntityKey(gtMention.entity.uniqueId)
           if(entityHash(gtMention.entity).length > 1) relevantExactMatches += 1
           exactMatches += 1
-          val predictedEntityType = if(useEntityTypes) m.phrase.attr += gtMention.phrase.attr
+          if(useEntityTypes) m.phrase.attr += gtMention.phrase.attr
           else
             NounPhraseEntityTypeLabeler.process(m.phrase)
-          //m.attr += new MentionEntityType(m,predictedEntityType)
           gtAligned(gtMention) = true
           if(debug) println("aligned: " + gtMention.string +":" + gtMention.phrase.start   + "  " + m.phrase.string + ":" + m.phrase.start)
       }else{
           if(debug) println("not aligned: "  +  m.string + ":" + m.phrase.start)
           val entityUID = m.phrase.document.name + unAlignedEntityCount
-          NounPhraseEntityTypeLabeler.process(m.phrase)
-          val newEntity = gtDoc.getTargetCoref.entityFromUniqueId(entityUID) // was: new Entity(entityUID)
-          //m.attr += newEntity
-          NounPhraseEntityTypeLabeler.process(m.phrase)
+          //NounPhraseEntityTypeLabeler.process(m.phrase)
+          //Add our mention which was unaligned to the target coref as a singleton for training
+          gtDoc.getTargetCoref.addMention(m.phrase)
+          //Make a ground truth singleton entity for training?
+          //val newEntity = gtDoc.getTargetCoref.entityFromUniqueId(entityUID) // was: new Entity(entityUID)
+          //NounPhraseEntityTypeLabeler.process(m.phrase)
           unAlignedEntityCount += 1
           falsePositives1 += m
       }
     })
 
     val unAlignedGTMentions = gtAligned.filter(kv => !kv._2).map(_._1)
-    unAlignedGTMentions.foreach(mention => gtDoc.coref.addMention(mention.phrase, mention.entity))
+    //unAlignedGTMentions.foreach(mention => gtDoc.coref.addMention(mention.phrase, mention.entity))
 
     val relevantGTMentions = groundTruthMentions.count(m => entityHash(m.entity).length > 1)
     new PrecRecReport(relevantExactMatches,relevantGTMentions,detectedMentions.length)
@@ -122,7 +131,7 @@ object MentionAlignmentCreation {
     m.phrase.start + m.phrase.headTokenOffset
   }
 
-  def checkContainment(startLengthHash: mutable.HashMap[(Int,Int),Mention], headHash: mutable.HashMap[Int,Mention] ,m: Mention, options: Coref1Options, shifts: Seq[Int]): Option[Mention] = {
+  def checkContainment(startLengthHash: mutable.HashMap[(Int,Int),Mention], headHash: mutable.HashMap[Int,Mention] ,m: Mention, options: CorefOptions, shifts: Seq[Int]): Option[Mention] = {
     val start = m.phrase.start
     val length = m.phrase.length
     val headTokIdxInDoc = m.phrase.headTokenOffset + m.phrase.start
@@ -145,15 +154,14 @@ object MentionAlignmentCreation {
 }
 
 
-object MentionFilterAlignment{
+object MentionFilter{
   var debug = false
   /**
    * Given a coref holder with predicted mentions on it, perform some standard filtering and return new phrases corresponding to the new set of mentions.
    * Note this does not change the document's coref at all and simply returns the phrases.
    * It would be the responsibility of the caller to erase current mentions and add the new phrases as mentions
    * @param coref Coref class already annotated with mentions
-   * @return Seq[Parse] These new parses
-   */
+   * @return Seq[Parse] new list of phrases suggested by the filter to be the new list of mentions */
   def filterMentions(coref: WithinDocCoref): Seq[Phrase] = {
     if(coref.mentions.isEmpty){
       // Just a warning and not an assert because there are some documents which have no ground truth mentions
@@ -184,7 +192,7 @@ object MentionFilterAlignment{
         for (ment <- protoMentionsByHead(head)) {
           // Overlapping but neither is contained in the other
           if (currentBiggest != null && ((ment.start < currentBiggest.start && ment.end < currentBiggest.end) || (ment.start > currentBiggest.start && ment.end > currentBiggest.end))) {
-            println("WARNING: mentions with the same head but neither contains the other");
+            println("WARNING: mentions with the same head but neither contains the other")
             println(currentBiggest.string + "("+currentBiggest.start +","+currentBiggest.end+")" + "    :   " + ment.string+ "("+ment.start +","+ment.end+")")
           }
           // This one is bigger
@@ -229,11 +237,10 @@ object MentionFilterAlignment{
 
   /**
    * Test filter with mentions with gold boundaries
-   * @param args
+   * @param args Conll 2011 training data and testing data
    */
   def main(args:Array[String]):Unit={
-    val allTrainDocs = LoadConll2011.loadWithParse("src/main/resources/conll-train-clean.txt",true)
-    val trainDocs = allTrainDocs.take(300)
+    val trainDocs = LoadConll2011.loadWithParse(args(0),limitNumDocuments = 300)
     trainDocs.foreach(d=> d.getTargetCoref.mentions.foreach(m => assert(m.phrase.attr[OntonotesPhraseEntityType] ne null,"missing entity type")))
     val phrases = trainDocs.flatMap(d => filterMentions(d.getTargetCoref))
     val trueDocs = trainDocs
@@ -248,10 +255,9 @@ object MentionFilterAlignment{
 
     trueDocs.foreach(d=> d.getTargetCoref.mentions.foreach(m => d.coref.addMention(m.phrase).phrase.attr += m.phrase.attr[OntonotesPhraseEntityType]))
 
-    var missing = 0
     val correctMatches = truePhrases.map(_.phrase.value).intersect(phrases.map(_.value)).size
-    val spuriousMentions = phrases.map(_.value).diff(truePhrases.map(_.phrase.value)).filter(m => !truePhrases.map(_.phrase.value).contains(m)).groupBy(_.map(_.string).mkString(" ")).toSeq.sortBy(-_._2.size)
-    val missingMentions = truePhrases.map(_.phrase.value).diff(phrases.map(_.value)).filter(m => !phrases.map(_.value).contains(m)).groupBy(_.map(_.string).mkString(" ")).toSeq.sortBy(-_._2.size)
+    val spuriousMentions = phrases.map(_.value).diff(truePhrases.map(_.phrase.value)).filter(m => !truePhrases.map(_.phrase.value).contains(m)).groupBy(_.map(_.string).mkString(" ")).toSeq.sortBy(-_._2.size).filter(_._2.size > 5)
+    val missingMentions = truePhrases.map(_.phrase.value).diff(phrases.map(_.value)).filter(m => !phrases.map(_.value).contains(m)).groupBy(_.map(_.string).mkString(" ")).toSeq.sortBy(-_._2.size).filter(_._2.size > 5)
 
     if(debug){
       //Print any extra mentions in order of how often the string was wrongly extracted
@@ -269,8 +275,7 @@ object MentionFilterAlignment{
 
     println("Train: "+trainDocs.length+" documents, " + trainDocs.map(d => d.getTargetCoref.mentions.size).sum.toFloat / trainDocs.length + " mentions/doc")
 
-    val allTestDocs = LoadConll2011.loadWithParse("src/main/resources/conll-test-clean.txt")
-    val testDocs = allTestDocs.take(1)
+    val testDocs = LoadConll2011.loadWithParse(args(1),limitNumDocuments = 20)
     testDocs.foreach(d=> d.getTargetCoref.mentions.foreach(m => d.coref.addMention(m.phrase).phrase.attr += m.phrase.attr[OntonotesPhraseEntityType]))
     for(doc<-testDocs;mention<-doc.coref.mentions) if(!mention.phrase.attr.contains(classOf[OntonotesPhraseEntityType])) mention.phrase.attr += new OntonotesPhraseEntityType(mention.phrase,"O")
 

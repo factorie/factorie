@@ -1,39 +1,34 @@
 package cc.factorie.app.nlp.coref
 
 import cc.factorie.app.nlp.wordnet.WordNet
-import cc.factorie.app.nlp.{DocumentAnnotatorPipeline, Token, Document, DocumentAnnotator}
+import cc.factorie.app.nlp.{Token, Document, DocumentAnnotator}
 import java.util.concurrent.ExecutorService
 import cc.factorie.optimize._
 import java.io._
 import cc.factorie.util._
 import scala.collection.mutable.ArrayBuffer
 import cc.factorie.app.nlp.phrase._
-import cc.factorie.app.nlp.coref.mention.ParseAndNerBasedMentionFinding
 import cc.factorie.app.nlp.pos.PennPosTag
 
 /**
- * @author: apassos
+ * @author apassos
  * Date: 6/27/13
  * Time: 12:25 PM
  * Updated: Cellier April 2014
  */
 
-
 abstract class ForwardCorefBase extends CorefSystem[Seq[MentionPairLabel]] {
-  val options = new Coref1Options
+  val options = new CorefOptions
   val model:PairwiseCorefModel
   def tokenAnnotationString(token:Token): String = {
-    //val emap = token.document.attr[GenericEntityMap[Mention]]
-    token.document.attr[MentionList].filter(mention => mention.phrase.contains(token)) match {
-      //case ms:Seq[Mention] if ms.length > 0 => ms.map(m => m.phrase.attr[Mention].categoryValue+":"+m.phrase.indexOf(token)+"e"+emap.getEntity(m)).mkString(", ")
+    token.document.coref.mentions.filter(mention => mention.phrase.contains(token)) match {
+      case ms:Seq[Mention] if ms.length > 0 => ms.filter(_.entity != null).map(m => token.string+":"+m.phrase.indexOf(token)+"  e: "+m.entity.uniqueId).mkString(", ")
       case _ => "_"
     }
   }
 
-  /**
-   * Store head words which are seen over a default 20 times in the model
-   * @param trainDocs
-   */
+  /**Store head words which are seen over a default 20 times in the model
+   * @param trainDocs Documents to generate counts from*/
   def preprocessCorpus(trainDocs:Seq[Document]) = {
     val nonPronouns = trainDocs.flatMap(_.coref.mentions.filterNot(m => m.phrase.isPronoun))
     model.CorefTokenFrequencies.lexicalCounter = new LexicalCounter(LexicalCounter.countWordTypes(nonPronouns.map(_.attr[MentionCharacteristics]),(t) => t.lowerCaseHead))
@@ -41,21 +36,25 @@ abstract class ForwardCorefBase extends CorefSystem[Seq[MentionPairLabel]] {
 
   def instantiateModel(optimizer:GradientOptimizer,pool:ExecutorService) = new LeftRightParallelTrainer(optimizer,pool)
 
-  /**
-   * Generate the labels used for training
+  /**Generate the labels used for training
    * @param coref This is expected to be the true coreference class for the document
-   * @return
-   */
+   * @return Sequence of training labels for this document*/
   def getCorefStructure(coref:WithinDocCoref): Seq[MentionPairLabel] = {
     val mentions = coref.mentions.toSeq
     val labels = new ArrayBuffer[MentionPairLabel]
     for (i <- 0 until mentions.size){
       if(!options.usePronounRules || !mentions(i).phrase.isPronoun)
         labels ++= generateTrainingLabelsForOneAnaphor(mentions, i)
+
     }
     labels
   }
 
+  /**
+   * Given the index of a mention, create positive and negative labels for this mention and its prodecessors
+   * @param orderedMentions Mentions for this document
+   * @param anaphorIndex Index of current mention to generate labels for
+   * @return Training Labels for this Mention */
   protected def generateTrainingLabelsForOneAnaphor(orderedMentions: Seq[Mention], anaphorIndex: Int): Seq[MentionPairLabel] = {
     val labels = new ArrayBuffer[MentionPairLabel]
     val m1 = orderedMentions(anaphorIndex)
@@ -78,7 +77,7 @@ abstract class ForwardCorefBase extends CorefSystem[Seq[MentionPairLabel]] {
   protected def generateFeatures(labels:Seq[MentionPairLabel]): Seq[MentionPairLabelFeatures] = {
     val previousLabels = new ArrayBuffer[MentionPairLabelFeatures]()
     labels.foreach{ label =>
-      val candidateLabelFeatures = label.features
+      val candidateLabelFeatures = label.genFeatures
       val matchingPreviousLabelsFeatures = previousLabels.filter(l => l.label.mention2.entity == candidateLabelFeatures.mention2.entity).map(_.features)
       mergeFeatures(candidateLabelFeatures, matchingPreviousLabelsFeatures)
       previousLabels += new MentionPairLabelFeatures(label,candidateLabelFeatures)
@@ -103,12 +102,9 @@ abstract class ForwardCorefBase extends CorefSystem[Seq[MentionPairLabel]] {
     }
   }
 
-  /**
-   *  Types of Pairs Pruned during Training
+  /**Types of Pairs Pruned during Training
    *     - cataphora since we do not corefer these
-   *     - Any pair of mentions which overlap each other
-   */
-
+   *     - Any pair of mentions which overlap each other*/
   def pruneMentionPairTraining(anaphor: Mention,antecedent: Mention,label:Boolean,numAntecedents:Int): Boolean = {
     val cataphora = antecedent.phrase.isPronoun && !anaphor.phrase.isPronoun
     if(cataphora) {
@@ -128,8 +124,7 @@ abstract class ForwardCorefBase extends CorefSystem[Seq[MentionPairLabel]] {
     return false
   }
 
-  /**
-   * Find each mentions best scoring antecedent.  If the antecedent has a cluster add the new mention if not, create a new entity and add both mentions
+  /**Find each mentions best scoring antecedent.  If the antecedent has a cluster add the new mention if not, create a new entity and add both mentions
    * Currently does not create singleton entities
    * @param coref Expects nontarget coref class that is pre annotated with mentions
    * @return
@@ -192,27 +187,24 @@ class ForwardCoref extends ForwardCorefBase {
 class ForwardCorefImplicitConjunctions extends ForwardCorefBase {
   val model = new ImplicitCrossProductCorefModel
 }
-/**
- * Forward Coreference on Proper Noun, Pronoun and Common Noun Mentions
- */
+/**Forward Coreference on Proper Noun, Pronoun and Common Noun Mentions*/
 class ParseForwardCoref extends ForwardCoref {
-  override def prereqAttrs: Seq[Class[_]] = ParseAndNerBasedMentionFinding.prereqAttrs.toSeq
+  override def prereqAttrs: Seq[Class[_]] = ParseAndNerBasedPhraseFinder.prereqAttrs.toSeq
   deserialize(new DataInputStream(ClasspathURL[ForwardCoref](".factorie").openConnection().getInputStream))
   override def annotateMentions(document:Document): Unit = {
-    ParseAndNerBasedMentionFinding.process(document)
+    ParseAndNerBasedPhraseFinder.getPhrases(document).foreach(document.coref.addMention)
     NounPhraseEntityTypeLabeler.process(document)
     NounPhraseGenderLabeler.process(document)
     NounPhraseNumberLabeler.process(document)
   }
 }
 
-object ParseForwardCoref extends NerForwardCoref {
+object ParseForwardCoref extends ParseForwardCoref {
+  ForwardCorefTrainer.evaluateParameters(Array[String]())
   deserialize(new DataInputStream(ClasspathURL[ParseForwardCoref](".factorie").openConnection().getInputStream))
 }
 
-/**
- * Forward Coreference on Ner and Pronoun Mentions
- */
+/** Forward Coreference on Ner and Pronoun Mentions*/
 class NerForwardCoref extends ForwardCoref {
   override def prereqAttrs: Seq[Class[_]] = (ConllProperNounPhraseFinder.prereqAttrs ++ AcronymNounPhraseFinder.prereqAttrs++PronounFinder.prereqAttrs ++ NnpPosNounPhraseFinder.prereqAttrs).distinct
   override def annotateMentions(doc:Document): Unit = {
@@ -227,15 +219,12 @@ object NerForwardCoref extends NerForwardCoref {
   deserialize(new DataInputStream(ClasspathURL[NerForwardCoref](".factorie").openConnection().getInputStream))
 }
 
-
-/**
- * Base class for any coreference system
+/**Base class for any coreference system
  * @tparam CoreferenceStructure The type used as a training instance, ex. MentionPairLabel or MentionGraph,
- *                              In the examples above, the training instance is either one pair or the whole document respectively
- */
+ *                              In the examples above, the training instance is either one pair or the whole document respectively*/
 abstract class CorefSystem[CoreferenceStructure] extends DocumentAnnotator with Trackable{
   val model:CorefModel
-  val options:Coref1Options
+  val options:CorefOptions
   def prereqAttrs: Seq[Class[_]] = Seq(classOf[Token],classOf[PennPosTag])
   def postAttrs = Seq(classOf[WithinDocCoref])
   def process(document: Document) = {
@@ -246,7 +235,7 @@ abstract class CorefSystem[CoreferenceStructure] extends DocumentAnnotator with 
   }
 
   def annotateMentions(document:Document):Unit = {
-    if(!options.useNonGoldBoundaries){
+    if(options.useGoldBoundaries){
       assert(document.targetCoref ne null,"Gold Boundaries cannot be used without gold data.")
       document.targetCoref.mentions.foreach{m =>
         if(options.useEntityType){
@@ -265,11 +254,13 @@ abstract class CorefSystem[CoreferenceStructure] extends DocumentAnnotator with 
     }
   }
 
-  /**
-   * Perform any preprocess
-   * @param trainDocs
-   */
+  /**Perform any preprocessing such as getting top used words
+   * @param trainDocs Documents to generate counts from */
   def preprocessCorpus(trainDocs: Seq[Document]): Unit
+
+  /**Returns data in the format that should be used for training
+   * @param coref Gold Coref to be used for training
+   */
   def getCorefStructure(coref:WithinDocCoref):CoreferenceStructure
   def instantiateModel(optimizer: GradientOptimizer,pool:ExecutorService):ParallelTrainer
   def infer(doc:WithinDocCoref): WithinDocCoref
@@ -297,11 +288,11 @@ abstract class CorefSystem[CoreferenceStructure] extends DocumentAnnotator with 
     for(doc <- trainDocs; mention <- doc.targetCoref.mentions) mention.attr += new MentionCharacteristics(mention)
     preprocessCorpus(trainDocs)
     |**("Training Structure Generated")
-    val trainingFormat: Seq[CoreferenceStructure] = trainDocs.map(doc => getCorefStructure(doc.targetCoref))
+    var i = 0
+    val trainingFormat: Seq[CoreferenceStructure] = trainDocs.map{doc => i +=1 ; if(i % 100 == 0) println("Processing Labels for: " + i + " of " + trainDocs.size); getCorefStructure(doc.targetCoref)}
     **|
     //println("Training Structure Generated")
     val pool = java.util.concurrent.Executors.newFixedThreadPool(options.numThreads)
-    //model.MentionPairFeaturesDomain.freeze()
     var accuracy = 0.0
     try {
       val trainer = instantiateModel(optimizer, pool)
@@ -309,7 +300,7 @@ abstract class CorefSystem[CoreferenceStructure] extends DocumentAnnotator with 
         val shuffledDocs = rng.shuffle(trainingFormat)
         val batches = shuffledDocs.grouped(options.featureComputationsPerThread*options.numThreads).toSeq
         for ((batch, b) <- batches.zipWithIndex) {
-          if (options.numThreads > 1) trainer.runSequential(batch)
+          if (options.numThreads > 1) trainer.runParallel(batch)
           else trainer.runSequential(batch)
         }
         if (!model.MentionPairFeaturesDomain.dimensionDomain.frozen) model.MentionPairFeaturesDomain.dimensionDomain.freeze()
@@ -319,7 +310,7 @@ abstract class CorefSystem[CoreferenceStructure] extends DocumentAnnotator with 
         println("Test docs")
         |**("Running Test")
         accuracy = doTest(testDocs, wn, "Test")
-        **|
+        **|("End Test")
         if(saveModelBetweenEpochs && iter % saveFrequency == 0)
           serialize(filename + "-" + iter)
         optimizer match {case o: ParameterAveraging => o.unSetWeightsToAverage(model.parameters) }
@@ -331,9 +322,8 @@ abstract class CorefSystem[CoreferenceStructure] extends DocumentAnnotator with 
     }
   }
 
-  class CorefTester(scorer: CorefScorer, scorerMutex: Object, val pool: ExecutorService){
+  class CorefTester(scorer: CorefConllOutput, scorerMutex: Object, val pool: ExecutorService){
     def map(doc: Document): Unit = {
-      val fId = doc.name
       assert(doc.targetCoref ne null,"Cannot perform test on document without test key.")
       val trueCoref = doc.targetCoref
       val predCoref = doc.coref
@@ -342,32 +332,17 @@ abstract class CorefSystem[CoreferenceStructure] extends DocumentAnnotator with 
       for(mention <- predCoref.mentions) if(mention.attr[MentionCharacteristics] eq null) mention.attr += new MentionCharacteristics(mention)
 
       infer(predCoref)
-      predCoref.mentions.zipWithIndex.foreach{case(mention,idx) => if(mention.entity eq null) predCoref.deleteMention(mention)}
-      trueCoref.mentions.zipWithIndex.foreach{case(mention,idx) => if(mention.entity eq null) trueCoref.deleteMention(mention)}
 
-      //gtMentions.seq.toSeq.zipWithIndex.foreach{
-      //  case (gtM, idx) =>
-      //    if(!predCoref.mentions.exists(m => m.phrase.value == gtM.phrase.value)) predCoref.addMention(gtM.phrase,predMentions.size)
-      //}
-      trueCoref.removeSingletons()
-      predCoref.removeSingletons()
-
-
-      val pw = ClusterF1Evaluation.Pairwise(predCoref, trueCoref)
       val b3 = ClusterF1Evaluation.BCubedNoSingletons(predCoref, trueCoref)
       val ce = ClusterF1Evaluation.CeafE(predCoref,trueCoref)
-      val muc = ClusterF1Evaluation.MUC(predCoref, trueCoref)
+      val muc = ClusterF1Evaluation.MUCNoSingletons(predCoref, trueCoref)
       val cm = ClusterF1Evaluation.CeafM(predCoref,trueCoref)
-      //gtMentions.map(_.phrase.value).diff(predMentions.map(_.phrase.value)).seq.toSeq.zipWithIndex.foreach(mi => newCoref.addMention(new Phrase(mi._1.chain,m1._1.start,mi._1.length,mi._1.h),m1._2+nm))
 
       scorerMutex.synchronized {
-        scorer.macroMUC.macroAppend(muc)
-        scorer.macroPW.macroAppend(pw)
         scorer.microB3.microAppend(b3)
         scorer.microCE.microAppend(ce)
         scorer.microCM.microAppend(cm)
         scorer.microMUC.microAppend(muc)
-        scorer.microPW.microAppend(pw)
       }
     }
     def runParallel(ins: Seq[Document]) = cc.factorie.util.Threading.parMap(ins, pool)(map)
@@ -375,17 +350,17 @@ abstract class CorefSystem[CoreferenceStructure] extends DocumentAnnotator with 
   }
 
   def doTest(testDocs: Seq[Document], wn: WordNet, name: String): Double = {
-    val scorer = new CorefScorer
+    val scorer = new CorefConllOutput
     object ScorerMutex
     val pool = java.util.concurrent.Executors.newFixedThreadPool(options.numThreads)
     var accuracy = 0.0
     try {
       val tester = new CorefTester(scorer, ScorerMutex, pool)
-      tester.runSequential(testDocs)
+      tester.runParallel(testDocs)
       println("-----------------------")
       println("  * Overall scores")
       scorer.printInhouseScore(name)
-      accuracy = scorer.microPW.f1
+      accuracy = scorer.microB3.f1
     } finally pool.shutdown()
     accuracy
   }
@@ -396,12 +371,10 @@ abstract class CorefSystem[CoreferenceStructure] extends DocumentAnnotator with 
   }
 
   def deserialize(stream: DataInputStream) {
-    import cc.factorie.util.CubbieConversions._
     val config = options.getConfigHash
     BinarySerializer.deserialize(config, stream)
     options.setConfigHash(config)
     println("deserializing with config:\n" + options.getConfigHash.iterator.map(x => x._1 + " = " + x._2).mkString("\n"))
-    //BinarySerializer.deserialize(model, stream)
     model.deserialize(stream)
     model.MentionPairFeaturesDomain.dimensionDomain.freeze()
     println("model weights 1norm = " + model.parameters.oneNorm)
@@ -413,7 +386,6 @@ abstract class CorefSystem[CoreferenceStructure] extends DocumentAnnotator with 
   }
 
   def serialize(filename: String) {
-    import cc.factorie.util.CubbieConversions._
     println("serializing with config:\n" + options.getConfigHash.iterator.map(x => x._1 + " = " + x._2).mkString("\n"))
     val stream = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(new File(filename))))
     BinarySerializer.serialize(options.getConfigHash, stream)

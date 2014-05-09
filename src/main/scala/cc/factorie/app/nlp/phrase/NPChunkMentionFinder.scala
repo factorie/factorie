@@ -1,22 +1,16 @@
-package cc.factorie.app.nlp.coref.mention
+package cc.factorie.app.nlp.phrase
 
 import cc.factorie.app.nlp._
-import cc.factorie.app.nlp.phrase.{Phrase,OntonotesPhraseEntityType,NounPhraseType}
-import cc.factorie.app.nlp.coref.{Mention,MentionList,WithinDocCoref}
 import scala.collection.mutable.ListBuffer
 import cc.factorie.app.nlp.load.{ChunkTag, BILOUNestedChunkTag, BILOUChunkTag}
 
-/**
- * User: cellier
- * Date: 10/28/13
- * Time: 11:24 PM
+/** User: cellier
+ *  Date: 10/28/13
+ *  Time: 11:24 PM
  */
 
-
-/*
- * Object to retrieve two layers of Nested BILOU Tags
- */
-object NestedNPChunkMentionFinder extends NPChunkMentionFinder[BILOUNestedChunkTag]{
+/** Object to retrieve two layers of Nested BILOU Tags*/
+object NestedNPChunkPhraseFinder extends NPChunkPhraseFinder[BILOUNestedChunkTag]{
   //Splits tag value and calls to retrieve NPs for the inner tags and outer tags
   override def getMentionSpans(document: Document): Seq[TokenSpan] ={
     val mentionSpans = ListBuffer[TokenSpan]()
@@ -32,31 +26,23 @@ object NestedNPChunkMentionFinder extends NPChunkMentionFinder[BILOUNestedChunkT
   }
 }
 //Default for MentionFinder is BILOU Notation over BIO since BILOU performed best for NP mention finding
-object NPChunkMentionFinder extends NPChunkMentionFinder[BILOUChunkTag]
+object NPChunkMentionFinder extends NPChunkPhraseFinder[BILOUChunkTag]
 
-class NPChunkMentionFinder[L<:ChunkTag](implicit m: Manifest[L]) extends DocumentAnnotator {
+class NPChunkPhraseFinder[L<:ChunkTag](implicit m: Manifest[L]) extends DocumentAnnotator {
   def prereqAttrs = Seq(classOf[Token], classOf[Sentence], m.runtimeClass)
-  def postAttrs = Seq(classOf[MentionList], classOf[OntonotesPhraseEntityType])
-  override def tokenAnnotationString(token:Token): String = token.document.attr[MentionList].filter(mention => mention.phrase.contains(token)) match { case ms:Seq[Mention] if ms.length > 0 => ms.map(m => m.attr[NounPhraseType].categoryValue+":"+ m.phrase.attr[OntonotesPhraseEntityType].categoryValue +":" +m.phrase.indexOf(token)).mkString(","); case _ => "_" }
+  def postAttrs = Seq(classOf[PhraseList])
+  override def tokenAnnotationString(token:Token): String = token.document.attr[PhraseList].filter(phrase => phrase.contains(token)) match { case phraseSeq:Seq[Phrase] if phraseSeq.length > 0 => phraseSeq.map(phrase => phrase.attr[NounPhraseType].categoryValue+":"+ phrase.attr[OntonotesPhraseEntityType].categoryValue +":" +phrase.indexOf(token)).mkString(","); case _ => "_" }
 
   val upperCase = "[A-Z]+".r
 
   def process(document: Document) = {
-    val mentions = addChunkMentions(document)
-    document.attr += new MentionList(mentions.sortBy(m => (m.phrase.head.stringStart, m.phrase.length)))
+    val phrases = getChunkPhrases(document)
+    document.attr += new PhraseList(phrases.sortBy(phrase => (phrase.head.stringStart, phrase.length)))
     document
   }
 
-  //Sets mention entity type to empty in case an entity type labeler is not run on the mentions retrieved
-  def addChunkMentions(document: Document): Seq[Mention] = {
-    val coref = document.getCoref
-    getMentionSpans(document).map{labelSpan =>
-      val s = labelSpan
-      val p = new Phrase(s, s.length-1)
-      val m = coref.addMention(p)
-      p.attr += new OntonotesPhraseEntityType(p,"O") // TODO Why the empty string here?? -akm
-      m
-    }
+  def getChunkPhrases(document: Document): Seq[Phrase] = {
+    getMentionSpans(document).map(span => new Phrase(span))//Get the head from the phrase's heuristic labeler
   }
 
   def getMentionSpans(document: Document): Seq[TokenSpan] ={

@@ -1,10 +1,8 @@
 package cc.factorie.app.nlp.coref
 
 import cc.factorie.app.nlp._
-import cc.factorie.app.nlp.coref._
 import cc.factorie.app.nlp.phrase._
-import cc.factorie.app.nlp.pos.{PennPosTag,PennPosDomain}
-import cc.factorie.app.nlp.ner._
+import cc.factorie.app.nlp.pos.PennPosDomain
 import scala.collection.mutable.ArrayBuffer
 import cc.factorie.app.nlp.Token
 import cc.factorie.app.nlp.ner.BilouConllNerTag

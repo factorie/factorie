@@ -1,10 +1,7 @@
 package cc.factorie.app.nlp.coref
 
-import cc.factorie._
 import cc.factorie.app.nlp._
 import cc.factorie.app.nlp.phrase._
-import cc.factorie.app.nlp.ner.OntonotesEntityTypeDomain
-//import cc.factorie.util.EvaluatableClustering
 import cc.factorie.util.{Attr,UniqueId,ImmutableArrayIndexedSeq,EvaluatableClustering}
 import cc.factorie.variable._
 import scala.collection.mutable.ArrayBuffer
@@ -79,6 +76,7 @@ abstract class WithinDocEntity(val document:Document) extends AbstractEntity {
   private val _mentions = new scala.collection.mutable.LinkedHashSet[Mention]
   def parent: WithinDocEntity = null
   def mentions:scala.collection.Set[Mention] = _mentions
+  def isSingleton:Boolean = _mentions.size < 2 //TODO Is this okay to do? or is there a better way
   def children: Iterable[Mention] = _mentions
   def +=(mention:Mention): Unit = {
     assert(mention.phrase.document eq document)
@@ -180,27 +178,28 @@ class WithinDocCoref(val document:Document) extends EvaluatableClustering[Within
   def idToEntity(id:String): WithinDocEntity = _entities(id)
   /** Remove from the list of entities all entities that contain no mentions. */
   def trimEmptyEntities(): Unit = _entities.values.filter(_.mentions.size == 0).map(_.uniqueId).foreach(_entities.remove) // TODO But note that this doesn't purge _entityKeyToId; perhaps it should.
-  /** Remove from all entities and mentions assosciated with entities that contain only one mention. */
+  /** Remove from all entities and mentions associated with entities that contain only one mention. */
   def removeSingletons():Unit ={
     _entities.values.filter(_.mentions.size == 1).map(_.uniqueId).foreach{
       id =>
         _entities(id).mentions.foreach(m => deleteMention(m))
         _entities.remove(id)
-//        _entityKeyToId.remove(_entityKeyToId.find{case (intId,stringId) => id == stringId}.get._1)
     }
   }
-  def resetPredictedMapping():Unit = {
-    _entities.clear()
-    mentions.foreach(_._setEntity(null))
-  }
+
+  /**Reset the clustered entities for this coref solution without losing mentions and their cached properties*/
+  def resetPredictedMapping():Unit = {_entities.clear();mentions.foreach(_._setEntity(null));_entityCount = 0 }
+
   // Support for evaluation
-  def clusterIds: Iterable[WithinDocEntity] = _entities.values
-  def pointIds: Iterable[Phrase] = _spanToMention.values.map(_.phrase)
-  def pointIds(entityId:WithinDocEntity): Iterable[Phrase] = entityId.mentions.map(_.phrase)
-  def intersectionSize(entityId1:WithinDocEntity, entityId2:WithinDocEntity): Int = entityId1.mentions.map(_.phrase.value).intersect(entityId2.mentions.map(_.phrase.value)).size
+  // These assure we ignore any singletons for conll scoring
+  // TODO: Allow for ACE scoring where singletons are counted
+  def clusterIds: Iterable[WithinDocEntity] = _entities.values.filterNot(_.isSingleton)
+  def pointIds: Iterable[Phrase] = _spanToMention.values.filterNot(m => m.entity == null || m.entity.isSingleton).map(_.phrase)
+  def pointIds(entityId:WithinDocEntity): Iterable[Phrase] = if(!entityId.isSingleton) entityId.mentions.map(_.phrase) else Seq()
+  def intersectionSize(entityId1:WithinDocEntity, entityId2:WithinDocEntity): Int = if(!entityId1.isSingleton && !entityId2.isSingleton) entityId1.mentions.map(_.phrase.value).intersect(entityId2.mentions.map(_.phrase.value)).size else 0
   def clusterId(mentionId:Phrase): WithinDocEntity = {
     val mention = _spanToMention.getOrElse(mentionId.value,null)
-    if(mention eq null) null
+    if(mention == null || mention.entity == null ||mention.entity.isSingleton) null
     else mention.entity
   }
 

@@ -150,7 +150,6 @@ object LoadConll2011 {
         }
 
         val entityLabels = fields.last.split('|').map(_.trim)
-        //println(entityLabels.mkString(" "))
         for(label <- entityLabels){
           val corefTags = tokenizeEntityType(label).filterNot(l => l.isEmpty)
           corefTags match {

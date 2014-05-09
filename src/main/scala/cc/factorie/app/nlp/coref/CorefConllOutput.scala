@@ -1,23 +1,18 @@
 package cc.factorie.app.nlp.coref
 
 import cc.factorie.util.F1Evaluation
-import cc.factorie.app.nlp.{Document, TokenSpan}
-//import cc.factorie.app.nlp.coref.Mention
+import cc.factorie.app.nlp.TokenSpan
 
 
 /** Various helper methods for printing coreference score Metrics.
     @author Alexandre Passos
     @author Caitlin Cellier - updated April*/
-class CorefScorer {
-  // val macroB3 = new F1Evaluation.Metric
+class CorefConllOutput {
   val macroMUC = new F1Evaluation
-  val macroPW = new F1Evaluation
-  val microPW = new F1Evaluation
   val microB3 = new F1Evaluation
   val microMUC = new F1Evaluation
   val microCE = new F1Evaluation
   val microCM = new F1Evaluation
-  val macroBlanc = new F1Evaluation
 
   def textualOrder(ts1: TokenSpan, ts2: TokenSpan): Int = {
     val (s1, e1) = (ts1.head.stringStart, ts1.last.stringEnd)
@@ -35,10 +30,10 @@ class CorefScorer {
     else o < 0
   }
 
-
-  def printConll2011Format(coref: WithinDocCoref, out: java.io.PrintStream,filtered:Boolean = true) {
+  def printConll2011Format(coref: WithinDocCoref, out: java.io.PrintStream,withSingletons:Boolean = true) {
     val entities = coref.entities.toSeq
-    val mappedMentions = if(filtered) coref.entities.filterNot(_.mentions.size == 1).toSeq.flatMap(_.mentions).distinct.sortWith((s, t) => beforeInTextualOrder(s, t))
+    val mappedMentions = if(!withSingletons)
+      coref.entities.filterNot(_.isSingleton).toSeq.flatMap(_.mentions).distinct.sortWith((s, t) => beforeInTextualOrder(s, t))
     else entities.flatMap(_.mentions).sortWith((s, t) => beforeInTextualOrder(s, t))
     val (singleTokMents, multiTokMents) = mappedMentions.partition(_.phrase.length == 1)
     val beginningTokMap = multiTokMents.groupBy(_.phrase.head)
@@ -69,17 +64,12 @@ class CorefScorer {
   }
 
   def printInhouseScore(name: String = "Test") {
-    print("--- MACRO ---\n")
-    print(name+" "+macroPW.toString("PW") + "\n")
-    // print(macroB3.toString("B3") + "\n")
-    print(name+" "+macroMUC.toString("MUC") + "\n")
-    print(name+" macro "+macroBlanc.toString("BLANC") + "\n")
     print("--- MICRO ---\n")
-    print(name+" micro "+microPW.toString("PW") + "\n")
     print(name+" micro "+microB3.toString("B3") + "\n")
     print(name+" micro "+microMUC.toString("MUC") + "\n")
     print(name+" micro "+microCE.toString("C-E") + "\n")
     print(name+" micro "+microCM.toString("C-M") + "\n")
+    print("Average: "+(microB3.f1+microMUC.f1+microCE.f1)/3.0)
   }
 }
 

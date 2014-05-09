@@ -1,23 +1,29 @@
 package cc.factorie.app.nlp.coref
 
-import cc.factorie.la.{Tensor1, SparseTensor, GrowableSparseBinaryTensor1}
+import cc.factorie.la.{SparseTensor, GrowableSparseBinaryTensor1}
 import cc.factorie.variable.{LabeledCategoricalVariable, BinaryFeatureVectorVariable}
 import scala.collection.mutable
 import cc.factorie.app.nlp.{Token, Document}
 import cc.factorie.app.nlp.ner.OntonotesEntityTypeDomain
 
-/** A binary feature vector for the features of a mention pair.
+/**
+ *  Contains two possible mention sets:
+ *    Lexical & Conventional
+ *      Conventional - String Match, Gender Cross, Head word / entity Type etc
+ *      Lexical - Anaphoricity Detection if mention1 == mention2, else Lexical features for the pair
+ *  A binary feature vector for the features of a mention pair.
     Here, mention1 is the mention to the right.
+
     @author Alexandre Passos
+    Updated: Cellier April, 2014
  */
-class MentionPairFeatures(val model: CorefModel, val mention1:Mention, val mention2:Mention, mentions: Seq[Mention], options: Coref1Options) extends BinaryFeatureVectorVariable[String] {
- // def this(label:MentionPairLabel) = this(label.model,label.mention1,label.mention2,label.mentions,label.options)
+class MentionPairFeatures(val model: CorefModel, val mention1:Mention, val mention2:Mention, mentions: Seq[Mention], options: CorefOptions) extends BinaryFeatureVectorVariable[String] {
   {
     val t = new GrowableSparseBinaryTensor1(domain.dimensionDomain)
     val sizeBoundary = if (options.featureSet == "conventional"){
       if (options.conjunctionStyle == ConjunctionOptions.SLOW_CONJUNCTIONS) 650
       else 70
-    } else{                        // if (options.featureSet == "lexical")
+    } else{
       if (options.conjunctionStyle == ConjunctionOptions.PRON_CONJUNCTIONS) 40
       else 16
     }
@@ -242,40 +248,26 @@ class MentionPairFeatures(val model: CorefModel, val mention1:Mention, val menti
   }
 
   private def fetchWordOrPosDefault(word: Token, counter:collection.mutable.HashMap[String,Int]):String = {
-    if(word == null){
-      "NA"
-    }
-    else if (counter.contains(word.string)) {
-      word.string
-    }
-    else {
-      word.posTag.printName
-    }
+    if(word == null) "NA"
+    else if (counter.contains(word.string)) word.string
+    else word.posTag.printName
   }
   private def fetchShapeOrPosDefault(t: Token, counter:collection.mutable.HashMap[String,Int]):String = {
     val shape = cc.factorie.app.strings.stringShape(t.string, 2)
-    if (counter.contains(shape)) {
-      shape
-    }
-    else {
-      ""
-    }
+    if (counter.contains(shape)) shape
+    else ""
   }
   private def fetchClass(token: Token,counter:collection.mutable.HashMap[String,Int]) = {
-    if (counter.contains(LexicalCounter.classFor(token))) {
-      LexicalCounter.classFor(token)
-    } else {
-      ""
-    }
+    if (counter.contains(LexicalCounter.classFor(token))) LexicalCounter.classFor(token)
+    else ""
   }
   def getTokenAtOffset(token: Token,offset:Int):Token = { val t = token.next(offset); if (t ne null) t else null }
 
 }
 
-class MentionPairLabel(val model: PairwiseCorefModel, val mention1:Mention, val mention2:Mention, mentions: Seq[Mention], val initialValue: Boolean, options: Coref1Options) extends LabeledCategoricalVariable(if (initialValue) "YES" else "NO")  {
+class MentionPairLabel(val model: PairwiseCorefModel, val mention1:Mention, val mention2:Mention, mentions: Seq[Mention], val initialValue: Boolean, options: CorefOptions) extends LabeledCategoricalVariable(if (initialValue) "YES" else "NO")  {
   def domain = model.MentionPairLabelDomain
-  def features:MentionPairFeatures = new MentionPairFeatures(model, mention1, mention2, mentions, options)
-  //lazy val features =
+  def genFeatures:MentionPairFeatures = new MentionPairFeatures(model, mention1, mention2, mentions, options)
 }
 
 
@@ -287,7 +279,7 @@ object LexicalCounter {
   val dets2 = Set("some", "all", "more", "no", "one", "two", "three", "any", "other", "many", "such", "both")
   val dems = Set("this", "that", "these", "those")
   val poss = Set("his", "their", "its", "our", "her", "my", "your")
-  val mods = Set("new", "last", "former", "public", "political", "vice");
+  val mods = Set("new", "last", "former", "public", "political", "vice")
   val nats = Set ("china", "u.s.", "foreign", "taiwan", "israeli", "national", "american", "palestinian", "chinese", "federal", "japan")
   val roles = Set("mr.", "reporter", "president")
   val defaultCutoff = 20
@@ -307,7 +299,6 @@ object LexicalCounter {
       if (words.size > 1) Seq[String](words(0).string.toLowerCase) else Seq[String]()
     })
     val firstWordCounts = countAndPrune(allFirstWordsInTrain, cutoff)
-
     // LAST WORDS
     val allLastWordsInTrain = nonPronouns.flatMap(mention => {
       val words = mention.phrase.tokens
@@ -338,9 +329,6 @@ object LexicalCounter {
     // FOLLOWING BY 2 WORDS
     val allFollowingBy2WordsInTrain = mentionList.map(mention => getTokenAtOffset(mention.phrase.last,+1).toLowerCase)
     val followingBy2WordCounts = countAndPrune(allFollowingBy2WordsInTrain, cutoff)
-    // GOVERNOR WORDS
-    //val allGovernorWordsInTrain = mentionList.map(mention => mention.governor.toLowerCase)
-    //val governorWordCounts = countAndPrune(allGovernorWordsInTrain, cutoff);
 
     // PREFIXES AND SUFFIXES
     val allPrefixCounts = new DefaultHashMap[String,Int](0)

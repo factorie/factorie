@@ -8,7 +8,7 @@ import scala.collection.mutable
  * Time: 12:20 PM
  */
 
-class Coref1Options {
+class CorefOptions {
   import ConjunctionOptions._
   def getConfigHash = mutable.HashMap[String,String]() ++= configHash.map(x => (x._1,x._2.toString))
 
@@ -49,13 +49,14 @@ class Coref1Options {
   var numThreads = 2
   var featureComputationsPerThread = 2
 
-  var useNonGoldBoundaries = false
+  var useGoldBoundaries = false
 
   var lexiconDir = "factorie-nlp-resources/src/main/resources/cc/factorie/app/nlp/lexicon/"
 
   var allowPosCataphora = false // allow cataphora in training?
   var allowNegCataphora = false
   var allowTestCataphora = false // allow cataphora in test?
+
   var pruneNegTrain = true // setting to true means only one positive pair is created for each mention, compatible with uiuc implementation
   var numPositivePairsTrain = 75 // number of positive pairs to create before stopping examining further back
   var pruneNegTest = false // setting to true means only one positive pair is created for each mention, compatible with uiuc implementation
@@ -82,7 +83,7 @@ class Coref1Options {
     useExactEntTypeMatch = opts.useExactEntTypeMatch.value
     slackRescale = opts.slackRescale.value
     mentionAlignmentShiftWidth = opts.mentionAlignmentShiftWidth.value
-    useNonGoldBoundaries = opts.useNonGoldBoundaries.value
+    useGoldBoundaries = opts.useGoldBoundaries.value
     mergeMentionWithApposition = opts.mergeAppositions.value
     setConfig("usePronounRules",opts.usePronounRules.value)
     numCompareToTheLeft = opts.numCompareToTheLeft.value

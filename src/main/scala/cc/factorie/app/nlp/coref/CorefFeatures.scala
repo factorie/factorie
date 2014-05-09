@@ -1,9 +1,8 @@
 package cc.factorie.app.nlp.coref
 
-import cc.factorie.app.nlp.coref._
 import cc.factorie.app.nlp.phrase._
 import cc.factorie.app.nlp.wordnet.WordNet
-import cc.factorie.app.nlp.{Token, TokenSpan}
+import cc.factorie.app.nlp.Token
 import cc.factorie.app.strings.Stopwords
 import scala.collection.mutable
 import cc.factorie.app.nlp.phrase.{Number, Gender}

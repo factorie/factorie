@@ -7,11 +7,8 @@ import cc.factorie.la.{SparseBinaryTensor, DenseTensor1, WeightsMapAccumulator, 
 import cc.factorie.optimize.{OptimizableObjectives, PredictorExample, Example}
 import java.io._
 import cc.factorie.util.BinarySerializer
-import cc.factorie.util.BasicEvaluatableClustering
 import cc.factorie.variable.{VectorDomain, DiscreteDomain, CategoricalVectorDomain, CategoricalDomain}
 import cc.factorie.model.Parameters
-import scala.collection.mutable
-import cc.factorie.app.nlp.coref.DefaultHashMap
 
 /**
  * User: apassos
@@ -70,8 +67,7 @@ trait CorefModel extends Parameters {
 }
 
 abstract class PairwiseCorefModel extends app.classify.backend.OptimizablePredictor[Double,Tensor1] with CorefModel{
-  def getExample(label: MentionPairLabel,features:MentionPairFeatures, scale: Double): Example = new PredictorExample(this, label.features.value, if (label.target.categoryValue == "YES") 1 else -1, OptimizableObjectives.hingeScaledBinary(1.0, 3.0))
-
+  def getExample(label: MentionPairLabel,features:MentionPairFeatures, scale: Double): Example = new PredictorExample(this, features.value, if (label.target.categoryValue == "YES") 1 else -1, OptimizableObjectives.hingeScaledBinary(1.0, 3.0))
 }
 
 class BaseCorefModel extends PairwiseCorefModel {
@@ -189,9 +185,12 @@ class StructuredCorefModel extends CorefModel {
     val scores = new Array[Array[Double]](mentionGraph.graph.length)
     for (i <- 0 until mentionGraph.graph.length) {
       scores(i) = new Array[Double](i+1)
-      for (j <- 0 until mentionGraph.graph(i).length; if(!mentionGraph.prunedEdges(i)(j))) {
+      for (j <- 0 until mentionGraph.graph(i).length) {
+        if(mentionGraph.prunedEdges(i)(j)) scores(i)(j) = Double.NegativeInfinity
+        else{
         require(mentionGraph.features(i)(j).domain.dimensionSize > 0)
         scores(i)(j) = predict(mentionGraph.features(i)(j).value)
+        }
       }
     }
     scores

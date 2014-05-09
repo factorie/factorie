@@ -6,7 +6,7 @@ import java.util.concurrent.ExecutorService
 import cc.factorie.variable.LabeledCategoricalVariable
 import cc.factorie.app.nlp.{Sentence, Token, Document}
 import cc.factorie.app.nlp.pos.PennPosTag
-import cc.factorie.app.nlp.coref.mention.{ParseAndNerBasedMentionFinding, ParseBasedMentionFinding}
+import cc.factorie.app.nlp.phrase.ParseAndNerBasedPhraseFinder
 
 
 /**
@@ -24,9 +24,9 @@ class NamedEntityStructuredCoreference extends StructuredCoref{
 }
 //Uses Parse Based Mention Finding, best for data with nested mentions in the ontonotes annotation style
 class ParseStructuredCoreference extends StructuredCoref{
-  override def prereqAttrs: Seq[Class[_]] = ParseBasedMentionFinding.prereqAttrs.toSeq
+  override def prereqAttrs: Seq[Class[_]] = ParseAndNerBasedPhraseFinder.prereqAttrs.toSeq
   override def annotateMentions(doc:Document): Unit = {
-    ParseAndNerBasedMentionFinding.process(doc)
+    ParseAndNerBasedPhraseFinder.process(doc)
     NounPhraseEntityTypeLabeler.process(doc)
     NounPhraseGenderLabeler.process(doc)
     NounPhraseNumberLabeler.process(doc)
@@ -34,25 +34,21 @@ class ParseStructuredCoreference extends StructuredCoref{
 }
 //Todo: The base Structured Coref class uses Gold Mentions, used for evaluation and tests on ConllData
 class StructuredCoref extends CorefSystem[MentionGraph]{
-  val options = new Coref1Options
+  val options = new CorefOptions
   val model: StructuredCorefModel = new StructuredCorefModel
   override def prereqAttrs: Seq[Class[_]] = Seq(classOf[Sentence],classOf[PennPosTag])
   def tokenAnnotationString(token:Token):String = ???
 
   def infer(coref:WithinDocCoref):WithinDocCoref = {
     val instance = new MentionGraph(model,coref,options)
-    instance.generateGraph(false)
     getPredCorefClusters(instance)
   }
 
-  var numDocs = 0
   def instantiateModel(optimizer:GradientOptimizer,pool:ExecutorService) = new SoftMaxParallelTrainer(optimizer,pool)
   def preprocessCorpus(trainDocs:Seq[Document]) = model.CorefTokenFrequencies.lexicalCounter = LexicalCounter.countLexicalItems(trainDocs.flatMap{_.coref.mentions},trainDocs,20)
   def getCorefStructure(coref:WithinDocCoref) = {
     println("document processed: "+coref.document.name)
-    val struct = new MentionGraph(model,coref,options)
-    struct.generateGraph(true)
-    struct
+    new MentionGraph(model,coref,options,train=true)
   }
 
   def getPredCorefClusters(graph:MentionGraph): WithinDocCoref = {
@@ -62,7 +58,7 @@ class StructuredCoref extends CorefSystem[MentionGraph]{
       val bestMatch = graph.orderedMentionList(bestMatches(edgeIdx)._1)
       if(bestMatch!=graph.orderedMentionList(edgeIdx)){
         if(bestMatch.entity ne null) bestMatch.entity += graph.orderedMentionList(edgeIdx)
-        else {val entity = graph.coref.newEntity(); entity += graph.orderedMentionList(edgeIdx); entity += graph.orderedMentionList(bestMatches(edgeIdx)._1) }
+        else {val entity = graph.coref.newEntity(); entity += graph.orderedMentionList(edgeIdx); entity += bestMatch }
       }//else entity is a singleton so do not add it to the entities   //Todo:Add it as a singleton cluster again
     }
     graph.coref
@@ -74,11 +70,10 @@ class StructuredCoref extends CorefSystem[MentionGraph]{
 }
 
 class MentionGraphLabel(model:CorefModel, val currentMention: Int, val linkedMention: Int, val initialValue: Boolean, val lossScore:Double) extends LabeledCategoricalVariable(if (initialValue) "YES" else "NO"){
-  var score = 0.0
   def domain = model.MentionPairLabelDomain
 }
 
-class MentionGraph(model:CorefModel,val coref: WithinDocCoref,options:Coref1Options){
+class MentionGraph(model:CorefModel,val coref: WithinDocCoref,options:CorefOptions,train:Boolean = false){
   var orderedMentionList = coref.mentions.toSeq
   var graph = new Array[Array[MentionGraphLabel]](orderedMentionList.size)
   val features = new Array[Array[MentionPairFeatures]](orderedMentionList.size)
@@ -88,8 +83,8 @@ class MentionGraph(model:CorefModel,val coref: WithinDocCoref,options:Coref1Opti
     features(i) = Array.fill(i+1)(null.asInstanceOf[MentionPairFeatures])
     prunedEdges(i) = Array.fill(i+1)(false)
   }
-
-  def generateGraph(train: Boolean) = {
+  generateGraph()
+  def generateGraph() = {
     for (currMentionIdx <- 0 until orderedMentionList.size) {
       graph(currMentionIdx) = new Array[MentionGraphLabel](currMentionIdx+1)
       val currentMention = orderedMentionList(currMentionIdx)
@@ -101,7 +96,7 @@ class MentionGraph(model:CorefModel,val coref: WithinDocCoref,options:Coref1Opti
           var initialValue = false
           if(train){
             initialValue = if(currentMention == anteMention){
-              currentMention.entity == null || currentMention.entity != null && currentMention == currentMention.entity.children.head
+              currentMention.entity == null || (currentMention.entity != null && currentMention == currentMention.entity.children.head)
             } else currentMention.entity != null && anteMention.entity != null && currentMention.entity == anteMention.entity
           }
           graph(currMentionIdx)(anteMentionIdx) = new MentionGraphLabel(model,currMentionIdx,anteMentionIdx,initialValue,lossScore)
@@ -131,6 +126,7 @@ class MentionGraph(model:CorefModel,val coref: WithinDocCoref,options:Coref1Opti
     if (anteMentionIdx < currMentionIdx - options.maxMentDist || (currentMention.phrase.isPronoun && currSentIdx - anteSentIdx > options.maxPronDist)) {
       skip = true
     }
+    if(antecedentMention != currentMention && antecedentMention.phrase.tokens.exists(t=> currentMention.phrase.tokens.contains(t))) skip = true
     skip
 
     //Add Constraints
