@@ -2,7 +2,7 @@ package cc.factorie.app.nlp.coref.mention
 
 import cc.factorie.app.nlp.wordnet.WordNet
 import scala.collection.mutable
-import cc.factorie.util.coref.GenericEntityMap
+import cc.factorie.util.{EvaluatableClustering,BasicEvaluatableClustering}
 import cc.factorie.app.nlp._
 import cc.factorie.app.nlp.coref._
 import cc.factorie.app.nlp.pos.PennPosTag
@@ -20,7 +20,7 @@ import cc.factorie.app.nlp.coref.{Mention,WithinDocEntity}
  */
 
 object MentionAlignment {
-  def makeLabeledData(f: String, outfile: String ,portion: Double, useEntityTypes: Boolean, options: Coref1Options, map: DocumentAnnotatorMap): (Seq[Document],mutable.HashMap[String,GenericEntityMap[Mention]]) = {
+  def makeLabeledData(f: String, outfile: String ,portion: Double, useEntityTypes: Boolean, options: Coref1Options, map: DocumentAnnotatorMap): (Seq[Document],mutable.HashMap[String,EvaluatableClustering[String,String]]) = {
     //first, get the gold data (in the form of factorie Mentions)
     val documentsAll = LoadConll2011.loadWithParse(f)
     val documents = documentsAll.take((documentsAll.length*portion).toInt)
@@ -48,7 +48,7 @@ object MentionAlignment {
     //align gold mentions to detected mentions in order to get labels for detected mentions
 
     val alignmentInfo =  documents.zip(documentsToBeProcessed).par.map(d => alignMentions(d._1,d._2,WordNet,useEntityTypes, options, shifts))
-    val entityMaps = new HashMap[String,GenericEntityMap[Mention]]() ++=  alignmentInfo.map(_._1).seq.toSeq
+    val entityMaps = new HashMap[String,EvaluatableClustering[String,String]]() ++=  alignmentInfo.map(_._1).seq.toSeq
 
     //do some analysis of the accuracy of this alignment
     val prReports = alignmentInfo.map(_._2)
@@ -64,7 +64,7 @@ object MentionAlignment {
 
   //for each of the mentions in detectedMentions, this adds a reference to a ground truth entity
   //the alignment is based on an **exact match** between the mention boundaries
-  def alignMentions(gtDoc: Document, detectedDoc: Document,wn: WordNet, useEntityTypes: Boolean, options: Coref1Options, shifts: Seq[Int]): ((String,GenericEntityMap[Mention]),PrecRecReport) = {
+  def alignMentions(gtDoc: Document, detectedDoc: Document,wn: WordNet, useEntityTypes: Boolean, options: Coref1Options, shifts: Seq[Int]): ((String,EvaluatableClustering[String,String]),PrecRecReport) = {
     val groundTruthMentions = gtDoc.attr[MentionList]
     val detectedMentions = detectedDoc.attr[MentionList]
 
@@ -110,16 +110,16 @@ object MentionAlignment {
     })
 
     //now, we make a generic entity map
-    val entityMap = new GenericEntityMap[Mention]
+    val entityMap = new BasicEvaluatableClustering //[Mention]
 
     val unAlignedGTMentions = gtAligned.filter(kv => !kv._2).map(_._1)
     val allCorefMentions =  detectedDoc.attr[MentionList] ++ unAlignedGTMentions
 
-    allCorefMentions.foreach(m => entityMap.addMention(m, entityMap.numMentions.toLong))
+    allCorefMentions.foreach(m => entityMap(m.uniqueId) = entityMap.pointIds.size.toString)
 
     val corefEntities = allCorefMentions.groupBy(_.entity)
     corefEntities.flatMap(_._2.sliding(2)).foreach(p => {
-      if (p.size == 2) entityMap.addCoreferentPair(p(0), p(1))
+      if (p.size == 2) entityMap.mergeClosure(p(0).uniqueId, p(1).uniqueId)
     })
 
 

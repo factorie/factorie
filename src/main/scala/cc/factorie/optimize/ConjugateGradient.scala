@@ -19,8 +19,9 @@ import cc.factorie.util.FastLogging
 import cc.factorie.model.{WeightsMap, WeightsSet}
 
 /**
- * A conjugate gradient optimizer. Should not be used unless you know you want it.
+ * A conjugate gradient optimizer. Should not be used unless you know you want it because LBFGS is often better.
  * @param initialStepSize The initial step size. Not too important because line search is performed.
+ * @author Andrew McCallum, Alexandre Passos
  */
 class ConjugateGradient(val initialStepSize: Double = 1.0) extends GradientOptimizer with FastLogging {
   private var _isConverged = false

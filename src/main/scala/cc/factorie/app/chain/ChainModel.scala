@@ -155,7 +155,7 @@ class ChainModel[Label <: MutableDiscreteVar, Features <: CategoricalVectorVar[S
     val localScores = getLocalScores(varying)
     addToLocalScoresOpt.foreach(l => (0 until varying.length).foreach(i => localScores(i) += l(i)))
     // WARNING: for efficiency we duplicate the transition scores by reference here. FIX -luke
-    ChainCliqueValues(localScores, Seq.fill(math.max(1, varying.size - 1))(markovScoresT.asInstanceOf[DenseTensor2]))
+    ChainCliqueValues(localScores, Seq.fill(math.max(1, varying.size - 1))(markovScoresT))
   }
 
   def accumulateExtraObsGradients(gradient: WeightsMapAccumulator, obsMarginal: Tensor1, position: Int, labels: Seq[Label]): Unit = {}
@@ -264,13 +264,13 @@ case class ChainViterbiResults(mapScore: Double, mapValues: Array[Int], scores: 
 case class ChainForwardBackwardResults(logZ: Double, alphas: Array[DenseTensor1], betas: Array[DenseTensor1], scores: ChainCliqueValues)
 
 // WARNING: transition values might point to the same underlying array for speed. FIX -luke
-case class ChainCliqueValues(localValues: Seq[DenseTensor1], transitionValues: Seq[DenseTensor2]) {
+case class ChainCliqueValues(localValues: Seq[DenseTensor1], transitionValues: Seq[Tensor2]) {
   def +=(other: ChainCliqueValues, f: Double) = {
     for ((m, s) <- localValues.zip(other.localValues)) m +=(s, f)
     for ((m, s) <- transitionValues.zip(other.transitionValues)) m +=(s, f)
   }
   def +=(other: ChainCliqueValues): Unit = +=(other, 1.0)
-  def safeDot(t1: DenseTensor, t2: DenseTensor): Double = {
+  def safeDot(t1: Tensor, t2: Tensor): Double = {
     val len = t1.length
     var dot = 0.0
     var i = 0

@@ -51,6 +51,10 @@ trait Section extends Chain[Section,Token] with DocumentSubstring with Attr {
       from the Document's original raw string  */
   def string: String = document.string.substring(stringStart, stringEnd)
   
+  /** Return the 0-based position of this Section in its Document's list of Sections.
+      Because document.sections is easily mutable, this method does a linear search, so don't call it in an inner loop. */
+  def indexInDocument:Int = document.sections.indexWhere(_ == this)
+  
   /** The sequence of Tokens inside this Section.  This method is just a convenient alias for Chain.links. */
   def tokens: IndexedSeq[Token] = links
   /** Find the Token the encompasses the character at "charOffset" beyond the start of this Section's string. */

@@ -7,7 +7,7 @@ import scala.collection.mutable
 class CBOWNegSamplingEmbeddingModel(override val opts: EmbeddingOpts) extends WordEmbeddingModel(opts) {
   val negative = opts.negative.value
   val window = opts.window.value
-  val rng = new util.Random
+  val rng = new util.Random(5) // fix the speed; 
   val sample = opts.sample.value.toDouble
   override def process(doc: String): Int = {
     // given a document, below line splits by space and converts each word to Int (by vocab.getId) and filters out words not in vocab
@@ -35,33 +35,26 @@ class CBOWNegSamplingEmbeddingModel(override val opts: EmbeddingOpts) extends Wo
     }
     return wordCount
   }
-  // subsampling 
+  // subsampling
   def subSample(word: Int): Int = {
-    val ran = vocab.getSubSampleProb(word) // pre-computed to avoid sqrt call every time. Improvement of 10 secs on 100MB data ~ 15 MINs on 10GB
-    //val cnt = vocab.getCount(word)
-    //val ran = (math.sqrt(cnt / (sample * train_words)) + 1) * (sample * train_words) / cnt
-    val real_ran = rng.nextInt(0xFFFF) / 0xFFFF.toDouble
-    if (ran < real_ran) { return -1 }
+    val prob = vocab.getSubSampleProb(word) // pre-computed to avoid sqrt call every time. Improvement of 10 secs on 100MB data ~ 15 MINs on 10GB
+    val alpha = rng.nextInt(0xFFFF) / 0xFFFF.toDouble
+    if (prob < alpha) { return -1 }
     else return word
   }
 }
-class CBOWNegSamplingExample(model: CBOWNegSamplingEmbeddingModel, word: Int, contexts: Seq[Int], label: Int) extends Example {
+class CBOWNegSamplingExample(model: WordEmbeddingModel, word: Int, contexts: Seq[Int], label: Int) extends Example {
 
   // to understand the gradient and objective refer to : http://arxiv.org/pdf/1310.4546.pdf
   def accumulateValueAndGradient(value: DoubleAccumulator, gradient: WeightsMapAccumulator): Unit = {
 
     val wordEmbedding = model.weights(word).value
     val contextEmbedding = new DenseTensor1(model.D, 0)
-    /*var i = 0
-    while (i < contexts.size) {
-      contextEmbedding.+=(model.weights(contexts(i)).value)
-      i += 1
-    } */
     contexts.foreach(context => contextEmbedding.+=(model.weights(context).value))
-
+        
     val score: Double = wordEmbedding.dot(contextEmbedding)
     val exp: Double = math.exp(-score) // TODO : pre-compute , costly operation
-
+    
     var objective: Double = 0.0
     var factor: Double = 0.0
     if (label == 1) {
@@ -74,11 +67,6 @@ class CBOWNegSamplingExample(model: CBOWNegSamplingEmbeddingModel, word: Int, co
     }
     if (value ne null) value.accumulate(objective)
     if (gradient ne null) {
-      var i = 0
-      /* while (i < contexts.size) {
-        gradient.accumulate(model.weights(contexts(i)), wordEmbedding, factor)
-        i += 1
-      } */
       contexts.foreach(context => gradient.accumulate(model.weights(context), wordEmbedding, factor))
       gradient.accumulate(model.weights(word), contextEmbedding, factor)
     }

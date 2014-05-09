@@ -4,7 +4,8 @@ import cc.factorie._
 import cc.factorie.la._
 import cc.factorie.model.{WeightsMap, WeightsSet}
 
-/** Base trait for optimizers that update weights according to a gradient. */
+/** Base trait for optimizers that update weights according to a gradient.
+    @author Andrew McCallum */
 trait GradientOptimizer {
   // TODO Why are we passing in weightsSet each time?  Couldn't this be dangerous?  -akm
   // I think passing it in here is probably a good compromise for optimizers that require no setup/teardown on weights or can do it automatically -luke

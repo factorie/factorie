@@ -105,7 +105,7 @@ To use FACTORIE's pre-trained NLP models in a Maven project, you can add additio
 <dependency>
   <groupId>cc.factorie.app.nlp</groupId>
   <artifactId>pos</artifactId>
-  <version>1.0-SNAPSHOT</version>
+  <version>1.0-RC5</version>
 </dependency>
 ```
 
@@ -117,7 +117,7 @@ To include all of the pre-trained models at once, you can add the all-models dep
 <dependency>
   <groupId>cc.factorie.app.nlp</groupId>
   <artifactId>all-models</artifactId>
-  <version>1.0-SNAPSHOT</version>
+  <version>1.0-RC8</version>
 </dependency>
 ```
 

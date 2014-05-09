@@ -27,8 +27,7 @@ trait Diff {
 
 /** A Diff which, when created, performs the change.  
     Thus we avoid duplication of code: rather than doing the change, and then creating a Diff instance, we just create the Diff instance. 
-    @author Andrew McCallum
- */
+    @author Andrew McCallum */
 abstract class AutoDiff(implicit d:DiffList) extends Diff {
   if (d != null) d += this
   redo()

@@ -15,13 +15,14 @@
 package cc.factorie.variable
 
 import scala.collection.mutable.ArrayBuffer
+import scala.annotation.unchecked.uncheckedVariance
 
 // Variables for holding sequences.
 
 /** A trait for setting the member type ElementType in SeqVar classes.
     @author Andrew McCallum */
 trait ElementType[+ET] {
-  type ElementType = ET
+  type ElementType = (ET @uncheckedVariance)
 }
 
 /** A trait with many of the same methods as Seq, but not actually a Seq itself.
@@ -120,7 +121,8 @@ trait MutableSeqVar[E] extends IndexedSeqVar[E] with MutableVar {
   //def update(index:Int, x:Element): Unit = _seq(index) = x // TODO What should this be named, since we already have an update method above? -akm
 }
 
-/** A variable containing a mutable sequence of other variables. */
+/** A concrete variable containing a mutable sequence of elements (which could be other variables).
+    @author Andrew McCallum */
 class SeqVariable[X] extends MutableSeqVar[X] {
   def this(initialValue: Seq[X]) = { this(); _seq ++= initialValue }
 }

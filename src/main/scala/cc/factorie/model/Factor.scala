@@ -101,6 +101,7 @@ trait Factor extends Ordered[Factor] {
     case _ => false
   }
   var _hashCode = -1
+  /** A hashCode matching the criteria in equals, using hashCode of the Factor's class and of the Factor's neighboring variables. */
   override def hashCode: Int = {
     if (_hashCode == -1) {
       _hashCode = getClass.hashCode
@@ -120,9 +121,11 @@ trait Factor extends Ordered[Factor] {
 /** An iterable collection for efficiently holding a single Factor.
     Used in various Template classes and in an implicit conversion from Factor to IterableSingleFactor
     so that unroll1,2,3,4 methods (which are supposed to return Iterable[Factor] can be written
-    by end users to return a single Factor (which is then implicitly converted to this class). */
+    by end users to return a single Factor (which is then implicitly converted to this class). 
+    @author Andrew McCallum */
 class IterableSingleFactor[F<:Factor](val factor:F) extends Iterable[F] {
   def iterator = Iterator.single(factor)
   override def size = 1
   override def head = factor
 }
+

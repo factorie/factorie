@@ -11,7 +11,8 @@ import javax.xml.parsers.{DocumentBuilder, DocumentBuilderFactory}
 import la.DenseTensor
 import cc.factorie.optimize._
 import org.w3c.dom.{Node, NodeList, Document}
-import scala.concurrent.ops._
+import scala.concurrent._
+import ExecutionContext.Implicits.global
 import java.io._
 import java.text.DecimalFormat
 import scala.Some
@@ -1492,12 +1493,12 @@ trait Foreman[E<:HierEntity with HasCanopyAttributes[E] with Prioritizable] exte
     numWorkers += 1
     val worker = workers.dequeue()
     activeWorkers += worker
-    spawn{
+    future {
       worker.run()
     }
   }
   protected def spawnPrintThreads(): Unit = {
-    spawn{while(true){printStats(); Thread.sleep(60000)}}
+    future{while(true){printStats(); Thread.sleep(60000)}}
   }
   def run() {
     initialize()
@@ -1506,7 +1507,7 @@ trait Foreman[E<:HierEntity with HasCanopyAttributes[E] with Prioritizable] exte
     spawnPrintThreads()
     println("About to manage "+workers.size+" workers")
     //manageWorkers
-    spawn{
+    future {
       while((workers.size+activeWorkers.size)>0 || (triggerSafeQuit && activeWorkers.size==0)){manageWorkers();Thread.sleep(1000)}
     }
     //while(workers.size>0){}
@@ -1536,7 +1537,7 @@ abstract class DefaultForeman[E<:HierEntity with HasCanopyAttributes[E] with Pri
     }
   }
   protected def spawnParameterReader(): Unit = {
-    spawn{
+    future{
       while(true){
         var reader:BufferedReader = null
         try{
@@ -1562,7 +1563,7 @@ abstract class DefaultForeman[E<:HierEntity with HasCanopyAttributes[E] with Pri
   }
   override protected def spawnPrintThreads(): Unit = {
     super.spawnPrintThreads()
-    spawn{while(true){printSamplingStats();Thread.sleep(60000)}}
+    future{while(true){printSamplingStats();Thread.sleep(60000)}}
     spawnParameterReader()
   }
   def printSamplingStats(): Unit = {

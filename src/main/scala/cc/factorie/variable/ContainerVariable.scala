@@ -31,7 +31,7 @@ trait ContainerVariable[A<:Var] extends Var {
 // NOTE: Vars#hashCode must be based on the contents of the collection, or else Factor uniq'ing won't work.
 // So this is the exception to the "rule" that Variable must have equals and hashCode based on unique memory address.
 /** A more concrete ContainerVariable, that is also a scala.collection.Seq.
-    Used for 
+    Used for implementing var-args in the neighbors of a Factor.
     @author Andrew McCallum */
 trait Vars[A<:Var] extends scala.collection.Seq[A] with ContainerVariable[A] /*with VarAndValueGenericDomain[Vars[A],scala.collection.Seq[A#Value]]*/ {
   type Value = scala.collection.Seq[A#Value]

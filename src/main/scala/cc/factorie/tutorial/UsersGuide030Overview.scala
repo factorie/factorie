@@ -495,7 +495,7 @@ specialized inference and learning algorithms.
 
 #### Parameters and Weights
 
-The case in which templated factor scores are calculated by
+The situation in which templated factor scores are calculated by
 dot-products is so common (and so relevant to our typical parameter
 estimation procedures) that FACTORIE provides special support for this
 case.
@@ -550,18 +550,35 @@ and `different` to determine if the element-wise distance between two
 Once we have a way to represent a possible world (variables, with
 their possible values) and a way to represent preferences over
 different possible worlds (factors provided by a model) we can address
-the problem of searching for the most highly preferred possible world
-(MAP inference) or finding the probabilities of subsets of all
-possible worlds (marginal inference).
+the problem of searching for the most preferred possible world (MAP
+inference) or finding the probabilities of subsets of all possible
+worlds (marginal inference).
+
+In FACTORIE terminology, inference is a process that takes as input a
+list of variables and a `Model` and produces as output a `Summary`, which
+contains a collection of `Marginals` and which also has a
+marginalization constant, accessible as `logZ`.
+
+#### Marginals
 
 A `Marginal` represents a joint distribution over a subset of the
 variables.  For example, a `DiscreteMarginal2` specifies two
-`DiscreteVar`s and a `Proportion2` which contains their marginal
+`DiscreteVar`s, and a `Proportions2` which contains their marginal
 distribution.  A `RealGaussianMarginal1` represents a univariate
-Gaussian distribution with a specified mean and variance.  Naturally a marginal 
+Gaussian distribution with a specified mean and variance.  Naturally a
+marginal that results from maximum aposteriori inference will simply
+have a spike with all probability on the maximum-scoring values.  The
+most widely used marginals are those over a single variable,
+inheriting from `Marginal1` because marginals over multiple variables
+more typically represented by `FactorMarginal`s.
 
-A `FactorMarginal` is `Marginal` associated with a `Factor`.  Its
-marginal distribution may cover all the neighboring variables of the
+A `FactorMarginal` is marginal associated with a `Factor` (note,
+however, that for technical reasons it does not inherit from the
+`Marginal` trait).  These are mainly used for learning, providing a
+tensor of sufficient statistics which are used to calculate parameter
+gradients.
+
+Its marginal distribution may cover all the neighboring variables of the
 factor, or, in the case in which inference varied some but not all of
 the neighbors, the marginal distribution will be over a subset of the
 neighboring variables of the factor.  Its `tensorStatistics` method
@@ -569,37 +586,133 @@ returns the expected sufficient statistics of the factor, which always
 covers all the neighboring variables of the factor; this is useful for
 parameter estimation.
 
+There is infrastructure for automatically creating a `FactorMarginal`s
+from `Marginal`s that cover a subset of the neighbors of a `Factor`.
+For example if we want a `FactorMarginal` for a `Factor2` in which one
+of the factor's two neighbors is varying but the other is treated as
+constant, we can use a `DiscreteMargina1` to construct a
+`DiscreteMarginal1Factor2` whose sufficient statistics will cover both
+neighboring variables.
+
 A request for inference on a model results in a `Summary` which is a
 collection of `Marginal`s .
 
 
-Inference
+#### Summary
 
-Marginal
+When inference is run the result is a `Summary` which is a container
+for (a) the collection of variables that varied during inference, (b)
+a collection of the corresponding single-variable `Marginal1`s, (c) a
+collection of `FactorMarginal`s for the factors used during inference,
+and (d) a normalization constant, `logZ`.  Using a `Summary` you can
+look up a `Marginal1` given a variable, and can look up a
+`FactorMarginal` given a `Factor`.
 
-Summary
+Several specialized implementations of `Summary` are provided.  For
+example `MAPSummary` puts all of its probability on one `Assignment`
+of the variables' values.  Because it also contains a collection of
+`Factor`s and `FactorMarginal`s, it can also be used for (max-margin)
+parameter estimation.  Other examples include `BPSummary` for holding
+the intermediate and final states of belief propagation, and
+`IndependentDiscreteSummary` for holding an IID distribution over
+discrete variables.
 
-Infer
 
-Not automatically selected.
+#### Inference
 
-Sampling
+The primary interface for making inference requests is in the method
+`infer` in the `Infer` trait.  This method takes two or three
+arguments: (1) the collection of non-constant variables whose values
+should be varied and whose marginal distributions should be
+calculated; (2) the `Model` whose factors will score these different
+assignments; and optionally, (3) a `Summary` which may indicate
+additional variables that should be marginalized (and the functional
+form of that marginalization), or which may alternatively provide
+information about the functional form to be used for the marginals of
+the first argument variables.
 
-Belief propagation
+The `Maximize` trait is a subtype of `Infer` for object that implement
+maximum aposteriori (MAP) inference.  It adds a method `maximize`,
+which calls `infer` and then assigns the variables to their maximizing
+values.
 
-MPLP
+Generally it is easy to implement your own inferencer and make it
+conform to this API (which then immediately enables its use for
+parameter estimation and other tasks).  Typically much of the existing
+infrastructure for `Summary`s and `Marginal`s will be helpful in your
+implementation.
 
+FACTORIE comes with a large collection of already-implement marginal
+and MAP inference procedures, whose names start with `InferBy`
+`MaxmimizeBy` respectively.
+
+There are many variants of belief propagation (BP) for both
+marginalization and maximization on graphical models of discrete
+variables.  These include `InferByBPChain`, an efficient
+implementation of forward-backward in linear-chain structured models;
+`InferByBPTree` for exact inference tree-shaped graphical models;
+`InferByBPLoopy` for approximate BP inference by on graphical models
+with loops; `InferByBPLoopyTreewise` for more robust approximate BP
+inference with tree-reparameterization [Wainwright, Jaakkola, Wilsky,
+2001].
+
+Other variational inference methods exist as well, including
+`InferByMeanField`, an implementation of marginal inference by mean
+field for discrete variables; `MaximizeByMPLP`, which uses dual
+coordinate ascent on the LP relaxation for MAP inference.
+
+FACTORIE also provides infrastructure for Monte Carlo inference.  This
+includes a generic `Sampler` as well as its special-case subclass, a
+`ProposalSampler` which selects among a collection of `Proposal`
+objects (each of which provides a score and a `DiffList` for undoing
+and redoing the proposed changes).  Examples of `ProposalSampler`
+include the `GibbsSampler` and `MHSampler` (Metropolis-Hastings), and
+`IteratedConditionalModes` which is the maximization analogue of Gibbs
+sampling.
+
+These underlying sampling mechanisms are wrapped into objects that
+implement the `Infer` interface, providing `InferByGibbsSampling`,
+`InferByMeanField`, `MaximizeByIteratedConditionalModels`,
+`MaximizeByMPLP`, etc.
+
+Finally, Expectation-Maximization (EM) and dual decomposition are
+implemented outside of the `Infer` API, by the `EMInferencer` and
+`DualDecomposition` classes.
+
+There is currently limited support for inference in that directly
+leverages the special case of _directed_ graphical models.  We have
+preliminarily implemented a system of storing and selecting among a
+collection of "recipes" for handling different patterns of random
+variables and factor types (similar to BUGS), but only a few such
+"recipes" have been implemented so far.  One of those cases, however,
+provides an extremely efficient collapsed Gibbs sampler for latent
+Dirichlet allocation (LDA)---the FACTORIE implementation of LDA is
+actually faster than the widely-used MALLET implementation.  See the
+Section on "Topic Modeling" below.
+
+FACTORIE does not currently provide automated methods of selecting the
+best inference method given a model and collection of variables.  This
+is an area of future work.
 
 
 
 ### Estimating parameters 
 
+(To be provided from Luke's text.)
 
 
 
 ## Application packages
 
+In additional to its general support for factor graphs, FACTORIE
+provides pre-build models and other infrastructure for particular
+application areas.
+
+
 ### Classification
+
+
+
 
 ### Regression
 

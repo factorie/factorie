@@ -236,14 +236,20 @@ class LabeledStringVariable(targetValue:String) extends StringVariable(targetVal
 
 // Templates
 
+/** A source of factors whose score is the Hamming objective, with score 1.0 for each variable whose current global value is its target value, and 0 for all other variables.
+    @author Andrew McCallum */
 class HammingTemplate[A<:LabeledVar]()(implicit ma: Manifest[A], mt: Manifest[A#TargetType]) extends TupleTemplateWithStatistics2[A,A#TargetType]() {
   def unroll1(aimer:A) = Factor(aimer, aimer.target.asInstanceOf[A#TargetType])
   def unroll2(target:A#TargetType) = throw new Error("Cannot unroll from the target variable.")
   def score(value1:A#Value, value2:A#TargetType#Value) = if (value1 == value2) 1.0 else 0.0 // TODO
   def accuracy(variables: Iterable[A]): Double = variables.map(v => Factor(v, v.target.asInstanceOf[A#TargetType]).currentScore).sum / variables.size
 }
+/** A source of factors whose score is the Hamming objective, with score 1.0 for each variable whose current global value is its target value, and 0 for all other variables.
+    @author Andrew McCallum */
 object HammingObjective extends HammingTemplate[LabeledVar]()(scala.reflect.ManifestFactory.classType(classOf[LabeledVar]), scala.reflect.ManifestFactory.classType(classOf[TargetVar]))
 
+/** A source of factors whose score is the Hamming loss, with score 0.0 for each variable whose current global value is its target value, and 1.0 for all other variables.
+    @author Alexandre Passos */
 class HammingLossTemplate[A<:LabeledVar]()(implicit am:Manifest[A], tm:Manifest[A#TargetType]) extends TupleTemplateWithStatistics2[A,A#TargetType] {
   import cc.factorie.la._
   def unroll1(aimer:A) = Factor(aimer, aimer.target)
@@ -260,13 +266,17 @@ class HammingLossTemplate[A<:LabeledVar]()(implicit am:Manifest[A], tm:Manifest[
       }
   }
 }
+/** A source of factors whose score is the Hamming loss, with score 0.0 for each variable whose current global value is its target value, and 1.0 for all other variables.
+    @author Alexandre Passos */
 object HammingLoss extends HammingLossTemplate[LabeledVar]()(scala.reflect.ManifestFactory.classType(classOf[LabeledVar]), scala.reflect.ManifestFactory.classType(classOf[TargetVar]))
 
 
 // Evaluation
 
-/** Stores the results of evaluating per-label accuracy and other measures.
-    Note, this is not per-field accuracy. */
+/** Stores the results of evaluating per-label accuracy and other measures,
+    providing accuracy and per-label-value precision, recall and F1.
+    Note, this is not per-field accuracy.
+    @author Andrew McCallum */
 class LabeledDiscreteEvaluation[C](val domain: DiscreteDomain) {
   def this(labels:Iterable[LabeledDiscreteVar]) = { this(labels.head.domain); this ++= labels }
 

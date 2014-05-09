@@ -52,6 +52,15 @@ object NLP {
       //val phraseEntitytype = new CmdOption[String]("mention-entity-type", null, "URL", "Annotate noun mention with Ontonotes NER label") { override def invoke() = { if (value ne null) System.setProperty(classOf[MentionEntityTypeLabeler].getName, value); annotators += cc.factorie.app.nlp.coref.mention.MentionEntityTypeLabeler } }
     }
     opts.parse(args)
+    
+    if (!opts.values.exists(_.wasInvoked)) {
+       println("Usage: " + opts.usageString)
+       println("The tool will perform annotation for whatever tasks you specify, and the prereqs for these tasks. It will only print to stdout the the ones that you request, though.")
+       println("Note: if you have downloaded the models via mvn, you will not need to specify urls for the models")
+       println("Note: this tool requires nlp models being downloaded. To do this automatically, run \'mvn package -Pnlp-jar-with-dependencies\'")
+       sys.exit()
+     }
+    
     val map = new MutableDocumentAnnotatorMap ++= DocumentAnnotatorPipeline.defaultDocumentAnnotationMap
     for (annotator <- annotators) map += annotator
     val pipeline = DocumentAnnotatorPipeline(map=map.toMap, prereqs=Nil, annotators.flatMap(_.postAttrs))

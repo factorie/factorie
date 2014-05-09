@@ -21,7 +21,8 @@ import cc.factorie.util.FastLogging
 import cc.factorie.model.{WeightsMap, WeightsSet}
 
 /**
- * A backtracking line optimizer. Shouldn't be used directly.
+ * A backtracking line optimizer. 
+ * Shouldn't be used directly; used in ConjugateGradient and LBFGS.
  * @param gradient The gradient
  * @param line A line
  * @param initialStepSize The initial step size

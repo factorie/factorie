@@ -15,9 +15,13 @@
 package cc.factorie.variable
 
 
+/** A Domain whose values are the integers.
+    @author Andrew McCallum */
 trait IntegerDomain extends Domain {
   type Value = Int
 }
+/** A Domain whose values are the integers.
+    @author Andrew McCallum */
 object IntegerDomain extends IntegerDomain
 
 /** An abstract variable with one Int value.  
@@ -34,7 +38,8 @@ trait IntegerVar extends ScalarVar with VarWithDomain {
 }
 
 /** An abstract variable with one Int value, which can be modified.
-    This trait makes no commitment about how the value is stored. */
+    This trait makes no commitment about how the value is stored.
+    @author Andrew McCallum */
 trait MutableIntegerVar extends IntegerVar with MutableVar
 
 /** A concrete variable with a mutable Int value.

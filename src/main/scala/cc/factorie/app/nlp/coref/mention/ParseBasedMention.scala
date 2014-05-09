@@ -149,21 +149,11 @@ class ParseBasedMentionFinding(val useNER: Boolean) extends DocumentAnnotator {
 
 
   def process(doc: Document): Document = {
-
-    var docMentions = new ArrayBuffer[Mention]
-
-    //if NER has already been done, then convert the NER tags to NER spans
-    //Note that this doesn't change the postAttrs for the annotator, since it may not necessarily add spans
-    ??? // was: if(useNER) docMentions ++=  NerAndPronounMentionFinder.getNerMentions(doc)
-
-    // NAM = proper noun, NOM = common noun, PRO = pronoun
-    docMentions ++= personalPronounSpans(doc)           map(  m => {m.phrase.attr += new NounPhraseType(m.phrase,"PRO");m})
-    docMentions ++= nounPhraseSpans(doc, isCommonNoun)  map(  m => {m.phrase.attr += new NounPhraseType(m.phrase,"NOM");m})
-    docMentions ++= nounPhraseSpans(doc, isProperNoun)  map(  m => {m.phrase.attr += new NounPhraseType(m.phrase,"NAM");m})
-    docMentions ++= NNPSpans(doc)                       map(  m => {m.phrase.attr += new NounPhraseType(m.phrase,"NAM");m})
-    // Filter Mentions that have no MentionType and that are longer than 5 words -akm
-    //doc.attr += (new MentionList() ++= removeSmallerIfHeadWordEqual(doc, dedup(docMentions)).filter(mention => (mention.attr[MentionType] ne null) && mention.span.length < 6).toSeq)
-    doc.attr += (new MentionList(dedup(docMentions).filter(mention => mention.phrase.attr[NounPhraseType] ne null).toSeq))
+    // The mentions are all added to coref in the methods
+    personalPronounSpans(doc)
+    nounPhraseSpans(doc, isCommonNoun)
+    nounPhraseSpans(doc, isProperNoun)
+    NNPSpans(doc)
     doc
   }
 

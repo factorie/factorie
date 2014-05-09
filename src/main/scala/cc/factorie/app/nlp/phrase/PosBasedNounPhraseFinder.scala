@@ -17,7 +17,7 @@ object PosBasedNounPhraseFinder extends DocumentAnnotator {
       // Put a span around contiguous sequences of NN or PR part-of-speech prefixes
       val posPrefix = token.attr[pos.PennPosTag].categoryValue.take(2)
       if (posPrefix == "NN" || posPrefix == "PR" || (posPrefix == "JJ" && token.hasNext && token.next.attr[pos.PennPosTag].categoryValue.take(2) == "NN")) {
-        if (tempSpan eq null) tempSpan = new  Phrase(section, token.position, 1)
+        if (tempSpan eq null) tempSpan = new Phrase(section, token.position, 1,offsetToHeadToken = -1)
         else tempSpan.append(1)(null)
       } else if (tempSpan ne null) {
         if (token.string == "-" && token.hasNext && token.next.attr[pos.PennPosTag].categoryValue.take(2) == "NN") tempSpan.append(1)(null) // Handle dashed nouns

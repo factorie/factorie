@@ -9,13 +9,8 @@ import util.FastLogging
 import cc.factorie.model.WeightsSet
 
 /**
- * User: apassos
- * Date: 10/17/12
- * Time: 7:29 PM
- */
-
-/**
  * Learns the parameters of a Model by processing the gradients and values from a collection of Examples.
+ * @author Alexandre Passos
  */
 trait Trainer {
   /**
@@ -34,6 +29,7 @@ trait Trainer {
  *  and passing them to a GradientOptimizer (such as ConjugateGradient or LBFGS).
  * @param weightsSet The parameters to be optimized
  * @param optimizer The optimizer
+ * @author Alexandre Passos
  */
 class BatchTrainer(val weightsSet: WeightsSet, val optimizer: GradientOptimizer = new LBFGS with L2Regularization, val maxIterations: Int = -1) extends Trainer with FastLogging {
   var iteration = 0
@@ -62,6 +58,7 @@ class BatchTrainer(val weightsSet: WeightsSet, val optimizer: GradientOptimizer 
  * @param optimizer The optimizer
  * @param maxIterations The maximum number of iterations until reporting convergence
  * @param logEveryN After this many examples a log will be printed. If set to -1 10 logs will be printed.
+ * @author Alexandre Passos
  */
 class OnlineTrainer(val weightsSet: WeightsSet, val optimizer: GradientOptimizer = new AdaGrad, val maxIterations: Int = 3, var logEveryN: Int = -1) extends Trainer with util.FastLogging {
   var iteration = 0
@@ -96,7 +93,8 @@ class OnlineTrainer(val weightsSet: WeightsSet, val optimizer: GradientOptimizer
 
 /** Train using one trainer, until it has converged, and then use the second trainer instead.
     Typical use is to first train with an online stochastic gradient ascent such as OnlineTrainer and AdaGrad,
-    and then a batch trainer, like BatchTrainer and LBFGS. */
+    and then a batch trainer, like BatchTrainer and LBFGS.
+    @author Alexandre Passos */
 class TwoStageTrainer(firstTrainer: Trainer, secondTrainer: Trainer) {
   def processExamples(examples: Iterable[Example]) {
     if (!firstTrainer.isConverged)
@@ -107,10 +105,11 @@ class TwoStageTrainer(firstTrainer: Trainer, secondTrainer: Trainer) {
   def isConverged = firstTrainer.isConverged && secondTrainer.isConverged
 }
 
-// This parallel batch trainer keeps a single gradient in memory and locks accesses to it.
-// It is useful when computing the gradient in each example is more expensive than
-// adding this gradient to the accumulator.
-// If it performs slowly then minibatches should help, or the ThreadLocalBatchTrainer.
+/** This parallel batch trainer keeps a single gradient in memory and locks accesses to it.
+    It is useful when computing the gradient in each example is more expensive than
+    adding this gradient to the accumulator.
+    If it performs slowly then mini-batches should help, or the ThreadLocalBatchTrainer.
+    @author Alexandre Passos */
 class ParallelBatchTrainer(val weightsSet: WeightsSet, val optimizer: GradientOptimizer = new LBFGS with L2Regularization, val nThreads: Int = Runtime.getRuntime.availableProcessors(), val maxIterations: Int = -1)
   extends Trainer with FastLogging {
   var iteration = 0
@@ -130,9 +129,10 @@ class ParallelBatchTrainer(val weightsSet: WeightsSet, val optimizer: GradientOp
   def isConverged = (maxIterations != -1 && iteration >= maxIterations) || optimizer.isConverged
 }
 
-// This parallel batch trainer keeps a per-thread gradient to which examples add weights.
-// It is useful when there is a very large number of examples, processing each example is
-// fast, and the weights are not too big, as it has to keep one copy of the weights per thread.
+/** This parallel batch trainer keeps a per-thread gradient to which examples add weights.
+    It is useful when there is a very large number of examples, processing each example is
+    fast, and the weights are not too big, as it has to keep one copy of the weights per thread.
+    @author Alexandre Passos */
 class ThreadLocalBatchTrainer(val weightsSet: WeightsSet, val optimizer: GradientOptimizer = new LBFGS with L2Regularization, numThreads: Int = Runtime.getRuntime.availableProcessors()) extends Trainer with FastLogging {
   def processExamples(examples: Iterable[Example]): Unit = {
     if (isConverged) return
@@ -149,11 +149,12 @@ class ThreadLocalBatchTrainer(val weightsSet: WeightsSet, val optimizer: Gradien
   def isConverged = optimizer.isConverged
 }
 
-// This uses read-write locks on the tensors to ensure consistency while doing
-// parallel online training.
-// The guarantee is that while the examples read each tensor they will see a consistent
-// state, but this might not be the state the gradients will get applied to.
-// The optimizer, however, has no consistency guarantees across tensors.
+/** This uses read-write locks on the tensors to ensure consistency while doing
+    parallel online training.
+    The guarantee is that while the examples read each tensor they will see a consistent
+    state, but this might not be the state the gradients will get applied to.
+    The optimizer, however, has no consistency guarantees across tensors.
+    @author Alexandre Passos */
 class ParallelOnlineTrainer(weightsSet: WeightsSet, val optimizer: GradientOptimizer, val maxIterations: Int = 3, var logEveryN: Int = -1, val nThreads: Int = Runtime.getRuntime.availableProcessors())
  extends Trainer with FastLogging {
   var iteration = 0
@@ -267,11 +268,12 @@ class ParallelOnlineTrainer(weightsSet: WeightsSet, val optimizer: GradientOptim
   }
 }
 
-// This online trainer synchronizes only on the optimizer, so reads on the weights
-// can be done while they are being written to.
-// It provides orthogonal guarantees than the ParallelOnlineTrainer, as the examples can have
-// inconsistent reads from the same tensor but the optimizer will always
-// have a consistent view of all tensors.
+/** This online trainer synchronizes only on the optimizer, so reads on the weights
+    can be done while they are being written to.
+    It provides orthogonal guarantees than the ParallelOnlineTrainer, as the examples can have
+    inconsistent reads from the same tensor but the optimizer will always
+    have a consistent view of all tensors.
+    @author Alexandre Passos */
 class SynchronizedOptimizerOnlineTrainer(val weightsSet: WeightsSet, val optimizer: GradientOptimizer, val nThreads: Int = Runtime.getRuntime.availableProcessors(), val maxIterations: Int = 3, var logEveryN : Int = -1)
   extends Trainer with FastLogging {
   var examplesProcessed = 0
@@ -317,6 +319,7 @@ class SynchronizedOptimizerOnlineTrainer(val weightsSet: WeightsSet, val optimiz
  * @param maxIterations The maximum number of iterations
  * @param logEveryN How often to log.
  * @param locksForLogging Whether to lock around logging. Disabling this might make logging not work at all.
+ * @author Alexandre Passos
  */
 class HogwildTrainer(val weightsSet: WeightsSet, val optimizer: GradientOptimizer, val nThreads: Int = Runtime.getRuntime.availableProcessors(), val maxIterations: Int = 3, var logEveryN : Int = -1, val locksForLogging: Boolean = true)
   extends Trainer with FastLogging {
@@ -365,6 +368,8 @@ object TrainerHelpers {
     f"$examplesProcessed%20s examples at ${1000.0*logEveryN/accumulatedTime}%5.2f examples/sec. Average objective: ${accumulatedValue / logEveryN}%5.5f"
 }
 
+/** A collection of convenience methods for creating Trainers and running them with recommended default values. 
+    @author Alexandre Passos */
 object Trainer {
   /**
    * Convenient function for training. Creates a trainer, trains until convergence, and evaluates after every iteration.

@@ -4,9 +4,6 @@ import cc.factorie.app.nlp.pos.PennPosTag
 import cc.factorie.app.nlp.parse.ParseTree
 import cc.factorie.app.nlp.lemma.WordNetTokenLemma
 import cc.factorie.app.nlp.ner.{BilouOntonotesNerTag, BilouConllNerTag}
-import cc.factorie.util.coref.GenericEntityMap
-//import cc.factorie.app.nlp.coref.mention.{MentionEntityType}
-//import cc.factorie.app.nlp.coref.MentionType
 import cc.factorie.app.nlp.coref.{MentionList, Mention}
 import cc.factorie.app.nlp.phrase.{MentionPhraseNumberLabeler, PhraseNumber, PhraseGender, NounPhraseType, OntonotesPhraseEntityType, MentionPhraseGenderLabeler}
 

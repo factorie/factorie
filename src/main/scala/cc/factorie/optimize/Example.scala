@@ -9,16 +9,9 @@ import cc.factorie.variable._
 import cc.factorie.app.classify.backend.{OptimizablePredictor, Classifier}
 
 /**
- * Created by IntelliJ IDEA.
- * User: Alexandre Passos, Luke Vilnis
- * Date: 10/5/12
- * Time: 11:13 AM
- * To change this template use File | Settings | File Templates.
- */
-
-/**
  * Main abstraction over a training example. It can compute a value and a gradient,
  * which are accumulated into accumulators and then given to the optimizer.
+ * @author Alexandre Passos
  */
 trait Example {
   /**

@@ -16,13 +16,10 @@ package cc.factorie.variable
 
 import cc.factorie.la._
 
-//trait TensorDomain extends Domain[Tensor]
-//object TensorDomain extends TensorDomain
-
-/** An abstract variable whose value is a Tensor. */
-trait TensorVar extends /*VarWithDomain[Tensor] with*/ Var {
+/** An abstract variable whose value is a Tensor.
+    @author Andrew McCallum */
+trait TensorVar extends Var {
   type Value <: Tensor
-  //def domain: TensorDomain
   def value: Value
 }
 
@@ -31,6 +28,9 @@ trait TensorVar extends /*VarWithDomain[Tensor] with*/ Var {
 // trait TypedTensorVar[+A<:Tensor] extends TensorVar with VarAndValueType[TypedTensorVar[A],A]
 // trait TensorVar extends TypedTensorVar[Tensor]
 
+/** An abstract mutable variable whose value is a Tensor.
+    If desired, changes to the Tensor may be tracked through methods set, update, increment and zero.
+    @author Andrew McCallum */
 trait MutableTensorVar extends TensorVar with MutableVar {
   //def domain: TensorDomain //with Domain[A]
   private var _value: Value = null.asInstanceOf[Value]

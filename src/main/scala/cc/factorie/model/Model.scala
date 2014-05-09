@@ -29,9 +29,7 @@ import scala.reflect.ClassTag
     Variables do not know directly about the factors that touch them.
     This allows us to consider multiple different Models applied to the same data.
     @author Andrew McCallum
-    @since 0.11
  */
-
 trait Model {
   // TODO Consider adding "type FactorType <: Factor" here so that Template2.factors can return the right type. -akm
   
@@ -121,8 +119,8 @@ trait Model {
 }
 
 /** A Model that explicitly stores all factors, with an efficient map from variables to their neighboring factors.
+    A DirectedModel is a subclass of this.
     @author Andrew McCallum
-    @since 0.11
  */
 class ItemizedModel(initialFactors:Factor*) extends Model {
   def this(initialFactors:Iterable[Factor]) = { this(initialFactors.toSeq:_*) }
@@ -151,7 +149,6 @@ class ItemizedModel(initialFactors:Factor*) extends Model {
 
 /** A Model that concatenates the factors of multiple contained models.
     @author Andrew McCallum
-    @since 0.11
  */
 class CombinedModel(theSubModels:Model*) extends Model {
   val subModels = new ArrayBuffer[Model] ++= theSubModels
