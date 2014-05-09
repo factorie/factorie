@@ -2,98 +2,10 @@ package cc.factorie.app.nlp.coref
 
 import cc.factorie.app.nlp.phrase._
 import cc.factorie.app.nlp.wordnet.WordNet
-import cc.factorie.app.nlp.Token
 import cc.factorie.app.strings.Stopwords
 import scala.collection.mutable
 import cc.factorie.app.nlp.phrase.{Number, Gender}
 import cc.factorie.app.nlp.ner.OntonotesEntityTypeDomain
-
-//object CorefMention{
-//  def mentionToCorefMention(m: Mention): CorefMention = {
-//    val cm = new CorefMention(m, m.phrase.start, m.phrase.sentence.indexInSection)
-//    //cm.attr += new MentionEntityType(m, m.attr[MentionEntityType].categoryValue)
-//    cm
-//  }
-//
-//
-//  //todo: the default headTokenIndex here is a little funky. If you don't pass it anything, it sets it using the NN heuristic below.
-//  //todo: however, if the span truly has the root as its parse parent, we also use the NN heuristic. Is there something else we should be doing for this second case?
-//  def apply(span: TokenSpan, tokenNum: Int, sentenceNum: Int, mentionType: String = null, headTokenIndex: Int = -1) = {
-//    //here, we use the final noun as the head if it wasn't passed a headTokenIndex (from parsing)
-//    val headInd = {
-//      if(headTokenIndex > span.length){
-//        throw new IllegalStateException("the constructor expects headTokenIndex to be an offset from the beginning of the span, not the document")
-//      }
-//      if(headTokenIndex == -1){
-//        val idx = span.value.lastIndexWhere(_.posTag.categoryValue.startsWith("NN"))
-//        //assert(idx != -1, "failed to find a noun in the span") //todo: put this back in
-//        if(idx < 0)  span.length -1 else idx      //todo: this handles the case where it didn't find an NN anywhere. Should that be happening?
-//      }else
-//        headTokenIndex
-//    }
-//    val docMention = span.document.getCoref.addMention(new Phrase(span, headInd))
-//    docMention.phrase.attr += new NounPhraseType(docMention.phrase, mentionType)
-//    new CorefMention(docMention, tokenNum,  sentenceNum)
-//  }
-//
-//  val posTagsSet = Set("PRP", "PRP$", "WP", "WP$")
-//
-//  val properSet = Set("NNP", "NNPS")
-//
-//  val nounSet = Seq("NN", "NNS")
-//
-//  val posSet = Seq("POS")
-//}
-
-
-
-//// TODO Most of these linguistic feature methods should get moved to Phrase.
-//// If coref needs caching, they should be cached somewhere in coref code. -akm
-//class CorefMention(val mention: Mention, val tokenNum: Int, val sentenceNum: Int) extends cc.factorie.util.Attr {
-//  val _head =  mention.phrase.tokens(mention.phrase.headTokenOffset)  //here, the head token index is an offset into the span, not the document
-//  def headToken: Token = _head
-//  def parentEntity = mention.entity // TODO Get rid of this method, and just use "entity" method -akm
-//  def mType = headToken.posTag.categoryValue
-//  def span = mention.phrase
-//  //def entityType: String = mention.attr[MentionEntityType].categoryValue
-//  def entityType: String = mention.phrase.attr[OntonotesEntityType].categoryValue // TODO Should return just EntityType, not String. -akm
-//  def document = mention.phrase.document
-//
-//  val isPRO = CorefMention.posTagsSet.contains(mType)
-//  val isProper = CorefMention.properSet.contains(mention.phrase.headToken.posTag.categoryValue)
-//  val isNoun = CorefMention.nounSet.contains(mention.phrase.headToken.posTag.categoryValue)
-//  val isPossessive = CorefMention.posSet.contains(mention.phrase.headToken.posTag.categoryValue)
-//
-//  def isAppositionOf(m : CorefMention) : Boolean = {
-//    val isAppo = headToken.parseLabel.categoryValue == "appos"
-//    val isChildOf = headToken.parseParent == m.headToken
-//    isAppo && isChildOf
-//  }
-//
-//  var cache = new MentionCharacteristics(this)
-//  def clearCache() {
-//    cache = new MentionCharacteristics(this)
-//  }
-//
-//  def hasSpeakWord: Boolean = cache.hasSpeakWord
-//  def gender = cache.gender
-//  def number = cache.number
-//  def nonDeterminerWords: Seq[String] = cache.nonDeterminerWords
-//  def acronym: Set[String] = cache.acronym
-//  def nounWords: Set[String] = cache.nounWords
-//  def lowerCaseHead: String = cache.lowerCaseHead
-//  def initials: String = cache.initials
-//  def predictEntityType: String = cache.predictEntityType
-//  def headPhraseTrim: String = cache.headPhraseTrim
-//  def demonym: String = cache.demonym
-//  def capitalization: Char = cache.capitalization
-//  def wnLemma: String = cache.wnLemma
-//  def wnSynsets = cache.wnSynsets
-//  def wnHypernyms = cache.wnHypernyms
-//  def wnAntonyms = cache.wnAntonyms
-//
-//  def printInfo : String = Seq[String]("gender", gender,"number", number,"nondet",nonDeterminerWords.mkString(" "),"acronym",acronym.mkString(" "),"nounwords",nounWords.mkString(" "),"lowercasehead",lowerCaseHead,"initials",initials,"ent-type",predictEntityType,"head-phase-trim",headPhraseTrim,"capitalization",capitalization.toString,"wnlemma",wnLemma).mkString("\n")
-//}
 
 /** Various lazily-evaluated cached characteristics of a Mention, typically attached to a Mention as an attr. */
 class MentionCharacteristics(val mention: Mention) {
@@ -103,12 +15,6 @@ class MentionCharacteristics(val mention: Mention) {
   lazy val isProper = CorefFeatures.properSet.contains(mention.phrase.headToken.posTag.categoryValue)
   lazy val isNoun = CorefFeatures.nounSet.contains(mention.phrase.headToken.posTag.categoryValue)
   lazy val isPossessive = CorefFeatures.posSet.contains(mention.phrase.headToken.posTag.categoryValue)
-
-//  def isAppositionOf(m:Mention) : Boolean = {
-//    val isAppo = mention.phrase.headToken.parseLabel.categoryValue == "appos"
-//    val isChildOf = mention.phrase.headToken.parseParent == m.phrase.headToken
-//    isAppo && isChildOf
-//  }
 
   lazy val hasSpeakWord = mention.phrase.exists(s => lexicon.iesl.Say.contains(s.string))
   lazy val wnLemma = WordNet.lemma(mention.phrase.headToken.string, "n")
@@ -124,7 +30,6 @@ class MentionCharacteristics(val mention: Mention) {
     mention.phrase.tokens.filterNot(_.posTag.categoryValue == "DT").map(t => t.string.toLowerCase)
   lazy val initials: String =
       mention.phrase.tokens.map(_.string).filterNot(lexicon.iesl.OrgSuffix.contains).filter(t => t(0).isUpper).map(_(0)).mkString("")
-  //lazy val predictEntityType: String = m.mention.attr[MentionEntityType].categoryValue
   lazy val predictEntityType: Int = mention.phrase.attr[OntonotesPhraseEntityType].intValue // TODO Why not just name this "entityTypeCategory"? And we should use the intValue instead anyway! -akm?
   lazy val demonym: String = lexicon.iesl.DemonymMap.getOrElse(headPhraseTrim, "")
 

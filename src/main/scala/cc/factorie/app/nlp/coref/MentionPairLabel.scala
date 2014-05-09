@@ -243,7 +243,7 @@ class MentionPairFeatures(val model: CorefModel, val mention1:Mention, val menti
       if(m1.lowerCaseHead == m2.lowerCaseHead) features += "Head_Match"
       else features += "No_Head_Match"
       features += "curr-type" + m1.predictEntityType + "link-type" + m2.predictEntityType
-
+      features += "gmc1" + m1.genderIndex + "gmc2"+m2.genderIndex
     }
   }
 
@@ -267,7 +267,7 @@ class MentionPairFeatures(val model: CorefModel, val mention1:Mention, val menti
 
 class MentionPairLabel(val model: PairwiseCorefModel, val mention1:Mention, val mention2:Mention, mentions: Seq[Mention], val initialValue: Boolean, options: CorefOptions) extends LabeledCategoricalVariable(if (initialValue) "YES" else "NO")  {
   def domain = model.MentionPairLabelDomain
-  def genFeatures:MentionPairFeatures = new MentionPairFeatures(model, mention1, mention2, mentions, options)
+  def genFeatures():MentionPairFeatures = new MentionPairFeatures(model, mention1, mention2, mentions, options)
 }
 
 
@@ -289,48 +289,34 @@ object LexicalCounter {
   }
 
   def countLexicalItems(mentionList:Seq[Mention],trainDocs:Seq[Document], cutoff: Int):LexicalCounter = {
-    val nonPronouns = mentionList.filter(!_.attr[MentionCharacteristics].isPRO)
-    // HEAD WORDS
+    val nonPronouns = mentionList.filter(!_.phrase.isPronoun)
     val allHeadWordsInTrain = nonPronouns.map(_.attr[MentionCharacteristics].lowerCaseHead)
     val headWordCounts = countAndPrune(allHeadWordsInTrain, cutoff)
-    // FIRST WORDS
     val allFirstWordsInTrain = nonPronouns.flatMap(mention => {
       val words = mention.phrase.tokens
       if (words.size > 1) Seq[String](words(0).string.toLowerCase) else Seq[String]()
     })
     val firstWordCounts = countAndPrune(allFirstWordsInTrain, cutoff)
-    // LAST WORDS
     val allLastWordsInTrain = nonPronouns.flatMap(mention => {
       val words = mention.phrase.tokens
       if (words.size > 1 && mention.phrase.last.position - 1 != mention.phrase.start) Seq[String](words(words.size - 1).string.toLowerCase) else Seq[String]()
     })
     val lastWordCounts = countAndPrune(allLastWordsInTrain, cutoff)
-    // PENULTIMATE WORDS
     val allPenultimateWordsInTrain = nonPronouns.flatMap(mention => {
       val words = mention.phrase.tokens
       if (words.size > 2) Seq[String](words(words.size - 2).string.toLowerCase) else Seq[String]()
     })
-    val penultimateWordCounts = countAndPrune(allPenultimateWordsInTrain, cutoff)
-    // SECOND WORDS
     val allSecondWordsInTrain = nonPronouns.flatMap(mention => {
       val words = mention.phrase.tokens
       if (words.size > 3) Seq[String](words(1).string.toLowerCase) else Seq[String]()
     })
-    val secondWordCounts = countAndPrune(allSecondWordsInTrain, cutoff)
-    // PRECEDING WORDS
     val allPrecedingWordsInTrain = mentionList.map(m => getTokenAtOffset(m.phrase.tokens(0),-1).toLowerCase)
     val precedingWordCounts = countAndPrune(allPrecedingWordsInTrain, cutoff)
-    // FOLLOWING WORDS
     val allFollowingWordsInTrain = mentionList.map(mention => getTokenAtOffset(mention.phrase.last,+1).toLowerCase)
     val followingWordCounts = countAndPrune(allFollowingWordsInTrain, cutoff)
-    // PRECEDING BY 2 WORDS
     val allPrecedingBy2WordsInTrain = mentionList.map(m=> getTokenAtOffset(m.phrase.tokens(0),-2).toLowerCase)
-    val precedingBy2WordCounts = countAndPrune(allPrecedingBy2WordsInTrain, cutoff)
-    // FOLLOWING BY 2 WORDS
     val allFollowingBy2WordsInTrain = mentionList.map(mention => getTokenAtOffset(mention.phrase.last,+1).toLowerCase)
-    val followingBy2WordCounts = countAndPrune(allFollowingBy2WordsInTrain, cutoff)
 
-    // PREFIXES AND SUFFIXES
     val allPrefixCounts = new DefaultHashMap[String,Int](0)
     val allSuffixCounts = new DefaultHashMap[String,Int](0)
     val allShapeCounts = new DefaultHashMap[String,Int](0)
@@ -357,7 +343,7 @@ object LexicalCounter {
     prune(allSuffixCounts,cutoff)
     prune(allShapeCounts,cutoff)
     prune(allClassCounts,cutoff)
-    new LexicalCounter(headWordCounts, firstWordCounts, lastWordCounts, /*penultimateWordCounts, secondWordCounts*/ precedingWordCounts, followingWordCounts, /*precedingBy2WordCounts, followingBy2WordCounts,  allPrefixCounts, allSuffixCounts, */allShapeCounts,allClassCounts)
+    new LexicalCounter(headWordCounts, firstWordCounts, lastWordCounts, precedingWordCounts, followingWordCounts, allShapeCounts,allClassCounts)
   }
   private def countAndPrune(words: Seq[String], cutoff: Int): DefaultHashMap[String,Int] = {
     val counts = new DefaultHashMap[String,Int](0)
@@ -435,15 +421,8 @@ object LexicalCounter {
 class LexicalCounter(val headWordCounts: DefaultHashMap[String,Int],
                      val firstWordCounts: DefaultHashMap[String,Int] = null,
                      val lastWordCounts: DefaultHashMap[String,Int] = null,
-                     //val penultimateWordCounts: DefaultHashMap[String,Int],
-                     //val secondWordCounts: DefaultHashMap[String,Int],
                      val precedingWordCounts: DefaultHashMap[String,Int] = null,
                      val followingWordCounts: DefaultHashMap[String,Int] = null,
-                     //val precedingBy2WordCounts: DefaultHashMap[String,Int],
-                     //val followingBy2WordCounts: DefaultHashMap[String,Int],
-                     //val commonGovernorWordCounts: DefaultHashMap[String,Int],
-                     //val prefixCounts: DefaultHashMap[String,Int],
-                     //val suffixCounts: DefaultHashMap[String,Int],
                      val shapeCounts: DefaultHashMap[String,Int] = null,
                      val classCounts: DefaultHashMap[String,Int] = null
                       ) extends Serializable {

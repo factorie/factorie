@@ -28,7 +28,7 @@ class CorefOptions {
   var maxMentDist = 1000
 
   var mergeMentionWithApposition = false
-  var useMIRA = true
+  var useAdaGradRDA = true
   var useAverageIterate = false
   var numTrainingIterations = 5
   var trainPortionForTest = 0.1
@@ -61,6 +61,7 @@ class CorefOptions {
   var numPositivePairsTrain = 75 // number of positive pairs to create before stopping examining further back
   var pruneNegTest = false // setting to true means only one positive pair is created for each mention, compatible with uiuc implementation
   var numPositivePairsTest = 100
+  var l1 = .0001
 
   var mentionAlignmentShiftWidth = 0
   var useNERMentions = false

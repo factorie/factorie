@@ -69,7 +69,7 @@ class CorefConllOutput {
     print(name+" micro "+microMUC.toString("MUC") + "\n")
     print(name+" micro "+microCE.toString("C-E") + "\n")
     print(name+" micro "+microCM.toString("C-M") + "\n")
-    print("Average: "+(microB3.f1+microMUC.f1+microCE.f1)/3.0)
+    println("Average: "+(microB3.f1+microMUC.f1+microCE.f1)/3.0)
   }
 }
 

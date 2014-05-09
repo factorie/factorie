@@ -17,6 +17,38 @@ import cc.factorie.app.nlp.pos.PennPosTag
  * Updated: Cellier April 2014
  */
 
+
+/**Forward Coreference on Proper Noun, Pronoun and Common Noun Mentions*/
+class ParseForwardCoref extends ForwardCoref {
+  override def prereqAttrs: Seq[Class[_]] = ParseAndNerBasedPhraseFinder.prereqAttrs.toSeq
+  deserialize(new DataInputStream(ClasspathURL[ForwardCoref](".factorie").openConnection().getInputStream))
+  override def annotateMentions(document:Document): Unit = {
+    ParseAndNerBasedPhraseFinder.getPhrases(document).foreach(document.coref.addMention)
+    NounPhraseEntityTypeLabeler.process(document)
+    NounPhraseGenderLabeler.process(document)
+    NounPhraseNumberLabeler.process(document)
+  }
+}
+
+object ParseForwardCoref extends ParseForwardCoref {
+  deserialize(new DataInputStream(ClasspathURL[ParseForwardCoref](".factorie").openConnection().getInputStream))
+}
+
+/** Forward Coreference on Ner and Pronoun Mentions*/
+class NerForwardCoref extends ForwardCoref {
+  override def prereqAttrs: Seq[Class[_]] = (ConllProperNounPhraseFinder.prereqAttrs ++ AcronymNounPhraseFinder.prereqAttrs++PronounFinder.prereqAttrs ++ NnpPosNounPhraseFinder.prereqAttrs).distinct
+  override def annotateMentions(doc:Document): Unit = {
+    (ConllProperNounPhraseFinder(doc) ++ PronounFinder(doc) ++ NnpPosNounPhraseFinder(doc)++ AcronymNounPhraseFinder(doc)).distinct.foreach(phrase => doc.getCoref.addMention(phrase))
+    NounPhraseEntityTypeLabeler.process(doc)
+    NounPhraseGenderLabeler.process(doc)
+    NounPhraseNumberLabeler.process(doc)
+  }
+}
+
+object NerForwardCoref extends NerForwardCoref {
+  deserialize(new DataInputStream(ClasspathURL[NerForwardCoref](".factorie").openConnection().getInputStream))
+}
+
 abstract class ForwardCorefBase extends CorefSystem[Seq[MentionPairLabel]] {
   val options = new CorefOptions
   val model:PairwiseCorefModel
@@ -30,7 +62,7 @@ abstract class ForwardCorefBase extends CorefSystem[Seq[MentionPairLabel]] {
   /**Store head words which are seen over a default 20 times in the model
    * @param trainDocs Documents to generate counts from*/
   def preprocessCorpus(trainDocs:Seq[Document]) = {
-    val nonPronouns = trainDocs.flatMap(_.coref.mentions.filterNot(m => m.phrase.isPronoun))
+    val nonPronouns = trainDocs.flatMap(_.targetCoref.mentions.filterNot(m => m.phrase.isPronoun))
     model.CorefTokenFrequencies.lexicalCounter = new LexicalCounter(LexicalCounter.countWordTypes(nonPronouns.map(_.attr[MentionCharacteristics]),(t) => t.lowerCaseHead))
   }
 
@@ -77,9 +109,11 @@ abstract class ForwardCorefBase extends CorefSystem[Seq[MentionPairLabel]] {
   protected def generateFeatures(labels:Seq[MentionPairLabel]): Seq[MentionPairLabelFeatures] = {
     val previousLabels = new ArrayBuffer[MentionPairLabelFeatures]()
     labels.foreach{ label =>
-      val candidateLabelFeatures = label.genFeatures
-      val matchingPreviousLabelsFeatures = previousLabels.filter(l => l.label.mention2.entity == candidateLabelFeatures.mention2.entity).map(_.features)
-      mergeFeatures(candidateLabelFeatures, matchingPreviousLabelsFeatures)
+        val candidateLabelFeatures = label.genFeatures()
+        if(options.mergeFeaturesAtAll){
+        val matchingPreviousLabelsFeatures = previousLabels.filter(l => l.label.mention2.entity != null && label.mention2.entity != null && l.label.mention2.entity == label.mention2.entity)
+        mergeFeatures(candidateLabelFeatures, matchingPreviousLabelsFeatures.map(_.features))
+      }
       previousLabels += new MentionPairLabelFeatures(label,candidateLabelFeatures)
     }
     previousLabels
@@ -187,37 +221,7 @@ class ForwardCoref extends ForwardCorefBase {
 class ForwardCorefImplicitConjunctions extends ForwardCorefBase {
   val model = new ImplicitCrossProductCorefModel
 }
-/**Forward Coreference on Proper Noun, Pronoun and Common Noun Mentions*/
-class ParseForwardCoref extends ForwardCoref {
-  override def prereqAttrs: Seq[Class[_]] = ParseAndNerBasedPhraseFinder.prereqAttrs.toSeq
-  deserialize(new DataInputStream(ClasspathURL[ForwardCoref](".factorie").openConnection().getInputStream))
-  override def annotateMentions(document:Document): Unit = {
-    ParseAndNerBasedPhraseFinder.getPhrases(document).foreach(document.coref.addMention)
-    NounPhraseEntityTypeLabeler.process(document)
-    NounPhraseGenderLabeler.process(document)
-    NounPhraseNumberLabeler.process(document)
-  }
-}
 
-object ParseForwardCoref extends ParseForwardCoref {
-  ForwardCorefTrainer.evaluateParameters(Array[String]())
-  deserialize(new DataInputStream(ClasspathURL[ParseForwardCoref](".factorie").openConnection().getInputStream))
-}
-
-/** Forward Coreference on Ner and Pronoun Mentions*/
-class NerForwardCoref extends ForwardCoref {
-  override def prereqAttrs: Seq[Class[_]] = (ConllProperNounPhraseFinder.prereqAttrs ++ AcronymNounPhraseFinder.prereqAttrs++PronounFinder.prereqAttrs ++ NnpPosNounPhraseFinder.prereqAttrs).distinct
-  override def annotateMentions(doc:Document): Unit = {
-    (ConllProperNounPhraseFinder(doc) ++ PronounFinder(doc) ++ NnpPosNounPhraseFinder(doc)++ AcronymNounPhraseFinder(doc)).distinct.foreach(phrase => doc.getCoref.addMention(phrase))
-    NounPhraseEntityTypeLabeler.process(doc)
-    NounPhraseGenderLabeler.process(doc)
-    NounPhraseNumberLabeler.process(doc)
-  }
-}
-
-object NerForwardCoref extends NerForwardCoref {
-  deserialize(new DataInputStream(ClasspathURL[NerForwardCoref](".factorie").openConnection().getInputStream))
-}
 
 /**Base class for any coreference system
  * @tparam CoreferenceStructure The type used as a training instance, ex. MentionPairLabel or MentionGraph,
@@ -282,9 +286,7 @@ abstract class CorefSystem[CoreferenceStructure] extends DocumentAnnotator with 
   }
 
   def train(trainDocs: Seq[Document], testDocs: Seq[Document], wn: WordNet, rng: scala.util.Random, saveModelBetweenEpochs: Boolean,saveFrequency: Int,filename: String, learningRate: Double = 1.0): Double =  {
-    val optimizer = if (options.useAverageIterate) new AdaGrad(learningRate) with ParameterAveraging else if (options.useMIRA) new AdaMira(learningRate) with ParameterAveraging else new AdaGrad(rate = learningRate)
-    for(doc <- trainDocs; mention <- doc.coref.mentions) mention.attr += new MentionCharacteristics(mention)
-    for(doc <- testDocs; mention <- doc.coref.mentions) mention.attr += new MentionCharacteristics(mention)
+    val optimizer = if (options.useAverageIterate) new AdaGrad(learningRate) with ParameterAveraging else if (options.useAdaGradRDA) new AdaGradRDA(rate = learningRate,l1 = options.l1) else new AdaGrad(rate = learningRate)
     for(doc <- trainDocs; mention <- doc.targetCoref.mentions) mention.attr += new MentionCharacteristics(mention)
     preprocessCorpus(trainDocs)
     |**("Training Structure Generated")
@@ -304,18 +306,18 @@ abstract class CorefSystem[CoreferenceStructure] extends DocumentAnnotator with 
           else trainer.runSequential(batch)
         }
         if (!model.MentionPairFeaturesDomain.dimensionDomain.frozen) model.MentionPairFeaturesDomain.dimensionDomain.freeze()
-        optimizer match {case o: ParameterAveraging => o.setWeightsToAverage(model.parameters) }
-        //println("Train docs")
-        //doTest(trainDocs.take((trainDocs.length*options.trainPortionForTest).toInt), wn, "Train")
+        if (!options.useAdaGradRDA&& options.useAverageIterate) optimizer match {case o: ParameterAveraging => o.setWeightsToAverage(model.parameters) }
+        println("Train docs")
+        doTest(trainDocs.take((trainDocs.length*options.trainPortionForTest).toInt), wn, "Train")
         println("Test docs")
         |**("Running Test")
         accuracy = doTest(testDocs, wn, "Test")
         **|("End Test")
         if(saveModelBetweenEpochs && iter % saveFrequency == 0)
           serialize(filename + "-" + iter)
-        optimizer match {case o: ParameterAveraging => o.unSetWeightsToAverage(model.parameters) }
+        if (!options.useAdaGradRDA && options.useAverageIterate) optimizer match {case o: ParameterAveraging => o.unSetWeightsToAverage(model.parameters) }
       }
-      optimizer match {case o: ParameterAveraging => o.setWeightsToAverage(model.parameters) }
+      if (!options.useAdaGradRDA&& options.useAverageIterate) optimizer match {case o: ParameterAveraging => o.setWeightsToAverage(model.parameters) }
       accuracy
     } finally {
       pool.shutdown()

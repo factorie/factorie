@@ -21,11 +21,10 @@ trait ForwardCorefTrainerOpts extends CorefTrainerOpts{
   val numThreads = new CmdOption("num-threads", 4, "INT", "Number of threads to use")
   val featureComputationsPerThread = new CmdOption("feature-computations-per-thread", 2, "INT", "Number of feature computations per thread to run in parallel during training")
   val numTrainingIterations = new CmdOption("num-training-iterations", 1, "INT", "Number of passes through the training data")
-  val useAverageIterate = new CmdOption("use-average-iterate", true, "BOOLEAN", "Use the average iterate instead of the last iterate?")
   val useMIRA = new CmdOption("use-mira", false, "BOOLEAN", "Whether to use MIRA as an optimizer")
   val saveFrequency = new CmdOption("save-frequency", 1, "INT", "how often to save the model between epochs")
   val trainPortionForTest = new CmdOption("train-portion-for-test", 0.1, "DOUBLE", "When testing on train, what portion to use.")
-  val mergeFeaturesAtAll = new CmdOption("merge-features-at-all", true, "BOOLEAN", "Whether to merge features")
+  val mergeFeaturesAtAll = new CmdOption("merge-features-at-all", false, "BOOLEAN", "Whether to merge features")
   val conjunctionStyle = new CmdOption("conjunction-style", "NONE", "NONE|HASH|SLOW", "What types of conjunction features to use - options are NONE, HASH, and SLOW (use slow string-based conjunctions).")
   val entityLR = new CmdOption("entity-left-right",false,"BOOLEAN","whether to do entity-based pruning in lr search")
   val slackRescale = new CmdOption("slack-rescale",2.0,"FLOAT","recall bias for hinge loss")
@@ -35,6 +34,10 @@ trait ForwardCorefTrainerOpts extends CorefTrainerOpts{
   val trainSeparatePronounWeights = new CmdOption("separate-pronoun-weights",false,"BOOLEAN","train a separate weight vector for pronoun-pronoun comparison")
   val numCompareToTheLeft = new CmdOption("num-compare-to-the-left",75,"INT","number of mentions to compare to the left before backing off to only looking at non-pronouns and those in entities (only used if entityLR == true)")
   val learningRate = new CmdOption("learning-rate",1.0,"FLOAT","learning rate")
+  val serialize = new CmdOption("serialize", "ForwardCoref.factorie", "FILE", "Filename in which to serialize classifier.")
+  val deserialize = new CmdOption("deserialize", "", "FILE", "Filename from which to deserialize classifier.")
+  val useAverageIterate = new CmdOption("use-average-iterate", true, "BOOLEAN", "Use the average iterate instead of the last iterate?")
+
 }
 
 object ForwardCorefTrainer extends CorefTrainer{
@@ -118,7 +121,11 @@ object StructuredCorefTrainer extends CorefTrainer{
     val numTrainingIterations = new CmdOption("num-training-iterations", 20, "INT", "Number of iterations to use for training")
     val saveFrequency = new CmdOption("save-frequency", 4, "INT", "how often to save the model between epochs")
     val learningRate = new CmdOption("learning-rate",1.0,"FLOAT","learning rate")
-    val featureSet = new CmdOption("feature-set","LEXICAL","LEXICAL|CONVENTIONAL","u")
+    val featureSet = new CmdOption("feature-set","lexical","LEXICAL|CONVENTIONAL","Feature set to use for this model")
+    val l1 = new CmdOption("l1", .0001, "INT", "l1 regularizer for adaGradRDA")
+    val useAverageIterate = new CmdOption("use-average-iterate", true, "BOOLEAN", "Use the average iterate instead of the last iterate?")
+    val serialize = new CmdOption("serialize", "StructuredCoref.factorie","FILE","Filename in which to serialize classifier.")
+    val deserialize = new CmdOption("deserialize", "", "FILE", "Filename from which to deserialize classifier.")
   }
   val opts = ProbCorefTrainerOpts
   def evaluateParameters(args:Array[String]):Double = {
@@ -130,6 +137,9 @@ object StructuredCorefTrainer extends CorefTrainer{
     val options = coreferenceSystem.options
     options.featureSet="lexical"
     options.learningRate = opts.learningRate.value
+    options.l1 = opts.l1.value
+    options.useAverageIterate = opts.useAverageIterate.value
+    options.useAdaGradRDA = false
     options.numTrainingIterations = opts.numTrainingIterations.value
     options.useGoldBoundaries = opts.useGoldBoundaries.value
     options.useNERMentions = opts.useNerMentions.value
@@ -173,8 +183,6 @@ trait CorefTrainerOpts extends cc.factorie.util.DefaultCmdOptions with cc.factor
   val useGoldBoundaries = new CmdOption("use-gold-boundaries",false,"BOOLEAN","whether to use gold parse boundaries + gold mention boundaries")
   val mentionAlignmentShiftWidth = new CmdOption("alignment-width",0,"INT","tolerance on boundaries when aligning detected mentions to gt mentions")
   val portion = new CmdOption("portion", 1.0, "DOUBLE", "Portion of corpus to load.")
-  val serialize = new CmdOption("serialize", "ParseForwardCoref.factorie", "FILE", "Filename in which to serialize classifier.")
-  val deserialize = new CmdOption("deserialize", "N/A", "FILE", "Filename from which to deserialize classifier.")
   val useNerMentions = new CmdOption("use-ner-mentions", false, "BOOLEAN", "Whether to use NER mentions instead of noun phrase mentions")
   val randomSeed = new CmdOption("random-seed", 0, "INT", "Seed for the random number generator")
   val writeConllFormat = new CmdOption("write-conll-format", true, "BOOLEAN", "Write CoNLL format data.")
@@ -187,7 +195,7 @@ abstract class CorefTrainer extends HyperparameterMain with Trackable{
 
   def addGenderNumberLabeling(trainDocs:Seq[Document], testDocs:Seq[Document]){
     |**("Adding Training Gender Labels")
-    if(trainDocs ne null)
+    if(trainDocs ne null){
       for (doc <- trainDocs; mention <- doc.targetCoref.mentions) {
         NounPhraseGenderLabeler.process(mention.phrase)
         NounPhraseNumberLabeler.process(mention.phrase)
@@ -199,13 +207,13 @@ abstract class CorefTrainer extends HyperparameterMain with Trackable{
       NounPhraseNumberLabeler.process(mention.phrase)
       DeterministicNounPhraseTypeLabeler.process(mention.phrase)
     }
-    **|
-
+    }
     for (doc <- testDocs; mention <- doc.coref.mentions) {
       NounPhraseGenderLabeler.process(mention.phrase)
       NounPhraseNumberLabeler.process(mention.phrase)
       DeterministicNounPhraseTypeLabeler.process(mention.phrase)
     }
+    **|
   }
 
   def makeTrainTestDataGoldBoundaries(trainFile: String, testFile: String, loadTrain: Boolean): (Seq[Document],Seq[Document]) = {
@@ -268,4 +276,49 @@ abstract class CorefTrainer extends HyperparameterMain with Trackable{
     conllFormatNonFilt.close()
   }
 
+}
+
+object StructuredCorefOptimizer{
+  def main(args: Array[String]) {
+    val opts = StructuredCorefTrainer.ProbCorefTrainerOpts
+    opts.parse(args)
+    opts.serialize.setValue("")
+    val l1 = cc.factorie.util.HyperParameter(opts.l1, new cc.factorie.util.SampleFromSeq(List(0.000005,0.00005,0.0005,.0001,.00001)))
+    val rate = cc.factorie.util.HyperParameter(opts.learningRate, new cc.factorie.util.SampleFromSeq(List(0.1,0.5,0.8,1,1.2)))
+
+    val qs = new cc.factorie.util.QSubExecutor(40, "cc.factorie.app.nlp.coref.StructuredCorefTrainer")
+    val optimizer = new cc.factorie.util.HyperParameterSearcher(opts, Seq(l1, rate), qs.execute, 40, 18, 60)
+    val result = optimizer.optimize()
+    println("Got results: " + result.mkString(" "))
+    println("Best l1: " + opts.l1.value + " best lr: " + opts.learningRate.value)
+    println("Running best configuration...")
+    opts.serialize.setValue("StructuredCoref.factorie")
+    import scala.concurrent.duration._
+    import scala.concurrent.Await
+    Await.result(qs.execute(opts.values.flatMap(_.unParse).toArray), 6.hours)
+    println("Done")
+  }
+}
+
+object ForwardCorefOptimizer{
+  def main(args: Array[String]) {
+    val opts = ForwardCorefTrainer.opts
+    opts.parse(args)
+    opts.serialize.setValue("")
+
+    val l1 = cc.factorie.util.HyperParameter(opts.numTrainingIterations, new cc.factorie.util.SampleFromSeq(List(1,2,3,4,5)))
+    val rate = cc.factorie.util.HyperParameter(opts.learningRate, new cc.factorie.util.SampleFromSeq(List(0.1,0.5,0.8,1,1.2,1.5)))
+
+    val qs = new cc.factorie.util.QSubExecutor(40, "cc.factorie.app.nlp.coref.ForwardCorefTrainer")
+    val optimizer = new cc.factorie.util.HyperParameterSearcher(opts, Seq(l1, rate), qs.execute, 40, 22, 60)
+    val result = optimizer.optimize()
+    println("Got results: " + result.mkString(" "))
+    println("Best rate: " + opts.learningRate.value + " best l1: " + opts.numTrainingIterations.value)
+    opts.serialize.setValue("ForwardCoref.factorie")
+    println("Running best configuration...")
+    import scala.concurrent.duration._
+    import scala.concurrent.Await
+    Await.result(qs.execute(opts.values.flatMap(_.unParse).toArray), 6.hours)
+    println("Done")
+  }
 }

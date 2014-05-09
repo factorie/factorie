@@ -7,13 +7,14 @@ import cc.factorie.variable.LabeledCategoricalVariable
 import cc.factorie.app.nlp.{Sentence, Token, Document}
 import cc.factorie.app.nlp.pos.PennPosTag
 import cc.factorie.app.nlp.phrase.ParseAndNerBasedPhraseFinder
+import java.io.DataInputStream
+import cc.factorie.util.ClasspathURL
 
+object NERAndPronounStructuredCoreference extends NERAndPronounStructuredCoreference{
+  deserialize(new DataInputStream(ClasspathURL[NERAndPronounStructuredCoreference](".factorie").openConnection().getInputStream))
+}
 
-/**
-*
-*/
-//NamedEntity Mention Finding
-class NamedEntityStructuredCoreference extends StructuredCoref{
+class NERAndPronounStructuredCoreference extends StructuredCoref{
   override def prereqAttrs: Seq[Class[_]] = (ConllProperNounPhraseFinder.prereqAttrs ++ AcronymNounPhraseFinder.prereqAttrs++PronounFinder.prereqAttrs ++ NnpPosNounPhraseFinder.prereqAttrs).distinct
   override def annotateMentions(doc:Document): Unit = {
     (ConllProperNounPhraseFinder(doc) ++ PronounFinder(doc) ++ NnpPosNounPhraseFinder(doc)++ AcronymNounPhraseFinder(doc)).distinct.foreach(phrase => doc.getCoref.addMention(phrase))
@@ -22,6 +23,11 @@ class NamedEntityStructuredCoreference extends StructuredCoref{
     NounPhraseNumberLabeler.process(doc)
   }
 }
+
+object ParseStructuredCoreference extends ParseStructuredCoreference{
+  deserialize(new DataInputStream(ClasspathURL[ParseStructuredCoreference](".factorie").openConnection().getInputStream))
+}
+
 //Uses Parse Based Mention Finding, best for data with nested mentions in the ontonotes annotation style
 class ParseStructuredCoreference extends StructuredCoref{
   override def prereqAttrs: Seq[Class[_]] = ParseAndNerBasedPhraseFinder.prereqAttrs.toSeq
@@ -45,11 +51,9 @@ class StructuredCoref extends CorefSystem[MentionGraph]{
   }
 
   def instantiateModel(optimizer:GradientOptimizer,pool:ExecutorService) = new SoftMaxParallelTrainer(optimizer,pool)
-  def preprocessCorpus(trainDocs:Seq[Document]) = model.CorefTokenFrequencies.lexicalCounter = LexicalCounter.countLexicalItems(trainDocs.flatMap{_.coref.mentions},trainDocs,20)
-  def getCorefStructure(coref:WithinDocCoref) = {
-    println("document processed: "+coref.document.name)
-    new MentionGraph(model,coref,options,train=true)
-  }
+  def preprocessCorpus(trainDocs:Seq[Document]) = model.CorefTokenFrequencies.lexicalCounter = LexicalCounter.countLexicalItems(trainDocs.flatMap{_.targetCoref.mentions},trainDocs,20)
+  def getCorefStructure(coref:WithinDocCoref) = new MentionGraph(model,coref,options,train=true)
+
 
   def getPredCorefClusters(graph:MentionGraph): WithinDocCoref = {
     //If we add the best mention within a range, then it will have it's own matches and we can have a chain works well.
@@ -59,7 +63,7 @@ class StructuredCoref extends CorefSystem[MentionGraph]{
       if(bestMatch!=graph.orderedMentionList(edgeIdx)){
         if(bestMatch.entity ne null) bestMatch.entity += graph.orderedMentionList(edgeIdx)
         else {val entity = graph.coref.newEntity(); entity += graph.orderedMentionList(edgeIdx); entity += bestMatch }
-      }//else entity is a singleton so do not add it to the entities   //Todo:Add it as a singleton cluster again
+      }
     }
     graph.coref
   }
@@ -96,6 +100,7 @@ class MentionGraph(model:CorefModel,val coref: WithinDocCoref,options:CorefOptio
           var initialValue = false
           if(train){
             initialValue = if(currentMention == anteMention){
+              //This is ugly but it's a side effect of having singleton clusters during training
               currentMention.entity == null || (currentMention.entity != null && currentMention == currentMention.entity.children.head)
             } else currentMention.entity != null && anteMention.entity != null && currentMention.entity == anteMention.entity
           }
@@ -128,8 +133,6 @@ class MentionGraph(model:CorefModel,val coref: WithinDocCoref,options:CorefOptio
     }
     if(antecedentMention != currentMention && antecedentMention.phrase.tokens.exists(t=> currentMention.phrase.tokens.contains(t))) skip = true
     skip
-
-    //Add Constraints
   }
 
   def getLossScore(currMention:Mention, antMention:Mention):Double = {
@@ -149,5 +152,4 @@ class MentionGraph(model:CorefModel,val coref: WithinDocCoref,options:CorefOptio
   val falseLinkScore = -0.1
   val falseNewScore = -3.0
   val wrongLinkScore = -1.0
-
 }

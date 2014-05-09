@@ -136,7 +136,6 @@ object LoadConll2011 {
         tokenId += 1
         if (tokId == 0) sentenceId += 1
 
-
         val entityTypeTokens = tokenizeEntityType(fields(10)).filterNot(_.isEmpty)
         entityTypeTokens match {
           case Array("(",entityTypeString:String,")") => _spanToEntityType.put(new TokenSpan(currSent.section,docTokInd,1).value,entityTypeString)   //todo:Don't forget to change this to new span

@@ -14,10 +14,9 @@
 
 package cc.factorie.app.nlp.phrase
 
-import cc.factorie._
 import cc.factorie.app.nlp._
 import cc.factorie.util.Attr
-import cc.factorie.variable.{CategoricalVariable, CategoricalDomain}
+import cc.factorie.variable.CategoricalVariable
 import cc.factorie.app.nlp.pos.PennPosDomain
 import cc.factorie.app.nlp.parse.ParseTreeLabelDomain
 
