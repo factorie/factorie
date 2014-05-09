@@ -1,10 +1,5 @@
----
-title: "Quick Start"
-layout: default
-group: usersguide
-weight: 35
----
-
+/*& Quick Start */
+/*&
 ## First Examples
 
 Here are three examples providing a brief sense of FACTORIE usage.
@@ -159,3 +154,4 @@ object ExampleLinearChainCRF extends App {
   labelSequences.foreach(_.foreach(l => println(s"Token: ${l.token.value} Label: ${l.value}")))
 }
 ```
+*/

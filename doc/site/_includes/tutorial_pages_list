@@ -1,4 +1,4 @@
-{% for weight in (1..100) %}
+{% for weight in (1..800) %}
    {% for node in site.pages %}
       {% if node.group == group and node.weight == weight %}
          {% if page.url == node.url %}

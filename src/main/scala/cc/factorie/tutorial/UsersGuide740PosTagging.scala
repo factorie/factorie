@@ -20,7 +20,7 @@ Our tagger is both fast and accurate, processing more than 20K tokens/second and
 
 ### From the command line ###
 
-The easiest way to get started is by using our tagger through the FACTORIE NLP command line tool. Check out the (NLP quick start guide)[http://factorie.cs.umass.edu/usersguide/UsersGuide260NLP.html].
+The easiest way to get started is by using our tagger through the FACTORIE NLP command line tool. Check out the [quick start guide](http://factorie.cs.umass.edu/usersguide/UsersGuide200QuickStart.html).
 
 ### As a Maven dependency ###
 
@@ -84,23 +84,39 @@ This will train a model on the given training data, testing accuracy on the give
 
 The above will learn the parameters of the model using regularized AdaGrad, log loss and some default hyperparameters. You can change the default values, as well as specify entire directories of training data, etc. using the command line parameters listed below:
 
-* model: Filename for the model (saving a trained model or reading a saved model)
-* save-model: Whether to save the trained model
-* test-file: Test data file
-* train-file: Training data file
-* test-dir: Directory containing test files
-* train-dir: Directory containing training files
-* test-files: Comma-separated list of training files
-* train-files: Comma-separated list of training files
-* owpl: Whether the data is in OWPL format or otherwise (Ontonotes) (default: false)
-* l1: l1 regularization weight for AdaGradRDA (default: 0.000001)
-* l2: l2 regularization weight for AdaGradRDA (default: 0.00001)
-* rate: learning rate (default: 1.0)
-* delta: learning rate decay (default: 0.1)
-* cutoff: Discard features less frequent than this before training (default: 2)
-* update-examples: Whether to update examples in later iterations during training (default: true)
-* use-hinge-loss: Whether to use hinge loss or log loss during training (default: false)
-* num-iterations: Number of passes over the data for training (default: 5)
+* * model: Filename for the model (saving a trained model or reading a saved model)
+
+* * save-model: Whether to save the trained model
+
+* * test-file: Test data file
+
+* * train-file: Training data file
+
+* * test-dir: Directory containing test files
+
+* * train-dir: Directory containing training files
+
+* * test-files: Comma-separated list of training files
+
+* * train-files: Comma-separated list of training files
+
+* * owpl: Whether the data is in OWPL format or otherwise (Ontonotes) (default: false)
+
+* * l1: l1 regularization weight for AdaGradRDA (default: 0.000001)
+
+* * l2: l2 regularization weight for AdaGradRDA (default: 0.00001)
+
+* * rate: learning rate (default: 1.0)
+
+* * delta: learning rate decay (default: 0.1)
+
+* * cutoff: Discard features less frequent than this before training (default: 2)
+
+* * update-examples: Whether to update examples in later iterations during training (default: true)
+
+* * use-hinge-loss: Whether to use hinge loss or log loss during training (default: false)
+
+* * num-iterations: Number of passes over the data for training (default: 5)
  
 You may want to perform hyperparameter optimization to find the right hyperparameters for your model. FACTORIE’s hyperparameter optimizer assumes access to a grid cluster engine
 where it can use qsub to submit many parallel jobs testing different sets of hyperparameters. The ForwardPosOptimizer object contains good default ranges for optimizing the l1, l2, rate, delta, cutoff and number of training iterations for the POS tagger, spawning 200 jobs each with 16GB heap allocated to the JVM. For a more detailed explanation of FACTORIE’s hyperparameter optimization capabilities, see [the users guide] (http://factorie.cs.umass.edu/usersguide/UsersGuide490ParallelismAndHyperparameters.html).
