@@ -283,7 +283,7 @@ class CmdOptions {
     }
     // TODO Format long help messages more nicely.
     def helpString: String = {
-      val defaultValueString = defaultValue match { case d:Seq[_] => d.mkString(","); case _ => defaultValue.toString }
+      val defaultValueString = defaultValue match { case d:Seq[_] => d.mkString(","); case _ => "" }
       if (valueClass != noClass) "--%-15s %s\n".format(name+"="+valueName, helpMsg+"  Default="+defaultValueString)
       else "--%-15s %s\n".format(name, helpMsg)
     }
