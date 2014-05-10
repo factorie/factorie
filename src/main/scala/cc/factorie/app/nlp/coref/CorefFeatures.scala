@@ -23,19 +23,19 @@ class MentionCharacteristics(val mention: Mention) {
   lazy val wnAntonyms = wnSynsets.flatMap(_.antonyms()).toSet
   lazy val nounWords: Set[String] =
       mention.phrase.tokens.filter(_.posTag.categoryValue.startsWith("N")).map(t => t.string.toLowerCase).toSet
-  lazy val lowerCaseHead: String = mention.phrase.headToken.string.toLowerCase // was:
+  lazy val lowerCaseHead: String = mention.phrase.headToken.string.toLowerCase
   lazy val lowerCaseString:String =  mention.phrase.string.toLowerCase
   lazy val headPhraseTrim: String = mention.phrase.tokensString(" ").trim
   lazy val nonDeterminerWords: Seq[String] =
     mention.phrase.tokens.filterNot(_.posTag.categoryValue == "DT").map(t => t.string.toLowerCase)
   lazy val initials: String =
       mention.phrase.tokens.map(_.string).filterNot(lexicon.iesl.OrgSuffix.contains).filter(t => t(0).isUpper).map(_(0)).mkString("")
-  lazy val predictEntityType: Int = mention.phrase.attr[OntonotesPhraseEntityType].intValue // TODO Why not just name this "entityTypeCategory"? And we should use the intValue instead anyway! -akm?
+  lazy val predictEntityType: Int = mention.phrase.attr[OntonotesPhraseEntityType].intValue
   lazy val demonym: String = lexicon.iesl.DemonymMap.getOrElse(headPhraseTrim, "")
 
   lazy val capitalization: Char = {
       if (mention.phrase.length == 1 && mention.phrase.head.positionInSentence == 0) 'u' // mention is the first word in sentence
-      else { // This was missing before, and I think this was a serious bug. -akm
+      else {
         val s = mention.phrase.value.filter(_.posTag.categoryValue.startsWith("N")).map(_.string.trim) // TODO Fix this slow String operation
         if (s.forall(_.forall(_.isUpper))) 'a'
         else if (s.forall(t => t.head.isLetter && t.head.isUpper)) 't'
@@ -45,8 +45,8 @@ class MentionCharacteristics(val mention: Mention) {
   lazy val gender = mention.phrase.attr[Gender].categoryValue
   lazy val number = mention.phrase.attr[Number].categoryValue
   lazy val nounPhraseType = mention.phrase.attr[NounPhraseType].categoryValue
-  lazy val genderIndex = mention.phrase.attr[Gender].intValue // .toString // TODO Why work in terms of String instead of Int? -akm
-  lazy val numberIndex = mention.phrase.attr[Number].intValue // .toString
+  lazy val genderIndex = mention.phrase.attr[Gender].intValue
+  lazy val numberIndex = mention.phrase.attr[Number].intValue
   lazy val nounPhraseTypeIndex = mention.phrase.attr[NounPhraseType].intValue
   lazy val headPos = mention.phrase.headToken.posTag.categoryValue
 
@@ -62,17 +62,9 @@ class MentionCharacteristics(val mention: Mention) {
       }
   }
 
-  lazy private val cachedCanonicalPronConjStr = if (isPRO) {
-    if (!PronounDictionary.canonicalize(lowerCaseHead).equals("")) {
-      PronounDictionary.canonicalize(lowerCaseHead)
-    } else {
-      lowerCaseHead
-    }
-  } else {
-    nounPhraseType
-  }
-  def computeCanonicalPronounsConjunctionStr = cachedCanonicalPronConjStr
-
+  lazy val canonicalizedPronounOrType =
+    if (isPRO) PronounSets.canonicalForms.getOrElse(lowerCaseString,lowerCaseHead)
+    else nounPhraseType
 }
 
 // TODO I think this should be renamed, but I'm not sure to what. -akm
@@ -82,11 +74,36 @@ object CorefFeatures {
   val nounSet = Seq("NN", "NNS")
   val posSet = Seq("POS")
 
-
   trait Ternary
   case object True extends Ternary
   case object False extends Ternary
   case object Unknown extends Ternary
+
+  def proWordHead(mention1: Mention,mention2: Mention): String = {
+    val m1c = mention1.attr[MentionCharacteristics]
+    val m2c = mention2.attr[MentionCharacteristics]
+    val e1 = if (m2c.isPRO) mention2.phrase.headToken.string else m2c.predictEntityType
+    val e2 = if (m1c.isPRO) mention1.phrase.headToken.string else m1c.predictEntityType
+    e1 + "&&" + e2
+  }
+
+  def entityTypeMatch(mention1: Mention,mention2: Mention): Ternary = {
+    val m1c = mention1.attr[MentionCharacteristics]
+    val m2c = mention2.attr[MentionCharacteristics]
+    if (m2c.predictEntityType == OntonotesEntityTypeDomain.O || m1c.predictEntityType == OntonotesEntityTypeDomain.O) Unknown
+    else if (m2c.predictEntityType == m1c.predictEntityType) True
+    else False
+  }
+
+  def acronymMatch(mention1: Mention,mention2: Mention):  Ternary = {
+    val m1 = mention1.attr[MentionCharacteristics]
+    val m2 = mention2.attr[MentionCharacteristics]
+    if (mention1.phrase.length == 1 && mention2.phrase.length > 1) {
+      if (m2.acronym.contains(mention1.phrase.string.trim.toLowerCase)) True else False
+    } else if (mention1.phrase.length > 1 && mention2.phrase.length == 1) {
+      if (m1.acronym.contains(mention2.phrase.string.trim.toLowerCase)) True else False
+    } else Unknown
+  }
 
   def getPairRelations(s1: Mention, s2: Mention): String = {
     val l1 = s1.phrase.headToken.string.toLowerCase
@@ -126,7 +143,6 @@ object CorefFeatures {
   }
 
   def countCompatibleMentionsBetween(m1:Mention, m2:Mention, mentions:Seq[Mention]): Seq[String] = {
-    val doc = m1.phrase.document
     val ments = mentions.filter(s => s.phrase.start < m1.phrase.start && s.phrase.start > m2.phrase.end)
     val iter = ments.iterator
     var numMatches = 0
@@ -134,7 +150,6 @@ object CorefFeatures {
       val m = iter.next()
       if (CorefFeatures.gendersMatch(m, m1) == True && CorefFeatures.numbersMatch(m, m1) == True) numMatches += 1
     }
-
     if (numMatches <= 2) (0 to numMatches).map(_.toString)
     else (0 to numMatches).map(_.toString) :+ "_OVER2"
   }
@@ -142,95 +157,6 @@ object CorefFeatures {
   val maleHonors = Set("mr", "mister")
   val femaleHonors = Set("ms", "mrs", "miss", "misses")
   val neuterWN = Set("artifact", "location", "group")
-
-  val malePron = Set("he", "him", "his", "himself")
-  val femalePron = Set("she", "her", "hers", "herself")
-  val neuterPron = Set("it", "its", "itself", "this", "that", "anything", "something",  "everything", "nothing", "which", "what", "whatever", "whichever")
-  val personPron = Set("you", "your", "yours", "i", "me", "my", "mine", "we", "our", "ours", "us", "myself", "ourselves", "themselves", "themself", "ourself", "oneself", "who", "whom", "whose", "whoever", "whomever", "anyone", "anybody", "someone", "somebody", "everyone", "everybody", "nobody")
-
-  val allPronouns = maleHonors ++ femaleHonors ++ neuterWN ++ malePron ++ femalePron ++ neuterPron ++ personPron
-  // TODO: this cache is not thread safe if we start making GenderMatch not local
-  // val cache = scala.collection.mutable.Map[String, Char]()
-  /*import cc.factorie.app.nlp.lexicon
-  def namGender(m: Mention): Char = {
-    val fullhead = m.phrase.string.trim.toLowerCase // TODO Is this change with "string" correct? -akm 2/28/2014
-    var g = 'u'
-    val words = fullhead.split("\\s")
-    if (words.length == 0) return g
-
-    val word0 = words.head
-    val lastWord = words.last
-
-    var firstName = ""
-    var honor = ""
-    if (lexicon.iesl.PersonHonorific.contains(word0)) {
-      honor = word0
-      honor = removePunct(honor)
-      if (words.length >= 3)
-        firstName = words(1)
-    } else if (words.length >= 2) {
-      firstName = word0
-    } else {
-      firstName = word0
-    }
-
-    // determine gender using honorifics
-    if (maleHonors.contains(honor))
-      return 'm'
-    else if (femaleHonors.contains(honor))
-      return 'f'
-
-    // determine from first name
-    if (lexicon.uscensus.PersonFirstMale.contains(firstName))
-      g = 'm'
-    else if (lexicon.uscensus.PersonFirstFemale.contains(firstName))
-      g = 'f'
-    else if (lexicon.uscensus.PersonLast.contains(lastWord))
-      g = 'p'
-
-    if (lexicon.iesl.City.contains(fullhead) || lexicon.iesl.Country.contains(fullhead)) {
-      if (g.equals("m") || g.equals("f") || g.equals("p"))
-        return 'u'
-      g = 'n'
-    }
-
-    if (lexicon.iesl.OrgSuffix.contains(lastWord)) {
-      if (g.equals("m") || g.equals("f") || g.equals("p"))
-        return 'u'
-      g = 'n'
-    }
-
-    g
-  } */
-  /*
-  def nomGender(m: Mention, wn: WordNet): Char = {
-    val fullhead = m.phrase.string.toLowerCase
-    if (wn.isHypernymOf("male", fullhead))
-      'm'
-    else if (wn.isHypernymOf("female", fullhead))
-      'f'
-    else if (wn.isHypernymOf("person", fullhead))
-      'p'
-    else if (neuterWN.exists(wn.isHypernymOf(_, fullhead)))
-      'n'
-    else
-      'u'
-  }*/
-
-  /*
-  def proGender(m: Mention): Char = {
-    val pronoun = m.phrase.string.toLowerCase
-    if (malePron.contains(pronoun))
-      'm'
-    else if (femalePron.contains(pronoun))
-      'f'
-    else if (neuterPron.contains(pronoun))
-      'n'
-    else if (personPron.contains(pronoun))
-      'p'
-    else
-      'u'
-  }*/
 
 
   def strongerOf(g1: Int, g2: Int): Int = {
@@ -246,13 +172,10 @@ object CorefFeatures {
       g2
   }
 
-
-  // TODO Do we really want to return a Char here?
   def gendersMatch(m1:Mention, m2:Mention): Ternary = {
     val g1 = m2.phrase.attr[Gender].intValue
     val g2 = m1.phrase.attr[Gender].intValue
-    import GenderDomain._
-    // TODO This condition could be much simplified 
+    // TODO This condition could be simplified
     if (g1 == GenderDomain.UNKNOWN || g2 == GenderDomain.UNKNOWN)
       Unknown
     else if (g1 == GenderDomain.PERSON && (g2 == GenderDomain.MALE || g2 == GenderDomain.FEMALE || g2 == GenderDomain.PERSON))
@@ -268,16 +191,14 @@ object CorefFeatures {
   def headWordsCross(m1:Mention, m2:Mention, model: CorefModel): String = {
     val w1 = m2.attr[MentionCharacteristics].headPhraseTrim
     val w2 = m1.attr[MentionCharacteristics].headPhraseTrim
-    val rare1 = 1.0 / model.CorefTokenFrequencies.lexicalCounter.headWordCounts.getOrElse(w1.toLowerCase, 1).toFloat > 0.1
-    val rare2 = 1.0 / model.CorefTokenFrequencies.lexicalCounter.headWordCounts.getOrElse(w2.toLowerCase, 1).toFloat > 0.1
+    val rare1 = 1.0 / model.CorefTokenFrequencies.counter.headWords.getOrElse(w1.toLowerCase, 1).toFloat > 0.1
+    val rare2 = 1.0 / model.CorefTokenFrequencies.counter.headWords.getOrElse(w2.toLowerCase, 1).toFloat > 0.1
     if (rare1 && rare2 && w1.equalsIgnoreCase(w2))
       "Rare_Duplicate"
     else
-      (if (rare1) "RARE" else w1) + "_AND_" + (if (rare2) "RARE" else w2)
+      (if (rare1) m1.attr[MentionCharacteristics].headPos else w1) + "_AND_" + (if (rare2) m1.attr[MentionCharacteristics].headPos else w2)
   }
 
-  val singPron = Set("i", "me", "my", "mine", "myself", "he", "she", "it", "him", "her", "his", "hers", "its", "one", "ones", "oneself", "this", "that")
-  val pluPron = Set("we", "us", "our", "ours", "ourselves", "ourself", "they", "them", "their", "theirs", "themselves", "themself", "these", "those")
   val singDet = Set("a ", "an ", "this ")
   val pluDet = Set("those ", "these ", "some ")
 
@@ -285,18 +206,14 @@ object CorefFeatures {
     val n1 = m2.phrase.attr[Number].intValue
     val n2 = m1.phrase.attr[Number].intValue
     import NumberDomain._
-    if (n1 == n2 && n1 != UNKNOWN)
-      True
-    else if (n1 != n2 && n1 != UNKNOWN && n2 != UNKNOWN)
-      False
+    if (n1 == n2 && n1 != UNKNOWN) True
+    else if (n1 != n2 && n1 != UNKNOWN && n2 != UNKNOWN) False
     else if (n1 == UNKNOWN || n2 == UNKNOWN) {
       if (m1.phrase.toSeq.map(t => t.string.trim).mkString(" ").equals(m2.phrase.toSeq.map(t => t.string.trim).mkString(" ")))
         True
-      else
-        Unknown
+      else Unknown
     }
-    else
-      Unknown
+    else Unknown
   }
 
   val relativizers = Set("who", "whom", "which", "whose", "whoever", "whomever", "whatever", "whichever", "that")
@@ -314,9 +231,9 @@ object CorefFeatures {
           || m2.phrase.head == m1.phrase.last.next(2) && m1.phrase.last.next.string.equals(",")))
 
 
-  def areRelative(m1:Mention, m2:Mention): Boolean = isRelativeFor(m1, m2) || isRelativeFor(m2, m1)
+  def areRelative(m1: Mention, m2: Mention): Boolean = isRelativeFor(m1, m2) || isRelativeFor(m2, m1)
 
-  def canBeAliases(m1:Mention, m2:Mention): Boolean = {
+  def canBeAliases(m1: Mention, m2: Mention): Boolean = {
     val m1c = m1.attr[MentionCharacteristics]
     val m2c = m2.attr[MentionCharacteristics]
     val eType1 = m2c.predictEntityType
@@ -338,115 +255,85 @@ object CorefFeatures {
           (m1c.initials, m2head)
       return shorter.replaceAll("[., ]", "") equalsIgnoreCase initials
     }
-
     false
   }
-
 
   lazy val punct = "^['\"(),;.`]*(.*?)['\"(),;.`]*$".r
   def removePunct(s: String): String = {
     val punct(ret) = s
     ret
   }
-
 }
-object PronounDictionary {
-  val firstPersonPronouns = Set("i", "me", "myself", "mine", "my", "we", "us", "ourself", "ourselves", "ours", "our")
-  val secondPersonPronouns = Set("you", "yourself", "yours", "your", "yourselves")
-  val thirdPersonPronouns = Set("he", "him", "himself", "his", "she", "her", "herself", "hers", "her", "it", "itself", "its", "one", "oneself", "one's", "they", "them", "themself", "themselves", "theirs", "their", "they", "them", "'em", "themselves")
-  val otherPronouns = Set("who", "whom", "whose", "where", "when","which")
 
-  val demonstratives = Set("this", "that", "these", "those")
+object PronounSets {
+  val firstPerson = Set("i", "me", "myself", "mine", "my", "we", "us", "ourself", "ourselves", "ours", "our")
+  val secondPerson = Set("you", "yourself", "yours", "your", "yourselves")
+  val thirdPerson = Set("he", "him", "himself", "his", "she", "herself", "hers", "her", "it", "itself", "its", "one", "oneself", "one's", "they", "them", "themself", "themselves", "theirs", "their",  "'em")
+  val other = Set("who", "whom", "whose", "where", "when","which")
 
-  // Borrowed from Stanford
-  val singularPronouns = Set("i", "me", "myself", "mine", "my", "yourself", "he", "him", "himself", "his", "she", "her", "herself", "hers", "her", "it", "itself", "its", "one", "oneself", "one's")
-  val pluralPronouns = Set("we", "us", "ourself", "ourselves", "ours", "our", "yourself", "yourselves", "they", "them", "themself", "themselves", "theirs", "their")
-  val malePronouns = Set("he", "him", "himself", "his")
-  val femalePronouns = Set("her", "hers", "herself", "she")
-  val neutralPronouns = Set("it", "its", "itself", "where", "here", "there", "which")
+  val demonstrative = Set("this", "that", "these", "those")
 
+  val singular = Set("i", "me", "myself", "mine", "my", "yourself", "he", "him", "himself", "his", "she", "her", "herself", "hers", "her", "it", "itself", "its", "one", "oneself", "one's")
+  val plural = Set("we", "us", "ourself", "ourselves", "ours", "our", "yourself", "yourselves", "they", "them", "themself", "themselves", "theirs", "their")
+  val male = Set("he", "him", "himself", "his")
+  val female = Set("her", "hers", "herself", "she")
 
-  val allPronouns = firstPersonPronouns ++ secondPersonPronouns ++ thirdPersonPronouns ++ otherPronouns
+  val neuter = Set("it", "its", "itself", "this", "that", "anything", "something",  "everything", "nothing", "which", "what", "whatever", "whichever")
+  val personal = Set("you", "your", "yours", "i", "me", "my", "mine", "we", "our", "ours", "us", "myself", "ourselves", "themselves", "themself", "ourself", "oneself", "who", "whom", "whose", "whoever", "whomever", "anyone", "anybody", "someone", "somebody", "everyone", "everybody", "nobody")
 
-  // Constructed based on Stanford's Dictionaries class
-  val canonicalizations = new mutable.HashMap[String,String]()
-  canonicalizations.put("i", "i")
-  canonicalizations.put("me", "i")
-  canonicalizations.put("my", "i")
-  canonicalizations.put("myself", "i")
-  canonicalizations.put("mine", "i")
-  canonicalizations.put("you", "you")
-  canonicalizations.put("your", "you")
-  canonicalizations.put("yourself", "you")
-  canonicalizations.put("yourselves", "you")
-  canonicalizations.put("yours", "you")
-  canonicalizations.put("he", "he")
-  canonicalizations.put("him", "he")
-  canonicalizations.put("his", "he")
-  canonicalizations.put("himself", "he")
-  canonicalizations.put("she", "she")
-  canonicalizations.put("her", "she")
-  canonicalizations.put("herself", "she")
-  canonicalizations.put("hers", "she")
+  val allPronouns = firstPerson ++ secondPerson ++ thirdPerson ++ other
 
-  canonicalizations.put("we", "we")
-  canonicalizations.put("us", "we")
-  canonicalizations.put("our", "we")
-  canonicalizations.put("ourself", "we")
-  canonicalizations.put("ourselves", "we")
-  canonicalizations.put("ours", "we")
-  canonicalizations.put("they", "they")
-  canonicalizations.put("them", "they")
-  canonicalizations.put("their", "they")
-  canonicalizations.put("themself", "they")
-  canonicalizations.put("themselves", "they")
-  canonicalizations.put("theirs", "they")
-  canonicalizations.put("'em", "they")
-  canonicalizations.put("it", "it")
-  canonicalizations.put("itself", "it")
-  canonicalizations.put("its", "it")
-  canonicalizations.put("one", "one")
-  canonicalizations.put("oneself", "one")
-  canonicalizations.put("one's", "one")
-
-  canonicalizations.put("this", "this")
-  canonicalizations.put("that", "that")
-  canonicalizations.put("these", "these")
-  canonicalizations.put("those", "those")
-  canonicalizations.put("which", "which")
-  canonicalizations.put("who", "who")
-  canonicalizations.put("whom", "who")
-  //  canonicalizations.put("where", "where")
-  //  canonicalizations.put("whose", "whose")
-  // This entry is here just to make results consistent with earlier ones
-  // on our very small dev set
-  canonicalizations.put("thy", "thy")
-  canonicalizations.put("y'all", "you")
-  canonicalizations.put("you're", "you")
-  canonicalizations.put("you'll", "you")
-  canonicalizations.put("'s", "'s")
-
-  def isPronLc(str: String): Boolean = {
-    allPronouns.contains(str.toLowerCase)
-  }
-
-  def isDemonstrative(str: String): Boolean = {
-    demonstratives.contains(str.toLowerCase)
-  }
-
-  def canonicalize(str: String): String = {
-    if (canonicalizations.contains(str.toLowerCase)) {
-      canonicalizations.get(str.toLowerCase).get
-    } else {
-      ""
-    }
-  }
-
-  def main(args: Array[String]) {
-    //println(PronounDictionary.canonicalizations("'em"))
-    println(PronounDictionary.isPronLc("them"))
-    println(PronounDictionary.isPronLc("Them"))
-    println(PronounDictionary.isPronLc("NotThem"))
+  val canonicalForms = new mutable.HashMap[String,String](){
+    ("i", "i")
+    ("i", "i")
+    ("me", "i")
+    ("my", "i")
+    ("myself", "i")
+    ("mine", "i")
+    ("you", "you")
+    ("your", "you")
+    ("yourself", "you")
+    ("yourselves", "you")
+    ("yours", "you")
+    ("he", "he")
+    ("him", "he")
+    ("his", "he")
+    ("himself", "he")
+    ("she", "she")
+    ("her", "she")
+    ("herself", "she")
+    ("hers", "she")
+    ("we", "we")
+    ("us", "we")
+    ("our", "we")
+    ("ourself", "we")
+    ("ourselves", "we")
+    ("ours", "we")
+    ("they", "they")
+    ("them", "they")
+    ("their", "they")
+    ("themself", "they")
+    ("themselves", "they")
+    ("theirs", "they")
+    ("'em", "they")
+    ("it", "it")
+    ("itself", "it")
+    ("its", "it")
+    ("one", "one")
+    ("oneself", "one")
+    ("one's", "one")
+    ("this", "this")
+    ("that", "that")
+    ("these", "these")
+    ("those", "those")
+    ("which", "which")
+    ("who", "who")
+    ("whom", "who")
+    ("thy", "thy")
+    ("y'all", "you")
+    ("you're", "you")
+    ("you'll", "you")
+    ("'s", "'s")
   }
 }
 

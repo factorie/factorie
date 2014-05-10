@@ -198,40 +198,6 @@ object ClusterF1Evaluation {
       }
     }
 
-  /** This matches the logic of the becubed no singletons from the Version 4 of the official conll scorer
-      Left here temporarily to sanity check any old scores.
-      The source script is in http://conll.bbn.com/download/scorer.v4.tar.gz*/
-  object OldBCubedNoSingletons extends ClusterF1Evaluation with FastLogging {
-    def apply[C,P](predicted: EvaluatableClustering[C,P], truth: EvaluatableClustering[C,P]): F1Evaluation = {
-      val result = new F1Evaluation
-      val predNonSingletons = predicted.pointIds.filter(m => predicted.pointIds(predicted.clusterId(m)).size > 1).toSet
-      val goldNonSingletons = truth.pointIds.filter(m => truth.pointIds(truth.clusterId(m)).size > 1).toSet
-      val denom = predNonSingletons.union(goldNonSingletons).size
-      result.precisionDenominator = denom
-      result.recallDenominator = denom
-      // Maps (predId,trueId) cluster ids to the size of the intersections of their point members
-      val intersection = new scala.collection.mutable.HashMap[(C,C),Int] {
-        override def default(key:(C,C)) = predicted.pointIds(key._1).toSet.intersect(truth.pointIds(key._2).toSet).size
-      }
-      // go through each mention
-      for (mid <- predicted.pointIds) {
-        // get pred and true clusters
-        val predId = predicted.clusterId(mid)
-        val predCluster = predicted.pointIds(predId)
-        val trueId = truth.clusterId(mid)
-        //If our predicted point was not in the truth set, return an empty set of points
-        val trueCluster = if(trueId != null) truth.pointIds(trueId) else Iterable.empty
-        if (predCluster.size > 1 || trueCluster.size > 1) {
-          // calculate overlap between the two
-          val clusterOverlap: Int = intersection(predId, trueId)
-          // add to metric
-          result.precisionNumerator += clusterOverlap.doubleValue / predCluster.size
-          result.recallNumerator += clusterOverlap.doubleValue / trueCluster.size
-        }
-      }
-      result
-    }
-  }
 
   object MUC extends ClusterF1Evaluation with FastLogging {
     def apply[E,M](predicted: EvaluatableClustering[E,M], truth: EvaluatableClustering[E,M]): F1Evaluation = {
@@ -351,6 +317,41 @@ object ClusterF1Evaluation {
     }
   }
 
+  /** This matches the logic of the becubed no singletons from the Version 4 of the official conll scorer
+      Left here temporarily to sanity check any old scores.
+      The source script is in http://conll.bbn.com/download/scorer.v4.tar.gz*/
+  object OldBCubedNoSingletons extends ClusterF1Evaluation with FastLogging {
+    def apply[C,P](predicted: EvaluatableClustering[C,P], truth: EvaluatableClustering[C,P]): F1Evaluation = {
+      val result = new F1Evaluation
+      val predNonSingletons = predicted.pointIds.filter(m => predicted.pointIds(predicted.clusterId(m)).size > 1).toSet
+      val goldNonSingletons = truth.pointIds.filter(m => truth.pointIds(truth.clusterId(m)).size > 1).toSet
+      val denom = predNonSingletons.union(goldNonSingletons).size
+      result.precisionDenominator = denom
+      result.recallDenominator = denom
+      // Maps (predId,trueId) cluster ids to the size of the intersections of their point members
+      val intersection = new scala.collection.mutable.HashMap[(C,C),Int] {
+        override def default(key:(C,C)) = predicted.pointIds(key._1).toSet.intersect(truth.pointIds(key._2).toSet).size
+      }
+      // go through each mention
+      for (mid <- predicted.pointIds) {
+        // get pred and true clusters
+        val predId = predicted.clusterId(mid)
+        val predCluster = if(predId!=null)predicted.pointIds(predId)else Vector(mid)
+        val trueId = truth.clusterId(mid)
+        //If our predicted point was not in the truth set, return an empty set of points
+        val trueCluster = if(trueId != null) truth.pointIds(trueId) else Vector(mid)
+        if (predCluster.size > 1 || trueCluster.size > 1) {
+          // calculate overlap between the two
+          val clusterOverlap: Int = if(trueId != null && predId!=null) intersection(predId, trueId) else 1
+          // add to metric
+          result.precisionNumerator += clusterOverlap.doubleValue / predCluster.size
+          result.recallNumerator += clusterOverlap.doubleValue / trueCluster.size
+        }
+      }
+      result
+    }
+  }
+
   /** MUC version to handle cases of spurious clusters or missing clusters*/
   object MUCNoSingletons extends ClusterF1Evaluation with FastLogging {
     def apply[E,M](predicted: EvaluatableClustering[E,M], truth: EvaluatableClustering[E,M]): F1Evaluation = {
@@ -412,7 +413,7 @@ object ClusterF1Evaluation {
         // calculate overlap
         val clusterOverlap = intersection((predId, trueId))
         // update metrics
-        tp += clusterOverlap - 1.0
+        tp += clusterOverlap
         tn += total - predCluster.size - trueCluster.size + clusterOverlap
         fp += predCluster.size - clusterOverlap
         fn += trueCluster.size - clusterOverlap

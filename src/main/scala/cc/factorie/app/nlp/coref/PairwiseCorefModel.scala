@@ -28,16 +28,16 @@ trait CorefModel extends Parameters {
   val MentionPairLabelDomain = new CategoricalDomain[String] { this += "YES"; this += "NO"; freeze() }
 
   object CorefTokenFrequencies{
-    var lexicalCounter:LexicalCounter = null
+    var counter:TopTokenFrequencies = null
   }
 
   def deserialize(stream: DataInputStream) {
-    val headWordCounts = new DefaultHashMap[String,Int](0)
-    BinarySerializer.deserialize(headWordCounts, stream)
+    val headWords = new DefaultHashMap[String,Int](0)
+    BinarySerializer.deserialize(headWords, stream)
     BinarySerializer.deserialize(MentionPairFeaturesDomain, stream)
     BinarySerializer.deserialize(new CategoricalVectorDomain[String] { val domain = new CategoricalDomain[String]} , stream)
     BinarySerializer.deserialize(this, stream)
-    CorefTokenFrequencies.lexicalCounter = new LexicalCounter(headWordCounts)
+    CorefTokenFrequencies.counter = new TopTokenFrequencies(headWords)
     stream.close()
     MentionPairFeaturesDomain.freeze()
   }
@@ -47,22 +47,12 @@ trait CorefModel extends Parameters {
   }
 
   def serialize(stream: DataOutputStream) {
-    BinarySerializer.serialize(CorefTokenFrequencies.lexicalCounter.headWordCounts,stream)
+    BinarySerializer.serialize(CorefTokenFrequencies.counter.headWords,stream)
     MentionPairFeaturesDomain.freeze()
     BinarySerializer.serialize(MentionPairFeaturesDomain , stream)
     BinarySerializer.serialize(new CategoricalVectorDomain[String] { val domain = new CategoricalDomain[String]}, stream)
     BinarySerializer.serialize(this,stream)
   }
-
-//  def generateTrueClustering(mentions: Seq[Mention]): BasicEvaluatableClustering = {
-//    val trueMap = new GenericEntityMap[Mention]
-//    mentions.foreach(m => trueMap.addMention(m, trueMap.numMentions.toLong))
-//    val entities = mentions.groupBy(_.entity)
-//    entities.flatMap(_._2.sliding(2)).foreach(p => {
-//      if (p.size == 2) trueMap.addCoreferentPair(p(0), p(1))
-//    })
-//    trueMap
-//  }
 
 }
 
@@ -95,8 +85,6 @@ class ImplicitCrossProductCorefModel extends PairwiseCorefModel {
   }
 }
 
-
-
 class StructuredCorefModel extends CorefModel {
   val pairwiseWeights = Weights(new la.DenseTensor1(MentionPairFeaturesDomain.dimensionDomain.size))
 
@@ -111,44 +99,44 @@ class StructuredCorefModel extends CorefModel {
   }
 
   override def deserialize(stream: DataInputStream) {
-    val firstWordCounts = new DefaultHashMap[String,Int](0)
-    val headWordCounts = new DefaultHashMap[String,Int](0)
-    val lastWordCounts = new DefaultHashMap[String,Int](0)
-    val precWordCounts = new DefaultHashMap[String,Int](0)
-    val followWordCounts = new DefaultHashMap[String,Int](0)
-    val classCounts = new DefaultHashMap[String,Int](0)
-    val shapeCounts = new DefaultHashMap[String,Int](0)
-    BinarySerializer.deserialize(headWordCounts,stream)
-    BinarySerializer.deserialize(firstWordCounts,stream)
-    BinarySerializer.deserialize(lastWordCounts,stream)
-    BinarySerializer.deserialize(precWordCounts,stream)
-    BinarySerializer.deserialize(followWordCounts,stream)
-    BinarySerializer.deserialize(classCounts,stream)
-    BinarySerializer.deserialize(shapeCounts,stream)
+    val firstWords = new DefaultHashMap[String,Int](0)
+    val headWords = new DefaultHashMap[String,Int](0)
+    val lastWords = new DefaultHashMap[String,Int](0)
+    val precContext = new DefaultHashMap[String,Int](0)
+    val followContext = new DefaultHashMap[String,Int](0)
+    val wordForm = new DefaultHashMap[String,Int](0)
+    val shapes = new DefaultHashMap[String,Int](0)
+    BinarySerializer.deserialize(headWords,stream)
+    BinarySerializer.deserialize(firstWords,stream)
+    BinarySerializer.deserialize(lastWords,stream)
+    BinarySerializer.deserialize(precContext,stream)
+    BinarySerializer.deserialize(followContext,stream)
+    BinarySerializer.deserialize(wordForm,stream)
+    BinarySerializer.deserialize(shapes,stream)
     BinarySerializer.deserialize(MentionPairFeaturesDomain, stream)
     BinarySerializer.deserialize(new CategoricalVectorDomain[String] { val domain = new CategoricalDomain[String]} , stream)
     BinarySerializer.deserialize(this, stream)
-    val newLexicalCounts = new LexicalCounter(headWordCounts,firstWordCounts,lastWordCounts,precWordCounts,followWordCounts,classCounts,shapeCounts)
+    val newLexicalCounts = new TopTokenFrequencies(headWords,firstWords,lastWords,precContext,followContext,wordForm,shapes)
     stream.close()
-    CorefTokenFrequencies.lexicalCounter = newLexicalCounts
+    CorefTokenFrequencies.counter = newLexicalCounts
     MentionPairFeaturesDomain.freeze()
   }
 
   override def serialize(stream: DataOutputStream) {
     MentionPairFeaturesDomain.freeze()
-    BinarySerializer.serialize(CorefTokenFrequencies.lexicalCounter.headWordCounts,stream)
-    BinarySerializer.serialize(CorefTokenFrequencies.lexicalCounter.firstWordCounts,stream)
-    BinarySerializer.serialize(CorefTokenFrequencies.lexicalCounter.lastWordCounts,stream)
-    BinarySerializer.serialize(CorefTokenFrequencies.lexicalCounter.precedingWordCounts,stream)
-    BinarySerializer.serialize(CorefTokenFrequencies.lexicalCounter.followingWordCounts,stream)
-    BinarySerializer.serialize(CorefTokenFrequencies.lexicalCounter.shapeCounts,stream)
-    BinarySerializer.serialize(CorefTokenFrequencies.lexicalCounter.classCounts,stream)
+    BinarySerializer.serialize(CorefTokenFrequencies.counter.headWords,stream)
+    BinarySerializer.serialize(CorefTokenFrequencies.counter.firstWords,stream)
+    BinarySerializer.serialize(CorefTokenFrequencies.counter.lastWords,stream)
+    BinarySerializer.serialize(CorefTokenFrequencies.counter.precContext,stream)
+    BinarySerializer.serialize(CorefTokenFrequencies.counter.followContext,stream)
+    BinarySerializer.serialize(CorefTokenFrequencies.counter.shapes,stream)
+    BinarySerializer.serialize(CorefTokenFrequencies.counter.wordForm,stream)
     BinarySerializer.serialize(MentionPairFeaturesDomain, stream)
     BinarySerializer.serialize(new CategoricalVectorDomain[String] { val domain = new CategoricalDomain[String]}, stream)
     BinarySerializer.serialize(this,stream)
   }
 
-  def decodeAntecedents(mentionGraph: MentionGraph): Array[(Int,Double)] = {
+  def getBestCandidatesAntecedents(mentionGraph: MentionGraph): Array[(Int,Double)] = {
     val scores = scoreGraph(mentionGraph)
     val cluster = findBestAntecedents(mentionGraph, (idx: Int) => {
       val probs = scores(idx).map(Math.exp)
@@ -163,8 +151,19 @@ class StructuredCorefModel extends CorefModel {
     cluster
   }
 
+  def normAntecedents(scores: Array[Double]): Array[Double] = {
+    val antecedents = scores.map(Math.exp)
+    val total = antecedents.reduce(_+_)
+    for(anteIn <- 0 until antecedents.length) {
+      antecedents(anteIn) /= total
+    }
+    val newants = antecedents.map(_/total)
+    assert(newants.zip(antecedents).forall{case(a,b)=>a==b})
+    newants
+  }
+
   def findBestAntecedents(mentionGraph: MentionGraph, scoreFunction: Int => Array[Double]): Array[(Int,Double)] = {
-    val backpointers = new Array[(Int,Double)](mentionGraph.graph.length)
+    val anaphors = new Array[(Int,Double)](mentionGraph.graph.length)
     for (currMentionIdx <- 0 until mentionGraph.graph.length) {
       val allAnteCandidates = scoreFunction(currMentionIdx)
       var bestIdx = -1
@@ -176,9 +175,9 @@ class StructuredCorefModel extends CorefModel {
           bestProb = currProb
         }
       }
-      backpointers(currMentionIdx) = (bestIdx,bestProb)
+      anaphors(currMentionIdx) = (bestIdx,bestProb)
     }
-    backpointers
+    anaphors
   }
 
   def scoreGraph(mentionGraph: MentionGraph): Array[Array[Double]] = {
@@ -188,8 +187,8 @@ class StructuredCorefModel extends CorefModel {
       for (j <- 0 until mentionGraph.graph(i).length) {
         if(mentionGraph.prunedEdges(i)(j)) scores(i)(j) = Double.NegativeInfinity
         else{
-        require(mentionGraph.features(i)(j).domain.dimensionSize > 0)
-        scores(i)(j) = predict(mentionGraph.features(i)(j).value)
+          require(mentionGraph.graph(i)(j).features.domain.dimensionSize > 0)
+          scores(i)(j) = predict(mentionGraph.graph(i)(j).features.value)
         }
       }
     }
@@ -221,33 +220,19 @@ class StructuredCorefModel extends CorefModel {
     marginals
   }
 
-  def computeOverallLikelihood(trainMentionGraphs: Seq[MentionGraph]): Double = {
-    //trainMentionGraphs.foldLeft(0.0)((likelihood, mentionGraph) =>{
-
-    //val predictionMarginalScores = calculateMarginals( mentionGraph,false)
-    //val goldMarginalScores = calculateMarginals(mentionGraph,true)
-    //likelihood + computeLikelihood(mentionGraph,goldMarginalScores,predictionMarginalScores)
-    //})
-    -1.0
-  }
-
   def computeLikelihood( mentionGraph: MentionGraph, goldMarginal: Array[Array[Double]],predictedMarginalScores: Array[Array[Double]]): Double = {
     var likelihood = 0.0
     for (currIdx <- 0 to mentionGraph.graph.length-1) {
       val currMention = mentionGraph.orderedMentionList(currIdx)
       var goldAntecedents = if(currMention.entity ne null) currMention.entity.mentions.filter(m => mentionGraph.orderedMentionList.indexOf(m) < currIdx) else Iterable.empty
       if(goldAntecedents.isEmpty) goldAntecedents = Set(currMention)
-      val edgeIdx = mentionGraph.orderedMentionList.indexOf(goldAntecedents.head)
       var currProb = 0.0
-      for (edgeLink <- goldAntecedents) {
-        val edgeIdx = mentionGraph.orderedMentionList.indexOf(edgeLink)
-        if(currIdx == -1 || edgeIdx == -1 || mentionGraph.prunedEdges(currIdx)(edgeIdx)) currProb += 0.0
-        else currProb += goldMarginal(currIdx)(edgeIdx) - predictedMarginalScores(currIdx)(edgeIdx)
+      for (linkIdx <- 0 until goldAntecedents.size) {
+        if(currIdx == -1 || linkIdx == -1 || mentionGraph.prunedEdges(currIdx)(linkIdx)) currProb += 0.0
+        else currProb += goldMarginal(currIdx)(linkIdx) - predictedMarginalScores(currIdx)(linkIdx)
       }
       var currLogProb = Math.log(currProb)
-      if (currLogProb.isInfinite) {
-        currLogProb = -30
-      }
+      if (currLogProb.isInfinite) currLogProb = -30
       likelihood += currLogProb
     }
     likelihood
@@ -257,16 +242,14 @@ class StructuredCorefModel extends CorefModel {
 class GraphExample[Output, Prediction, Input<:MentionGraph](model: StructuredCorefModel, input: Input) extends Example {
   def accumulateValueAndGradient(value: DoubleAccumulator, gradient: WeightsMapAccumulator) {
     val scores = model.scoreGraph(input)
-    //Add a parameter if we want to do gold only? Or should this be handled further up
-    val predictionMarginalScores = model.calculateMarginals(scores,input,false)
-    val goldMarginalScores = model.calculateMarginals(scores,input,true)
+    val predictionMarginalScores = model.calculateMarginals(scores,input,gold = false)
+    val goldMarginalScores = model.calculateMarginals(scores,input,gold = true)
     val likelihood = model.computeLikelihood(input,goldMarginalScores,predictionMarginalScores)
     if (value != null) value.accumulate(likelihood)
-    //if (gradient != null) model.accumulateObjectiveGradient(gradient, input, ograd, weight)
     for (i <- 0 until input.graph.length) {
       for (edgeIdx <- 0 until input.graph(i).length; if !input.prunedEdges(i)(edgeIdx)) {
         if(gradient != null){
-          gradient.accumulate(model.pairwiseWeights, input.features(i)(edgeIdx).value, goldMarginalScores(i)(edgeIdx) - predictionMarginalScores(i)(edgeIdx))
+          gradient.accumulate(model.pairwiseWeights, input.graph(i)(edgeIdx).features.value, goldMarginalScores(i)(edgeIdx) - predictionMarginalScores(i)(edgeIdx))
         }
       }
     }

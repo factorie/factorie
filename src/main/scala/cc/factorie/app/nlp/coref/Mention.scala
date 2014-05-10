@@ -160,7 +160,7 @@ class WithinDocCoref(val document:Document) extends EvaluatableClustering[Within
   }
   
   /** Return all Mentions in this coreference solution. */
-  def mentions: Iterable[Mention] = _spanToMention.values
+  def mentions: Seq[Mention] = _spanToMention.values.toVector
   /** Return a collection of WithinDocEntities managed by this coref solution.  Note that some of them may have no Mentions. */
   def entities: Iterable[WithinDocEntity] = _entities.values
   /** Create and return a new WithinDocEntity with uniqueId determined by the number entities created so far. */

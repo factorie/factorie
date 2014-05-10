@@ -38,6 +38,7 @@ class ParseStructuredCoreference extends StructuredCoref{
     NounPhraseNumberLabeler.process(doc)
   }
 }
+
 //Todo: The base Structured Coref class uses Gold Mentions, used for evaluation and tests on ConllData
 class StructuredCoref extends CorefSystem[MentionGraph]{
   val options = new CorefOptions
@@ -45,74 +46,82 @@ class StructuredCoref extends CorefSystem[MentionGraph]{
   override def prereqAttrs: Seq[Class[_]] = Seq(classOf[Sentence],classOf[PennPosTag])
   def tokenAnnotationString(token:Token):String = ???
 
-  def infer(coref:WithinDocCoref):WithinDocCoref = {
-    val instance = new MentionGraph(model,coref,options)
-    getPredCorefClusters(instance)
+  def preprocessCorpus(trainDocs:Seq[Document]) = {
+    val nonPronouns = trainDocs.flatMap(_.targetCoref.mentions.filterNot(m => m.phrase.isPronoun))
+    model.CorefTokenFrequencies.counter = new TopTokenFrequencies(nonPronouns,Vector("Head","First","Last","Prec","Follow","Shape","WordForm"))
   }
 
-  def instantiateModel(optimizer:GradientOptimizer,pool:ExecutorService) = new SoftMaxParallelTrainer(optimizer,pool)
-  def preprocessCorpus(trainDocs:Seq[Document]) = model.CorefTokenFrequencies.lexicalCounter = LexicalCounter.countLexicalItems(trainDocs.flatMap{_.targetCoref.mentions},trainDocs,20)
   def getCorefStructure(coref:WithinDocCoref) = new MentionGraph(model,coref,options,train=true)
 
-
-  def getPredCorefClusters(graph:MentionGraph): WithinDocCoref = {
-    //If we add the best mention within a range, then it will have it's own matches and we can have a chain works well.
-    val bestMatches = model.decodeAntecedents(graph)
-    for(edgeIdx <- 0 until graph.graph.length){
-      val bestMatch = graph.orderedMentionList(bestMatches(edgeIdx)._1)
-      if(bestMatch!=graph.orderedMentionList(edgeIdx)){
-        if(bestMatch.entity ne null) bestMatch.entity += graph.orderedMentionList(edgeIdx)
-        else {val entity = graph.coref.newEntity(); entity += graph.orderedMentionList(edgeIdx); entity += bestMatch }
-      }
-    }
-    graph.coref
-  }
+  def instantiateModel(optimizer:GradientOptimizer,pool:ExecutorService) = new SoftMaxParallelTrainer(optimizer,pool)
 
   class SoftMaxParallelTrainer(optimizer: GradientOptimizer, pool: ExecutorService) extends ParallelTrainer(optimizer,pool){
     def map(d:MentionGraph): Seq[Example] = model.getExample(d)
   }
+
+  def infer(coref: WithinDocCoref): WithinDocCoref = {
+    val instance = new MentionGraph(model,coref,options)
+    val scores = model.scoreGraph(instance)
+    for(i <- 0 until coref.mentions.size){
+      val m1 = coref.mentions(i)
+      val (bestCandIndx,score) = getBestCandidate(instance, scores(i), i)
+      val bestCand = coref.mentions(bestCandIndx)
+      if(bestCand != m1){
+        if(bestCand.entity ne null)
+          bestCand.entity += m1
+        else {val entity = coref.newEntity(); entity += m1; entity += bestCand }
+      }
+    }
+    coref
+  }
+
+  def getBestCandidate(mentionGraph: MentionGraph, scores: Array[Double], currMentionIdx: Int): (Int,Double) = {
+    val antecedentScores = model.normAntecedents(scores)
+    var bestIdx = -1
+    var bestProb = Double.NegativeInfinity
+    for (anteIdx <- 0 to currMentionIdx) {
+      val currProb = antecedentScores(anteIdx)
+      if (bestIdx == -1 || currProb > bestProb) {
+        bestIdx = anteIdx
+        bestProb = currProb
+      }
+    }
+    (bestIdx,bestProb)
+  }
 }
 
-class MentionGraphLabel(model:CorefModel, val currentMention: Int, val linkedMention: Int, val initialValue: Boolean, val lossScore:Double) extends LabeledCategoricalVariable(if (initialValue) "YES" else "NO"){
+class MentionGraphLabel(model: CorefModel,val currentMention: Int, val linkedMention: Int, val initialValue: Boolean, val lossScore: Double, mentions: Seq[Mention],options: CorefOptions) extends LabeledCategoricalVariable(if (initialValue) "YES" else "NO"){
   def domain = model.MentionPairLabelDomain
+  lazy val features = new MentionPairFeatures(model,mentions(currentMention),mentions(linkedMention),mentions,options)
 }
 
-class MentionGraph(model:CorefModel,val coref: WithinDocCoref,options:CorefOptions,train:Boolean = false){
-  var orderedMentionList = coref.mentions.toSeq
+class MentionGraph(model: CorefModel, val coref: WithinDocCoref, options: CorefOptions, train: Boolean = false){
+  var orderedMentionList = coref.mentions
   var graph = new Array[Array[MentionGraphLabel]](orderedMentionList.size)
-  val features = new Array[Array[MentionPairFeatures]](orderedMentionList.size)
   var prunedEdges = new Array[Array[Boolean]](orderedMentionList.size)
 
   for (i <- 0 until orderedMentionList.size) {
-    features(i) = Array.fill(i+1)(null.asInstanceOf[MentionPairFeatures])
     prunedEdges(i) = Array.fill(i+1)(false)
   }
-  generateGraph()
-  def generateGraph() = {
-    for (currMentionIdx <- 0 until orderedMentionList.size) {
-      graph(currMentionIdx) = new Array[MentionGraphLabel](currMentionIdx+1)
-      val currentMention = orderedMentionList(currMentionIdx)
-      for (anteMentionIdx <- 0 to currMentionIdx) {
-        val anteMention = orderedMentionList(anteMentionIdx)
-        //If we don't have a constraint on the pair, then add the linking mention as a possible antecedent
-        if(!pruneMentionPair(currMentionIdx,anteMentionIdx)){
-          val lossScore = if(train) getLossScore(currentMention,anteMention) else 0.0
-          var initialValue = false
-          if(train){
-            initialValue = if(currentMention == anteMention){
-              //This is ugly but it's a side effect of having singleton clusters during training
-              currentMention.entity == null || (currentMention.entity != null && currentMention == currentMention.entity.children.head)
-            } else currentMention.entity != null && anteMention.entity != null && currentMention.entity == anteMention.entity
-          }
-          graph(currMentionIdx)(anteMentionIdx) = new MentionGraphLabel(model,currMentionIdx,anteMentionIdx,initialValue,lossScore)
-          features(currMentionIdx)(anteMentionIdx) = new MentionPairFeatures(model,currentMention,anteMention,orderedMentionList,options)
-        } else prunedEdges(currMentionIdx)(anteMentionIdx) = true
-      }
-    }
-  }
 
-  def getGoldAntecendents(mentionIdx: Int): Seq[Mention]={
-    graph(mentionIdx).filter(_.initialValue).map(_.linkedMention).map(orderedMentionList)
+  for (currMentionIdx <- 0 until orderedMentionList.size) {
+    graph(currMentionIdx) = new Array[MentionGraphLabel](currMentionIdx+1)
+    val currentMention = orderedMentionList(currMentionIdx)
+    for (anteMentionIdx <- 0 to currMentionIdx) {
+      val anteMention = orderedMentionList(anteMentionIdx)
+      //If we don't have a constraint on the pair, then add the linking mention as a possible antecedent
+      if(!pruneMentionPair(currMentionIdx,anteMentionIdx)){
+        val lossScore = if(train) getLossScore(currentMention,anteMention) else 0.0
+        var initialValue = false
+        if(train){
+          initialValue = if(currentMention == anteMention){
+            //This is ugly but it's a side effect of having singleton clusters during training
+            currentMention.entity == null || (currentMention.entity != null && currentMention == currentMention.entity.children.head)
+          } else currentMention.entity != null && anteMention.entity != null && currentMention.entity == anteMention.entity
+        }
+        graph(currMentionIdx)(anteMentionIdx) = new MentionGraphLabel(model,currMentionIdx,anteMentionIdx,initialValue,lossScore,orderedMentionList,options)
+      } else prunedEdges(currMentionIdx)(anteMentionIdx) = true
+    }
   }
 
   def pruneMentionPair(currMentionIdx:Int, anteMentionIdx:Int):Boolean = {

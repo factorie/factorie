@@ -17,8 +17,8 @@ import cc.factorie.app.nlp.load.LoadConll2011
 class ConllEntityType(targetValue:String) extends LabeledCategoricalVariable(targetValue) {
   def domain = ConllNerDomain
 }
-class ConllPhraseEntityType(val phrase:Phrase, targetValue:String) extends ConllEntityType(targetValue)
 
+class ConllPhraseEntityType(val phrase:Phrase, targetValue:String) extends ConllEntityType(targetValue)
 
 /** Categorical variable indicating whether the noun phrase is person, location, organization, etc. 
     according to the Ontonotes entity type domain. */
@@ -26,11 +26,8 @@ class OntonotesEntityType(targetValue:String,val exactMatch:Boolean = false) ext
   def domain = OntonotesEntityTypeDomain
 
 }
+
 class OntonotesPhraseEntityType(val phrase:Phrase, targetValue:String, exactMatch:Boolean = false) extends OntonotesEntityType(targetValue,exactMatch)
-
-
-
-
 
 class OntonotesPhraseEntityTypeLabeler extends DocumentAnnotator {
   def this(stream:InputStream) = { this(); deserialize(stream) }
@@ -97,8 +94,6 @@ class OntonotesPhraseEntityTypeLabeler extends DocumentAnnotator {
     if (PersonLexicon.contains(mention) || isWordNetPerson(mention.headToken)) OntonotesEntityTypeDomain.index("PERSON")
     else model.classification(features(mention).value).bestLabelIndex
   }
-
-
 
   def filterTrainingNounPhrases(phrases:Seq[Phrase]): Iterable[Phrase] =
     // TODO This used to filter out phrases corresponding to entities with only one mention, but now we need the Mention to do this. 
