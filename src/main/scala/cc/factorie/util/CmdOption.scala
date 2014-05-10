@@ -91,7 +91,7 @@ class CmdOptions {
   def usageString: String = {
     val sb = new StringBuffer
     sb append "Usage: "
-    opts.values.foreach(o => { if (o.hasValue) sb.append(o.name+"="+o.valueName) else sb.append(o.name); sb.append(" ") })
+    opts.values.foreach(o => { if (o.hasValue) sb.append("--" + o.name+"="+o.valueName) else sb.append(o.name); sb.append(" ") })
     sb.toString
   }
   /** The arguments that were unqualified by dashed options. */
@@ -283,7 +283,8 @@ class CmdOptions {
     }
     // TODO Format long help messages more nicely.
     def helpString: String = {
-      val defaultValueString = defaultValue match { case d:Seq[_] => d.mkString(","); case _ => "" }
+      val defaultValueString = if(defaultValue == null)  "null" else defaultValue  match { case d:Seq[_] => d.mkString(",");  case _ => defaultValue }
+
       if (valueClass != noClass) "--%-15s %s\n".format(name+"="+valueName, helpMsg+"  Default="+defaultValueString)
       else "--%-15s %s\n".format(name, helpMsg)
     }
