@@ -13,13 +13,13 @@ FACTORIE Part-of-Speech Tagger
 
 A part-of-speech tagger (POS tagger) is a program that takes human-language text as input and attempts to automatically determine the grammatical POS tags (noun, verb, etc.) of each token in the text. We achieve this by training a simple probabilistic model that, given a token of text, predicts its part-of-speech given its form and context in the sentence. Our tagger uses a fast and accurate forward model based heavily on the one described in the following paper:
 
-Jinho D. Choi and Martha Palmer. 2012. [Fast and Robust Part-of-Speech Tagging Using Dynamic Model Selection](http://aclweb.org/anthology//P/P12/P12-2071.pdf). In Proceedings of the 50th Annual Meeting of the Association for Computational Linguistics (ACL12), pp. 363--367.
+> Jinho D. Choi and Martha Palmer. 2012. [Fast and Robust Part-of-Speech Tagging Using Dynamic Model Selection](http://aclweb.org/anthology//P/P12/P12-2071.pdf). In Proceedings of the 50th Annual Meeting of the Association for Computational Linguistics (ACL12), pp. 363--367.
 
 Unlike the above, our tagger does not perform dynamic model selection. It is trained using regularized AdaGrad, with l1, l2, learning rate, delta, feature count cutoff, and number of training iterations hyperparameters tuned via grid search using a development set.
 
-We provide two pre-trained models, one trained on the Ontonotes English corpus and one trained on Penn Treebank WSJ sections 0-22. The default tagger in Factorie is the model trained on Ontonotes, a cross-domain dataset guaranteeing relatively high inter-annotator accuracy, called OntonotesForwardPosTagger.
+We provide two pre-trained models, one trained on the Ontonotes English corpus and one trained on Penn Treebank WSJ sections 0-18. The default tagger in Factorie is the model trained on Ontonotes, a cross-domain dataset guaranteeing relatively high inter-annotator accuracy, called OntonotesForwardPosTagger.
 
-Our tagger is both fast and accurate, processing more than 20K tokens/second and achieving 97.22% accuracy on WSJ section 24.
+Our tagger is both fast and accurate, processing more than 20K tokens/second and achieving 97.22% accuracy on WSJ sections 22-24.
 
 ## How to use ##
 
@@ -82,7 +82,7 @@ testfile="--test-file=/path/to/test/data"
 save="--save-model=true"
 model="--model=$modelname"
 
-java -classpath factorie-jar-with-dependencies-1.0.jar -Xmx$memory cc.factorie.app.nlp.pos.ForwardPosWithTemplatesTrainer --owpl $trainfile $testfile $save $model
+java -classpath factorie-jar-with-dependencies-1.0-SNAPSHOT.jar -Xmx$memory cc.factorie.app.nlp.pos.ForwardPosTrainer --owpl $trainfile $testfile $save $model
 ```
 
 This will train a model on the given training data, testing accuracy on the given test data, and saving the trained model to a file called “ForwardPosTagger.factorie”. If you are training on a lot of data, you may need to increase the amount of memory allocated to the JVM. For example, to train on the Ontonotes corpus requires about 16GB.
