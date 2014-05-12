@@ -70,9 +70,14 @@ object ForwardCorefTrainer extends CorefTrainer{
 
     val mentPairClsf =
       if (opts.deserialize.wasInvoked){
-        val lr = new ForwardCoref()
+
+        val lr = if(opts.deserialize.value == "NerForwardCoref.factorie") new NerForwardCoref()
+                 else if (opts.deserialize.value == "ParseForwardCoref.factorie") new ParseForwardCoref()
+                 else new ForwardCoref()
+
         //copy over options that are tweakable at test time
 	      println("deserializing from " + opts.deserialize.value)
+
         lr.deserialize(opts.deserialize.value)  //note that this may overwrite some of the options specified at the command line.  The idea is that there are certain options that must be consistent
         //between train and test. These options were serialized with the model, and set when you deserialize the model.
 
@@ -89,11 +94,10 @@ object ForwardCorefTrainer extends CorefTrainer{
       else{
         lr.train(trainDocs, testDocs, WordNet, rng, opts.saveFrequency.wasInvoked,opts.saveFrequency.value,opts.serialize.value, opts.learningRate.value)
         println(timer.timings)
-        lr
+        if (opts.serialize.wasInvoked)
+          lr.serialize(opts.serialize.value)
       }
 
-    if (opts.serialize.wasInvoked && !opts.deserialize.wasInvoked)
-      mentPairClsf.serialize(opts.serialize.value)
 
     if (opts.writeConllFormat.value)
       writeConllOutput(testDocs)
@@ -149,12 +153,15 @@ object StructuredCorefTrainer extends CorefTrainer{
     if (opts.deserialize.wasInvoked){
       //copy over options that are tweakable at test time
       println("deserializing from " + opts.deserialize.value)
-      coreferenceSystem.deserialize(opts.deserialize.value)  //note that this may overwrite some of the options specified at the command line.  The idea is that there are certain options that must be consistent
+      val testSystem = if(opts.deserialize.value == "NerStructuredCoref.factorie") new NERAndPronounStructuredCoreference()
+      else if (opts.deserialize.value == "ParseStructuredCoref.factorie") new ParseStructuredCoreference()
+      else new StructuredCoref()
+      testSystem.deserialize(opts.deserialize.value)  //note that this may overwrite some of the options specified at the command line.  The idea is that there are certain options that must be consistent
       //between train and test. These options were serialized with the model, and set when you deserialize the model.
 
-      coreferenceSystem.model.MentionPairFeaturesDomain.freeze()
-      accuracy = coreferenceSystem.doTest( testDocs, WordNet,"Test")
-      coreferenceSystem
+      testSystem.model.MentionPairFeaturesDomain.freeze()
+      accuracy = testSystem.doTest( testDocs, WordNet,"Test")
+      testSystem
     }else{
       accuracy = coreferenceSystem.train(trainDocs,testDocs, WordNet, rng,opts.saveFrequency.wasInvoked,opts.saveFrequency.value,opts.serialize.value, opts.learningRate.value)
       if (opts.serialize.wasInvoked && !opts.deserialize.wasInvoked)
