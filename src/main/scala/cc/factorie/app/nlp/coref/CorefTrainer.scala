@@ -235,20 +235,20 @@ abstract class CorefTrainer extends HyperparameterMain with Trackable{
     if (useNerMentions) {
       map(classOf[NerTag]) = () => ConllChainNer
     }
-
-    val trainDocs:Seq[Document] = if(loadTrain){
-      val allTrainDocs = LoadConll2011.loadWithParse(trainFile)
+    var trainDocs: Seq[Document] = null
+    if(loadTrain){
+      val allTrainDocs = LoadConll2011.loadWithParse(trainFile, loadSingletons = false)
       val unalignedTrainDocs = allTrainDocs.take((allTrainDocs.length*opts.portion.value).toInt)
-      MentionAlignment.makeLabeledData(unalignedTrainDocs,null,options.useEntityType, options, map.toMap)
-    } else null
-    println("Train: "+trainDocs.length+" documents, " + trainDocs.map(d => d.coref.mentions.size).sum.toFloat / trainDocs.length + " mentions/doc")
-    val testDocs:Seq[Document] = {
-      val allTestDocs = LoadConll2011.loadWithParse(testFile)
+      trainDocs = MentionAlignment.makeLabeledData(unalignedTrainDocs,null,options.useEntityType, options, map.toMap)
+      println("Train: "+trainDocs.length+" documents, " + trainDocs.map(d => d.targetCoref.mentions.size).sum.toFloat / trainDocs.length + " mentions/doc")
+    }
+
+    val testDocs: Seq[ Document] = {
+      val allTestDocs = LoadConll2011.loadWithParse(testFile, loadSingletons = false)
       val unalignedTestDocs = allTestDocs.take((allTestDocs.length*opts.portion.value).toInt)
       MentionAlignment.makeLabeledData(unalignedTestDocs,null,options.useEntityType, options, map.toMap)
     }
-    println("Test : "+ testDocs.length+" documents, " + testDocs.map(d => d.coref.mentions.size).sum.toFloat / testDocs.length + " mention/doc")
-    assert(trainDocs.head.sections.head.sentences.head.indexInSection != trainDocs.head.sections.head.sentences(1).indexInSection)
+    println("Test : "+ testDocs.length+" documents, " + testDocs.map(d => d.targetCoref.mentions.size).sum.toFloat / testDocs.length + " mention/doc")
     if(!useNerMentions){
       val labeler = NounPhraseEntityTypeLabeler
       if (loadTrain)  for (doc <- trainDocs; mention <- doc.coref.mentions) labeler.process(mention.phrase)

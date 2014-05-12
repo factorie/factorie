@@ -160,24 +160,6 @@ class StructuredCorefModel extends CorefModel {
     antecedents
   }
 
-  def findBestAntecedents(mentionGraph: MentionGraph, scoreFunction: Int => Array[Double]): Array[(Int,Double)] = {
-    val anaphors = new Array[(Int,Double)](mentionGraph.graph.length)
-    for (currMentionIdx <- 0 until mentionGraph.graph.length) {
-      val allAnteCandidates = scoreFunction(currMentionIdx)
-      var bestIdx = -1
-      var bestProb = Double.NegativeInfinity
-      for (anteIdx <- 0 to currMentionIdx) {
-        val currProb = allAnteCandidates(anteIdx)
-        if (bestIdx == -1 || currProb > bestProb) {
-          bestIdx = anteIdx
-          bestProb = currProb
-        }
-      }
-      anaphors(currMentionIdx) = (bestIdx,bestProb)
-    }
-    anaphors
-  }
-
   def scoreGraph(mentionGraph: MentionGraph): Array[Array[Double]] = {
     val scores = new Array[Array[Double]](mentionGraph.graph.length)
     for (i <- 0 until mentionGraph.graph.length) {

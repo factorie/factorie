@@ -3,10 +3,6 @@ package cc.factorie.app.nlp.coref
 import cc.factorie.util.F1Evaluation
 import cc.factorie.app.nlp.TokenSpan
 
-
-/** Various helper methods for printing coreference score Metrics.
-    @author Alexandre Passos
-    @author Caitlin Cellier - updated April*/
 class CorefConllOutput {
   val macroMUC = new F1Evaluation
   val microB3 = new F1Evaluation
