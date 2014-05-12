@@ -21,7 +21,7 @@ import scala.reflect.ClassTag
  * User:harshal, John Sullivan
  * Date: 10/28/13
  */
-abstract class CorefSampler[Vars <: NodeVariables[Vars]](model:CorefModel[Vars], val mentions:Iterable[Node[Vars]], val iterations:Int)(implicit override val random:Random, val varsTag:ClassTag[Vars])
+abstract class CorefSampler[Vars <: NodeVariables[Vars]](override val model:CorefModel[Vars], val mentions:Iterable[Node[Vars]], val iterations:Int)(implicit override val random:Random, val varsTag:ClassTag[Vars])
   extends SettingsSampler[(Node[Vars], Node[Vars])](model) {
   this: PairContextGenerator[Vars] with MoveGenerator[Vars] =>
 
