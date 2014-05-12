@@ -5,8 +5,7 @@ import scala.collection.mutable
 import cc.factorie.app.nlp._
 import cc.factorie.app.nlp.pos.PennPosTag
 import collection.mutable.ArrayBuffer
-import cc.factorie.app.nlp.phrase.{NounPhraseEntityTypeLabeler,OntonotesPhraseEntityType}
-import cc.factorie.app.nlp.phrase.ParseAndNerBasedPhraseFinder
+import cc.factorie.app.nlp.phrase.{ParseBasedPhraseFinder, NounPhraseEntityTypeLabeler, OntonotesPhraseEntityType, ParseAndNerBasedPhraseFinder}
 
 /** Used for training with predicted mentions.
  * If the predicted mention is equal to or within some specified alignment width in options we add the true spans entity label if any
@@ -31,8 +30,8 @@ object MentionAlignment {
     val numCorrect = alignmentInfo.map(_.numcorrect).sum.toDouble
     val numGT = alignmentInfo.map(_.numGT).sum.toDouble
     val numDetected = alignmentInfo.map(_.numDetected).sum.toDouble
-    println("precision = " + numCorrect/numDetected)
-    println("recall = " + numCorrect/numGT)
+    println("precision = " + numCorrect + " / " + numDetected + " = " + numCorrect/numDetected)
+    println("recall = " + numCorrect + " / " + numGT + " = " + numCorrect/numGT)
 
     documents
   }
@@ -43,14 +42,15 @@ object MentionAlignment {
     }else if(!options.useNERMentions){
       ParseAndNerBasedPhraseFinder.FILTER_APPOS = true
       val map = if(annotatorMap eq null) DocumentAnnotatorPipeline.defaultDocumentAnnotationMap else annotatorMap
-      DocumentAnnotatorPipeline(map, prereqs=Nil, ParseAndNerBasedPhraseFinder.prereqAttrs.toSeq).process(doc)
-      ParseAndNerBasedPhraseFinder.getPhrases(doc).foreach(doc.coref.addMention)
+      DocumentAnnotatorPipeline(map, prereqs=Nil, ParseBasedPhraseFinder.prereqAttrs.toSeq).process(doc)
+      ParseBasedPhraseFinder.getPhrases(doc).foreach(doc.coref.addMention)
     }else {
       val defaultMap = if(annotatorMap eq null) DocumentAnnotatorPipeline.defaultDocumentAnnotationMap else annotatorMap
       val preReqs = ConllProperNounPhraseFinder.prereqAttrs ++ PronounFinder.prereqAttrs ++AcronymNounPhraseFinder.prereqAttrs
       DocumentAnnotatorPipeline.apply(map=defaultMap.toMap, prereqs=Nil, preReqs).process(doc)
       (ConllProperNounPhraseFinder(doc) ++ PronounFinder(doc) ++ AcronymNounPhraseFinder(doc)).foreach(doc.getCoref.addMention)
     }
+    DocumentAnnotatorPipeline.apply(DocumentAnnotatorPipeline.defaultDocumentAnnotationMap, prereqs=Nil, ForwardCoref.prereqAttrs).process(doc)
   }
 
   case class PrecRecReport(numcorrect: Int,numGT: Int, numDetected: Int)
@@ -59,6 +59,7 @@ object MentionAlignment {
   //the alignment is based on an **exact match** between the mention boundaries
   def alignMentions(gtDoc: Document, wn: WordNet, useEntityTypes: Boolean, options: CorefOptions, shifts: Seq[Int],annotatorMap:DocumentAnnotatorMap = null): (PrecRecReport) = {
     val groundTruthMentions = gtDoc.targetCoref.entities.filter(!_.isSingleton).flatMap(e => e.children).toSeq
+
     //Set predicted mentions on the coref attribute of the document
     if(gtDoc.coref.mentions.isEmpty) findMentions(gtDoc,options)
     val detectedMentions = gtDoc.getCoref.mentions.toSeq
@@ -82,20 +83,31 @@ object MentionAlignment {
     detectedMentions.foreach(m => {
       val alignment = checkContainment(gtSpanHash,gtHeadHash,m, options, shifts)
       if(alignment.isDefined){
-          val gtMention = alignment.get
-          val entity = gtMention.entity
-          //Make the close alignment our new ground truth for training
-          gtDoc.getTargetCoref.deleteMention(gtMention)
-          gtDoc.getTargetCoref.addMention(m.phrase)
-          if(entity != null){
-            m._setEntity(entity)
-            if(entityHash(gtMention.entity).length > 1) relevantExactMatches += 1
-            exactMatches += 1
-          }
-          else
-            NounPhraseEntityTypeLabeler.process(m.phrase)
+        val gtMention = alignment.get
+        val entity = gtMention.entity
+        //If aligned gold mention was a gold entity
+        if(entity != null) {
           gtAligned(gtMention) = true
           if(debug) println("aligned: " + gtMention.string +":" + gtMention.phrase.start   + "  " + m.phrase.string + ":" + m.phrase.start)
+          if(entityHash(gtMention.entity).length > 1) relevantExactMatches += 1
+          exactMatches += 1
+          if(options.useEntityType) m.phrase.attr += gtMention.phrase.attr[OntonotesPhraseEntityType]
+          else NounPhraseEntityTypeLabeler.process(m.phrase)
+          gtDoc.getTargetCoref.deleteMention(gtMention)
+          gtDoc.getTargetCoref.addMention(m.phrase)
+          m._setEntity(entity)
+          entity += m
+        }
+        //If the aligned gold mention was a loaded singleton, use any annotation information if wanted
+        else{
+          if(options.useEntityType) m.phrase.attr += gtMention.phrase.attr[OntonotesPhraseEntityType]
+          else NounPhraseEntityTypeLabeler.process(m.phrase)
+          gtDoc.getTargetCoref.deleteMention(gtMention)
+          gtDoc.getTargetCoref.addMention(m.phrase)
+          unAlignedEntityCount += 1
+          falsePositives1 += m
+        }
+        //Make the close alignment our new ground truth for training
       }else{
           if(debug) println("not aligned: "  +  m.string + ":" + m.phrase.start)
           //Add our mention which was unaligned to the target coref as a singleton for training
@@ -105,8 +117,8 @@ object MentionAlignment {
           falsePositives1 += m
       }
     })
+    val relevantGTMentions = groundTruthMentions.size
 
-    val relevantGTMentions = groundTruthMentions.count(m => entityHash(m.entity).length > 1)
     new PrecRecReport(relevantExactMatches,relevantGTMentions,detectedMentions.length)
   }
 

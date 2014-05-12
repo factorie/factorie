@@ -13,7 +13,7 @@ trait ForwardCorefTrainerOpts extends CorefTrainerOpts{
   val numPositivePairsTest = new CmdOption("prune-test", 100, "INT", "number of positive pairs before pruning instances in testing")
   val numThreads = new CmdOption("num-threads", 4, "INT", "Number of threads to use")
   val featureComputationsPerThread = new CmdOption("feature-computations-per-thread", 2, "INT", "Number of feature computations per thread to run in parallel during training")
-  val numTrainingIterations = new CmdOption("num-training-iterations", 1, "INT", "Number of passes through the training data")
+  val numTrainingIterations = new CmdOption("num-training-iterations", 4, "INT", "Number of passes through the training data")
   val useMIRA = new CmdOption("use-mira", false, "BOOLEAN", "Whether to use MIRA as an optimizer")
   val saveFrequency = new CmdOption("save-frequency", 1, "INT", "how often to save the model between epochs")
   val trainPortionForTest = new CmdOption("train-portion-for-test", 0.1, "DOUBLE", "When testing on train, what portion to use.")
@@ -30,7 +30,6 @@ trait ForwardCorefTrainerOpts extends CorefTrainerOpts{
   val serialize = new CmdOption("serialize", "ForwardCoref.factorie", "FILE", "Filename in which to serialize classifier.")
   val deserialize = new CmdOption("deserialize", "", "FILE", "Filename from which to deserialize classifier.")
   val useAverageIterate = new CmdOption("use-average-iterate", true, "BOOLEAN", "Use the average iterate instead of the last iterate?")
-
 }
 
 object ForwardCorefTrainer extends CorefTrainer{
@@ -242,11 +241,13 @@ abstract class CorefTrainer extends HyperparameterMain with Trackable{
       val unalignedTrainDocs = allTrainDocs.take((allTrainDocs.length*opts.portion.value).toInt)
       MentionAlignment.makeLabeledData(unalignedTrainDocs,null,options.useEntityType, options, map.toMap)
     } else null
+    println("Train: "+trainDocs.length+" documents, " + trainDocs.map(d => d.coref.mentions.size).sum.toFloat / trainDocs.length + " mentions/doc")
     val testDocs:Seq[Document] = {
-      val allTestDocs = LoadConll2011.loadWithParse(trainFile)
+      val allTestDocs = LoadConll2011.loadWithParse(testFile)
       val unalignedTestDocs = allTestDocs.take((allTestDocs.length*opts.portion.value).toInt)
       MentionAlignment.makeLabeledData(unalignedTestDocs,null,options.useEntityType, options, map.toMap)
     }
+    println("Test : "+ testDocs.length+" documents, " + testDocs.map(d => d.coref.mentions.size).sum.toFloat / testDocs.length + " mention/doc")
     assert(trainDocs.head.sections.head.sentences.head.indexInSection != trainDocs.head.sections.head.sentences(1).indexInSection)
     if(!useNerMentions){
       val labeler = NounPhraseEntityTypeLabeler

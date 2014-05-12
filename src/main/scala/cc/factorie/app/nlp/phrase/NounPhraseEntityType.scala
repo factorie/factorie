@@ -141,14 +141,14 @@ class OntonotesPhraseEntityTypeLabeler extends DocumentAnnotator {
     import cc.factorie.util.CubbieConversions._
     val dstream = new java.io.DataInputStream(new BufferedInputStream(stream))
     BinarySerializer.deserialize(FeatureDomain.dimensionDomain, dstream)
-    model.weights.set(new la.DenseLayeredTensor2(PennPosDomain.size, FeatureDomain.dimensionDomain.size, new la.SparseIndexedTensor1(_)))
+    model.weights.set(new la.DenseLayeredTensor2(FeatureDomain.dimensionDomain.size, OntonotesEntityTypeDomain.size, new la.SparseIndexedTensor1(_)))
     BinarySerializer.deserialize(model, dstream)
     dstream.close()  // TODO Are we really supposed to close here, or is that the responsibility of the caller
   }
 
 }
 
-object NounPhraseEntityTypeLabeler extends OntonotesPhraseEntityTypeLabeler(cc.factorie.util.ClasspathURL[OntonotesPhraseEntityTypeLabeler](".factorie"))
+object NounPhraseEntityTypeLabeler extends OntonotesPhraseEntityTypeLabeler(new File("OntonotesPhraseEntityTypeLabeler.factorie"))
 
 object NounPhraseEntityTypeLabelerTrainer {
   def main(args:Array[String]): Unit = {

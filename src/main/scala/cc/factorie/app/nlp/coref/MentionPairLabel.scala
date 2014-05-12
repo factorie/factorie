@@ -158,7 +158,6 @@ class MentionPairFeatures(val model: CorefModel, val mention1:Mention, val menti
     addMergeableFeature("cap" + m1.capitalization +"_" +  m2.capitalization)
     addMergeableFeature("hpos" + mention2.phrase.headToken.posTag.value + "_" + mention1.phrase.headToken.posTag.value)
     addMergeableFeature("am" + CorefFeatures.acronymMatch(mention1,mention2))
-    addMergeableFeature("Poss1"+m1.isPossessive + "|Poss2"+m2.isPossessive)
     basicFeatureCalculated = true
   }
 
@@ -222,8 +221,8 @@ class TopTokenFrequencies(val headWords: DefaultHashMap[String,Int],
     if(typesOfCounts.contains("Head")) TokenFreqs.countWordTypes(nonPronouns,(t) => t.phrase.headToken.string.toLowerCase,default) else null,
     if(typesOfCounts.contains("First")) TokenFreqs.countWordTypes(nonPronouns,(t) => t.phrase.tokens(0).string.toLowerCase,default)else null,
     if(typesOfCounts.contains("Last")) TokenFreqs.countWordTypes(nonPronouns,(t) => t.phrase.last.string.toLowerCase,default)else null,
-    if(typesOfCounts.contains("Prec")) TokenFreqs.countWordTypes(nonPronouns,(t) => TokenFreqs.getTokenAtOffset(t.phrase.tokens(0),-1).string.toLowerCase,default)else null,
-    if(typesOfCounts.contains("Follow")) TokenFreqs.countWordTypes(nonPronouns,(t) => TokenFreqs.getTokenAtOffset(t.phrase.last,1).string.toLowerCase,default)else null,
+    if(typesOfCounts.contains("Prec")) TokenFreqs.countWordTypes(nonPronouns,(t) => TokenFreqs.getTokenStringAtOffset(t.phrase.tokens(0),-1).toLowerCase,default)else null,
+    if(typesOfCounts.contains("Follow")) TokenFreqs.countWordTypes(nonPronouns,(t) => TokenFreqs.getTokenStringAtOffset(t.phrase.last,1).toLowerCase,default)else null,
     if(typesOfCounts.contains("Shape")) TokenFreqs.countWordTypes(nonPronouns,(t) => cc.factorie.app.strings.stringShape(t.phrase.string.toLowerCase,2),default)else null,
     if(typesOfCounts.contains("WordForm")) TokenFreqs.countWordTypes(nonPronouns,(t) => TokenFreqs.getWordClass(t.phrase.headToken),default)else null)
 
@@ -251,6 +250,7 @@ object TokenFreqs{
   }
 
   def getTokenAtOffset(token: Token,offset: Int): Token = { val t = token.next(offset); if (t ne null) t else null }
+  def getTokenStringAtOffset(token: Token,offset: Int): String = { val t = token.next(offset); if (t ne null) t.string else ""}
 
   def getWordClass(word: Token):String = {
     val sb = new StringBuilder

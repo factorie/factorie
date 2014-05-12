@@ -86,7 +86,7 @@ class ImplicitCrossProductCorefModel extends PairwiseCorefModel {
 }
 
 class StructuredCorefModel extends CorefModel {
-  val pairwiseWeights = Weights(new la.DenseTensor1(MentionPairFeaturesDomain.dimensionDomain.size))
+  val pairwiseWeights = Weights(new la.DenseTensor1(MentionPairFeaturesDomain.dimensionDomain.maxSize))
 
   def predict(pairwiseStats: Tensor1) = pairwiseWeights.value dot pairwiseStats
 
@@ -157,9 +157,7 @@ class StructuredCorefModel extends CorefModel {
     for(anteIn <- 0 until antecedents.length) {
       antecedents(anteIn) /= total
     }
-    val newants = antecedents.map(_/total)
-    assert(newants.zip(antecedents).forall{case(a,b)=>a==b})
-    newants
+    antecedents
   }
 
   def findBestAntecedents(mentionGraph: MentionGraph, scoreFunction: Int => Array[Double]): Array[(Int,Double)] = {
@@ -222,9 +220,9 @@ class StructuredCorefModel extends CorefModel {
 
   def computeLikelihood( mentionGraph: MentionGraph, goldMarginal: Array[Array[Double]],predictedMarginalScores: Array[Array[Double]]): Double = {
     var likelihood = 0.0
-    for (currIdx <- 0 to mentionGraph.graph.length-1) {
+    for (currIdx <- 0 until mentionGraph.graph.length) {
       val currMention = mentionGraph.orderedMentionList(currIdx)
-      var goldAntecedents = if(currMention.entity ne null) currMention.entity.mentions.filter(m => mentionGraph.orderedMentionList.indexOf(m) < currIdx) else Iterable.empty
+      var goldAntecedents = if(currMention.entity ne null) currMention.entity.mentions.filter(m => m.phrase.start < currMention.phrase.start) else Iterable.empty
       if(goldAntecedents.isEmpty) goldAntecedents = Set(currMention)
       var currProb = 0.0
       for (linkIdx <- 0 until goldAntecedents.size) {

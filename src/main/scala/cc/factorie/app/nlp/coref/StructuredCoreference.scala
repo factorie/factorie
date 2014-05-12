@@ -96,7 +96,7 @@ class MentionGraphLabel(model: CorefModel,val currentMention: Int, val linkedMen
 }
 
 class MentionGraph(model: CorefModel, val coref: WithinDocCoref, options: CorefOptions, train: Boolean = false){
-  var orderedMentionList = coref.mentions
+  var orderedMentionList = coref.mentions.sortBy(m=>m.phrase.start)
   var graph = new Array[Array[MentionGraphLabel]](orderedMentionList.size)
   var prunedEdges = new Array[Array[Boolean]](orderedMentionList.size)
 
@@ -116,7 +116,7 @@ class MentionGraph(model: CorefModel, val coref: WithinDocCoref, options: CorefO
         if(train){
           initialValue = if(currentMention == anteMention){
             //This is ugly but it's a side effect of having singleton clusters during training
-            currentMention.entity == null || (currentMention.entity != null && currentMention == currentMention.entity.children.head)
+            currentMention.entity == null || (currentMention.entity != null && currentMention == currentMention.entity.getFirstMention)
           } else currentMention.entity != null && anteMention.entity != null && currentMention.entity == anteMention.entity
         }
         graph(currMentionIdx)(anteMentionIdx) = new MentionGraphLabel(model,currMentionIdx,anteMentionIdx,initialValue,lossScore,orderedMentionList,options)
@@ -140,18 +140,17 @@ class MentionGraph(model: CorefModel, val coref: WithinDocCoref, options: CorefO
     if (anteMentionIdx < currMentionIdx - options.maxMentDist || (currentMention.phrase.isPronoun && currSentIdx - anteSentIdx > options.maxPronDist)) {
       skip = true
     }
-    if(antecedentMention != currentMention && antecedentMention.phrase.tokens.exists(t=> currentMention.phrase.tokens.contains(t))) skip = true
+    if(antecedentMention != currentMention && !antecedentMention.phrase.tokens.intersect(currentMention.phrase.tokens).isEmpty) skip = true
     skip
   }
 
   def getLossScore(currMention:Mention, antMention:Mention):Double = {
-    val oracleCluster = if(currMention.entity ne null) currMention.entity.children else Iterable(currMention)
-    val headGold = oracleCluster.head
-    if (headGold == currMention && currMention != antMention) {
+    val headCluster = if(currMention.entity ne null) currMention.entity.getFirstMention else currMention
+    if (headCluster == currMention && currMention != antMention) {
       falseLinkScore
-    } else if (headGold != currMention && currMention == antMention) {
+    } else if (headCluster != currMention && currMention == antMention) {
       falseNewScore
-    } else if (headGold != currMention && currMention.entity == antMention.entity) {
+    } else if (headCluster != currMention && currMention.entity == antMention.entity) {
       wrongLinkScore
     } else {
       0.0

@@ -76,8 +76,10 @@ abstract class WithinDocEntity(val document:Document) extends AbstractEntity {
   private val _mentions = new scala.collection.mutable.LinkedHashSet[Mention]
   def parent: WithinDocEntity = null
   def mentions:scala.collection.Set[Mention] = _mentions
-  def isSingleton:Boolean = _mentions.size < 2 //TODO Is this okay to do? or is there a better way
+  def isSingleton:Boolean = _mentions.size == 1 //TODO Is this okay to do? or is there a better way
+  def isEmpty:Boolean = _mentions.isEmpty
   def children: Iterable[Mention] = _mentions
+  def getFirstMention: Mention = if(isEmpty) null else if(isSingleton) _mentions.head else mentions.toSeq.sortBy(m => m.phrase.start).head
   def +=(mention:Mention): Unit = {
     assert(mention.phrase.document eq document)
     //assert(!_mentions.contains(mention)) // No reason to do this; might catch a bug.
@@ -129,7 +131,6 @@ class WithinDocCoref(val document:Document) extends EvaluatableClustering[Within
     def this(phrase:Phrase, entityKey:Int) = this(phrase, entityFromKey(entityKey)) // Typically used for labeled data
     def this(phrase:Phrase, entityUniqueId:String) = this(phrase, entityFromUniqueId(entityUniqueId)) // Typically used for deserialization
     def this(phrase:Phrase) = this(phrase, null.asInstanceOf[WithinDocEntity]) // Typically used for new inference // TODO Should this be null, or a newly created blank Entity; See LoadConll2011 also.
-    assert(!_spanToMention.contains(phrase.value))
     assert(entity == null || entity.asInstanceOf[WithinDocEntity1].coref == WithinDocCoref.this)
     _spanToMention(phrase.value) = this
     val uniqueId = WithinDocCoref.this.uniqueId + "//Mention(" + phrase.start + "," + phrase.length + ")" // TODO Is this what we want? -akm

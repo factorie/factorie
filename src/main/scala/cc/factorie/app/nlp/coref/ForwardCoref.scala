@@ -12,10 +12,10 @@ import cc.factorie.app.nlp.pos.PennPosTag
 
 /**Forward Coreference on Proper Noun, Pronoun and Common Noun Mentions*/
 class ParseForwardCoref extends ForwardCoref {
-  override def prereqAttrs: Seq[Class[_]] = ParseAndNerBasedPhraseFinder.prereqAttrs.toSeq
+  override def prereqAttrs: Seq[Class[_]] = ParseAndNerBasedPhraseFinder.prereqAttrs.toSeq ++ ForwardCoref.prereqAttrs
   deserialize(new DataInputStream(ClasspathURL[ForwardCoref](".factorie").openConnection().getInputStream))
   override def annotateMentions(document:Document): Unit = {
-    ParseAndNerBasedPhraseFinder.getPhrases(document).foreach(document.coref.addMention)
+    if(document.coref.mentions.isEmpty) ParseAndNerBasedPhraseFinder.getPhrases(document).foreach(document.coref.addMention)
     NounPhraseEntityTypeLabeler.process(document)
     NounPhraseGenderLabeler.process(document)
     NounPhraseNumberLabeler.process(document)
@@ -28,7 +28,7 @@ object ParseForwardCoref extends ParseForwardCoref {
 
 /** Forward Coreference on Ner and Pronoun Mentions*/
 class NerForwardCoref extends ForwardCoref {
-  override def prereqAttrs: Seq[Class[_]] = (ConllProperNounPhraseFinder.prereqAttrs ++ AcronymNounPhraseFinder.prereqAttrs++PronounFinder.prereqAttrs ++ NnpPosNounPhraseFinder.prereqAttrs).distinct
+  override def prereqAttrs: Seq[Class[_]] = (ConllProperNounPhraseFinder.prereqAttrs ++ AcronymNounPhraseFinder.prereqAttrs++PronounFinder.prereqAttrs ++ NnpPosNounPhraseFinder.prereqAttrs ++ ForwardCoref.prereqAttrs).distinct
   override def annotateMentions(doc:Document): Unit = {
     (ConllProperNounPhraseFinder(doc) ++ PronounFinder(doc) ++ NnpPosNounPhraseFinder(doc)++ AcronymNounPhraseFinder(doc)).distinct.foreach(phrase => doc.getCoref.addMention(phrase))
     NounPhraseEntityTypeLabeler.process(doc)
@@ -39,6 +39,16 @@ class NerForwardCoref extends ForwardCoref {
 
 object NerForwardCoref extends NerForwardCoref {
   deserialize(new DataInputStream(ClasspathURL[NerForwardCoref](".factorie").openConnection().getInputStream))
+}
+
+class ForwardCoref extends ForwardCorefBase {
+  val model = new BaseCorefModel
+}
+
+object ForwardCoref extends ForwardCoref
+
+class ForwardCorefImplicitConjunctions extends ForwardCorefBase {
+  val model = new ImplicitCrossProductCorefModel
 }
 
 abstract class ForwardCorefBase extends CorefSystem[Seq[MentionPairLabel]] {
@@ -64,7 +74,7 @@ abstract class ForwardCorefBase extends CorefSystem[Seq[MentionPairLabel]] {
    * @param coref This is expected to be the true coreference class for the document
    * @return Sequence of training labels for this document*/
   def getCorefStructure(coref:WithinDocCoref): Seq[MentionPairLabel] = {
-    val mentions = coref.mentions.toSeq
+    val mentions = coref.mentions.sortBy(m=>m.phrase.start)
     val labels = new ArrayBuffer[MentionPairLabel]
     for (i <- 0 until mentions.size){
       if(!options.usePronounRules || !mentions(i).phrase.isPronoun)
@@ -104,9 +114,8 @@ abstract class ForwardCorefBase extends CorefSystem[Seq[MentionPairLabel]] {
       val candidateLabelFeatures = label.genFeatures()
       //If we want to merge features of our antecedent with any of it's previous mentions,
       if(options.mergeFeaturesAtAll && label.mention2.entity != null){
-        val matchingPreviousLabelsFeatures = previousLabels.filter(l => l.label.mention2.entity == label.mention2.entity)
-        mergeFeatures(candidateLabelFeatures, matchingPreviousLabelsFeatures.map(_.features))
-        if(!matchingPreviousLabelsFeatures.isEmpty)mergeFeatures(candidateLabelFeatures, matchingPreviousLabelsFeatures.map(_.features))
+        val matchingPreviousLabelsFeatures = previousLabels.lastIndexWhere(l => l.label.mention2.entity == label.mention2.entity)
+        if(matchingPreviousLabelsFeatures != -1) mergeFeatures(candidateLabelFeatures, previousLabels(matchingPreviousLabelsFeatures).features)
       }
       previousLabels += new MentionPairLabelFeatures(label,candidateLabelFeatures)
     }
@@ -122,11 +131,11 @@ abstract class ForwardCorefBase extends CorefSystem[Seq[MentionPairLabel]] {
     }
   }
 
-  def mergeFeatures(l: MentionPairFeatures, mergeables: Seq[MentionPairFeatures]) {
+  def mergeFeatures(l: MentionPairFeatures, mergeables: MentionPairFeatures) {
     if (options.mergeFeaturesAtAll) {
       assert(l.features.activeCategories.forall(!_.startsWith("NBR")))
       val mergeLeft = ArrayBuffer[MentionPairFeatures]()
-      mergeables.take(1).diff(mergeLeft).foreach(l.features ++= _.features.mergeableAllFeatures.map("NBRR_" + _))
+      l.features ++= mergeables.features.mergeableAllFeatures.map("NBRR_" + _)
     }
   }
 
@@ -140,7 +149,7 @@ abstract class ForwardCorefBase extends CorefSystem[Seq[MentionPairLabel]] {
         return true
       }
     }
-    if(anaphor.phrase.tokens.exists(t => antecedent.phrase.tokens.contains(t))) return true
+    if(!anaphor.phrase.tokens.intersect(antecedent.phrase.tokens).isEmpty) return true
     if (label && numAntecedents > 0 && !options.pruneNegTrain) return true
     return false
   }
@@ -148,7 +157,7 @@ abstract class ForwardCorefBase extends CorefSystem[Seq[MentionPairLabel]] {
     val cataphora = antecedent.phrase.isPronoun && !anaphor.phrase.isPronoun
     if(options.usePronounRules && antecedent.phrase.isPronoun) return true
     else if(cataphora || options.allowTestCataphora) return true
-    if(anaphor.phrase.tokens.exists(t => antecedent.phrase.tokens.contains(t))) return true
+    if(!anaphor.phrase.tokens.intersect(antecedent.phrase.tokens).isEmpty) return true
     return false
   }
 
@@ -158,11 +167,11 @@ abstract class ForwardCorefBase extends CorefSystem[Seq[MentionPairLabel]] {
    * @return
    */
   def infer(coref: WithinDocCoref): WithinDocCoref = {
-    val mentions = coref.mentions.toSeq//.distinct
+    val mentions = coref.mentions.sortBy(m => m.phrase.start)
     assert(mentions.forall(m => mentions.count(m2=> m2.phrase.value == m.phrase.value) < 2))
     for (i <- 0 until coref.mentions.size) {
       val m1 = mentions(i)
-      val bestCand = getBestCandidate(coref, i)
+      val bestCand = getBestCandidate(coref,mentions, i)
       if (bestCand != null) {
         if(bestCand.entity ne null){
           bestCand.entity += m1
@@ -175,9 +184,8 @@ abstract class ForwardCorefBase extends CorefSystem[Seq[MentionPairLabel]] {
     coref
   }
 
-  def getBestCandidate(coref: WithinDocCoref, mInt: Int): Mention = {
+  def getBestCandidate(coref: WithinDocCoref, mentions: Seq[Mention], mInt: Int): Mention = {
     val candidateLabels = ArrayBuffer[MentionPairFeatures]()
-    val mentions = coref.mentions.toSeq
     var bestCandidate: Mention = null
     var bestScore = Double.MinValue
     var anteIdx = mInt
@@ -187,8 +195,8 @@ abstract class ForwardCorefBase extends CorefSystem[Seq[MentionPairLabel]] {
       val m2 = mentions(anteIdx)
       if (!pruneMentionPairTesting(m1,m2)) {
         val candidateLabel = new MentionPairFeatures(model, m1, m2, mentions, options=options)
-        val mergeables = candidateLabels.filter(l => l.mention2.entity == m2.entity && m2.entity!= null)
-        mergeFeatures(candidateLabel, mergeables)
+        val mergeables = candidateLabels.lastIndexWhere(l => l.mention2.entity != null &&l.mention2.entity == candidateLabel.mention2.entity)
+        if(mergeables != -1) mergeFeatures(candidateLabel, candidateLabels(mergeables))
         candidateLabels += candidateLabel
         val score =  if (m1.phrase.isProperNoun && m1.attr[MentionCharacteristics].nounWords.forall(m2.attr[MentionCharacteristics].nounWords.contains)
                                 && m2.attr[MentionCharacteristics].nounWords.forall(m1.attr[MentionCharacteristics].nounWords.contains)
@@ -210,13 +218,6 @@ abstract class ForwardCorefBase extends CorefSystem[Seq[MentionPairLabel]] {
 }
 
 
-class ForwardCoref extends ForwardCorefBase {
-  val model = new BaseCorefModel
-}
-
-class ForwardCorefImplicitConjunctions extends ForwardCorefBase {
-  val model = new ImplicitCrossProductCorefModel
-}
 
 
 /**Base class for any coreference system
@@ -329,7 +330,7 @@ abstract class CorefSystem[CoreferenceStructure] extends DocumentAnnotator with 
 
       infer(predCoref)
 
-      val b3 = ClusterF1Evaluation.OldBCubedNoSingletons(predCoref, trueCoref)
+      val b3 = ClusterF1Evaluation.BCubedNoSingletons(predCoref, trueCoref)
       val ce = ClusterF1Evaluation.CeafE(predCoref,trueCoref)
       val muc = ClusterF1Evaluation.MUCNoSingletons(predCoref, trueCoref)
       val cm = ClusterF1Evaluation.CeafM(predCoref,trueCoref)
@@ -363,7 +364,7 @@ abstract class CorefSystem[CoreferenceStructure] extends DocumentAnnotator with 
 
   def assertSorted(mentions: Seq[Mention]): Unit = {
     for(i <- 0 until mentions.length)
-      assert(mentions(i).phrase.tokens.head.stringStart >= mentions(i-1).phrase.tokens.head.stringStart, "the mentions are not sorted by their position in the document. Error at position " +i+ " of " + mentions.length)
+      assert(mentions(i).phrase.tokens.head.stringStart <= mentions(i+1).phrase.tokens.head.stringStart, "the mentions are not sorted by their position in the document. Error at position " +i+ " of " + mentions.length)
   }
 
   def deserialize(stream: DataInputStream) {
