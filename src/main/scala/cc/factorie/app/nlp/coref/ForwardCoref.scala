@@ -29,11 +29,11 @@ object ParseForwardCoref extends ParseForwardCoref {
 /** Forward Coreference on Ner and Pronoun Mentions*/
 class NerForwardCoref extends ForwardCoref {
   override def prereqAttrs: Seq[Class[_]] = (ConllProperNounPhraseFinder.prereqAttrs ++ AcronymNounPhraseFinder.prereqAttrs++PronounFinder.prereqAttrs ++ NnpPosNounPhraseFinder.prereqAttrs ++ ForwardCoref.prereqAttrs).distinct
-  override def annotateMentions(doc:Document): Unit = {
-    (ConllProperNounPhraseFinder(doc) ++ PronounFinder(doc) ++ NnpPosNounPhraseFinder(doc)++ AcronymNounPhraseFinder(doc)).distinct.foreach(phrase => doc.getCoref.addMention(phrase))
-    NounPhraseEntityTypeLabeler.process(doc)
-    NounPhraseGenderLabeler.process(doc)
-    NounPhraseNumberLabeler.process(doc)
+  override def annotateMentions(document:Document): Unit = {
+    if(document.coref.mentions.isEmpty) (ConllProperNounPhraseFinder(document) ++ PronounFinder(document) ++ NnpPosNounPhraseFinder(document)++ AcronymNounPhraseFinder(document)).distinct.foreach(phrase => document.getCoref.addMention(phrase))
+    NounPhraseEntityTypeLabeler.process(document)
+    NounPhraseGenderLabeler.process(document)
+    NounPhraseNumberLabeler.process(document)
   }
 }
 
@@ -75,6 +75,7 @@ abstract class ForwardCorefBase extends CorefSystem[Seq[MentionPairLabel]] {
    * @return Sequence of training labels for this document*/
   def getCorefStructure(coref:WithinDocCoref): Seq[MentionPairLabel] = {
     val mentions = coref.mentions.sortBy(m=>m.phrase.start)
+    assertSorted(mentions)
     val labels = new ArrayBuffer[MentionPairLabel]
     for (i <- 0 until mentions.size){
       if(!options.usePronounRules || !mentions(i).phrase.isPronoun)
@@ -95,7 +96,7 @@ abstract class ForwardCorefBase extends CorefSystem[Seq[MentionPairLabel]] {
     var i = anaphorIndex - 1
     while (i >= 0 && (numAntecedents < options.numPositivePairsTrain || !options.pruneNegTrain)) {
       val m2 = orderedMentions(i)
-      val label = m1.entity == m2.entity
+      val label = m1.entity != null & m1.entity == m2.entity
       if (!pruneMentionPairTraining(m1,m2,label,numAntecedents)) {
         val cl = new MentionPairLabel(model, m1, m2, orderedMentions, label, options=options)
         if(label) numAntecedents += 1
@@ -179,7 +180,7 @@ abstract class ForwardCorefBase extends CorefSystem[Seq[MentionPairLabel]] {
         else{
           val entity = coref.newEntity(); entity += bestCand; entity += m1
         }
-      }
+      }else {val entity = coref.newEntity(); entity += m1}
     }
     coref
   }
@@ -330,6 +331,9 @@ abstract class CorefSystem[CoreferenceStructure] extends DocumentAnnotator with 
 
       infer(predCoref)
 
+      predCoref.removeSingletons()
+      trueCoref.removeSingletons()
+
       val b3 = ClusterF1Evaluation.BCubedNoSingletons(predCoref, trueCoref)
       val ce = ClusterF1Evaluation.CeafE(predCoref,trueCoref)
       val muc = ClusterF1Evaluation.MUCNoSingletons(predCoref, trueCoref)
@@ -363,7 +367,7 @@ abstract class CorefSystem[CoreferenceStructure] extends DocumentAnnotator with 
   }
 
   def assertSorted(mentions: Seq[Mention]): Unit = {
-    for(i <- 0 until mentions.length)
+    for(i <- 0 until mentions.length -1)
       assert(mentions(i).phrase.tokens.head.stringStart <= mentions(i+1).phrase.tokens.head.stringStart, "the mentions are not sorted by their position in the document. Error at position " +i+ " of " + mentions.length)
   }
 

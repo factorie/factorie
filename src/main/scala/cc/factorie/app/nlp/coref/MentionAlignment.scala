@@ -33,6 +33,7 @@ object MentionAlignment {
     println("precision = " + numCorrect + " / " + numDetected + " = " + numCorrect/numDetected)
     println("recall = " + numCorrect + " / " + numGT + " = " + numCorrect/numGT)
 
+
     documents
   }
 
@@ -53,12 +54,13 @@ object MentionAlignment {
     DocumentAnnotatorPipeline.apply(DocumentAnnotatorPipeline.defaultDocumentAnnotationMap, prereqs=Nil, ForwardCoref.prereqAttrs).process(doc)
   }
 
-  case class PrecRecReport(numcorrect: Int,numGT: Int, numDetected: Int)
+  case class PrecRecReport(numcorrect: Int, numGT: Int, numDetected: Int)
 
   //for each of the mentions in detectedMentions, this adds a reference to a ground truth entity
   //the alignment is based on an **exact match** between the mention boundaries
   def alignMentions(gtDoc: Document, wn: WordNet, useEntityTypes: Boolean, options: CorefOptions, shifts: Seq[Int],annotatorMap:DocumentAnnotatorMap = null): (PrecRecReport) = {
     val groundTruthMentions = gtDoc.targetCoref.entities.filter(!_.isSingleton).flatMap(e => e.children).toSeq
+    val relevantGTMentions = groundTruthMentions.size
 
     //Set predicted mentions on the coref attribute of the document
     if(gtDoc.coref.mentions.isEmpty) findMentions(gtDoc,options)
@@ -76,6 +78,7 @@ object MentionAlignment {
     var relevantExactMatches = 0
     var unAlignedEntityCount = 0
     val debug = false
+
     //here, we create a bunch of new entity objects, that differ from the entities that the ground truth mentions point to
     //however, we index them by the same uIDs that the ground mentions use
     val entityHash = groundTruthMentions.groupBy(m => m.entity).toMap
@@ -87,23 +90,22 @@ object MentionAlignment {
         val entity = gtMention.entity
         //If aligned gold mention was a gold entity
         if(entity != null) {
+          if(entityHash(gtMention.entity).length > 1 && !gtAligned(gtMention)) relevantExactMatches += 1
           gtAligned(gtMention) = true
-          if(debug) println("aligned: " + gtMention.string +":" + gtMention.phrase.start   + "  " + m.phrase.string + ":" + m.phrase.start)
-          if(entityHash(gtMention.entity).length > 1) relevantExactMatches += 1
+          if(debug) println("aligned: " + gtMention.string +":" + gtMention.phrase.start   + "  " + m.phrase.string + ":" + m.phrase.start +" " + gtMention.entity.uniqueId)
+
           exactMatches += 1
           if(options.useEntityType) m.phrase.attr += gtMention.phrase.attr[OntonotesPhraseEntityType]
           else NounPhraseEntityTypeLabeler.process(m.phrase)
-          gtDoc.getTargetCoref.deleteMention(gtMention)
-          gtDoc.getTargetCoref.addMention(m.phrase)
-          m._setEntity(entity)
-          entity += m
+          val newEntity = gtDoc.coref.entityFromUniqueId(gtMention.entity.uniqueId)
+          newEntity += m
         }
         //If the aligned gold mention was a loaded singleton, use any annotation information if wanted
         else{
           if(options.useEntityType) m.phrase.attr += gtMention.phrase.attr[OntonotesPhraseEntityType]
           else NounPhraseEntityTypeLabeler.process(m.phrase)
-          gtDoc.getTargetCoref.deleteMention(gtMention)
-          gtDoc.getTargetCoref.addMention(m.phrase)
+          val newEntity = gtDoc.coref.entityFromUniqueId(gtDoc.name + "-" + gtDoc.targetCoref.entities.size+unAlignedEntityCount)
+          newEntity += m
           unAlignedEntityCount += 1
           falsePositives1 += m
         }
@@ -111,15 +113,28 @@ object MentionAlignment {
       }else{
           if(debug) println("not aligned: "  +  m.string + ":" + m.phrase.start)
           //Add our mention which was unaligned to the target coref as a singleton for training
-          gtDoc.getTargetCoref.addMention(m.phrase)
           m.phrase.attr += new OntonotesPhraseEntityType(m.phrase,"O")
+          val newEntity = gtDoc.coref.entityFromUniqueId(gtDoc.name + "-" + gtDoc.targetCoref.entities.size+unAlignedEntityCount)
+          newEntity += m
           unAlignedEntityCount += 1
           falsePositives1 += m
       }
     })
-    val relevantGTMentions = groundTruthMentions.size
 
-    new PrecRecReport(relevantExactMatches,relevantGTMentions,detectedMentions.length)
+    val countUnAligned = gtAligned.count(!_._2)
+    val newCoref = new WithinDocCoref(gtDoc)
+    newCoref.target = gtDoc.coref
+    //So we don't have to perform mention finding twice
+    gtDoc.coref.mentions.foreach(m => newCoref.addMention(m.phrase))
+    gtDoc.attr += newCoref
+//    for(entity <- gtDoc.targetCoref.entities){
+//      println(entity.uniqueId)
+//      for(mention<-entity.children){
+//        println(mention.phrase)
+//      }
+//      println("----------------------")
+//    }
+    new PrecRecReport(relevantGTMentions-countUnAligned,relevantGTMentions,detectedMentions.length)
   }
 
   def getHeadTokenInDoc(m: Mention): Int = m.phrase.start + m.phrase.headTokenOffset

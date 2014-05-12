@@ -136,21 +136,6 @@ class StructuredCorefModel extends CorefModel {
     BinarySerializer.serialize(this,stream)
   }
 
-  def getBestCandidatesAntecedents(mentionGraph: MentionGraph): Array[(Int,Double)] = {
-    val scores = scoreGraph(mentionGraph)
-    val cluster = findBestAntecedents(mentionGraph, (idx: Int) => {
-      val probs = scores(idx).map(Math.exp)
-      val total = probs.reduce(_+_)
-      var i = 0
-      while (i < probs.size) {
-        probs(i) /= total
-        i += 1
-      }
-      probs
-    })
-    cluster
-  }
-
   def normAntecedents(scores: Array[Double]): Array[Double] = {
     val antecedents = scores.map(Math.exp)
     val total = antecedents.reduce(_+_)

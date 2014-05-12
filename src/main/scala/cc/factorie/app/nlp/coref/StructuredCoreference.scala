@@ -61,16 +61,17 @@ class StructuredCoref extends CorefSystem[MentionGraph]{
 
   def infer(coref: WithinDocCoref): WithinDocCoref = {
     val instance = new MentionGraph(model,coref,options)
+    val mentions = instance.orderedMentionList
     val scores = model.scoreGraph(instance)
-    for(i <- 0 until coref.mentions.size){
-      val m1 = coref.mentions(i)
+    for(i <- 0 until instance.orderedMentionList.length){
+      val m1 = mentions(i)
       val (bestCandIndx,score) = getBestCandidate(instance, scores(i), i)
-      val bestCand = coref.mentions(bestCandIndx)
+      val bestCand = mentions(bestCandIndx)
       if(bestCand != m1){
         if(bestCand.entity ne null)
           bestCand.entity += m1
         else {val entity = coref.newEntity(); entity += m1; entity += bestCand }
-      }
+      } else {val entity = coref.newEntity();entity+=m1}
     }
     coref
   }
