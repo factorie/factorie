@@ -1,7 +1,6 @@
-/* Copyright (C) 2008-2010 University of Massachusetts Amherst,
-   Department of Computer Science.
+/* Copyright (C) 2008-2014 University of Massachusetts Amherst.
    This file is part of "FACTORIE" (Factor graphs, Imperative, Extensible)
-   http://factorie.cs.umass.edu, http://code.google.com/p/factorie/
+   http://factorie.cs.umass.edu, http://github.com/factorie
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
    You may obtain a copy of the License at
@@ -210,7 +209,7 @@ class ParseTree(val sentence:Sentence, theTargetParents:Seq[Int], theTargetLabel
         val childIdx = token.positionInSentence
         val parentIdx = token.parseParentIndex
         val label = token.parseLabel.categoryValue
-        builder.append("  \\depedge{%s}{%s}{%s}".format(parentIdx + 1, childIdx + 1, label)).append(System.lineSeparator()) // latex uses 1-indexing
+        builder.append("  \\depedge{%s}{%s}{%s}".format(parentIdx + 1, childIdx + 1, label)).append("\n") // latex uses 1-indexing
         texEdges(childIdx, builder)
       }
         builder
@@ -222,14 +221,13 @@ class ParseTree(val sentence:Sentence, theTargetParents:Seq[Int], theTargetLabel
     val rootString = "  \\deproot{%s}{%s}".format(rootId, rootLabel)
 
     val sb = new StringBuilder
-    sb.append("""\begin{dependency}""").append(System.lineSeparator())
-    sb.append("""  \begin{deptext}""").append(System.lineSeparator())
-    sb.append(sentenceString).append(System.lineSeparator())
-    sb.append("""  \end{deptext}""").append(System.lineSeparator())
-    sb.append(rootString).append(System.lineSeparator())
+    sb.append("""\begin{dependency}""").append("\n")
+    sb.append("""  \begin{deptext}""").append("\n")
+    sb.append(sentenceString).append("\n")
+    sb.append("""  \end{deptext}""").append("\n")
+    sb.append(rootString).append("\n")
     texEdges(rootId, sb)
-    sb.append("""\end{dependency}""").append(System.lineSeparator())
-
+    sb.append("""\end{dependency}""").append("\n")
 
     sb.toString()
   }
