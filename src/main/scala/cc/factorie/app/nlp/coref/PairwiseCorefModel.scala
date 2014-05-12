@@ -10,12 +10,6 @@ import cc.factorie.util.BinarySerializer
 import cc.factorie.variable.{VectorDomain, DiscreteDomain, CategoricalVectorDomain, CategoricalDomain}
 import cc.factorie.model.Parameters
 
-/**
- * User: apassos
- * Date: 6/27/13
- * Time: 12:20 PM
- */
-
 trait CorefModel extends Parameters {
   val MentionPairFeaturesDomain = new CategoricalVectorDomain[String] {
     dimensionDomain.maxSize = 1e6.toInt

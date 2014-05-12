@@ -195,7 +195,7 @@ class MentionPairFeatures(val model: CorefModel, val mention1:Mention, val menti
       if(m1.lowerCaseHead == m2.lowerCaseHead) addFeature("Head_Match")
       else addFeature("No_Head_Match")
 
-      addFeature("curr-type" + m1.predictEntityType + "link-type" + m2.predictEntityType)
+      addFeature("curr-type" + m1.predictEntityType + "|link-type" + m2.predictEntityType)
       addFeature("gmc1" + m1.genderIndex + "|gmc2"+m2.genderIndex)
     }
   }

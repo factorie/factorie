@@ -2,12 +2,6 @@ package cc.factorie.app.nlp.coref
 
 import scala.collection.mutable
 
-/**
- * User: apassos
- * Date: 6/27/13
- * Time: 12:20 PM
- */
-
 class CorefOptions {
   import ConjunctionOptions._
   def getConfigHash = mutable.HashMap[String,String]() ++= configHash.map(x => (x._1,x._2.toString))
