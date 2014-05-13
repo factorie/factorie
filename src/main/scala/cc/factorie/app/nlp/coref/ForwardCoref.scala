@@ -13,12 +13,11 @@ import cc.factorie.app.nlp.pos.PennPosTag
 /**Forward Coreference on Proper Noun, Pronoun and Common Noun Mentions*/
 class ParseForwardCoref extends ForwardCoref {
   override def prereqAttrs: Seq[Class[_]] = ParseAndNerBasedPhraseFinder.prereqAttrs.toSeq ++ ForwardCoref.prereqAttrs
-  deserialize(new DataInputStream(ClasspathURL[ForwardCoref](".factorie").openConnection().getInputStream))
   override def annotateMentions(document:Document): Unit = {
     if(document.coref.mentions.isEmpty) ParseAndNerBasedPhraseFinder.getPhrases(document).foreach(document.coref.addMention)
-    NounPhraseEntityTypeLabeler.process(document)
-    NounPhraseGenderLabeler.process(document)
-    NounPhraseNumberLabeler.process(document)
+    document.coref.mentions.foreach(mention => NounPhraseEntityTypeLabeler.process(mention.phrase))
+    document.coref.mentions.foreach(mention => NounPhraseGenderLabeler.process(mention.phrase))
+    document.coref.mentions.foreach(mention => NounPhraseNumberLabeler.process(mention.phrase))
   }
 }
 
@@ -31,9 +30,9 @@ class NerForwardCoref extends ForwardCoref {
   override def prereqAttrs: Seq[Class[_]] = (ConllProperNounPhraseFinder.prereqAttrs ++ AcronymNounPhraseFinder.prereqAttrs++PronounFinder.prereqAttrs ++ NnpPosNounPhraseFinder.prereqAttrs ++ ForwardCoref.prereqAttrs).distinct
   override def annotateMentions(document:Document): Unit = {
     if(document.coref.mentions.isEmpty) (ConllProperNounPhraseFinder(document) ++ PronounFinder(document) ++ NnpPosNounPhraseFinder(document)++ AcronymNounPhraseFinder(document)).distinct.foreach(phrase => document.getCoref.addMention(phrase))
-    NounPhraseEntityTypeLabeler.process(document)
-    NounPhraseGenderLabeler.process(document)
-    NounPhraseNumberLabeler.process(document)
+    document.coref.mentions.foreach(mention => NounPhraseEntityTypeLabeler.process(mention.phrase))
+    document.coref.mentions.foreach(mention => NounPhraseGenderLabeler.process(mention.phrase))
+    document.coref.mentions.foreach(mention => NounPhraseNumberLabeler.process(mention.phrase))
   }
 }
 
