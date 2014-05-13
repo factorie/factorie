@@ -127,13 +127,7 @@ object MentionAlignment {
     //So we don't have to perform mention finding twice
     gtDoc.coref.mentions.foreach(m => newCoref.addMention(m.phrase))
     gtDoc.attr += newCoref
-//    for(entity <- gtDoc.targetCoref.entities){
-//      println(entity.uniqueId)
-//      for(mention<-entity.children){
-//        println(mention.phrase)
-//      }
-//      println("----------------------")
-//    }
+
     new PrecRecReport(relevantGTMentions-countUnAligned,relevantGTMentions,detectedMentions.length)
   }
 
