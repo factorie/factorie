@@ -10,11 +10,11 @@ import cc.factorie.app.nlp.phrase.ParseAndNerBasedPhraseFinder
 import java.io.DataInputStream
 import cc.factorie.util.ClasspathURL
 
-object NERAndPronounStructuredCoreference extends NERAndPronounStructuredCoreference{
-  deserialize(new DataInputStream(ClasspathURL[NERAndPronounStructuredCoreference](".factorie").openConnection().getInputStream))
+object NerStructuredCoref extends NerStructuredCoref{
+  deserialize(new DataInputStream(ClasspathURL[NerStructuredCoref](".factorie").openConnection().getInputStream))
 }
 
-class NERAndPronounStructuredCoreference extends StructuredCoref{
+class NerStructuredCoref extends StructuredCoref{
   override def prereqAttrs: Seq[Class[_]] = (ConllProperNounPhraseFinder.prereqAttrs ++ AcronymNounPhraseFinder.prereqAttrs++PronounFinder.prereqAttrs ++ NnpPosNounPhraseFinder.prereqAttrs).distinct
   override def annotateMentions(doc:Document): Unit = {
     (ConllProperNounPhraseFinder(doc) ++ PronounFinder(doc) ++ NnpPosNounPhraseFinder(doc)++ AcronymNounPhraseFinder(doc)).distinct.foreach(phrase => doc.getCoref.addMention(phrase))
@@ -24,15 +24,15 @@ class NERAndPronounStructuredCoreference extends StructuredCoref{
   }
 }
 
-object ParseStructuredCoreference extends ParseStructuredCoreference{
-  deserialize(new DataInputStream(ClasspathURL[ParseStructuredCoreference](".factorie").openConnection().getInputStream))
+object ParseStructuredCoref extends ParseStructuredCoref{
+  deserialize(new DataInputStream(ClasspathURL[ParseStructuredCoref](".factorie").openConnection().getInputStream))
 }
 
 //Uses Parse Based Mention Finding, best for data with nested mentions in the ontonotes annotation style
-class ParseStructuredCoreference extends StructuredCoref{
+class ParseStructuredCoref extends StructuredCoref{
   override def prereqAttrs: Seq[Class[_]] = ParseAndNerBasedPhraseFinder.prereqAttrs.toSeq
   override def annotateMentions(doc:Document): Unit = {
-    ParseAndNerBasedPhraseFinder.process(doc)
+    if(doc.coref.mentions.isEmpty) ParseAndNerBasedPhraseFinder.getPhrases(doc).foreach(doc.coref.addMention)
     doc.coref.mentions.foreach(mention => NounPhraseEntityTypeLabeler.process(mention.phrase))
     doc.coref.mentions.foreach(mention => NounPhraseGenderLabeler.process(mention.phrase))
     doc.coref.mentions.foreach(mention => NounPhraseNumberLabeler.process(mention.phrase))
@@ -44,7 +44,6 @@ class StructuredCoref extends CorefSystem[MentionGraph]{
   val options = new CorefOptions
   val model: StructuredCorefModel = new StructuredCorefModel
   override def prereqAttrs: Seq[Class[_]] = Seq(classOf[Sentence],classOf[PennPosTag])
-  def tokenAnnotationString(token:Token):String = ???
 
   def preprocessCorpus(trainDocs:Seq[Document]) = {
     val nonPronouns = trainDocs.flatMap(_.targetCoref.mentions.filterNot(m => m.phrase.isPronoun))

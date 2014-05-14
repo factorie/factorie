@@ -4,7 +4,6 @@ import java.io._
 import cc.factorie.app.nlp.parse._
 import java.net.{ServerSocket,Socket,SocketException}
 import cc.factorie.app.nlp.coref.MentionList
-import cc.factorie.app.nlp.phrase._
 
 /** A command-line driver for DocumentAnnotators.
     Launch on the command-line, specifying which NLP pipeline steps you want, 
@@ -44,8 +43,8 @@ object NLP {
       
       // coref
       val deterministicNamedCoref = new CmdOption[String]("d-named-coref", null, "", "Simple deterministic coreference on named entities") { override def invoke() = { annotators += coref.DeterministicNamedCoref } }
-      val parsestructuredcoref = new CmdOption[String]("parse-lexical-coref", null, "URL", "Annotate within-document noun mention coreference using a state-of-the-art system and parse-based mention finding") { override def invoke() = {  if (value ne null) System.setProperty(classOf[coref.ParseStructuredCoreference].getName, value); annotators += cc.factorie.app.nlp.coref.ParseStructuredCoreference } }
-      val nerstructuredcoref = new CmdOption[String]("ner-lexical-coref", null, "URL", "Annotate within-document proper- and pro-noun mention coreference using a state-of-the-art system") { override def invoke() = { if (value ne null) System.setProperty(classOf[coref.NERAndPronounStructuredCoreference].getName, value); annotators += coref.NERAndPronounStructuredCoreference} }
+      val parsestructuredcoref = new CmdOption[String]("parse-lexical-coref", null, "URL", "Annotate within-document noun mention coreference using a state-of-the-art system and parse-based mention finding") { override def invoke() = {  if (value ne null) System.setProperty(classOf[coref.ParseStructuredCoref].getName, value); annotators += cc.factorie.app.nlp.coref.ParseStructuredCoref } }
+      val nerstructuredcoref = new CmdOption[String]("ner-lexical-coref", null, "URL", "Annotate within-document proper- and pro-noun mention coreference using a state-of-the-art system") { override def invoke() = { if (value ne null) System.setProperty(classOf[coref.NerStructuredCoref].getName, value); annotators += coref.NerStructuredCoref} }
       val parseforwardcoref = new CmdOption[String]("parse-forward-coref", null, "URL", "Annotate within-document noun mention coreference using a state-of-the-art system and parse-based mention finding") { override def invoke() = {  if (value ne null) System.setProperty(classOf[coref.ParseForwardCoref].getName, value); annotators += cc.factorie.app.nlp.coref.ParseForwardCoref } }
       val nerforwardcoref = new CmdOption[String]("ner-forward-coref", null, "URL", "Annotate within-document proper- and pro-noun mention coreference using a state-of-the-art system") { override def invoke() = { if (value ne null) System.setProperty(classOf[coref.NerForwardCoref].getName, value); annotators += coref.NerForwardCoref} }
 
