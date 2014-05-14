@@ -157,7 +157,7 @@ object StructuredCorefTrainer extends CorefTrainer{
       else new StructuredCoref()
       testSystem.deserialize(opts.deserialize.value)  //note that this may overwrite some of the options specified at the command line.  The idea is that there are certain options that must be consistent
       //between train and test. These options were serialized with the model, and set when you deserialize the model.
-
+      options.featureSet = "lexical"
       testSystem.model.MentionPairFeaturesDomain.freeze()
       accuracy = testSystem.doTest( testDocs, WordNet,"Test")
       testSystem

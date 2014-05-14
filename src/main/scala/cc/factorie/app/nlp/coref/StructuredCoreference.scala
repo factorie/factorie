@@ -12,6 +12,7 @@ import cc.factorie.util.ClasspathURL
 
 object NerStructuredCoref extends NerStructuredCoref{
   deserialize(new DataInputStream(ClasspathURL[NerStructuredCoref](".factorie").openConnection().getInputStream))
+  options.featureSet = "lexical"
 }
 
 class NerStructuredCoref extends StructuredCoref{
@@ -26,6 +27,7 @@ class NerStructuredCoref extends StructuredCoref{
 
 object ParseStructuredCoref extends ParseStructuredCoref{
   deserialize(new DataInputStream(ClasspathURL[ParseStructuredCoref](".factorie").openConnection().getInputStream))
+  options.featureSet = "lexical"
 }
 
 //Uses Parse Based Mention Finding, best for data with nested mentions in the ontonotes annotation style
@@ -39,7 +41,7 @@ class ParseStructuredCoref extends StructuredCoref{
   }
 }
 
-//Todo: The base Structured Coref class uses Gold Mentions, used for evaluation and tests on ConllData
+/**The base Structured Coref class uses Gold Mentions, used for evaluation and tests on ConllData*/
 class StructuredCoref extends CorefSystem[MentionGraph]{
   val options = new CorefOptions
   val model: StructuredCorefModel = new StructuredCorefModel
@@ -62,15 +64,15 @@ class StructuredCoref extends CorefSystem[MentionGraph]{
     val instance = new MentionGraph(model,coref,options)
     val mentions = instance.orderedMentionList
     val scores = model.scoreGraph(instance)
-    for(i <- 0 until instance.orderedMentionList.length){
+     for(i <- 0 until instance.orderedMentionList.length){
       val m1 = mentions(i)
       val (bestCandIndx,score) = getBestCandidate(instance, scores(i), i)
       val bestCand = mentions(bestCandIndx)
       if(bestCand != m1){
         if(bestCand.entity ne null)
           bestCand.entity += m1
-        else {val entity = coref.newEntity(); entity += m1; entity += bestCand }
-      } else {val entity = coref.newEntity();entity+=m1}
+        else {val entity = coref.newEntity(); entity += m1; entity += bestCand}
+      } else{val entity = coref.newEntity();entity += m1}
     }
     coref
   }
@@ -92,7 +94,7 @@ class StructuredCoref extends CorefSystem[MentionGraph]{
 
 class MentionGraphLabel(model: CorefModel,val currentMention: Int, val linkedMention: Int, val initialValue: Boolean, val lossScore: Double, mentions: Seq[Mention],options: CorefOptions) extends LabeledCategoricalVariable(if (initialValue) "YES" else "NO"){
   def domain = model.MentionPairLabelDomain
-  lazy val features = new MentionPairFeatures(model,mentions(currentMention),mentions(linkedMention),mentions,options)
+  val features = new MentionPairFeatures(model,mentions(currentMention),mentions(linkedMention),mentions,options)
 }
 
 class MentionGraph(model: CorefModel, val coref: WithinDocCoref, options: CorefOptions, train: Boolean = false){
