@@ -68,35 +68,34 @@ object ForwardCorefTrainer extends CorefTrainer{
     addGenderNumberLabeling(trainDocs,testDocs)
     println(timer.timings)
 
-    val mentPairClsf =
-      if (opts.deserialize.wasInvoked){
 
-        val lr = if(opts.deserialize.value == "NerForwardCoref.factorie") new NerForwardCoref()
-                 else if (opts.deserialize.value == "ParseForwardCoref.factorie") new ParseForwardCoref()
-                 else new ForwardCoref()
+    if (opts.deserialize.wasInvoked){
 
-        //copy over options that are tweakable at test time
-	      println("deserializing from " + opts.deserialize.value)
+      val lr = if(opts.deserialize.value == "NerForwardCoref.factorie") new NerForwardCoref()
+               else if (opts.deserialize.value == "ParseForwardCoref.factorie") new ParseForwardCoref()
+               else new ForwardCoref()
 
-        lr.deserialize(opts.deserialize.value)  //note that this may overwrite some of the options specified at the command line.  The idea is that there are certain options that must be consistent
-        //between train and test. These options were serialized with the model, and set when you deserialize the model.
+      //copy over options that are tweakable at test time
+      println("deserializing from " + opts.deserialize.value)
 
-        //However, there are some options that are safe to change at test time. Just to be extra sure, we set this manually back
-        lr.options.setConfig("usePronounRules",options.usePronounRules) //this is safe to tweak at test time if you train separate weights for all the pronoun cases
+      lr.deserialize(opts.deserialize.value)  //note that this may overwrite some of the options specified at the command line.  The idea is that there are certain options that must be consistent
+      //between train and test. These options were serialized with the model, and set when you deserialize the model.
 
-        lr.model.MentionPairFeaturesDomain.freeze()
-        //Add Cached Mention Features
-        for(doc <- testDocs; mention <- doc.coref.mentions) mention.attr += new MentionCharacteristics(mention)
+      //However, there are some options that are safe to change at test time. Just to be extra sure, we set this manually back
+      lr.options.setConfig("usePronounRules",options.usePronounRules) //this is safe to tweak at test time if you train separate weights for all the pronoun cases
 
-        lr.doTest(testDocs, WordNet, "Test")
-        lr
-      }
-      else{
-        lr.train(trainDocs, testDocs, WordNet, rng, opts.saveFrequency.wasInvoked,opts.saveFrequency.value,opts.serialize.value, opts.learningRate.value)
-        println(timer.timings)
-        if (opts.serialize.wasInvoked)
-          lr.serialize(opts.serialize.value)
-      }
+      lr.model.MentionPairFeaturesDomain.freeze()
+      //Add Cached Mention Features
+      for(doc <- testDocs; mention <- doc.coref.mentions) mention.attr += new MentionCharacteristics(mention)
+
+      lr.doTest(testDocs, WordNet, "Test")
+    }
+    else{
+      lr.train(trainDocs, testDocs, WordNet, rng, opts.saveFrequency.wasInvoked,opts.saveFrequency.value,opts.serialize.value, opts.learningRate.value)
+      println(timer.timings)
+      if (opts.serialize.wasInvoked)
+        lr.serialize(opts.serialize.value)
+    }
 
 
     if (opts.writeConllFormat.value)
@@ -153,8 +152,8 @@ object StructuredCorefTrainer extends CorefTrainer{
     if (opts.deserialize.wasInvoked){
       //copy over options that are tweakable at test time
       println("deserializing from " + opts.deserialize.value)
-      val testSystem = if(opts.deserialize.value == "NerStructuredCoref.factorie") new NERAndPronounStructuredCoreference()
-      else if (opts.deserialize.value == "ParseStructuredCoref.factorie") new ParseStructuredCoreference()
+      val testSystem = if(opts.deserialize.value == "NerStructuredCoref.factorie") new NerStructuredCoref()
+      else if (opts.deserialize.value == "ParseStructuredCoref.factorie") new ParseStructuredCoref()
       else new StructuredCoref()
       testSystem.deserialize(opts.deserialize.value)  //note that this may overwrite some of the options specified at the command line.  The idea is that there are certain options that must be consistent
       //between train and test. These options were serialized with the model, and set when you deserialize the model.
@@ -170,7 +169,7 @@ object StructuredCorefTrainer extends CorefTrainer{
 
     if(opts.writeConllFormat.value)
       writeConllOutput(testDocs)
-
+    testDocs.head.tokens.foreach{t => println(coreferenceSystem.tokenAnnotationString(t))}
     accuracy
   }
 }

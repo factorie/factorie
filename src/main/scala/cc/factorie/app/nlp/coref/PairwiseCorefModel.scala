@@ -162,15 +162,18 @@ class StructuredCorefModel extends CorefModel {
       marginals(i) = Array.fill(mentionGraph.graph(i).length)(0.0)
       for(edgeIdx<- 0 until mentionGraph.graph(i).length){
         if(!mentionGraph.prunedEdges(i)(edgeIdx)){
-        val edge = mentionGraph.graph(i)(edgeIdx)
-        if (!gold || goldAntecedents.contains(edge)) {
-          //pair loss score is set at graph generation
-          val unnormalizedProb = Math.exp(scores(i)(edgeIdx) - edge.lossScore)
-          marginals(i)(edgeIdx) = unnormalizedProb
-          normalizer += unnormalizedProb
-        } else {
+          val edge = mentionGraph.graph(i)(edgeIdx)
+          if (!gold || goldAntecedents.contains(edge)) {
+            //pair loss score is set at graph generation
+            val unnormalizedProb = Math.exp(scores(i)(edgeIdx) - edge.lossScore)
+            marginals(i)(edgeIdx) = unnormalizedProb
+            normalizer += unnormalizedProb
+          }
+          else
+            marginals(i)(edgeIdx) = 0.0
+        }
+        else
           marginals(i)(edgeIdx) = 0.0
-        } }else marginals(i)(edgeIdx) = 0.0
       }
       for(edgeIdx<- 0 until mentionGraph.graph(i).length){
         marginals(i)(edgeIdx) = if(normalizer == 0) 0.0 else marginals(i)(edgeIdx) / normalizer
@@ -191,7 +194,8 @@ class StructuredCorefModel extends CorefModel {
         else currProb += goldMarginal(currIdx)(linkIdx) - predictedMarginalScores(currIdx)(linkIdx)
       }
       var currLogProb = Math.log(currProb)
-      if (currLogProb.isInfinite) currLogProb = -30
+      if (currLogProb.isInfinite)
+        currLogProb = -30
       likelihood += currLogProb
     }
     likelihood
