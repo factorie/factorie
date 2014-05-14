@@ -290,7 +290,6 @@ class SparseLDAInferencer(
           // We've sampled from the topicTermMass
           phiCounts.incrementCountsAtPositions(wi, ti, -1, phiCountsWiTiPosition, newTi, 1, newPosition)
         } else {
-          //phiCounts(wi).incrementCountAtPosition(phiCountsWiTiPosition, -1) //ANTON: decrement the previous
           phiCounts.increment(wi, ti, -1)
           phiCounts.increment(wi, newTi, 1)
         }

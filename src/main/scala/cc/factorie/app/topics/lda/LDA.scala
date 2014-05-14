@@ -116,7 +116,6 @@ class LDA(val wordSeqDomain: CategoricalSeqDomain[String], numTopics: Int = 10, 
     //sampler.debug = debug
     val startTime = System.currentTimeMillis
     for (i <- 1 to iterations) {
-
       val timeToEstAlpha = (i % fitAlphaInterval == 0) && i > burnIn
 
       val startIterationTime = System.currentTimeMillis
@@ -127,9 +126,7 @@ class LDA(val wordSeqDomain: CategoricalSeqDomain[String], numTopics: Int = 10, 
         println ("\n"+diagnosticName+"\nIteration "+i)
         sampler.export(phis)
         if (diagnosticShowPhrases) println(topicsWordsAndPhrasesSummary(10,10)) else println(topicsSummary(10))
-
       }
-
       /*if (i % fitAlphaInterval == 0) {
         sampler.exportThetas(documents)
         MaximizeDirichletByMomentMatching(alphas, model)
