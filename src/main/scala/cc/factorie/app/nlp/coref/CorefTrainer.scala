@@ -142,7 +142,7 @@ object StructuredCorefTrainer extends CorefTrainer{
     val ignoreOpts = Set("config", "help", "version")
     for (o <- opts.values.toSeq.sortBy(_.name); if !ignoreOpts(o.name)) println(o.name + " = " + o.value)
 
-    println("Loading Training Docs")
+    println("Loading Documents")
     val (trainDocs,testDocs) =   if(options.useGoldBoundaries) makeTrainTestDataGoldBoundaries(opts.trainFile.value,opts.testFile.value,loadTrain)
     else makeTrainTestData(opts.trainFile.value, opts.testFile.value,options, loadTrain, opts.useNerMentions.value)
 

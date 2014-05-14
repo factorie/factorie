@@ -293,10 +293,10 @@ class ConstituencyParse(val sent: Sentence,rootStart:Int,rootLabel:String){
     def getHeadToken(docTokInd:Int):Token ={
       val childNP = children.filter(_.label == "NP")
       val possNP = span.tokens.find(_.posTag.intValue == PennPosDomain.posIndex)
-      if(possNP.isDefined && possNP.get != span.last && possNP.get.posTag.categoryValue.startsWith("NN")) {
+      if(possNP.isDefined && possNP.get != span.last && possNP.get.next.posTag.categoryValue.startsWith("N")) {
         return possNP.get.next
       }
-      else if(!childNP.isEmpty) childNP.last.getHeadToken(docTokInd)
+      else if(!childNP.isEmpty) childNP.head.getHeadToken(docTokInd)
       else {
         span.value.foreach(t=>assert(t.posTag != null))
         val lastIndexOfNoun = span.value.lastIndexWhere(_.posTag.categoryValue.startsWith("NN"))
