@@ -2,9 +2,8 @@ package cc.factorie.app.nlp.phrase
 
 import cc.factorie._
 import cc.factorie.app.nlp._
-import cc.factorie.app.nlp.pos._
 import cc.factorie.app.nlp.ner.{ConllNerDomain, OntonotesEntityTypeDomain}
-import cc.factorie.util.BinarySerializer
+import cc.factorie.util.{ClasspathURL, BinarySerializer}
 import java.io._
 import cc.factorie.variable.{LabeledCategoricalVariable, BinaryFeatureVectorVariable, CategoricalVectorDomain}
 import cc.factorie.optimize.{PredictorExample, Trainer, OptimizableObjectives}
@@ -148,7 +147,7 @@ class OntonotesPhraseEntityTypeLabeler extends DocumentAnnotator {
 
 }
 
-object NounPhraseEntityTypeLabeler extends OntonotesPhraseEntityTypeLabeler(new File("OntonotesPhraseEntityTypeLabeler.factorie"))
+object NounPhraseEntityTypeLabeler extends OntonotesPhraseEntityTypeLabeler(ClasspathURL[OntonotesPhraseEntityTypeLabeler](".factorie").openConnection().getInputStream)
 
 object NounPhraseEntityTypeLabelerTrainer {
   def main(args:Array[String]): Unit = {
