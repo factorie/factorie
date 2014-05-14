@@ -53,12 +53,7 @@ class ForwardCorefImplicitConjunctions extends ForwardCorefBase {
 abstract class ForwardCorefBase extends CorefSystem[Seq[MentionPairLabel]] {
   val options = new CorefOptions
   val model:PairwiseCorefModel
-  def tokenAnnotationString(token:Token): String = {
-    token.document.coref.mentions.filter(mention => mention.phrase.contains(token)) match {
-      case ms:Seq[Mention] if ms.length > 0 => ms.filter(_.entity != null).map(m => token.string+":"+m.phrase.indexOf(token)+"  e: "+m.entity.uniqueId).mkString(", ")
-      case _ => "_"
-    }
-  }
+
 
   /**Store head words which are seen over a default 20 times in the model
    * @param trainDocs Documents to generate counts from*/
@@ -168,7 +163,6 @@ abstract class ForwardCorefBase extends CorefSystem[Seq[MentionPairLabel]] {
    */
   def infer(coref: WithinDocCoref): WithinDocCoref = {
     val mentions = coref.mentions.sortBy(m => m.phrase.start)
-    assert(mentions.forall(m => mentions.count(m2=> m2.phrase.value == m.phrase.value) < 2))
     for (i <- 0 until coref.mentions.size) {
       val m1 = mentions(i)
       val bestCand = getBestCandidate(coref,mentions, i)
@@ -228,6 +222,22 @@ abstract class CorefSystem[CoreferenceStructure] extends DocumentAnnotator with 
   val options:CorefOptions
   def prereqAttrs: Seq[Class[_]] = Seq(classOf[Token],classOf[PennPosTag])
   def postAttrs = Seq(classOf[WithinDocCoref])
+  def tokenAnnotationString(token:Token): String = {
+    val entities = token.document.coref.entities.toSeq
+    var outputString = token.document.coref.mentions.filter(mention => mention.phrase.contains(token)) match {
+      case ms:Seq[Mention] if ms.length > 0 => ms.filter(m => m.entity != null && !m.entity.isSingleton).map{
+          m => if (m.phrase.length == 1) "("+entities.indexOf(m.entity)+")"
+               else if(m.phrase.indexOf(token) == 0) "("+entities.indexOf(m.entity)
+               else if(m.phrase.indexOf(token) == m.phrase.length - 1) entities.indexOf(m.entity)+")"
+               else ""
+      }.mkString("|")
+      case _ => "_"
+    }
+    if(outputString == "") outputString = "_"
+    else if(outputString.endsWith("|")) outputString = outputString.substring(0,outputString.length-1)
+    "%10s %10s %15s".format(token.string, token.attr[PennPosTag].categoryValue, outputString)
+  }
+
   def process(document: Document) = {
     if(document.getCoref.mentions.isEmpty)
       annotateMentions(document)
@@ -259,7 +269,7 @@ abstract class CorefSystem[CoreferenceStructure] extends DocumentAnnotator with 
    * @param trainDocs Documents to generate counts from */
   def preprocessCorpus(trainDocs: Seq[Document]): Unit
 
-  /**Returns data in the format that should be used for training
+  /**Returns training labels for data in the format that should be used for training
    * @param coref Gold Coref to be used for training */
   def getCorefStructure(coref: WithinDocCoref): CoreferenceStructure
   def instantiateModel(optimizer: GradientOptimizer,pool: ExecutorService): ParallelTrainer
@@ -329,9 +339,6 @@ abstract class CorefSystem[CoreferenceStructure] extends DocumentAnnotator with 
       for(mention <- predCoref.mentions) if(mention.attr[MentionCharacteristics] eq null) mention.attr += new MentionCharacteristics(mention)
 
       infer(predCoref)
-
-      predCoref.removeSingletons()
-      trueCoref.removeSingletons()
 
       val b3 = ClusterF1Evaluation.BCubedNoSingletons(predCoref, trueCoref)
       val ce = ClusterF1Evaluation.CeafE(predCoref,trueCoref)
