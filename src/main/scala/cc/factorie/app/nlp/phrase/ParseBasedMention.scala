@@ -10,29 +10,47 @@
    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
    See the License for the specific language governing permissions and
    limitations under the License. */
-package cc.factorie.app.nlp.coref.mention
 
-import scala.collection.mutable.HashSet
+package cc.factorie.app.nlp.phrase
+
 import scala.collection.mutable.ArrayBuffer
 import cc.factorie.app.nlp._
-import cc.factorie.app.nlp.coref._
-import cc.factorie.app.nlp.phrase.{Phrase,NounPhraseType}
 import cc.factorie.app.nlp.parse.ParseTree
 import cc.factorie.app.nlp.ner._
-import cc.factorie.app.nlp.pos.PennPosTag
 import scala.Some
+import cc.factorie.app.nlp.coref.{ConllProperNounPhraseFinder, MentionList, Mention}
 
 
 class ParseBasedMentionList(spans:Iterable[Mention]) extends MentionList(spans)
-//class NerSpanList extends TokenSpanList[NerSpan]
 
-@deprecated("This functionality should be moved to cc.factorie.app.nlp.coref.ParseBasedMentionPhraseFinder.")
-object ParseBasedMentionFinding extends ParseBasedMentionFinding(false)
-@deprecated("This functionality should be moved to cc.factorie.app.nlp.coref.ParseBasedMentionPhraseFinder.")
-object ParseAndNerBasedMentionFinding extends ParseBasedMentionFinding(true)
+object ParseBasedPhraseFinder extends ParseBasedPhraseFinder(false)
 
-@deprecated("This functionality should be moved to cc.factorie.app.nlp.coref.ParseBasedMentionPhraseFinder.")
-class ParseBasedMentionFinding(val useNER: Boolean) extends DocumentAnnotator {
+object ParseAndNerBasedPhraseFinder extends ParseBasedPhraseFinder(true)
+
+class ParseBasedPhraseFinder(val useNER: Boolean) extends DocumentAnnotator {
+  def prereqAttrs: Iterable[Class[_]] = if (!useNER) List(classOf[parse.ParseTree]) else List(classOf[parse.ParseTree])++ConllProperNounPhraseFinder.prereqAttrs
+  def postAttrs: Iterable[Class[_]] = List(classOf[PhraseList])
+
+  def process(doc: Document): Document = {
+    // Filter Mentions that have no MentionType and that are longer than 5 words -akm
+    doc.attr += new PhraseList(dedup(getPhrases(doc)).filter(phrase => phrase.attr[NounPhraseType] ne null).toSeq)
+    doc
+  }
+
+  def getPhrases(doc:Document): Seq[Phrase] = {
+    var docPhrases = new ArrayBuffer[Phrase]
+
+    //if NER has already been done, then convert the NER tags to NER spans
+    //Note that this doesn't change the postAttrs for the annotator, since it may not necessarily add spans
+    if(useNER) docPhrases ++= ConllProperNounPhraseFinder(doc)
+
+    // NAM = proper noun, NOM = common noun, PRO = pronoun
+    docPhrases ++= personalPronounSpans(doc)           map(  phrase => {phrase.attr += new NounPhraseType(phrase,"PRO");phrase})
+    docPhrases ++= nounPhraseSpans(doc, isCommonNoun)  map(  phrase => {phrase.attr += new NounPhraseType(phrase,"NOM");phrase})
+    docPhrases ++= nounPhraseSpans(doc, isProperNoun)  map(  phrase => {phrase.attr += new NounPhraseType(phrase,"NAM");phrase})
+    docPhrases ++= NNPSpans(doc)                       map(  phrase => {phrase.attr += new NounPhraseType(phrase,"NAM");phrase})
+
+  }
 
   private final val PERSONAL_PRONOUNS = Seq("PRP", "PRP$")
   private final val COMMON_NOUNS      = Seq("NN" , "NNS")
@@ -55,16 +73,13 @@ class ParseBasedMentionFinding(val useNER: Boolean) extends DocumentAnnotator {
                             we want to make sure that we are extracting the appositives separately
                             default behavior is that we do filter the appositives.   */
 
-
-  private def nerSpans(doc: Document): Seq[Mention] = {
-    val coref = doc.getCoref
+  private def nerSpans(doc: Document): Seq[Phrase] = {
     (for (span <- doc.attr[ConllNerSpanBuffer]) yield
-      coref.addMention(new Phrase(span.section, span.start, span.length, span.length - 1)) //this sets the head token idx to be the last token in the span
+      new Phrase(span.section, span.start, span.length, -1)
       ).toSeq
   }
 
-  private def NNPSpans(doc : Document) : Seq[Mention] = {
-    val coref = doc.getCoref
+  private def NNPSpans(doc : Document) : Seq[Phrase] = {
     val spans = ArrayBuffer[ArrayBuffer[Token]]()
     spans += ArrayBuffer[Token]()
     for(section <- doc.sections; sentence <- section.sentences; token <- sentence.tokens) {
@@ -73,15 +88,15 @@ class ParseBasedMentionFinding(val useNER: Boolean) extends DocumentAnnotator {
     }
     if(spans.nonEmpty && spans.last.isEmpty) spans.remove(spans.length-1)
     (for(span <- spans) yield
-      coref.addMention(new Phrase(span.head.section, span.head.positionInSection, span.last.positionInSection-span.head.positionInSection+1, span.last.positionInSection-span.head.positionInSection))).toSeq
+      new Phrase(span.head.section, span.head.positionInSection, span.last.positionInSection-span.head.positionInSection+1, span.last.positionInSection-span.head.positionInSection)).toSeq
   }
 
   // [Assumes personal pronouns are single tokens.]
-  private def personalPronounSpans(doc: Document): Seq[Mention] = {
-    val coref = doc.getCoref
+  private def personalPronounSpans(doc: Document): Seq[Phrase] = {
+    //val coref = doc.getCoref
     (for (section <- doc.sections; s <- section.sentences;
            (t,i) <- s.tokens.zipWithIndex if isPersonalPronoun(t)) yield
-        coref.addMention(new Phrase(section, s.start + i, 1,0))
+        new Phrase(section, s.start + i, 1,0)
       ).toSeq
   }
 
@@ -94,6 +109,7 @@ class ParseBasedMentionFinding(val useNER: Boolean) extends DocumentAnnotator {
     assert(tokenIdxInSpan >= 0 && tokenIdxInSpan <= m.phrase.length)
     tokenIdxInSpan
   }
+
   //this expects as input indices in the **document section** not the sentence
   //note that this never returns the root as the head, it always returns a pointer to an actual token in the sentence
   //it will either return the root of a parse tree span, or a token that is a child of the root
@@ -117,9 +133,8 @@ class ParseBasedMentionFinding(val useNER: Boolean) extends DocumentAnnotator {
   final val allowedChildLabels = Set("amod", "det", "nn", "num", "hmod", "hyph", "possessive", "poss", "predet", "nmod", "dep")
   final val disallowedChildLabels = Set("conj", "punct", "prep", "cc", "appos", "npadvmod", "advmod", "quantmod", "partmod", "rcmod", "dobj", "nsubj", "infmod", "ccomp", "advcl", "aux", "intj", "neg", "preconj", "prt", "meta", "parataxis", "complm", "mark")
 
-  private def nounPhraseSpans(doc: Document, nounFilter: Token => Boolean): Seq[Mention] =  {
-    val mentions = ArrayBuffer[Mention]()
-    val coref = doc.getCoref
+  private def nounPhraseSpans(doc: Document, nounFilter: Token => Boolean): Seq[Phrase] =  {
+    val phrases = ArrayBuffer[Phrase]()
     for (section <- doc.sections; s <- section.sentences; (t, si) <- s.tokens.zipWithIndex if nounFilter(t);
          label = s.parse.label(t.positionInSentence).categoryValue
          if label != "nn" && label != "hmod")  {
@@ -136,44 +151,27 @@ class ParseBasedMentionFinding(val useNER: Boolean) extends DocumentAnnotator {
       val sTokens = tokens.sortBy(_.positionInSection)
       val start = sTokens.head.positionInSection
       val end = sTokens.last.positionInSection
-      mentions += coref.addMention(new Phrase(section, start, end-start+1, sTokens.zipWithIndex.filter(i => i._1 eq t).head._2))
+      phrases += new Phrase(section, start, end-start+1, sTokens.zipWithIndex.filter(i => i._1 eq t).head._2)
     }
-    mentions
+    phrases
   }
 
-
-  private def dedup(mentions: Seq[Mention]): Seq[Mention] = {
-      def dedupOverlappingMentions(mentions: Seq[Mention]): Mention = {
-        if(mentions.length == 1){
-          return mentions.head
-        }else{
-          mentions.find(_.phrase.attr[NounPhraseType].categoryValue == "NAM").getOrElse(mentions.head)
-        }
+  private def dedup(phrases: Seq[Phrase]): Seq[Phrase] = {
+    def dedupOverlappingMentions(phrases: Seq[Phrase]): Phrase = {
+      if(phrases.length == 1){
+        return phrases.head
+      }else{
+        phrases.find( _.attr[NounPhraseType].categoryValue == "NAM").getOrElse(phrases.head)
       }
 
-
-      mentions
-      .groupBy(m => (m.phrase.section, m.phrase.start, m.phrase.length))
-      .values.map(mentionSet => dedupOverlappingMentions(mentionSet)).toSeq
-      .sortBy(m => (m.phrase.tokens.head.stringStart, m.phrase.length))
-
+    }
+    phrases
+      .groupBy(phrase => (phrase.section, phrase.start, phrase.length))
+      .values.map(phraseSet => dedupOverlappingMentions(phraseSet)).toSeq
+      .sortBy(phrase => (phrase.tokens.head.stringStart, phrase.length))
   }
 
-
-  def process(doc: Document): Document = {
-    // The mentions are all added to coref in the methods
-    personalPronounSpans(doc)
-    nounPhraseSpans(doc, isCommonNoun)
-    nounPhraseSpans(doc, isProperNoun)
-    NNPSpans(doc)
-    doc
-  }
-
-  def prereqAttrs: Iterable[Class[_]] = if (!useNER) Seq(classOf[parse.ParseTree]) else Seq(classOf[parse.ParseTree], classOf[ner.IobConllNerTag])
-  def postAttrs: Iterable[Class[_]] = Seq(classOf[MentionList])
-  override def tokenAnnotationString(token:Token): String = token.document.attr[MentionList].filter(mention => mention.phrase.contains(token)) match { case ms:Seq[Mention] if ms.length > 0 => ms.map(m => m.phrase.attr[NounPhraseType].categoryValue+":"+m.phrase.indexOf(token)).mkString(","); case _ => "_" }
-
-
+   override def tokenAnnotationString(token:Token): String = token.document.attr[MentionList].filter(mention => mention.phrase.contains(token)) match { case ms:Seq[Mention] if ms.length > 0 => ms.map(m => m.phrase.attr[NounPhraseType].categoryValue+":"+m.phrase.indexOf(token)).mkString(","); case _ => "_" }
 }
 
 

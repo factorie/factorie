@@ -13,10 +13,8 @@
 
 package cc.factorie.app.nlp.phrase
 
-import cc.factorie._
 import cc.factorie.app.nlp._
 import cc.factorie.util.Attr
-import cc.factorie.variable.{CategoricalVariable, CategoricalDomain}
 import cc.factorie.app.nlp.pos.PennPosDomain
 import cc.factorie.app.nlp.parse.ParseTreeLabelDomain
 
@@ -77,7 +75,8 @@ object HeadTokenOffset {
       val lastNounIndex = span.lastIndexWhere(_.posTag.isNoun)
       if (lastNounIndex > 0) return lastNounIndex
       // Otherwise simply select the last word of the span
-      else return span.end-1
+      else return span.length-1
+
     }
   }
 }

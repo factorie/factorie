@@ -12,11 +12,8 @@
    limitations under the License. */
 package cc.factorie.app.nlp.coref
 
-import cc.factorie._
 import cc.factorie.app.nlp._
 import cc.factorie.app.nlp.phrase._
-import cc.factorie.app.nlp.ner.OntonotesEntityTypeDomain
-//import cc.factorie.util.EvaluatableClustering
 import cc.factorie.util.{Attr,UniqueId,ImmutableArrayIndexedSeq,EvaluatableClustering}
 import cc.factorie.variable._
 import scala.collection.mutable.ArrayBuffer
@@ -91,12 +88,15 @@ abstract class WithinDocEntity(val document:Document) extends AbstractEntity {
   private val _mentions = new scala.collection.mutable.LinkedHashSet[Mention]
   def parent: WithinDocEntity = null
   def mentions:scala.collection.Set[Mention] = _mentions
+  def isSingleton:Boolean = _mentions.size == 1 //TODO Is this okay to do? or is there a better way
+  def isEmpty:Boolean = _mentions.isEmpty
   def children: Iterable[Mention] = _mentions
+  def getFirstMention: Mention = if(isEmpty) null else if(isSingleton) _mentions.head else mentions.toSeq.sortBy(m => m.phrase.start).head
   def +=(mention:Mention): Unit = {
     assert(mention.phrase.document eq document)
-    assert(!_mentions.contains(mention)) // No reason to do this; might catch a bug.
+    //assert(!_mentions.contains(mention)) // No reason to do this; might catch a bug.
     if (mention.entity ne null) mention.entity._mentions -= mention
-    _mentions += mention
+    if(!_mentions.contains(mention))_mentions += mention
     mention._setEntity(WithinDocEntity.this)
   }
   def -=(mention:Mention): Unit = {
@@ -143,7 +143,6 @@ class WithinDocCoref(val document:Document) extends EvaluatableClustering[Within
     def this(phrase:Phrase, entityKey:Int) = this(phrase, entityFromKey(entityKey)) // Typically used for labeled data
     def this(phrase:Phrase, entityUniqueId:String) = this(phrase, entityFromUniqueId(entityUniqueId)) // Typically used for deserialization
     def this(phrase:Phrase) = this(phrase, null.asInstanceOf[WithinDocEntity]) // Typically used for new inference // TODO Should this be null, or a newly created blank Entity; See LoadConll2011 also.
-    assert(!_spanToMention.contains(phrase.value))
     assert(entity == null || entity.asInstanceOf[WithinDocEntity1].coref == WithinDocCoref.this)
     _spanToMention(phrase.value) = this
     val uniqueId = WithinDocCoref.this.uniqueId + "//Mention(" + phrase.start + "," + phrase.length + ")" // TODO Is this what we want? -akm
@@ -174,7 +173,7 @@ class WithinDocCoref(val document:Document) extends EvaluatableClustering[Within
   }
   
   /** Return all Mentions in this coreference solution. */
-  def mentions: Iterable[Mention] = _spanToMention.values
+  def mentions: Seq[Mention] = _spanToMention.values.toVector
   /** Return a collection of WithinDocEntities managed by this coref solution.  Note that some of them may have no Mentions. */
   def entities: Iterable[WithinDocEntity] = _entities.values
   /** Create and return a new WithinDocEntity with uniqueId determined by the number entities created so far. */
@@ -183,7 +182,7 @@ class WithinDocCoref(val document:Document) extends EvaluatableClustering[Within
   def entityFromUniqueId(id:String): WithinDocEntity = _entities.getOrElse(id, new WithinDocEntity1(id))
   /** Return the entity associated with the given key, or create a new entity if not found alread among 'entities'. */
   def entityFromKey(key:Int): WithinDocEntity = { 
-    val id = _entityKeyToId(key)
+    val id = _entityKeyToId.getOrElse(key,null)
     val result = if (id eq null) new WithinDocEntity1 else _entities(id)
     _entityKeyToId(key) = result.uniqueId
     result
@@ -191,13 +190,33 @@ class WithinDocCoref(val document:Document) extends EvaluatableClustering[Within
   /** Return the entity associated with the given uniqueId.  Return null if not found. */
   def idToEntity(id:String): WithinDocEntity = _entities(id)
   /** Remove from the list of entities all entities that contain no mentions. */
-  def trimEmptyEntities: Unit = _entities.values.filter(_.mentions.size == 0).map(_.uniqueId).foreach(_entities.remove(_)) // TODO But note that this doesn't purge _entityKeyToId; perhaps it should.
+  def trimEmptyEntities(): Unit = _entities.values.filter(_.mentions.size == 0).map(_.uniqueId).foreach(_entities.remove) // TODO But note that this doesn't purge _entityKeyToId; perhaps it should.
+  /** Remove from all entities and mentions associated with entities that contain only one mention. */
+  def removeSingletons():Unit ={
+    _entities.values.filter(_.mentions.size == 1).map(_.uniqueId).foreach{
+      id =>
+        _entities(id).mentions.foreach(m => deleteMention(m))
+        _entities.remove(id)
+    }
+  }
+
+  /**Reset the clustered entities for this coref solution without losing mentions and their cached properties*/
+  def resetPredictedMapping():Unit = {_entities.clear();mentions.foreach(_._setEntity(null));_entityCount = 0 }
+
   // Support for evaluation
-  def clusterIds: Iterable[WithinDocEntity] = _entities.values
-  def pointIds: Iterable[Phrase] = _spanToMention.values.map(_.phrase)
-  def pointIds(entityId:WithinDocEntity): Iterable[Phrase] = entityId.mentions.map(_.phrase)
-  def intersectionSize(entityId1:WithinDocEntity, entityId2:WithinDocEntity): Int = entityId1.mentions.map(_.phrase.value).intersect(entityId2.mentions.map(_.phrase.value)).size
-  def clusterId(mentionId:Phrase): WithinDocEntity = _spanToMention(mentionId.value).entity
+  // These assure we ignore any singletons for conll scoring
+  // TODO: Allow for ACE scoring where singletons are counted
+  def clusterIds: Iterable[WithinDocEntity] = _entities.values.filterNot(_.isSingleton)
+  def pointIds: Iterable[Phrase] = _spanToMention.values.filterNot(m => m.entity == null || m.entity.isSingleton).map(_.phrase)
+  def pointIds(entityId:WithinDocEntity): Iterable[Phrase] = if(!entityId.isSingleton) entityId.mentions.map(_.phrase) else Seq()
+  def intersectionSize(entityId1:WithinDocEntity, entityId2:WithinDocEntity): Int = if(!entityId1.isSingleton && !entityId2.isSingleton) entityId1.mentions.map(_.phrase.value).intersect(entityId2.mentions.map(_.phrase.value)).size else 0
+  def clusterId(mentionId:Phrase): WithinDocEntity = {
+    val mention = _spanToMention.getOrElse(mentionId.value,null)
+    if(mention == null || mention.entity == null ||mention.entity.isSingleton) null
+    else mention.entity
+  }
+
+
 }
 
 

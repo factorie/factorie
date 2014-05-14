@@ -13,10 +13,8 @@
 package cc.factorie.app.nlp.coref
 
 import cc.factorie.app.nlp._
-import cc.factorie.app.nlp.coref._
 import cc.factorie.app.nlp.phrase._
-import cc.factorie.app.nlp.pos.{PennPosTag,PennPosDomain}
-import cc.factorie.app.nlp.ner._
+import cc.factorie.app.nlp.pos.PennPosDomain
 import scala.collection.mutable.ArrayBuffer
 import cc.factorie.app.nlp.Token
 import cc.factorie.app.nlp.ner.BilouConllNerTag
@@ -68,7 +66,7 @@ object ConllProperNounPhraseFinder extends MentionPhraseFinder {
         if (attr(0) == "U") {
           val phrase = new Phrase(section, token.positionInSection, length=1,offsetToHeadToken = -1)
           phrase.attr += new ConllPhraseEntityType(phrase, attr(1))
-          phrase.attr += new NounPhraseType(phrase, "NAM")
+          DeterministicNounPhraseTypeLabeler.process(phrase)
           result += phrase
         } else if (attr(0) == "B") {
           if (token.hasNext) {
@@ -77,12 +75,12 @@ object ConllProperNounPhraseFinder extends MentionPhraseFinder {
             // TODO Be more clever in determining the headTokenOffset
             val phrase = new Phrase(section, token.positionInSection, length=lookFor.positionInSection - token.positionInSection,offsetToHeadToken = -1)
             phrase.attr += new ConllPhraseEntityType(phrase, attr(1))
-            phrase.attr += new NounPhraseType(phrase, "NAM")
+            DeterministicNounPhraseTypeLabeler.process(phrase)
             result += phrase
           } else {
             val phrase = new Phrase(section, token.positionInSection, length=1,offsetToHeadToken = -1)
             phrase.attr += new ConllPhraseEntityType(phrase, attr(1))
-            phrase.attr += new NounPhraseType(phrase, "NAM")
+            DeterministicNounPhraseTypeLabeler.process(phrase)
             result += phrase
           }
         }
@@ -127,7 +125,7 @@ object NnpPosNounPhraseFinder extends MentionPhraseFinder {
         if (end != start && tokens(end-1).posTag.intValue == PennPosDomain.nnpIndex) {
           val phrase = new Phrase(section, token.positionInSection, length=end-start,offsetToHeadToken = -1)
           phrase.attr += new NounPhraseType(phrase, "NAM")
-          // phrase.attr += new ConllPhraseEntityType(phrase, "ORG") // TODO What should this be?
+          NounPhraseEntityTypeLabeler.process(phrase)
         }
         start = math.max(start+1, end)
       }

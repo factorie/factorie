@@ -36,7 +36,7 @@ import scala.annotation.tailrec
  * matching for each edge it removes, and add one more edge than that.
  *
  * To see a proof of this algorithm see the lecture notes in
- * http://www.cs.uiuc.edu/~jeffe/teaching/algorithms/notes/18-maxflowext.pdf
+ * http://compgeom.cs.uiuc.edu/~jeffe/teaching/algorithms/2009/notes/18-maxflowext.pdf
  *
  * Note that we can't use Dijkstra for shortest-paths because of the negative-weighted
  * edges. We can't have negatively weighted cycles because the existence of such a
@@ -77,6 +77,10 @@ class AssignmentSolver(val weights: Tensor2) {
     }
     val returnSet = collection.mutable.ListBuffer[(Int,Int)]()
     @tailrec def addEdges(right: Int) {
+      if(returnSet.length >= weights.dim1) {
+        println("Warning, Cycle in CM, CE calculation");
+        return
+      }
       val left = rightParents(right)
       returnSet += ((left,right))
       assert(returnSet.length <= weights.dim1)
