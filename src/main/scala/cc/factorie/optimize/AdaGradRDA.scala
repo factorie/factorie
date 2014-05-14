@@ -1,16 +1,21 @@
+/* Copyright (C) 2008-2014 University of Massachusetts Amherst.
+   This file is part of "FACTORIE" (Factor graphs, Imperative, Extensible)
+   http://factorie.cs.umass.edu, http://github.com/factorie
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+    http://www.apache.org/licenses/LICENSE-2.0
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License. */
 package cc.factorie.optimize
 
 import cc.factorie._
 import la._
 import util._
 import cc.factorie.model.{WeightsMap, WeightsSet}
-
-/**
- * User: apassos
- * Date: 4/8/13
- * Time: 5:54 PM
- */
-
 
 /**
  * The AdaGrad regularized dual averaging algorithm from Duchi et al, Adaptive Subgradient Algorithms
@@ -28,6 +33,7 @@ import cc.factorie.model.{WeightsMap, WeightsSet}
  * @param l1 The strength of l1 regularization
  * @param l2 The strength of l2 regularization
  * @param numExamples The number of examples for online training, used to scale regularizers
+ * @author Alexandre Passos
  */
 class AdaGradRDA(val delta: Double = 0.1, val rate: Double = 0.1, val l1: Double = 0.0, val l2: Double = 0.0, val numExamples: Int = 1) extends GradientOptimizer {
   var initialized = false

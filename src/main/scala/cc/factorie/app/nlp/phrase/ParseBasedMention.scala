@@ -1,3 +1,16 @@
+/* Copyright (C) 2008-2014 University of Massachusetts Amherst.
+   This file is part of "FACTORIE" (Factor graphs, Imperative, Extensible)
+   http://factorie.cs.umass.edu, http://github.com/factorie
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+    http://www.apache.org/licenses/LICENSE-2.0
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License. */
+
 package cc.factorie.app.nlp.phrase
 
 import scala.collection.mutable.ArrayBuffer
@@ -62,7 +75,7 @@ class ParseBasedPhraseFinder(val useNER: Boolean) extends DocumentAnnotator {
 
   private def nerSpans(doc: Document): Seq[Phrase] = {
     (for (span <- doc.attr[ConllNerSpanBuffer]) yield
-      new Phrase(span.section, span.start, span.length)
+      new Phrase(span.section, span.start, span.length, -1)
       ).toSeq
   }
 
@@ -150,12 +163,23 @@ class ParseBasedPhraseFinder(val useNER: Boolean) extends DocumentAnnotator {
       }else{
         phrases.find( _.attr[NounPhraseType].categoryValue == "NAM").getOrElse(phrases.head)
       }
+
     }
     phrases
       .groupBy(phrase => (phrase.section, phrase.start, phrase.length))
       .values.map(phraseSet => dedupOverlappingMentions(phraseSet)).toSeq
       .sortBy(phrase => (phrase.tokens.head.stringStart, phrase.length))
   }
+
+
+//  def process(doc: Document): Document = {
+//    // The mentions are all added to coref in the methods
+//    personalPronounSpans(doc)
+//    nounPhraseSpans(doc, isCommonNoun)
+//    nounPhraseSpans(doc, isProperNoun)
+//    NNPSpans(doc)
+//    doc
+//  }
 
    override def tokenAnnotationString(token:Token): String = token.document.attr[MentionList].filter(mention => mention.phrase.contains(token)) match { case ms:Seq[Mention] if ms.length > 0 => ms.map(m => m.phrase.attr[NounPhraseType].categoryValue+":"+m.phrase.indexOf(token)).mkString(","); case _ => "_" }
 }

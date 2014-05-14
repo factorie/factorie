@@ -1,23 +1,30 @@
----
-title: "Variable"
-layout: default
-group: tutorial
-weight: 20
----
+/* Copyright (C) 2008-2014 University of Massachusetts Amherst.
+   This file is part of "FACTORIE" (Factor graphs, Imperative, Extensible)
+   http://factorie.cs.umass.edu, http://github.com/factorie
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+    http://www.apache.org/licenses/LICENSE-2.0
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License. */
+/*& Variable */
+/*&
+ * Variable Tutorial
+ * =================
+ *
+ * Examples of FACTORIE Variables, which hold data values.
+ **/
 
-Variable Tutorial
-=================
-
-Examples of FACTORIE Variables, which hold data values.
-
-
-A Variable holds a value (data)
-They hold a single value.
-They do not hold distributions over values.
-A distribution over variable values are the result of inference, and are stored in a Marginal
-(many of which may be stored in a Summary).
-
-```scala
+/*&
+* A Variable holds a value (data)
+* They hold a single value.
+* They do not hold distributions over values.
+* A distribution over variable values are the result of inference, and are stored in a Marginal
+* (many of which may be stored in a Summary).
+**/
 package cc.factorie.tutorial
 object TutorialVariables extends App {
   import org.junit.Assert._
@@ -47,11 +54,8 @@ object TutorialVariables extends App {
   assert(i === j)
   assert(!(i == j))
 
-```
-The Scala type of a variable's value is represented by the variable class' inner type `Value`.... 
+  /*& The Scala type of a variable's value is represented by the variable class' inner type `Value`.... */
 
-
-```scala
   // We can also track changes with a DiffList and undo them.
   // TODO Move this material about DiffLists to a separate Tutorial file.
   val d = new DiffList
@@ -72,22 +76,18 @@ The Scala type of a variable's value is represented by the variable class' inner
   println("k's partner is " + k.partner)
   assert(k.partner == i)
 
-```
-
-All Variables also have a Domain, which indicates something about the range of values.
-Many of the Domain objects (such as IntegerDomain) don't have much functionality.
-Important functionality is performed by DiscreteDomain and CategoricalDomain, which will be described below.
-
-```scala
+  /*&
+   * All Variables also have a Domain, which indicates something about the range of values.
+   * Many of the Domain objects (such as IntegerDomain) don't have much functionality.
+   * Important functionality is performed by DiscreteDomain and CategoricalDomain, which will be described below.
+   **/
   val id: IntegerDomain = i.domain
   assert(i.domain == k.domain)
 
-```
+  /*&
+   * There are many types of Variables holding different types of values.
+   **/
 
-There are many types of Variables holding different types of values.
-
-
-```scala
   // Variable whose value is a String
   val s = new StringVariable("Hello")
   // Variable whose value is a floating-point number
@@ -114,13 +114,11 @@ There are many types of Variables holding different types of values.
   println("The first element of list is " + list.head)
   assert(i == list.head)
 
-```
+  /*&
+   * Variables are defined in a deep hierarchy of type inheritance.
+   * cc.factorie.Variable is the root of all variable classes.
+   **/
 
-Variables are defined in a deep hierarchy of type inheritance.
-cc.factorie.Variable is the root of all variable classes.
-
-
-```scala
   // cc.factorie.Var* are traits that capture various abstractions.
   val mv: MutableVar = s // All MutableVar have a set() method and a := method.
   //val cv: VarWithConstantValue = s // This would cause a compilation error.
@@ -130,18 +128,17 @@ cc.factorie.Variable is the root of all variable classes.
   // or to a particular storage mechanism for their value
   val sv: StringVar = s
   val msv: MutableStringVar = s
-```
+  /*&
+   * So if you want, you can create your own subclass of StringVar 
+   *  which stores its String value as an integer index into an external table of Strings, and has immutable value.
+   * If your code needs a Variable holding a String value, but doesn't care about its mutability or representation,
+   *  you can have more flexibility by specifying type StringVar rather than StringVariable.
+   **/
 
-So if you want, you can create your own subclass of StringVar
-which stores its String value as an integer index into an external table of Strings, and has immutable value.
-If your code needs a Variable holding a String value, but doesn't care about its mutability or representation,
-you can have more flexibility by specifying type StringVar rather than StringVariable.
-
-
-One important type of value is a Tensor.
-There are many subclasses of Tensor in order to efficiently support various special cases
-
-```scala
+  /*&
+   * One important type of value is a Tensor.
+   * There are many subclasses of Tensor in order to efficiently support various special cases
+   **/
   import cc.factorie.la._
   // Creates a vector of length 5, internally stored as an Array[Double]
   val dt = new DenseTensor1(5) 
@@ -158,28 +155,26 @@ There are many subclasses of Tensor in order to efficiently support various spec
   val dt4 = new DenseTensor4(3, 4, 5, 2) 
   println("dt4 value at indices (2,3,4,1) is " + dt4(2, 3, 4, 1))
 
-```
-
-WeightsMap
--------
-
-WeightsMap have many useful methods, including:
-
-- dot (products)
-- outer (products)
-- twoNorm
-- etc.
-
-
-WeightsMap are important because some important special cases of Factors require variables with Tensor values
-because the Factors calculate their scores as dot-products between these Tensor values and a "weight" parameter Tensor.
-
-RealVariable is like DoubleVariable in that it holds a single floating-point number,
-however its value is a Tensor rather than a Double.
-
-In particular it is a RealValue which inherits from ScalarTensor, which is a Tensor1 of length 1.
-
-```scala
+  /*&
+   * WeightsMap
+   * -------
+   *
+   * WeightsMap have many useful methods, including:
+   *
+   *   - dot (products)
+   *   - outer (products)
+   *   - twoNorm
+   *   - etc.
+   *
+   *
+   * WeightsMap are important because some important special cases of Factors require variables with Tensor values
+   *  because the Factors calculate their scores as dot-products between these Tensor values and a "weight" parameter Tensor.
+   *
+   * RealVariable is like DoubleVariable in that it holds a single floating-point number,
+   *  however its value is a Tensor rather than a Double.  
+   *
+   * In particular it is a RealValue which inherits from ScalarTensor, which is a Tensor1 of length 1.
+   **/
   val scalar = new RealValue(3.4) // A Tensor1 of length 1, holding value 3.4 at index 0
   val rv = new RealVariable(3.4)
   val rvv: RealValue = rv.value
@@ -192,16 +187,14 @@ In particular it is a RealValue which inherits from ScalarTensor, which is a Ten
   val sbt = new SingletonBinaryTensor1(999, 3) 
   println("Tensor sbt is " + sbt)
 
-```
+  /*&
+   * A DiscreteVar holds one of a finite N values, each associated with an integer 0 through N-1.
+   *  Its value is a DiscreteValue.
+   * A CategoricalVar inherits from DiscreteVar, but each value is also associated with "category", usually a String.
+   *  Its value is a CategoricalValue.
+   * DiscreteValue and CategoricalValue inherit from SingletonBinaryTensor1.  They are a binary one-hot Tensor1.
+   **/
 
-A DiscreteVar holds one of a finite N values, each associated with an integer 0 through N-1.
-Its value is a DiscreteValue.
-A CategoricalVar inherits from DiscreteVar, but each value is also associated with "category", usually a String.
-Its value is a CategoricalValue.
-DiscreteValue and CategoricalValue inherit from SingletonBinaryTensor1.  They are a binary one-hot Tensor1.
-
-
-```scala
   // The value N is the size of a DiscreteVariable's domain, and is stored in a DiscreteDomain
   val dd = new DiscreteDomain(10)
   // Unlike all the Variables discussed below, DiscreteVariable does not have its "domain" method pre-defined; users must define it.
@@ -261,27 +254,23 @@ DiscreteValue and CategoricalValue inherit from SingletonBinaryTensor1.  They ar
   val fvd = new CategoricalVectorDomain[String] { def dimensionsDomain = cd }
   class MyFeatureVector extends BinaryFeatureVectorVariable[String] { def domain = fvd }
 
-```
-
-Another type of Tensor is Masses.
-These are WeightsMap with only non-negative elements, whose sum is efficiently cached.
-They are useful for the parameters of a Dirichlet, and also as the sufficient statistics for a Proportions
-
-```scala
+  /*&
+   * Another type of Tensor is Masses.
+   * These are WeightsMap with only non-negative elements, whose sum is efficiently cached.
+   * They are useful for the parameters of a Dirichlet, and also as the sufficient statistics for a Proportions
+   **/
   val m1 = new DenseMasses1(5) // A vector of length 5
   m1 := Array(.5, .5, .5, .5, .5)
   println("m1 sum is " + m1.sum)
   assertEquals(2.5, m1.sum, 0.01)
 
-```
-
-Proportions inherits from Masses
-They are WeightsMap with only non-negative elements, whose sum must always be 1.0.
-Proportions also have a method "masses".  In some classes this returns itself.
-In others it returns an inner object that holds the sufficient statistics determining the Proportions values.
-Proportions themselves cannot be incremented (e.g. to gather counts for estimating a Proportions), but its inner Masses sometimes can.
-
-```scala
+  /*&
+   * Proportions inherits from Masses
+   * They are WeightsMap with only non-negative elements, whose sum must always be 1.0.
+   * Proportions also have a method "masses".  In some classes this returns itself.  
+   *  In others it returns an inner object that holds the sufficient statistics determining the Proportions values.
+   * Proportions themselves cannot be incremented (e.g. to gather counts for estimating a Proportions), but its inner Masses sometimes can.
+   **/
   val dp = new DenseProportions1(3)
   dp.masses(0) += 3
   dp.masses(2) += 2
@@ -294,39 +283,35 @@ Proportions themselves cannot be incremented (e.g. to gather counts for estimati
   // Its concrete, simplest subclass is TensorVariable, which can hold arbitrary WeightsMap.
   val tv = new TensorVariable(new DenseTensor2(Array(Array(2.0, 3.0, 4.0), Array(6.0, 7.0, 8.0))))
 
-```
+  /*&
+   * Value types
+   * -----------
+   * 
+   * The type of a Variable's value is available as a member type "Value"
+   **/
 
-Value types
------------
-
-The type of a Variable's value is available as a member type "Value"
-
-
-```scala
   // For example, StringVariable#Value is String
   def printValue(v: StringVariable#Value): Unit = println(v)
   printValue("Hi there.")
 
-```
+  /*&
+   * In the Variable trait, the Value type is not set but only "bounded", so that it can be refined in subclasses
+   * i.e. trait Variable { type Value <: Any }
+   * Some Var* traits bound the value, others set it.
+   * For example
+   * 
+   *  - `DiscreteVar[A<:DiscreteValue]` bounds it, but `DiscreteVariable[A<:DiscreteValue]` sets it.
+   *  - `CategoricalVar[A<:CategoricalValue[C],C]` bounds it, but `CategoricalVariable[A<:CategoricalValue[C],C]]` sets it.
+   *  - `MutableVar[A<:Any]` sets it.
+   * 
+   * Whenever we define method that expects a parameter of type Variable#Value, the Value must be set, not merely bounded.
+   * 
+   * This is why MutableVar[] (which defines `set(v:Value):Unit` sets `Value`, and why all *Variable classes have the Value type set.
+   * 
+   * The standard way to bound the Value type is to inherit from ValueBound[A], which bounds the Value <: A.
+   * The standard way to set the Value type is to inherit from the trait Var[A], which sets the Value to A.
+   **/
 
-In the Variable trait, the Value type is not set but only "bounded", so that it can be refined in subclasses
-i.e. trait Variable { type Value <: Any }
-Some Var* traits bound the value, others set it.
-For example
-
-- `DiscreteVar[A<:DiscreteValue]` bounds it, but `DiscreteVariable[A<:DiscreteValue]` sets it.
-- `CategoricalVar[A<:CategoricalValue[C],C]` bounds it, but `CategoricalVariable[A<:CategoricalValue[C],C]]` sets it.
-- `MutableVar[A<:Any]` sets it.
-
-Whenever we define method that expects a parameter of type Variable#Value, the Value must be set, not merely bounded.
-
-This is why MutableVar[] (which defines `set(v:Value):Unit` sets `Value`, and why all *Variable classes have the Value type set.
-
-The standard way to bound the Value type is to inherit from ValueBound[A], which bounds the Value <: A.
-The standard way to set the Value type is to inherit from the trait Var[A], which sets the Value to A.
-
-
-```scala
   // Assignment objects
 
   // While a Variable objects holds a value, values for variable may also be stored in an Assignment.
@@ -336,4 +321,3 @@ The standard way to set the Value type is to inherit from the trait Var[A], whic
   // This allows some code to consider different values for a variable which changing the
   // "global" value stored in the variable. (Helpful for multi-threaded code, among other reasons.)
 }
-```

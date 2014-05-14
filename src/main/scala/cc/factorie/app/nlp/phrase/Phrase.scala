@@ -1,7 +1,6 @@
-/* Copyright (C) 2008-2010 University of Massachusetts Amherst,
-   Department of Computer Science.
+/* Copyright (C) 2008-2014 University of Massachusetts Amherst.
    This file is part of "FACTORIE" (Factor graphs, Imperative, Extensible)
-   http://factorie.cs.umass.edu, http://code.google.com/p/factorie/
+   http://factorie.cs.umass.edu, http://github.com/factorie
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
    You may obtain a copy of the License at
@@ -16,13 +15,12 @@ package cc.factorie.app.nlp.phrase
 
 import cc.factorie.app.nlp._
 import cc.factorie.util.Attr
-import cc.factorie.variable.CategoricalVariable
 import cc.factorie.app.nlp.pos.PennPosDomain
 import cc.factorie.app.nlp.parse.ParseTreeLabelDomain
 
 /** A Phrase is a TokenSpan that has a head token.
     If offsetToHeadToken is unspecified, then it will be set automatically using HeadTokenOffset.apply. */
-class Phrase(section:Section, start:Int, length:Int, offsetToHeadToken: Int = -1) extends TokenSpan(section, start, length) with Attr {
+class Phrase(section:Section, start:Int, length:Int, offsetToHeadToken: Int) extends TokenSpan(section, start, length) with Attr {
   def this(span:TokenSpan, headTokenIndex:Int = -1) = this(span.section, span.start, span.length, headTokenIndex)
   
   assert(offsetToHeadToken == -1 || offsetToHeadToken >= 0 && offsetToHeadToken < length, "Offset from beginning of span, headTokenOffset="+offsetToHeadToken+", but span only has length "+length)

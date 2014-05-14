@@ -1,3 +1,15 @@
+/* Copyright (C) 2008-2014 University of Massachusetts Amherst.
+   This file is part of "FACTORIE" (Factor graphs, Imperative, Extensible)
+   http://factorie.cs.umass.edu, http://github.com/factorie
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+    http://www.apache.org/licenses/LICENSE-2.0
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License. */
 package cc.factorie.app.bib
 import cc.factorie.app.bib.parser._
 import cc.factorie._
@@ -11,7 +23,8 @@ import javax.xml.parsers.{DocumentBuilder, DocumentBuilderFactory}
 import la.DenseTensor
 import cc.factorie.optimize._
 import org.w3c.dom.{Node, NodeList, Document}
-import scala.concurrent.ops._
+import scala.concurrent._
+import ExecutionContext.Implicits.global
 import java.io._
 import java.text.DecimalFormat
 import scala.Some
@@ -1492,12 +1505,12 @@ trait Foreman[E<:HierEntity with HasCanopyAttributes[E] with Prioritizable] exte
     numWorkers += 1
     val worker = workers.dequeue()
     activeWorkers += worker
-    spawn{
+    future {
       worker.run()
     }
   }
   protected def spawnPrintThreads(): Unit = {
-    spawn{while(true){printStats(); Thread.sleep(60000)}}
+    future{while(true){printStats(); Thread.sleep(60000)}}
   }
   def run() {
     initialize()
@@ -1506,7 +1519,7 @@ trait Foreman[E<:HierEntity with HasCanopyAttributes[E] with Prioritizable] exte
     spawnPrintThreads()
     println("About to manage "+workers.size+" workers")
     //manageWorkers
-    spawn{
+    future {
       while((workers.size+activeWorkers.size)>0 || (triggerSafeQuit && activeWorkers.size==0)){manageWorkers();Thread.sleep(1000)}
     }
     //while(workers.size>0){}
@@ -1536,7 +1549,7 @@ abstract class DefaultForeman[E<:HierEntity with HasCanopyAttributes[E] with Pri
     }
   }
   protected def spawnParameterReader(): Unit = {
-    spawn{
+    future{
       while(true){
         var reader:BufferedReader = null
         try{
@@ -1562,7 +1575,7 @@ abstract class DefaultForeman[E<:HierEntity with HasCanopyAttributes[E] with Pri
   }
   override protected def spawnPrintThreads(): Unit = {
     super.spawnPrintThreads()
-    spawn{while(true){printSamplingStats();Thread.sleep(60000)}}
+    future{while(true){printSamplingStats();Thread.sleep(60000)}}
     spawnParameterReader()
   }
   def printSamplingStats(): Unit = {

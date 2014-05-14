@@ -41,6 +41,7 @@ FACTORIE commands:
 
   nlp                run NLP server listening on a socket (pos, ner, parse, coref,... available)
   lda                train and use a latent Dirichlet allocation model
+  word2vec           learn word embeddings using Skip-Gram and Continuous Bag-Of-Words (CBOW) models
 
 Include --help with any option for more information
 EOF
@@ -51,6 +52,7 @@ CLASS=
 case $CMD in
 	nlp) CLASS=cc.factorie.app.nlp.NLP;;
 	lda) CLASS=cc.factorie.app.topics.lda.LDA;;
+	word2vec) CLASS=cc.factorie.app.nlp.embeddings.WordVec;;
 	classify) CLASS=cc.factorie.app.classify.Classify;;
 	inter) CLASS=cc.factorie.util.Interpreter;;
 	run) CLASS=$1; shift;;

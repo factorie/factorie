@@ -1,7 +1,6 @@
-/* Copyright (C) 2008-2010 University of Massachusetts Amherst,
-   Department of Computer Science.
+/* Copyright (C) 2008-2014 University of Massachusetts Amherst.
    This file is part of "FACTORIE" (Factor graphs, Imperative, Extensible)
-   http://factorie.cs.umass.edu, http://code.google.com/p/factorie/
+   http://factorie.cs.umass.edu, http://github.com/factorie
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
    You may obtain a copy of the License at
@@ -21,7 +20,9 @@ import scala.util.Sorting
 import cc.factorie.variable._
 import cc.factorie.util.ImmutableArrayIndexedSeq
 
-/** An immutable value indicating a subsequence of a Chain (and whether this span is to be considered present or "active" now). */
+/** An immutable value indicating a subsequence of a Chain 
+    (and also whether this span is to be considered present or "active" now).
+    @author Andrew McCallum */
 final case class Span[C<:Chain[C,E],E<:ChainLink[E,C]](chain:C, start:Int, length:Int, present:Boolean = true) extends IndexedSeq[E] {
   def apply(i:Int) = chain.links(start + i)
   @inline final def end: Int = start + length
@@ -60,7 +61,8 @@ final case class Span[C<:Chain[C,E],E<:ChainLink[E,C]](chain:C, start:Int, lengt
   def prev(elt:E): E = if (hasPrev(elt)) elt.prev else null.asInstanceOf[E]
 }
 
-/** A (non-mutable) variable whose value is a Span. */
+/** A (non-mutable) variable whose value is a Span.
+    @author Andrew McCallum */
 trait SpanVar[C<:Chain[C,E],E<:ChainLink[E,C]] extends IndexedSeqVar[E] {
   type Value = Span[C,E]
   /** If true then Diff objects will return this as their variable even when the value indicates it is not "present". */
@@ -74,7 +76,8 @@ trait SpanVar[C<:Chain[C,E],E<:ChainLink[E,C]] extends IndexedSeqVar[E] {
   def hasPredecessor(i: Int) = (start - i) >= 0
 }
 
-/** A mutable variable whose value is a Span. */
+/** An abstract mutable variable whose value is a Span.
+    @author Andrew McCallum */
 class MutableSpanVar[C<:Chain[C,E],E<:ChainLink[E,C]](span:Span[C,E]) extends SpanVar[C,E] with MutableVar {
   private var _value: Span[C,E] = span
   def value: Span[C,E] = _value
@@ -127,12 +130,15 @@ class MutableSpanVar[C<:Chain[C,E],E<:ChainLink[E,C]](span:Span[C,E]) extends Sp
   }  
 }
 
+/** A concrete mutable variable whose value is a Span.
+    @author Andrew McCallum */
 class SpanVariable[C<:Chain[C,E],E<:ChainLink[E,C]](span:Span[C,E]) extends MutableSpanVar[C,E](span) {
   def this(chain:C, start:Int, length:Int) = this(new Span[C,E](chain, start, length))
 }
 
 
-/** An abstract collection of SpanVars, with various methods for retrieving subsets. */
+/** An abstract collection of SpanVars, with various methods for retrieving subsets.
+    @author Andrew McCallum */
 trait SpanVarCollection[+S<:SpanVar[C,E],C<:Chain[C,E],E<:ChainLink[E,C]] extends Seq[S] {
   def spansOfClass[A<:SpanVar[C,E]](c:Class[A]): Seq[A] = this.filter(s => c.isAssignableFrom(s.getClass)).asInstanceOf[Seq[A]]
   def spansOfClass[A<:SpanVar[C,E]](implicit m:Manifest[A]): Seq[A] = spansOfClass[A](m.runtimeClass.asInstanceOf[Class[A]])
@@ -163,10 +169,12 @@ trait SpanVarCollection[+S<:SpanVar[C,E],C<:Chain[C,E],E<:ChainLink[E,C]] extend
   def spansOfClassPreceeding[A<:SpanVar[C,E]](e:E)(implicit m:Manifest[A]): Seq[A] = spansOfClassPreceeding(m.runtimeClass.asInstanceOf[Class[A]], e)
 }
 
-/** An immutable concrete collection of SpanVars. */
+/** An immutable concrete collection of SpanVars.
+    @author Andrew McCallum */
 class SpanVarList[+S<:SpanVar[C,E],C<:Chain[C,E],E<:ChainLink[E,C]](spans:Iterable[S]) extends ImmutableArrayIndexedSeq[S](spans) with SpanVarCollection[S,C,E]
 
-/** A mutable concrete collection of SpanVars, with various methods for tracking additions and removals via DiffLists. */
+/** A mutable concrete collection of SpanVars, with various methods for tracking additions and removals via DiffLists.
+    @author Andrew McCallum */
 class SpanVarBuffer[S<:SpanVar[C,E],C<:Chain[C,E],E<:ChainLink[E,C]] extends ArrayBuffer[S] with SpanVarCollection[S,C,E] {
   /** Add the span to the list of spans.  Unlike +=, make a DiffList entry for the change. */
   def add(s:S)(implicit d:DiffList): Unit = {

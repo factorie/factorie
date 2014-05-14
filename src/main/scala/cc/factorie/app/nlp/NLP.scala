@@ -1,3 +1,15 @@
+/* Copyright (C) 2008-2014 University of Massachusetts Amherst.
+   This file is part of "FACTORIE" (Factor graphs, Imperative, Extensible)
+   http://factorie.cs.umass.edu, http://github.com/factorie
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+    http://www.apache.org/licenses/LICENSE-2.0
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License. */
 package cc.factorie.app.nlp
 
 import java.io._
@@ -39,7 +51,7 @@ object NLP {
       // parsers
       //val parser1 = new CmdOption("parser1", ClasspathURL[DepParser1](".factorie").toString, "URL", "Annotate dependency parse with a simple shift-reduce transition-based model.") { override def invoke = { System.setProperty(classOf[DepParser1].getName, value); annotators += cc.factorie.app.nlp.parse.DepParser1 } }
       val transitionparser = new CmdOption[String]("transition-based-parser", null, "URL", "Annotate dependency parse with a state-of-the-art shift-reduce transition-based model.") { override def invoke() = { if (value ne null) System.setProperty(classOf[OntonotesTransitionBasedParser].getName, value); annotators += cc.factorie.app.nlp.parse.OntonotesTransitionBasedParser } }
-      val graphparser = new CmdOption[String]("graph-based-parser", null, "URL", "Annotate dependency parse with a first-order projective parser.") { override def invoke() = { if (value ne null) System.setProperty(classOf[OntonotesProjectiveGraphBasedParser].getName, value); annotators += cc.factorie.app.nlp.parse.OntonotesProjectiveGraphBasedParser } }
+      //val graphparser = new CmdOption[String]("graph-based-parser", null, "URL", "Annotate dependency parse with a first-order projective parser.") { override def invoke() = { if (value ne null) System.setProperty(classOf[OntonotesProjectiveGraphBasedParser].getName, value); annotators += cc.factorie.app.nlp.parse.OntonotesProjectiveGraphBasedParser } }
       
       // coref
       val deterministicNamedCoref = new CmdOption[String]("d-named-coref", null, "", "Simple deterministic coreference on named entities") { override def invoke() = { annotators += coref.DeterministicNamedCoref } }
@@ -50,6 +62,15 @@ object NLP {
 
     }
     opts.parse(args)
+    
+    if (!opts.values.exists(_.wasInvoked)) {
+       println("Usage: " + opts.usageString)
+       println("The tool will perform annotation for whatever tasks you specify, and the prereqs for these tasks. It will only print to stdout the the ones that you request, though.")
+       println("Note: if you have downloaded the models via mvn, you will not need to specify urls for the models")
+       println("Note: this tool requires nlp models being downloaded. To do this automatically, run \'mvn package -Pnlp-jar-with-dependencies\'")
+       sys.exit()
+     }
+    
     val map = new MutableDocumentAnnotatorMap ++= DocumentAnnotatorPipeline.defaultDocumentAnnotationMap
     for (annotator <- annotators) map += annotator
     val pipeline = DocumentAnnotatorPipeline(map=map.toMap, prereqs=Nil, annotators.flatMap(_.postAttrs))

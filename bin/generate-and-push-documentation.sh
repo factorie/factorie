@@ -12,10 +12,10 @@ git checkout gh-pages && \
 git pull && \
 
 # update tutorial files
-git rm tutorials/*md && \
-mkdir tutorials && \
-cp doc/html/*md tutorials/ && \
-git add tutorials/ && \
+git rm usersguide/*md && \
+mkdir usersguide && \
+cp doc/html/*md usersguide/ && \
+git add usersguide/ && \
 
 # update scaladocs
 git rm -r scaladocs/ && \
@@ -23,6 +23,6 @@ mv target/site/scaladocs . && \
 git add scaladocs/ && \
 
 # push changes and return to master branch
-git commit -m "updating tutorials and scaladocs" && \
+git commit -m "updating users guide and scaladocs" && \
 git push
 git checkout master

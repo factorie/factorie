@@ -1,7 +1,6 @@
-/* Copyright (C) 2008-2010 University of Massachusetts Amherst,
-   Department of Computer Science.
+/* Copyright (C) 2008-2014 University of Massachusetts Amherst.
    This file is part of "FACTORIE" (Factor graphs, Imperative, Extensible)
-   http://factorie.cs.umass.edu, http://code.google.com/p/factorie/
+   http://factorie.cs.umass.edu, http://github.com/factorie
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
    You may obtain a copy of the License at
@@ -31,7 +30,7 @@ trait ContainerVariable[A<:Var] extends Var {
 // NOTE: Vars#hashCode must be based on the contents of the collection, or else Factor uniq'ing won't work.
 // So this is the exception to the "rule" that Variable must have equals and hashCode based on unique memory address.
 /** A more concrete ContainerVariable, that is also a scala.collection.Seq.
-    Used for 
+    Used for implementing var-args in the neighbors of a Factor.
     @author Andrew McCallum */
 trait Vars[A<:Var] extends scala.collection.Seq[A] with ContainerVariable[A] /*with VarAndValueGenericDomain[Vars[A],scala.collection.Seq[A#Value]]*/ {
   type Value = scala.collection.Seq[A#Value]

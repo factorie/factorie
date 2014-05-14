@@ -11,15 +11,15 @@ val filePrefix = scriptPath.substring(0, scriptPath.lastIndexOf('/'))
 val outputPathName = s"$filePrefix/html/"
 	
 val tutorialsDirName = s"$filePrefix/../src/main/scala/cc/factorie/tutorial/"
-val tutorialsPattern = "(UsersGuide.*)|(Tutorial.*)"
+val tutorialsPattern = "(Tutorial.*)"
 val tutorialsDir = new File(tutorialsDirName)
 val fileNames = tutorialsDir.listFiles.map(_.getName)
 	
 fileNames.foreach(fileName => {
-  val fileNamePattern = "(Tutorial|UsersGuide)([0-9]+).*".r
+  val fileNamePattern = "(UsersGuide)([0-9]+).*".r
   fileName match {
     case fileNamePattern(tutorialType, num) => {
-      val group = if(tutorialType == "Tutorial") "tutorial" else "usersguide"
+      val group = "usersguide"
       val weight = Integer.parseInt(num) + 10
       val outputFileName = s"$outputPathName${fileName.replace(".scala", ".md")}"
       val outputFile = new File(outputFileName)

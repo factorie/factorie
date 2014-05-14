@@ -1,3 +1,15 @@
+/* Copyright (C) 2008-2014 University of Massachusetts Amherst.
+   This file is part of "FACTORIE" (Factor graphs, Imperative, Extensible)
+   http://factorie.cs.umass.edu, http://github.com/factorie
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+    http://www.apache.org/licenses/LICENSE-2.0
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License. */
 package cc.factorie.app.classify.backend
 
 import cc.factorie._
@@ -139,7 +151,7 @@ trait MulticlassClassifierTrainer[C <: MulticlassClassifier[Tensor1]] extends Ba
     baseTrain(classifier, labels.map(_.target.intValue), features.map(_.value), weights, evaluate)
   def train(classifier: C, labels: Seq[LabeledDiscreteVar], features: Seq[VectorVar], evaluate: C => Unit): Unit =
     baseTrain(classifier, labels.map(_.target.intValue), features.map(_.value), labels.map(i => 1.0), evaluate)
-  def train[Label<:LabeledDiscreteVar](classifier: C, labels: Seq[Label], l2f: Label => VectorVar, testLabels: Seq[Label], l2w: Label => Double = (l: Label) => 1.0): Unit =
+  def train[Label<:LabeledDiscreteVar](classifier: C, labels: Seq[Label], l2f: Label => VectorVar, testLabels: Seq[Label], l2w: Label => Double): Unit =
     train(classifier, labels, labels.map(l2f), labels.map(l2w), testLabels, testLabels.map(l2f))
   def train[Label<:LabeledDiscreteVar](classifier: C, labels: Seq[Label], l2f: Label => VectorVar, l2w: Label => Double): Unit =
     train(classifier, labels, labels.map(l2f), labels.map(l2w))

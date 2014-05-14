@@ -1,7 +1,6 @@
-/* Copyright (C) 2008-2010 University of Massachusetts Amherst,
-   Department of Computer Science.
+/* Copyright (C) 2008-2014 University of Massachusetts Amherst.
    This file is part of "FACTORIE" (Factor graphs, Imperative, Extensible)
-   http://factorie.cs.umass.edu, http://code.google.com/p/factorie/
+   http://factorie.cs.umass.edu, http://github.com/factorie
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
    You may obtain a copy of the License at
@@ -16,13 +15,10 @@ package cc.factorie.variable
 
 import cc.factorie.la._
 
-//trait TensorDomain extends Domain[Tensor]
-//object TensorDomain extends TensorDomain
-
-/** An abstract variable whose value is a Tensor. */
-trait TensorVar extends /*VarWithDomain[Tensor] with*/ Var {
+/** An abstract variable whose value is a Tensor.
+    @author Andrew McCallum */
+trait TensorVar extends Var {
   type Value <: Tensor
-  //def domain: TensorDomain
   def value: Value
 }
 
@@ -31,6 +27,9 @@ trait TensorVar extends /*VarWithDomain[Tensor] with*/ Var {
 // trait TypedTensorVar[+A<:Tensor] extends TensorVar with VarAndValueType[TypedTensorVar[A],A]
 // trait TensorVar extends TypedTensorVar[Tensor]
 
+/** An abstract mutable variable whose value is a Tensor.
+    If desired, changes to the Tensor may be tracked through methods set, update, increment and zero.
+    @author Andrew McCallum */
 trait MutableTensorVar extends TensorVar with MutableVar {
   //def domain: TensorDomain //with Domain[A]
   private var _value: Value = null.asInstanceOf[Value]

@@ -1,7 +1,6 @@
-/* Copyright (C) 2008-2010 University of Massachusetts Amherst,
-   Department of Computer Science.
+/* Copyright (C) 2008-2014 University of Massachusetts Amherst.
    This file is part of "FACTORIE" (Factor graphs, Imperative, Extensible)
-   http://factorie.cs.umass.edu, http://code.google.com/p/factorie/
+   http://factorie.cs.umass.edu, http://github.com/factorie
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
    You may obtain a copy of the License at
@@ -13,6 +12,8 @@
    limitations under the License. */
 
 package cc.factorie.variable
+
+import scala.annotation.unchecked.uncheckedVariance
 
 /** A simple superclass of ChainLink that has a self-type argument, but (unlike ChainLink) not the type of the Chain.
     Used by app.chain.Observation and app.chain.Lexicon.LexiconToken.
@@ -128,7 +129,7 @@ trait ChainLink[This<:ChainLink[This,C],C<:Chain[C,This]] extends AbstractChainL
  */
 trait ThisType[+This<:AnyRef] {
   this: This =>
-  type ThisType = This
+  type ThisType = (This @uncheckedVariance)
 }
 
 /** A chain of elements, each of which has methods "next", "prev", etc.

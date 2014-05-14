@@ -1,7 +1,6 @@
-/* Copyright (C) 2008-2010 University of Massachusetts Amherst,
-   Department of Computer Science.
+/* Copyright (C) 2008-2014 University of Massachusetts Amherst.
    This file is part of "FACTORIE" (Factor graphs, Imperative, Extensible)
-   http://factorie.cs.umass.edu, http://code.google.com/p/factorie/
+   http://factorie.cs.umass.edu, http://github.com/factorie
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
    You may obtain a copy of the License at
@@ -90,6 +89,9 @@ class GrowableUniformProportions1(sizeProxy:Iterable[Any], uniformValue:Double =
   override def sampleIndex(massTotal:Double)(implicit r:Random): Int = r.nextInt(dim1)
 }
 
+/** Proportions with arbitrary probability on all its discrete outcomes.
+    Extends DenseDoubleSeq.
+    @author Andrew McCallum */
 trait DenseProportions extends DenseDoubleSeq with Proportions  {
   def forallActiveElements(f: (Int, Double) => Boolean) = forallElements(f)
   def activeDomainSize = activeDomain.size
@@ -140,6 +142,9 @@ class GrowableDenseProportions1(val sizeProxy:Iterable[Any]) extends Proportions
   def activeDomain = new cc.factorie.util.RangeIntSeq(0, dim1)
 }
 
+/** Proportions with arbitrary probability on all its discrete outcomes.
+    Extends DenseTensor.
+    @author Andrew McCallum */
 trait DenseTensorProportions extends DenseTensor with Proportions {
   def massTotal = 1.0
   // These overrides would not be necessary if Tensor were not a MutableDoubleSeq and we had a ImmutableDenseTensor, but I don't think it is worth it.
@@ -187,6 +192,9 @@ class DenseTensorProportions4(override protected val _initialArray:Array[Double]
 }
 
 
+/** Proportions expected to have zero probability on many of its discrete outcomes.
+    Extends SparseIndexedTensor.
+    @author Andrew McCallum */
 trait SparseTensorProportions extends SparseIndexedTensor with Proportions {
   def massTotal = 1.0
   protected def tensor: SparseIndexedTensor
@@ -303,6 +311,10 @@ class SparseTensorProportions4(val tensor:SparseIndexedTensor4, checkNormalizati
 //  def masses = this
 //}
 
+/** Proportions expected to have zero probability on many of its discrete outcomes,
+    and which is stored with high-probability outcomes first, for efficient sampling.
+    Extends SparseDoubleSeq.
+    @author Andrew McCallum */
 class SortedSparseCountsProportions1(val dim1:Int) extends SparseDoubleSeq with Proportions1  {
   val masses = new SortedSparseCountsMasses1(dim1)
   def activeDomainSize = masses.activeDomainSize
@@ -344,12 +356,16 @@ class SortedSparseCountsProportions1(val dim1:Int) extends SparseDoubleSeq with 
 //trait ProportionsDomain extends MassesDomain with Domain[Proportions]
 //object ProportionsDomain extends ProportionsDomain
 
+/** An abstract Var whose value is a Proportions.
+    @author Andrew McCallum */
 trait ProportionsVar extends MassesVar {
   type Value <: Proportions
   override def value: Value
 }
 trait MutableProportionsVar extends MutableMassesVar with ProportionsVar
 
+/** A Variable whose value is a Proportions.
+    @author Andrew McCallum */
 class ProportionsVariable extends MutableProportionsVar {
   type Value = Proportions
   def this(initialValue:Proportions) = { this(); set(initialValue)(null) }
@@ -392,6 +408,8 @@ class ProportionsVariable extends MutableProportionsVar {
 }
 // In the future, we might also need a ProportionsVar1, ProportionsVar2, etc. -akm
 
+/** A factory for creating ProportionsVariables.
+    @author Andrew McCallum */
 object ProportionsVariable {
   def uniform(dim:Int) = new ProportionsVariable(new UniformProportions1(dim))
   def dense(dim:Int) = new ProportionsVariable(new DenseProportions1(dim))
@@ -401,6 +419,8 @@ object ProportionsVariable {
   //def growableSparseCounts(sizeProxy:Iterable[Any]) = new ProportionsVariable(new SortedSparseCountsProportions1(sizeProxy)) // Not yet implemented
 }
 
+/** A distribution over proportions, with mean and variance, e.g. as the mean and concentration parameters of a Dirichlet distribution.
+    @author Andrew McCallum */
 trait ProportionsMarginal extends Marginal {
   //def variables = Seq(_1)
   def _1: ProportionsVar
@@ -409,6 +429,8 @@ trait ProportionsMarginal extends Marginal {
   //def setToMaximize(implicit d:DiffList): Unit = _1.asInstanceOf[ProportionsVariable].set(mean)
 }
 
+/** A value assignment to a single ProportionsVariable.
+    @author Andrew McCallum */
 class ProportionsAssignment(p:ProportionsVariable, v:Proportions) extends Assignment1[ProportionsVariable](p, v.asInstanceOf[p.Value]) with Marginal1 with ProportionsMarginal {
   //final def _1 = p // TODO Consider renaming Assignment1.var1 back to _1
   override def variables = Seq(p)
@@ -417,7 +439,8 @@ class ProportionsAssignment(p:ProportionsVariable, v:Proportions) extends Assign
   def setToMaximize(implicit d:DiffList): Unit = setVariables(d)
 }
 
-
+/** For inferring the value of a ProportionsVariable that maximizes the score of its surrounding factors in a DirectedModel.
+    @author Andrew McCallum */
 object MaximizeProportions extends Maximize[Iterable[ProportionsVariable],DirectedModel] {
   def infer(variables:Iterable[ProportionsVariable], model:DirectedModel, marginalizing:Summary): Summary = {
     def maxProp(v:ProportionsVariable, model:DirectedModel, marginalizing:Summary): Proportions = maxProportions(v, model, marginalizing match { case m:DiscreteSummary1[DiscreteVar @unchecked] => m; case null => null })

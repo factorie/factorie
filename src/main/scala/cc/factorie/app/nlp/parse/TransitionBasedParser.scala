@@ -1,3 +1,15 @@
+/* Copyright (C) 2008-2014 University of Massachusetts Amherst.
+   This file is part of "FACTORIE" (Factor graphs, Imperative, Extensible)
+   http://factorie.cs.umass.edu, http://github.com/factorie
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+    http://www.apache.org/licenses/LICENSE-2.0
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License. */
 package cc.factorie.app.nlp.parse
 
 import cc.factorie.app.nlp._
@@ -109,7 +121,7 @@ class TransitionBasedParser extends DocumentAnnotator {
   }
   
   
-  def train(trainSentences:Iterable[Sentence], testSentences:Iterable[Sentence], numBootstrappingIterations:Int = 2, l1Factor:Double = 0.00001, l2Factor:Double = 0.00001, nThreads: Int = 1)(implicit random: scala.util.Random): Unit = {
+  def train(trainSentences:Seq[Sentence], testSentences:Seq[Sentence], numBootstrappingIterations:Int = 2, l1Factor:Double = 0.00001, l2Factor:Double = 0.00001, nThreads: Int = 1)(implicit random: scala.util.Random): Unit = {
     featuresDomain.dimensionDomain.gatherCounts = true
     var trainingVars: Iterable[ParseDecisionVariable] = generateDecisions(trainSentences, ParserConstants.TRAINING, nThreads)
     println("Before pruning # features " + featuresDomain.dimensionDomain.size)
@@ -130,7 +142,7 @@ class TransitionBasedParser extends DocumentAnnotator {
     }
   }
   
-  def trainDecisions(trainDecisions:Iterable[ParseDecisionVariable], optimizer:optimize.GradientOptimizer, trainSentences:Iterable[Sentence], testSentences:Iterable[Sentence])(implicit random: scala.util.Random): Unit = {
+  def trainDecisions(trainDecisions:Iterable[ParseDecisionVariable], optimizer:optimize.GradientOptimizer, trainSentences:Seq[Sentence], testSentences:Seq[Sentence])(implicit random: scala.util.Random): Unit = {
     def evaluate(c: LinearMulticlassClassifier) {
       println(model.weights.value.toSeq.count(_ == 0).toFloat/model.weights.value.length +" sparsity")
       println(" TRAIN "+testString(trainSentences))
@@ -139,16 +151,23 @@ class TransitionBasedParser extends DocumentAnnotator {
     new OnlineLinearMulticlassTrainer(optimizer=optimizer, maxIterations=2).baseTrain(model, trainDecisions.map(_.target.intValue).toSeq, trainDecisions.map(_.features.value).toSeq, trainDecisions.map(v => 1.0).toSeq, evaluate=evaluate)
   }
   
-  def testString(testSentences:Iterable[Sentence]): String = {
+  def testString(testSentences:Seq[Sentence]): String = {
     val(las, uas, tokSpeed, sentSpeed) = test(testSentences)
-    "LAS="+las+" UAS="+uas+s"  ${tokSpeed} tokens/sec"
+    "LAS="+las+" UAS="+uas+s" ${tokSpeed} tokens/sec ${sentSpeed} sentences/sec"
   }
   
-  def test(testSentences:Iterable[Sentence]): (Double, Double, Double, Double) = {
-    val t0 = System.currentTimeMillis()
-    testSentences.par.foreach(process)
-    val totalTime = System.currentTimeMillis() - t0
-    val totalTokens = testSentences.map(_.tokens.length).sum
+  def test(testSentences:Seq[Sentence]): (Double, Double, Double, Double) = {
+    var i = 0
+    val numSentences = testSentences.size
+    var t0: Long = 0
+    var totalTime: Long = 0
+    while(i < numSentences){
+      t0 = System.currentTimeMillis()
+      process(testSentences(i))
+      totalTime += System.currentTimeMillis() - t0
+      i += 1
+    }
+    val totalTokens = testSentences.map(_.length).sum
     val totalSentences = testSentences.size
     val pred = testSentences.map(_.attr[ParseTree])
     (ParserEval.calcLas(pred), ParserEval.calcUas(pred), totalTokens*1000.0/totalTime, totalSentences*1000.0/totalTime)
@@ -630,9 +649,9 @@ class TransitionBasedParserArgs extends cc.factorie.util.DefaultCmdOptions with 
   val saveModel = new CmdOption("save-model", true,"BOOLEAN","whether to write out a model file or not")
   val l1 = new CmdOption("l1", 0.000001,"FLOAT","l1 regularization weight")
   val l2 = new CmdOption("l2", 0.00001,"FLOAT","l2 regularization weight")
-  val rate = new CmdOption("rate", 10.0,"FLOAT","base learning rate")
+  val rate = new CmdOption("rate", 1.0,"FLOAT","base learning rate")
   val maxIters = new CmdOption("max-iterations", 5, "INT", "iterations of training per round")
-  val delta = new CmdOption("delta", 100.0,"FLOAT","learning rate decay")
+  val delta = new CmdOption("delta", 0.1,"FLOAT","learning rate decay")
 }
 
 object TransitionBasedParserTrainer extends cc.factorie.util.HyperparameterMain {
@@ -650,7 +669,7 @@ object TransitionBasedParserTrainer extends cc.factorie.util.HyperparameterMain 
       if (dirOpt.wasInvoked) fileList ++= FileUtils.getFileListFromDir(dirOpt.value)
       fileList.flatMap(fname => {
         if(opts.wsj.value)
-          load.LoadWSJMalt.fromFilename(fname, loadLemma=load.AnnotationTypes.AUTO, loadPos=load.AnnotationTypes.AUTO).head.sentences.toSeq 
+          load.LoadWSJMalt.fromFilename(fname, loadPos=load.AnnotationTypes.AUTO).head.sentences.toSeq 
         else if (opts.ontonotes.value)
           load.LoadOntonotes5.fromFilename(fname, loadLemma=load.AnnotationTypes.AUTO, loadPos=load.AnnotationTypes.AUTO).head.sentences.toSeq 
         else
@@ -733,7 +752,8 @@ object TransitionBasedParserTrainer extends cc.factorie.util.HyperparameterMain 
       c.boosting(sentences, nThreads=opts.nThreads.value, trainer=trainer, evaluate=evaluate)
     }
     
-    testSentences.par.foreach(c.process)
+    //testSentences.par.foreach(c.process)
+    //testSentences.foreach(c.process)
     
     if (opts.saveModel.value) {
       val modelUrl: String = if (opts.modelDir.wasInvoked) opts.modelDir.value else opts.modelDir.defaultValue + System.currentTimeMillis().toString + ".factorie"
@@ -789,10 +809,10 @@ object TransitionBasedParserOptimizer {
     val l1 = cc.factorie.util.HyperParameter(opts.l1, new cc.factorie.util.LogUniformDoubleSampler(1e-10, 1e2))
     val l2 = cc.factorie.util.HyperParameter(opts.l2, new cc.factorie.util.LogUniformDoubleSampler(1e-10, 1e2))
     val rate = cc.factorie.util.HyperParameter(opts.rate, new cc.factorie.util.LogUniformDoubleSampler(1e-4, 1e4))
-    val delta = cc.factorie.util.HyperParameter(opts.delta, new cc.factorie.util.LogUniformDoubleSampler(1e-4, 1e4))
+    //val delta = cc.factorie.util.HyperParameter(opts.delta, new cc.factorie.util.LogUniformDoubleSampler(1e-4, 1e4))
     val cutoff = cc.factorie.util.HyperParameter(opts.cutoff, new cc.factorie.util.SampleFromSeq[Int](Seq(0, 1, 2)))
-    val bootstrap = cc.factorie.util.HyperParameter(opts.bootstrapping, new cc.factorie.util.SampleFromSeq[Int](Seq(0, 1, 2)))
-    val maxit = cc.factorie.util.HyperParameter(opts.maxIters, new cc.factorie.util.SampleFromSeq[Int](Seq(2, 5, 8)))
+    //val bootstrap = cc.factorie.util.HyperParameter(opts.bootstrapping, new cc.factorie.util.SampleFromSeq[Int](Seq(0, 1, 2)))
+    val maxit = cc.factorie.util.HyperParameter(opts.maxIters, new cc.factorie.util.SampleFromSeq[Int](Seq(3, 5, 7)))
     /*
     val ssh = new cc.factorie.util.SSHActorExecutor("apassos",
       Seq("avon1", "avon2"),
@@ -801,8 +821,8 @@ object TransitionBasedParserOptimizer {
       "cc.factorie.app.nlp.parse.TransitionBasedParser",
       10, 5)
       */
-    val qs = new cc.factorie.util.QSubExecutor(32, "cc.factorie.app.nlp.parse.TransitionBasedParserTrainer")
-    val optimizer = new cc.factorie.util.HyperParameterSearcher(opts, Seq(l1, l2, rate, delta, cutoff, bootstrap, maxit), qs.execute, 200, 180, 60)
+    val qs = new cc.factorie.util.QSubExecutor(48, "cc.factorie.app.nlp.parse.TransitionBasedParserTrainer")
+    val optimizer = new cc.factorie.util.HyperParameterSearcher(opts, Seq(l1, l2, rate, cutoff, maxit), qs.execute, 250, 220, 60)
     val result = optimizer.optimize()
     println("Got results: " + result.mkString(" "))
     opts.saveModel.setValue(true)

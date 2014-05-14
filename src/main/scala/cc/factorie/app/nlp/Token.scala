@@ -1,7 +1,6 @@
-/* Copyright (C) 2008-2010 University of Massachusetts Amherst,
-   Department of Computer Science.
+/* Copyright (C) 2008-2014 University of Massachusetts Amherst.
    This file is part of "FACTORIE" (Factor graphs, Imperative, Extensible)
-   http://factorie.cs.umass.edu, http://code.google.com/p/factorie/
+   http://factorie.cs.umass.edu, http://github.com/factorie
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
    You may obtain a copy of the License at
@@ -26,14 +25,18 @@ import cc.factorie.variable.{StringVariable, ChainLink, CategoricalValue}
     A Token is also a ChainLink in a Chain sequence; thus Tokens have "next" and "prev" methods returning neighboring Tokens.
     Token constructors that include a Section automatically add the Token to the Section (which is the Chain).
     Token constructors that include a Sentence automatically add the Token to the Sentence and its Section.
-    Token constructors that include a tokenString automatically append the tokenString to the Document's string. */
+    Token constructors that include a tokenString automatically append the tokenString to the Document's string.
+    @param stringStart The offset into the Document string of the first character of the Token.
+    @param stringEnd The offset into the Document string of the character immediately after the last character of the Token. */
 class Token(val stringStart:Int, val stringEnd:Int) extends cc.factorie.app.chain.Observation[Token] with ChainLink[Token,Section] with DocumentSubstring with Attr {
   assert(stringStart <= stringEnd)
   /** Create a Token and also append it to the list of Tokens in the Section.
       There must not already be Tokens in the document with higher stringStart indices.
-      Note that the start and end indices are character offsets into the Document string, not the Section string. */
-  def this(sec:Section, s:Int, e:Int) = {
-    this(s, e)
+      Note that the start and end indices are character offsets into the Document string, not the Section string.
+      @param stringStart The offset into the Document string of the first character of the Token.
+      @param stringEnd The offset into the Document string of the character immediately after the last character of the Token. */
+  def this(sec:Section, stringStart:Int, stringEnd:Int) = {
+    this(stringStart, stringEnd)
     assert(sec ne null)
     assert(sec.document ne null)
     assert(sec.document.annotators ne null)
