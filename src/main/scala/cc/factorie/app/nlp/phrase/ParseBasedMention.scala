@@ -171,16 +171,6 @@ class ParseBasedPhraseFinder(val useNER: Boolean) extends DocumentAnnotator {
       .sortBy(phrase => (phrase.tokens.head.stringStart, phrase.length))
   }
 
-
-//  def process(doc: Document): Document = {
-//    // The mentions are all added to coref in the methods
-//    personalPronounSpans(doc)
-//    nounPhraseSpans(doc, isCommonNoun)
-//    nounPhraseSpans(doc, isProperNoun)
-//    NNPSpans(doc)
-//    doc
-//  }
-
    override def tokenAnnotationString(token:Token): String = token.document.attr[MentionList].filter(mention => mention.phrase.contains(token)) match { case ms:Seq[Mention] if ms.length > 0 => ms.map(m => m.phrase.attr[NounPhraseType].categoryValue+":"+m.phrase.indexOf(token)).mkString(","); case _ => "_" }
 }
 
