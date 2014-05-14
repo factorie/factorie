@@ -223,7 +223,7 @@ class TopTokenFrequencies(val headWords: DefaultHashMap[String,Int],
     if(typesOfCounts.contains("Last")) TokenFreqs.countWordTypes(nonPronouns,(t) => t.phrase.last.string.toLowerCase,default)else null,
     if(typesOfCounts.contains("Prec")) TokenFreqs.countWordTypes(nonPronouns,(t) => TokenFreqs.getTokenStringAtOffset(t.phrase.tokens(0),-1).toLowerCase,default)else null,
     if(typesOfCounts.contains("Follow")) TokenFreqs.countWordTypes(nonPronouns,(t) => TokenFreqs.getTokenStringAtOffset(t.phrase.last,1).toLowerCase,default)else null,
-    if(typesOfCounts.contains("Shape")) TokenFreqs.countWordTypes(nonPronouns,(t) => cc.factorie.app.strings.stringShape(t.phrase.string.toLowerCase,2),default)else null,
+    if(typesOfCounts.contains("Shape")) TokenFreqs.countWordTypes(nonPronouns,(t) => cc.factorie.app.strings.stringShape(t.phrase.string,2),default)else null,
     if(typesOfCounts.contains("WordForm")) TokenFreqs.countWordTypes(nonPronouns,(t) => TokenFreqs.getWordClass(t.phrase.headToken),default)else null)
 
 
