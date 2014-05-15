@@ -111,7 +111,7 @@ object EvaluatableClustering {
   def evaluationString[C,P](predicted:EvaluatableClustering[C,P], truth:EvaluatableClustering[C,P]): String = {
     val sb: StringBuffer = new StringBuffer
     sb.append("P(mentions,entities) %d %d\n".format(predicted.pointIds.size, predicted.clusterIds.size))
-    sb.append("T(mentions,entities) %d %d\n".format(truth.pointIds, truth.clusterIds.size))
+    sb.append("T(mentions,entities) %d %d\n".format(truth.pointIds.size, truth.clusterIds.size))
     val pw = ClusterF1Evaluation.Pairwise(predicted, truth)
     //if (debug) TimeUtil.snapshot(pw.toString("PW"))
     sb.append(pw.toString("PW") + "\n")
