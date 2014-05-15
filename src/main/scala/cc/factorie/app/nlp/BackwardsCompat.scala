@@ -9,14 +9,15 @@ import scala.collection.mutable.{ArrayBuffer, ListBuffer, HashMap, LinkedHashMap
 
 object RelationArgFeaturesDomain extends CategoricalDomain[String]
 
-class ArgFeatures(val arg: PairwiseMention, val first: Boolean) extends BinaryFeatureVectorVariable[String] {
+@deprecated("Marked for Possible Deletion")
+class ArgFeatures(val arg: Mention, val first: Boolean) extends BinaryFeatureVectorVariable[String] {
   def domain = RelationArgFeaturesDomain
 
   def compute() = {
     this += "BIAS"
     // TODO compute relation features using "first" and "arg"
     // TODO convert Lexicons (from refectorie.proj.jntinf) to app.chain.Lexicon
-    for (tok <- arg.tokens) {
+    for (tok <- arg.phrase.tokens) {
       this += "POS_" + tok.posTag.categoryValue
       if (tok.string(0).isLower)
         this += "STEM_" + tok.string.replaceAll("\\s+", " ").take(5)
@@ -25,14 +26,18 @@ class ArgFeatures(val arg: PairwiseMention, val first: Boolean) extends BinaryFe
     }
 //      for (lex <- Lexicons.getMemberships(arg.phrase.replaceAll("\\s+", " ").toLowerCase))
 //        this += "PHRASE-LEX-" + lex
-    this += "HEAD_POS_" + arg.headToken.posTag.categoryValue
+
+    this += "HEAD_POS_" + arg.phrase.headToken.posTag.categoryValue
 //      for (lex <- Lexicons.getMemberships(arg.headToken.string.replaceAll("\\s+", " ").toLowerCase))
 //        this += "HEAD_LEX-" + lex
   }
 }
 
+@deprecated("Marked for Possible Deletion")
+class RelationMentionsSet extends SetVariable[RelationMention]
 
-class RelationMention(val arg1: PairwiseMention, val arg2: PairwiseMention, val relationType: String, val relationSubType: Option[String]) extends ArrowVariable(arg1, arg2) with Attr {
+@deprecated("Marked for Possible Deletion")
+class RelationMention(val arg1: Mention, val arg2: Mention, val relationType: String, val relationSubType: Option[String]) extends ArrowVariable(arg1, arg2) with Attr {
     val arg1Features = new ArgFeatures(arg1, true)
     val arg2Features = new ArgFeatures(arg2, false)
 //    val features = new Features(this)
@@ -47,7 +52,6 @@ class RelationMention(val arg1: PairwiseMention, val arg2: PairwiseMention, val 
 
 trait TokenSpanMention extends TokenSpan with Entity
 
-class RelationMentions extends SetVariable[RelationMention]
 
 /** The string-valued name for an entity. */
 class EntityName(val entity:Entity, s:String) extends StringVariable(s)
@@ -82,14 +86,6 @@ class EntityRef(theSrc:Entity, initialDst:Entity) extends ArrowVariable(theSrc, 
   }
   final def mention = src
   final def entity = dst
-}
-
-trait PairwiseMention extends TokenSpan with Entity {
-  val edges = new ArrayBuffer[PairwiseLabel]
-  var _head: Token = null
-  def headToken: Token = _head
-  // this is done for cases where the mention is split across multiple sentence in error (e.g. in reACE: george w. | bush)
-  override def sentence = if (_head ne null) headToken.sentence else super.sentence
 }
 
 class ChildEntities(val entity:Entity) extends SetVariable[Entity]
