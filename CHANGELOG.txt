@@ -1,6 +1,16 @@
 Changelog
 ===
 
+New in version 1.0
+---
+
+* Overall
+    - Miscellaneous code cleanup (launchers, app)
+
+* NLP
+    - Removed old hcoref package and renamed new xcoref to hcoref
+    - Removed old relation package
+
 New in version 1.0.0-RC2
 ---
 
