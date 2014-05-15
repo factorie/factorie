@@ -16,10 +16,10 @@ import cc.factorie.app.nlp._
 
 import segment._
 
-import ner.NerSpan
 import xml.{XML, NodeSeq}
 import java.io.File
-import scala.collection.mutable.ListBuffer
+import cc.factorie.app.nlp.coref.Mention
+import cc.factorie.app.nlp.phrase.Phrase
 
 // TODO: consider moving this info into variables.
 case class ACEEntityIdentifiers(eId: String, eType: String, eSubtype: String, eClass: String)
@@ -29,11 +29,6 @@ case class ACEMentionIdentifiers(mId: String, mType: String, ldcType: String, of
 case class ACERelationIdentifiers(rId: String, rType: String, rSubtype: String)
 
 case class ACEFileIdentifier(fileId: String)
-
-class ACEMentionSpan(doc: Section, val labelString: String, start: Int, length: Int) extends TokenSpan(doc, start, length) with TokenSpanMention with PairwiseMention {
-  override def toString = "ACEMentionSpan(" + length + "," + labelString + ":" + this.phrase + ")"
-}
-class ACEMentionSpanList(spans:Iterable[ACEMentionSpan]) extends TokenSpanList[ACEMentionSpan](spans)
 
 object LoadACE {
 
@@ -80,29 +75,26 @@ object LoadACE {
   }
 
   def addMentionsFromApf(apf: NodeSeq, doc: Document): Unit = {
-    val spanList = new ListBuffer[ACEMentionSpan]
+    val coref = doc.getCoref
     for (entity <- apf \\ "entity") {
-      val e = new EntityVariable((entity \ "entity_attributes" \ "name" \ "charseq").text)
+      val entityKey = (entity \ "entity_attributes" \ "name" \ "charseq").text
+      val e = coref.entityFromUniqueId(entityKey)
       e.attr += ACEEntityIdentifiers(eId = getAttr(entity, "ID"), eType = getAttr(entity, "TYPE"), eSubtype = getAttr(entity, "SUBTYPE"), eClass = getAttr(entity, "CLASS"))
-
       
       for (mention <- entity \ "entity_mention") {
         val (start, length) = getTokenIdxAndLength(mention, doc)
-        val m = new ACEMentionSpan(doc.asSection, e.attr[ACEEntityIdentifiers].eType, start, length)
-        spanList += m
-        if (m.sentence == null) println("NULL mention: (%d, %d) -> %s".format(start, length, m.string))
-        m.attr += new ACEMentionIdentifiers(mId = getAttr(mention, "ID"), mType = getAttr(mention, "TYPE"), ldcType = getAttr(mention, "LDCTYPE"), offsetStart = getAttr(mention \ "extent" \ "charseq", "START").toInt, offsetEnd = getAttr(mention \ "extent" \ "charseq", "END").toInt)
-        m.attr += new EntityRef(m, e)
+        val headCharIndex = getAttr(mention \ "head" \ "charseq", "END").toInt
 
-        val headCharIndex = getAttr(mention \ "head" \ "charseq", "END").toInt //- 1 // is the -1 necessary?
         val headLeftCharIndex = getAttr(mention \ "head" \ "charseq", "START").toInt
         try {
-          val tokIndLeft = tokenIndexAtCharIndex(headLeftCharIndex, doc)
           // set head token to the rightmost token of the ACE head
           val tokIndRight = tokenIndexAtCharIndex(headCharIndex, doc)
-          m._head = doc.asSection(tokIndRight)
-          //m.attr += new ACEFullHead(new TokenSpan(doc.asSection, tokIndLeft, tokIndRight - tokIndLeft + 1)(null))
-        } catch {
+          val phrase = new Phrase(doc.asSection, start, length, tokIndRight)
+          if (phrase.sentence == null) println("NULL mention: (%d, %d) -> %s".format(start, length, phrase.string))
+
+          coref.addMention(phrase,e).attr += new ACEMentionIdentifiers(mId = getAttr(mention, "ID"), mType = getAttr(mention, "TYPE"), ldcType = getAttr(mention, "LDCTYPE"), offsetStart = getAttr(mention \ "extent" \ "charseq", "START").toInt, offsetEnd = getAttr(mention \ "extent" \ "charseq", "END").toInt)
+
+         } catch {
           case e: Exception =>
             println("doc: " + doc.tokens.mkString("\n"))
             println("mention: " + mention)
@@ -113,34 +105,33 @@ object LoadACE {
         }
       }
     }
-    doc.attr += new ACEMentionSpanList(spanList)
   }
 
-  private def lookupEntityMention(id: String, doc: Document): PairwiseMention =
-    doc.attr[ACEMentionSpanList].find {
-      s =>
-        val a = s.attr[ACEMentionIdentifiers]
+  private def lookupEntityMention(id: String, doc: Document): Mention =
+    doc.coref.mentions.find {
+      m =>
+        val a = m.attr[ACEMentionIdentifiers]
         a != null && a.mId == id
-    }.get.asInstanceOf[PairwiseMention]
+    }.get
 
-  def addRelationsFromApf(apf: NodeSeq, doc: Document): Unit = {
-    doc.attr += new RelationMentions
-    for (relation <- apf \\ "relation") {
-      val identifiers = new ACERelationIdentifiers(rId = getAttr(relation, "ID"), rType = getAttr(relation, "TYPE"), rSubtype = getAttr(relation, "SUBTYPE"))
-
-      for (mention <- relation \ "relation_mention") {
-        val args = mention \ "relation_mention_argument" map {
-          arg => lookupEntityMention(getAttr(arg, "REFID"), doc)
-        }
-        assert(args.size == 2)
-        val m = new RelationMention(args.head, args.last, identifiers.rType, Some(identifiers.rSubtype))
-        if (m.arg1.sentence != m.arg2.sentence) println("sentence doesn't match")
-        m.attr += identifiers
-        doc.attr[RelationMentions].add(m)(null)
-        args.foreach(_.attr.getOrElseUpdate(new RelationMentions).add(m)(null))
-      }
-    }
-  }
+//  def addRelationsFromApf(apf: NodeSeq, doc: Document): Unit = {
+//    doc.getCoref
+//    for (relation <- apf \\ "relation") {
+//      val identifiers = new ACERelationIdentifiers(rId = getAttr(relation, "ID"), rType = getAttr(relation, "TYPE"), rSubtype = getAttr(relation, "SUBTYPE"))
+//
+//      for (mention <- relation \ "relation_mention") {
+//        val args = mention \ "relation_mention_argument" map {
+//          arg => lookupEntityMention(getAttr(arg, "REFID"), doc)
+//        }
+//        assert(args.size == 2)
+//        val m = new RelationMention(args.head, args.last, identifiers.rType, Some(identifiers.rSubtype))
+//        if (m.arg1.phrase.sentence != m.arg2.phrase.sentence) println("sentence doesn't match")
+//        m.attr += identifiers
+//        doc.attr[RelationMentions].add(m)(null)
+//        args.foreach(_.attr.getOrElseUpdate(new RelationMentions).add(m)(null))
+//      }
+//    }
+//  }
 
   // drops the first two lines (xml decl, and dtd)
   private def loadXML(apfFile: String): NodeSeq = {
@@ -156,7 +147,7 @@ object LoadACE {
 
   def fromApf(apfFile: String, doc: Document): Document = {
     addMentionsFromApf(loadXML(apfFile), doc)
-    addRelationsFromApf(loadXML(apfFile), doc)
+    //addRelationsFromApf(loadXML(apfFile), doc)
     doc
   }
 
@@ -167,7 +158,7 @@ object LoadACE {
     val docs = fromDirectory(args(0))
     println("docs: " + docs.size)
     for (d <- docs)
-      d.attr[ACEMentionSpanList].foreach(s => println(s))
+      d.coref.mentions.foreach(s => println(s))
   }
 
 }
