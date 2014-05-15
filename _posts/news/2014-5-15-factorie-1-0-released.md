@@ -31,7 +31,6 @@ New in version 1.0
     - Rewritten dependency parser
     - New within-document coreference system
     - Added CRF based mention finding
-    - 
     - Rewrite of Phrases/Mentions
     - Usability improvements to command line NLP tool
     - Performance improvement to Sparse LDA
