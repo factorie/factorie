@@ -221,38 +221,6 @@ limitations under the License.
               </args>
             </launcher>
             -->
-            <launcher>
-              <id>bib-demo</id>
-              <mainClass>cc.factorie.app.bib.Coref</mainClass>
-              <jvmArgs>
-                <jvmArg>-Xmx4g</jvmArg>
-                <jvmArg>-DentityExpansionLimit=100000000</jvmArg>
-              </jvmArgs>
-            </launcher>
-            <launcher>
-              <id>bib-kb</id>
-              <mainClass>cc.factorie.app.bib.BibKB</mainClass>
-              <jvmArgs>
-                <jvmArg>-Xmx6g</jvmArg>
-                <jvmArg>-DentityExpansionLimit=100000000</jvmArg>
-              </jvmArgs>
-            </launcher>
-            <launcher>
-              <id>bib-exp</id>
-              <mainClass>cc.factorie.app.bib.experiments.EpiDBExperimentOptions</mainClass>
-              <jvmArgs>
-                <jvmArg>-Xmx4g</jvmArg>
-                <jvmArg>-DentityExpansionLimit=100000000</jvmArg>
-              </jvmArgs>
-            </launcher>
-            <launcher>
-              <id>bib-exp-edits</id>
-              <mainClass>cc.factorie.app.bib.experiments.UserEditExperiments</mainClass>
-              <jvmArgs>
-                <jvmArg>-Xmx4g</jvmArg>
-                <jvmArg>-DentityExpansionLimit=100000000</jvmArg>
-              </jvmArgs>
-            </launcher>
           </launchers>
         </configuration>
       </plugin>
