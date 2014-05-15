@@ -16,8 +16,7 @@ import cc.factorie._
 import scala.reflect.ClassTag
 import cc.factorie.optimize.{SampleRankTrainer, ParameterAveraging, MIRA}
 import cc.factorie.model.TupleTemplateWithStatistics2
-import cc.factorie.variable.BooleanValue
-import cc.factorie.app.nlp._
+import cc.factorie.variable.{BooleanValue, BagOfWordsVariable}
 
 /**
  * @author John Sullivan

@@ -12,7 +12,7 @@
    limitations under the License. */
 package cc.factorie.app.nlp.xcoref
 
-import cc.factorie.infer.{Proposal, SettingsSampler}
+import cc.factorie.infer.SettingsSampler
 import scala.util.Random
 import cc.factorie.util.Hooks1
 import scala.reflect.ClassTag

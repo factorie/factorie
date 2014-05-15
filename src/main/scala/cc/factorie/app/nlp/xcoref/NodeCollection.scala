@@ -13,14 +13,12 @@
 package cc.factorie.app.nlp.xcoref
 
 import cc.factorie.db.mongo.{LazyCubbieConverter, MongoCubbieCollection, MutableCubbieCollection}
-import cc.factorie._
 import cc.factorie.db.mongo.MongoCubbieImplicits._
 import scala.collection.mutable
 import com.mongodb.DB
 import scala.reflect.ClassTag
 import cc.factorie.util.Cubbie
-import cc.factorie.app.nlp.BagOfWordsVariable
-import cc.factorie.variable.Var
+import cc.factorie.variable.{Var, BagOfWordsVariable}
 
 /**
  * User: escher

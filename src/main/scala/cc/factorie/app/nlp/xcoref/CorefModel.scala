@@ -14,9 +14,7 @@ package cc.factorie.app.nlp.xcoref
 
 import cc.factorie._
 import cc.factorie.model._
-import cc.factorie.variable._
 import cc.factorie.variable.BooleanValue
-import cc.factorie.app.nlp.DebugableTemplate
 
 /**
  * @author John Sullivan
@@ -29,7 +27,7 @@ implicit val params:Parameters = this
 
 class StructuralPrior[Vars <: NodeVariables[Vars]](entityvalue:Double = -0.5,
                                                    subEntityValue:Double = 0.25)
-  extends TupleTemplateWithStatistics3[Node[Vars]#IsRoot, Node[Vars]#IsMention, Node[Vars]#Exists] with DebugableTemplate{
+  extends TupleTemplateWithStatistics3[Node[Vars]#IsRoot, Node[Vars]#IsMention, Node[Vars]#Exists] with DebuggableTemplate{
 
   def name = "StructuralPrior"
   def unroll1(isRoot: Node[Vars]#IsRoot) = Factor(isRoot, isRoot.node.isMentionVar, isRoot.node.existsVar)

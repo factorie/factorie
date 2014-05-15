@@ -41,9 +41,6 @@ class Node[Vars <: NodeVariables[Vars]](val variables:Vars, val id: String)(impl
   variables.node = this
   private type RuntimeType = this.type
 
-
-  //def newInstance(implicit d:DiffList):RuntimeType = new Node[Vars](variables.emptyInstance)(d)
-
   class UnrepresentedChildren(initVal:Int=0) extends IntegerVariable(0) {
     val node = Node.this
     if(initVal > 0) this.set(initVal)(d)
@@ -317,71 +314,3 @@ trait NodeCubbie[Vars <: NodeVariables[Vars], N  <: Node[Vars]] extends Cubbie {
     this
   }
 }
-
-/*************************************************************************************/
-/*
-abstract class MyNodeVariables(names:BagOfWordsVariable, context:BagOfWordsVariable) extends NodeVariables[MyNodeVariables] {
-  def combine(other: MyNodeVariables): MyNodeVariables = {
-    this.names ++= other.names.activeCategories
-    this.context ++= other.context.activeCategories
-    this
-  }
-
-  def remove(other: MyNodeVariables): MyNodeVariables = this
-
-  def getVariables = Seq(names, context)
-}
-
-class HcorefNodeCubbie extends NodeCubbie[MyNodeVariables, Node[MyNodeVariables] with Persistence] {
-
-  def newNodeCubbie: HcorefNodeCubbie = new HcorefNodeCubbie()
-}
-
-class HcorefCubbieCollection(names:Seq[String], mongoDB:DB)
-  extends MongoNodeCollection[MyNodeVariables,Node[MyNodeVariables] with Persistence,HcorefNodeCubbie](names, mongoDB){
-
-  protected def newBOWCubbie = new edu.umass.cs.iesl.variable.BOWCubbie()
-
-  protected def newNodeVars(vars: cc.factorie.Var*): MyNodeVariables = {
-    val names = vars(0).asInstanceOf[BagOfWordsVariable]
-    val context = vars(1).asInstanceOf[BagOfWordsVariable]
-    new MyNodeVariables(names, context)
-  }
-
-  protected def newNodeCubbie: HcorefNodeCubbie = new HcorefNodeCubbie
-
-  protected def newNode(v: MyNodeVariables, nc: HcorefNodeCubbie) = {
-    if(nc.isMention.value){
-      new Mention(v,nc.id.toString) with Persistence {
-        protected val loadedFromDb = true
-      }
-    }
-    else {
-      new Node(v,nc.id.toString) with Persistence {
-        protected val loadedFromDb = true
-      }
-    }
-  }
-}
-
-object Trial {
-  val m1Vars = new MyNodeVariables(new BagOfWordsVariableWithDomain(Seq("Andrew", "McCallum", "A. McCallum")),
-    new BagOfWordsVariableWithDomain(Seq("CRF", "MEMM", "Umass")))
-  val m1 = new Mention(m1Vars) with Persistence{ protected val loadedFromDb = false }
-  val m2 = new Mention(m1Vars) with Persistence{ protected val loadedFromDb = false }
-  val n  = new Node(new MyNodeVariables(new BagOfWordsVariableWithDomain(Nil),new BagOfWordsVariableWithDomain(Nil)))
-    with Persistence{ protected val loadedFromDb = false }
-  m1.alterParent(Some(n))
-  m2.alterParent(Some(n))
-  //persist
-  val mongoConn = new MongoClient("localhost",27017)
-  val mongoDb   = mongoConn.getDB("test")
-  val corefCollection = new HcorefCubbieCollection(Seq("mentions","names","context"), mongoDb)
-  corefCollection += m1
-  corefCollection += m2
-  corefCollection += n
-  //retrieve
-  val mentions = corefCollection.loadAll
-}
-
-*/

@@ -13,8 +13,6 @@
 package cc.factorie.app.nlp.xcoref
 
 import cc.factorie._
-import cc.factorie.app.nlp._
-import cc.factorie.variable.{TensorVar, ArrowVariable}
 import cc.factorie.model._
 import cc.factorie.variable._
 import scala.reflect.ClassTag
@@ -25,6 +23,16 @@ import cc.factorie.Parameters
 /**
  * @author John Sullivan
  */
+trait DebuggableTemplate {
+  protected var _debug: Boolean = false
+  def debugOn() = _debug = true
+  def debugOff() = _debug = false
+  def name: String
+  def debug(score: Double): String = score + " (" + name + ")"
+
+}
+
+
 abstract class ChildParentTemplate[Vars <: NodeVariables[Vars]](initWeights:Tensor1)(implicit v1:ClassTag[Vars], params:Parameters)
   extends Template3[ArrowVariable[Node[Vars], Node[Vars]], Vars, Vars]
   with DotFamily3[ArrowVariable[Node[Vars], Node[Vars]], Vars, Vars]{
@@ -43,7 +51,7 @@ abstract class ChildParentTemplate[Vars <: NodeVariables[Vars]](initWeights:Tens
 class BagOfWordsTensorEntropy[Vars <:NodeVariables[Vars], T <: TensorVar](initialWeight:Double, getBag:(Vars => T))(implicit ct:ClassTag[Vars], params:Parameters)
   extends Template2[Node[Vars]#Exists, Vars]
   with DotFamily2[Node[Vars]#Exists, Vars]
-  with DebugableTemplate {
+  with DebuggableTemplate {
 
 
   def name: String = "BagOfWordsEntropy"
@@ -84,7 +92,7 @@ class BagOfWordsTensorEntropy[Vars <:NodeVariables[Vars], T <: TensorVar](initia
 class BagOfWordsEntropy[Vars <:NodeVariables[Vars]](initialWeight:Double, getBag:(Vars => BagOfWordsVariable))(implicit ct:ClassTag[Vars], params:Parameters)
   extends Template2[Node[Vars]#Exists, Vars]
   with DotFamily2[Node[Vars]#Exists, Vars]
-  with DebugableTemplate {
+  with DebuggableTemplate {
 
 
   def name: String = "BagOfWordsEntropy"
@@ -113,7 +121,7 @@ class BagOfWordsEntropy[Vars <:NodeVariables[Vars]](initialWeight:Double, getBag
       println("n=:" + n)
       println("active size: %d\tone norm: %.4f\t".format(bag.size, bag.l1Norm))
       bag.asHashMap.foreach{ case (index, value) =>
-        println("index:%d\tvalue:%.4f\t(value/oneNorm):%.4f\tlog(value/oneNorm:%.4f".format(index, value, value/bag.l1Norm, math.log(value/bag.l1Norm)))
+        println("index:%s\tvalue:%.4f\t(value/oneNorm):%.4f\tlog(value/oneNorm:%.4f".format(index, value, value/bag.l1Norm, math.log(value/bag.l1Norm)))
       }
     }
     entropy = -entropy
@@ -144,7 +152,7 @@ abstract class StructuralTemplate[A <: Var](initialWeights: Tensor1)(implicit v1
   def weights: Weights = _weights
 }
 
-class ChildParentCosineDistance[Vars <: NodeVariables[Vars]](weight:Double, shift: Double, getBag:(Vars => BagOfWordsVariable))(implicit c:ClassTag[Vars], p:Parameters) extends ChildParentTemplate[Vars](Tensor1(weight)) with DebugableTemplate {
+class ChildParentCosineDistance[Vars <: NodeVariables[Vars]](weight:Double, shift: Double, getBag:(Vars => BagOfWordsVariable))(implicit c:ClassTag[Vars], p:Parameters) extends ChildParentTemplate[Vars](Tensor1(weight)) with DebuggableTemplate {
   override def name: String = "ChildParentCosineDistance: %s".format(getBag)
 
   override def statistics(v1: (Node[Vars], Node[Vars]), child: Vars, parent: Vars): Tensor = {
