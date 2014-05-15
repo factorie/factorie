@@ -27,7 +27,7 @@ else
 fi
 
 # This makes -Xmx value command-line changeable
-MEMORY=3g
+MEMORY=6g
 
 JAVA_COMMAND="java -Xmx$MEMORY -ea -Djava.awt.headless=true -Dfile.encoding=UTF-8 -server -classpath $cp"
 
