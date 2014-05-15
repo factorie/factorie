@@ -15,12 +15,10 @@ import cc.factorie.app.nlp._
 
 
 import segment._
-import hcoref._
 
 import ner.NerSpan
 import xml.{XML, NodeSeq}
 import java.io.File
-import relation.RelationVariables.{RelationMention, RelationMentions}
 import scala.collection.mutable.ListBuffer
 
 // TODO: consider moving this info into variables.
@@ -32,7 +30,7 @@ case class ACERelationIdentifiers(rId: String, rType: String, rSubtype: String)
 
 case class ACEFileIdentifier(fileId: String)
 
-class ACEMentionSpan(doc: Section, val labelString: String, start: Int, length: Int) extends TokenSpan(doc, start, length) with cc.factorie.app.nlp.hcoref.TokenSpanMention with PairwiseMention {
+class ACEMentionSpan(doc: Section, val labelString: String, start: Int, length: Int) extends TokenSpan(doc, start, length) with TokenSpanMention with PairwiseMention {
   override def toString = "ACEMentionSpan(" + length + "," + labelString + ":" + this.phrase + ")"
 }
 class ACEMentionSpanList(spans:Iterable[ACEMentionSpan]) extends TokenSpanList[ACEMentionSpan](spans)

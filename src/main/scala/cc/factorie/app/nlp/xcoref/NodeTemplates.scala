@@ -12,14 +12,15 @@
    limitations under the License. */
 package cc.factorie.app.nlp.xcoref
 
+import cc.factorie._
+import cc.factorie.app.nlp._
 import cc.factorie.variable.{TensorVar, ArrowVariable}
 import cc.factorie.model._
-import cc.factorie._
+import cc.factorie.variable._
 import scala.reflect.ClassTag
 import cc.factorie.la.{Tensor, Tensor1}
 import scala.Some
 import cc.factorie.Parameters
-import cc.factorie.app.nlp.hcoref.{BagOfWordsVariable, DebugableTemplate}
 
 /**
  * @author John Sullivan

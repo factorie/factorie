@@ -12,10 +12,11 @@
    limitations under the License. */
 package cc.factorie.app.nlp.xcoref
 
-import cc.factorie.model.TupleTemplateWithStatistics3
 import cc.factorie._
-import cc.factorie.app.nlp.hcoref.DebugableTemplate
+import cc.factorie.model._
+import cc.factorie.variable._
 import cc.factorie.variable.BooleanValue
+import cc.factorie.app.nlp.DebugableTemplate
 
 /**
  * @author John Sullivan

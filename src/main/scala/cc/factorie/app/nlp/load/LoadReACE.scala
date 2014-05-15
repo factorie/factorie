@@ -13,10 +13,8 @@
 package cc.factorie.app.nlp.load
 import cc.factorie.app.nlp._
 
-import hcoref._
 import ner.ConllNerSpan
 import pos.PennPosTag
-import relation.RelationVariables.{RelationMention, RelationMentions}
 import xml.{XML, NodeSeq}
 import java.io.File
 import cc.factorie.app.nlp.Document

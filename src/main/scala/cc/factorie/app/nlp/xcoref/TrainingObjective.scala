@@ -12,12 +12,12 @@
    limitations under the License. */
 package cc.factorie.app.nlp.xcoref
 
+import cc.factorie._
 import scala.reflect.ClassTag
 import cc.factorie.optimize.{SampleRankTrainer, ParameterAveraging, MIRA}
 import cc.factorie.model.TupleTemplateWithStatistics2
-import cc.factorie.app.nlp.hcoref.BagOfWordsVariable
-import cc.factorie._
 import cc.factorie.variable.BooleanValue
+import cc.factorie.app.nlp._
 
 /**
  * @author John Sullivan

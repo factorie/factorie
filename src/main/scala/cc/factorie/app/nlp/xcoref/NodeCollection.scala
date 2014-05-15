@@ -17,8 +17,10 @@ import cc.factorie._
 import cc.factorie.db.mongo.MongoCubbieImplicits._
 import scala.collection.mutable
 import com.mongodb.DB
-import cc.factorie.app.nlp.hcoref.BagOfWordsVariable
 import scala.reflect.ClassTag
+import cc.factorie.util.Cubbie
+import cc.factorie.app.nlp.BagOfWordsVariable
+import cc.factorie.variable.Var
 
 /**
  * User: escher
