@@ -10,15 +10,15 @@
    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
    See the License for the specific language governing permissions and
    limitations under the License. */
-package cc.factorie.app.nlp.xcoref
+package cc.factorie.app.nlp.hcoref
 
 import cc.factorie.db.mongo.{LazyCubbieConverter, MongoCubbieCollection, MutableCubbieCollection}
-import cc.factorie._
 import cc.factorie.db.mongo.MongoCubbieImplicits._
 import scala.collection.mutable
 import com.mongodb.DB
-import cc.factorie.app.nlp.hcoref.BagOfWordsVariable
 import scala.reflect.ClassTag
+import cc.factorie.util.Cubbie
+import cc.factorie.variable.{Var, BagOfWordsVariable}
 
 /**
  * User: escher

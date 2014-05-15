@@ -10,11 +10,10 @@
    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
    See the License for the specific language governing permissions and
    limitations under the License. */
-package cc.factorie.app.nlp.xcoref
+package cc.factorie.app.nlp.hcoref
 
-import cc.factorie.model.TupleTemplateWithStatistics3
 import cc.factorie._
-import cc.factorie.app.nlp.hcoref.DebugableTemplate
+import cc.factorie.model._
 import cc.factorie.variable.BooleanValue
 
 /**
@@ -28,7 +27,7 @@ implicit val params:Parameters = this
 
 class StructuralPrior[Vars <: NodeVariables[Vars]](entityvalue:Double = -0.5,
                                                    subEntityValue:Double = 0.25)
-  extends TupleTemplateWithStatistics3[Node[Vars]#IsRoot, Node[Vars]#IsMention, Node[Vars]#Exists] with DebugableTemplate{
+  extends TupleTemplateWithStatistics3[Node[Vars]#IsRoot, Node[Vars]#IsMention, Node[Vars]#Exists] with DebuggableTemplate{
 
   def name = "StructuralPrior"
   def unroll1(isRoot: Node[Vars]#IsRoot) = Factor(isRoot, isRoot.node.isMentionVar, isRoot.node.existsVar)

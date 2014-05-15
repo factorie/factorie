@@ -10,7 +10,7 @@
    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
    See the License for the specific language governing permissions and
    limitations under the License. */
-package cc.factorie.app.nlp.xcoref
+package cc.factorie.app.nlp.hcoref
 
 import cc.factorie.variable.{SettingIterator, DiffList}
 import cc.factorie.infer.SettingsSampler
@@ -53,37 +53,7 @@ trait Move[Vars <: NodeVariables[Vars]] {
     case None => operation(node1, node2)(new DiffList)
   }
 }
-/*
-trait DefaultMoveGenerator[Vars <: NodeVariables[Vars]] extends MoveGenerator[Vars] {
-  this: SettingsSampler[(Node[Vars], Node[Vars])] =>
-  val moves = IndexedSeq(new NoMove[Vars], new MergeLeft[Vars], new SplitRight[Vars], new MergeUp[Vars]({d:DiffList => this.newInstance(d)}))
 
-  @inline
-  protected def expandedContext(context: (Node[Vars], Node[Vars])): Iterable[(Node[Vars], Node[Vars])] = List(context)
-}
-
-trait RootCheckingMoveGenerator[Vars <: NodeVariables[Vars]] extends MoveGenerator[Vars] {
-  this: SettingsSampler[(Node[Vars], Node[Vars])] =>
-  override protected def expandedContext(context: (Node[Vars], Node[Vars])): Iterable[(Node[Vars], Node[Vars])] = {
-    val (n1, n2) = context
-    val r1 = n1.root; val r2 = n2.root
-    val l = new mutable.ArrayBuffer[(Node[Vars], Node[Vars])](3)
-    if(r1 != n1) l += r1 -> n2
-    if(r2 != n2) l += r2 -> n1
-    l += context
-    l
-  }
-}
-
-trait ParentCheckingMovingGenerator[Vars <: NodeVariables[Vars]] extends MoveGenerator[Vars] {
-  this: SettingsSampler[(Node[Vars], Node[Vars])] =>
-
-  override protected def expandedContext(context: (Node[Vars], Node[Vars])): Iterable[(Node[Vars], Node[Vars])] = {
-    val (n1, n2) = context
-    List(n1 -> n2, n1.root -> n2.root) ++ n1.lineage.map(_ -> n2) //++ n2.lineage.map(_.asInstanceOf[N] -> n1.asInstanceOf[N])
-  }
-}
-*/
 class NoMove[Vars <: NodeVariables[Vars]] extends Move[Vars] {
   def name = "No Move"
 

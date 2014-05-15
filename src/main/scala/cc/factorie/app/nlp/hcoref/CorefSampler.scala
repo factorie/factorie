@@ -10,15 +10,29 @@
    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
    See the License for the specific language governing permissions and
    limitations under the License. */
-package cc.factorie.app.nlp.xcoref
+package cc.factorie.app.nlp.hcoref
 
+import cc.factorie.infer.SettingsSampler
 import scala.util.Random
+import cc.factorie.util.Hooks1
 import scala.reflect.ClassTag
 
 /**
- * @author John Sullivan
+ * User:harshal, John Sullivan
+ * Date: 10/28/13
  */
-abstract class HierarchicalCorefSampler[Vars <: NodeVariables[Vars] with Canopy](model :CorefModel[Vars], mentions:Iterable[Node[Vars]], iterations:Int)(implicit random:Random, ct:ClassTag[Vars])
-  extends CorefSampler[Vars](model, mentions, iterations)(random, ct)
-  with DefaultMoveGenerator[Vars]
-  with CanopyPairGenerator[Vars]
+abstract class CorefSampler[Vars <: NodeVariables[Vars]](override val model:CorefModel[Vars], val mentions:Iterable[Node[Vars]], val iterations:Int)(implicit override val random:Random, val varsTag:ClassTag[Vars])
+  extends SettingsSampler[(Node[Vars], Node[Vars])](model) {
+  this: PairContextGenerator[Vars] with MoveGenerator[Vars] =>
+
+  this.temperature = 0.001
+
+  val beforeInferHooks = new Hooks1[Unit]
+  protected def beforeInferHook = beforeInferHooks()
+
+  def infer {
+    beforeInferHook
+    processAll(contexts)
+  }
+
+}

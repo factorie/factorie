@@ -17,7 +17,7 @@ import cc.factorie.util.EvaluatableClustering
 /**
  * @author John Sullivan
  */
-package object xcoref {
+package object hcoref {
   implicit class NodeListUtils[Vars <: NodeVariables[Vars]](val nodes:Iterable[Node[Vars]]) {
     private val mentionToRoot = nodes.filter(_.isMention).map(m => m.id -> m.root.id).toMap
     private val rootToMentions = nodes.filter(_.isRoot).map(r => r.id -> r.mentionsVar.value.map(_.id)).toMap

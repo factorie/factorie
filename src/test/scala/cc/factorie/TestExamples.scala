@@ -51,14 +51,6 @@ class TestExamples {
     cc.factorie.tutorial.ChainNERExample.main(Array(dummyNERFile, dummyNERFile))
   }
 
-  @Test def testCoref1() {
-    cc.factorie.tutorial.Coref1.main(emptyArgs)
-  }
-
-  @Test def testCorefMentions() {
-    cc.factorie.tutorial.CorefMentions.main(emptyArgs)
-  }
-
   @Test def testDirichletDemo() {
     cc.factorie.tutorial.DirichletDemo.main(emptyArgs)
   }

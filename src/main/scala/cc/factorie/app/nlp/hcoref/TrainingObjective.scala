@@ -10,14 +10,13 @@
    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
    See the License for the specific language governing permissions and
    limitations under the License. */
-package cc.factorie.app.nlp.xcoref
+package cc.factorie.app.nlp.hcoref
 
+import cc.factorie._
 import scala.reflect.ClassTag
 import cc.factorie.optimize.{SampleRankTrainer, ParameterAveraging, MIRA}
 import cc.factorie.model.TupleTemplateWithStatistics2
-import cc.factorie.app.nlp.hcoref.BagOfWordsVariable
-import cc.factorie._
-import cc.factorie.variable.BooleanValue
+import cc.factorie.variable.{BooleanValue, BagOfWordsVariable}
 
 /**
  * @author John Sullivan
