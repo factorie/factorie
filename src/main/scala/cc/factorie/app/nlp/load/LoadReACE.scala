@@ -1,10 +1,19 @@
+/* Copyright (C) 2008-2014 University of Massachusetts Amherst.
+   This file is part of "FACTORIE" (Factor graphs, Imperative, Extensible)
+   http://factorie.cs.umass.edu, http://github.com/factorie
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+    http://www.apache.org/licenses/LICENSE-2.0
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License. */
 package cc.factorie.app.nlp.load
 import cc.factorie.app.nlp._
 
-import hcoref._
 import ner.ConllNerSpan
-import pos.PennPosTag
-import relation.RelationVariables.{RelationMention, RelationMentions}
 import xml.{XML, NodeSeq}
 import java.io.File
 import cc.factorie.app.nlp.Document
@@ -13,7 +22,9 @@ import cc.factorie.app.nlp.Token
 import cc.factorie.app.nlp.UnknownDocumentAnnotator
 import cc.factorie.app.nlp.pos.PennPosTag
 import scala.Array.fallbackCanBuildFrom
-import scala.collection.mutable.ListBuffer
+import cc.factorie.app.nlp.coref.Mention
+import cc.factorie.app.nlp.phrase.Phrase
+import cc.factorie.variable.SetVariable
 
 trait ReACEMentionIdentifiers {
   val mId: Option[String]
@@ -103,7 +114,7 @@ object LoadReACE {
     doc
   }
 
-  private def lookupEntityMention(doc: Document, id: String): Option[PairwiseMention] = {
+  private def lookupEntityMention(doc: Document, id: String): Option[Mention] = {
     val opt = doc.attr[ner.ConllNerSpanBuffer].find {
       s => {
         val a = s.attr[ReACEMentionIdentifiers]
@@ -111,11 +122,11 @@ object LoadReACE {
       }
     }
     if (opt == None) None
-    else Some(opt.get.asInstanceOf[PairwiseMention])
+    else Some(opt.get.asInstanceOf[Mention])
   }
 
   def addNrm(doc: Document, xml: String): Document = {
-    val spanList = doc.attr[ner.ConllNerSpanBuffer]
+    val coref = doc.getCoref
     var xmlText: NodeSeq = XML.loadFile(xml + ".nrm.xml")
     assert(doc.attr[ACEFileIdentifier].fileId == xml) // adding to the right document?
 
@@ -136,8 +147,10 @@ object LoadReACE {
       val nerType = (mention \ "@t").text
       val nerSubType = (mention \ "@st").text
 
-      val m = new ConllNerSpan(doc.asSection, start, length, nerType) with PairwiseMention
-      spanList += m
+      val phrase = new Phrase(doc.asSection,start,length,hend)
+      phrase.attr += new ConllNerSpan(doc.asSection,start,length,nerType)
+
+      val m = coref.addMention(phrase)
 
       m.attr += new ReACEMentionIdentifiers {
         val mId = getAttr(mention, "id")
@@ -148,34 +161,32 @@ object LoadReACE {
         val mType = nerType
         val mSubType = nerSubType
       }
-
-      // set the head of the mention
-      m.attr[ReACEMentionIdentifiers].headEnd.foreach(he => m._head = doc.asSection(he))
     }
 
     // Add relations
     xmlText = XML.loadFile(xml + ".nrm.xml") // is there a way to avoid rereading?
-    doc.attr += new RelationMentions
-    for (rel <- xmlText \\ "rel") {
-      val ids = new ReACERelationIdentifiers {
-        val rId = getAttr(rel, "id")
-        val rType = getAttr(rel, "t")
-        val rSubtype = getAttr(rel, "st")
-      }
-
-      val e1 = lookupEntityMention(doc, getAttr(rel, "e1").get).get
-      val e2 = lookupEntityMention(doc, getAttr(rel, "e2").get).get
-      val args = Seq(e1, e2)
-
-      val m = new RelationMention(e1, e2, ids.rType.get, Some(ids.rSubtype.get))
-      m.attr += ids
-      doc.attr[RelationMentions].add(m)(null)
-      args.foreach(_.attr.getOrElseUpdate(new RelationMentions).add(m)(null))
-    }
+//    doc.attr += new RelationMentions
+//    for (rel <- xmlText \\ "rel") {
+//      val ids = new ReACERelationIdentifiers {
+//        val rId = getAttr(rel, "id")
+//        val rType = getAttr(rel, "t")
+//        val rSubtype = getAttr(rel, "st")
+//      }
+//
+//      val e1 = lookupEntityMention(doc, getAttr(rel, "e1").get).get
+//      val e2 = lookupEntityMention(doc, getAttr(rel, "e2").get).get
+//      val args = Seq(e1, e2)
+//
+//      val m = new RelationMention(e1, e2, ids.rType.get, Some(ids.rSubtype.get))
+//      m.attr += ids
+//      doc.attr[RelationMentions].add(m)(null)
+//      args.foreach(_.attr.getOrElseUpdate(new RelationMentions).add(m)(null))
+//    }
 
     doc
   }
 
+  class MentionsSet extends SetVariable[Mention]
   // TODO: consider renaming this to fromFile to match the API for other loaders.
   // But if renamed, how can the user know that ttt.xml is required?
   def fromTtt(ttt: String): Document = {

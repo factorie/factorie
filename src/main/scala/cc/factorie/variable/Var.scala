@@ -1,7 +1,6 @@
-/* Copyright (C) 2008-2010 University of Massachusetts Amherst,
-   Department of Computer Science.
+/* Copyright (C) 2008-2014 University of Massachusetts Amherst.
    This file is part of "FACTORIE" (Factor graphs, Imperative, Extensible)
-   http://factorie.cs.umass.edu, http://code.google.com/p/factorie/
+   http://factorie.cs.umass.edu, http://github.com/factorie
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
    You may obtain a copy of the License at
@@ -42,8 +41,6 @@ package cc.factorie.variable
    @author Andrew McCallum */
 trait Var {
   type Value <: Any
-  /** Abstract method to return the domain of this variable. */
-  //def domain: Domain[Any]
 
   /** Abstract method to return the value of this variable. */
   def value: Value
@@ -53,6 +50,7 @@ trait Var {
   def !==(other: Var) = value != other.value
   
   // TODO Is there a more standard way of getting this short name? -akm
+  /** Return a string consisting of the class name without its package. */
   private def shortClassName = {
     var fields = this.getClass.getName.split('$')
     if (fields.length == 1)
@@ -64,16 +62,18 @@ trait Var {
     else
       fields.last
   }
+  /** Return the string often used as a prefix of the toString reprsentation of this variable. */
   def printName = shortClassName
+  /** Return a short string representation of this variable, suitable for debugging messages. */
   override def toString = printName + "(_)"
 }
 
 
 /** A variable that has a Domain, with value type bound A. 
     Since this trait also inherits from ValueBound, 
-    we ensure that the Value of the Var matches the Value of the Domain. */
+    we ensure that the Value of the Var matches the Value of the Domain.
+    @author Andrew McCallum */
 trait VarWithDomain extends Var {
-  self =>
   /** Abstract method to return the domain of this variable. */
   def domain: Domain
 }
@@ -81,7 +81,8 @@ trait VarWithDomain extends Var {
 // Various marker traits on Var
 
 /** Used as a marker for variables whose value does not change once created.  
-    Be  careful to only use this in class definitions that cannot become mutable in subclasses. */
+    Be  careful to only use this in class definitions that cannot become mutable in subclasses.
+    @author Andrew McCallum */
 trait VarWithConstantValue extends Var 
 
 /** Used as a marker for variables whose value is a deterministic (non-stochastic) function of some other state,
@@ -89,7 +90,8 @@ trait VarWithConstantValue extends Var
     Note that this is an attribute of a variable, not a factor, because it refers to the fact that the
     variable's value changes automatically with changes to the parent variables' values.  How the automatic
     values are scored (whether they are given 0.0 or 1.0 extreme probabilities) is a different matter. 
-    This function is used in cc.factorie.directed.DirectedModel.extendedParents and extendedChildren. */
+    This function is used in cc.factorie.directed.DirectedModel.extendedParents and extendedChildren. 
+    @author Andrew McCallum */
 trait VarWithDeterministicValue extends Var
 
 /** A Variable with a value that can be changed.
@@ -102,7 +104,8 @@ trait MutableVar extends Var {
 }
 
 /** A marker for Variables that declare themselves not to automatically change other Variables' values when they are changed.
-    This trait may enable efficiencies for sampling, scoring and learning. */
+    This trait may enable efficiencies for sampling, scoring and learning.
+    @author Andrew McCallum */
 trait NoVariableCoordination {
   this: Var =>
 }
@@ -110,7 +113,8 @@ trait NoVariableCoordination {
 
 // Odd simple variable I wasn't sure where else to put. -akm
 
-/** A Variable whose (constant) value is the Variable object itself. */
+/** A Variable whose (constant) value is the Variable object itself.
+    @author Andrew McCallum */
 trait SelfVariable[This<:SelfVariable[This]] extends Var with VarWithConstantValue {
   this: This =>
   type Value = This

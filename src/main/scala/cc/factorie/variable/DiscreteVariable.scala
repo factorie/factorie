@@ -1,7 +1,6 @@
-/* Copyright (C) 2008-2010 University of Massachusetts Amherst,
-   Department of Computer Science.
+/* Copyright (C) 2008-2014 University of Massachusetts Amherst.
    This file is part of "FACTORIE" (Factor graphs, Imperative, Extensible)
-   http://factorie.cs.umass.edu, http://code.google.com/p/factorie/
+   http://factorie.cs.umass.edu, http://github.com/factorie
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
    You may obtain a copy of the License at
@@ -19,11 +18,14 @@ import scala.util.Random
 import cc.factorie.model._
 import cc.factorie.infer.{Maximize, DiscreteSummary1, SimpleDiscreteMarginal1, Summary}
 
-/** A single discrete variable */
+/** A single discrete variable whose values are associated with indices 0..N-1.
+    @author Andrew McCallum */
 trait DiscreteVar extends VectorVar with VarWithDomain {
   type Value <: DiscreteValue
   def domain: DiscreteDomain
+  /** Return the value of this variable as a DiscreteValue. */
   def value: Value
+  /** Return the value of this variable as an integer 0..N-1 */
   def intValue = value.intValue
   /** Return the distribution over values of this variable given some factors (which presumably neighbor this DiscreteVar)
       and given that all other variables' values are fixed. */
@@ -45,28 +47,6 @@ trait DiscreteVar extends VectorVar with VarWithDomain {
   /** Return the distribution over values of this variable given the model and given that all other variables' values are fixed. */
   def proportions(model:Model): Proportions1 = proportions(model.factors(this))
   
-// TODO Not sure this really belongs here.  Similar functionality in MaximizeDiscrete. -akm
-//  /** Return the integer value of this variable would maximize the model's score, given that all other variables' values are fixed.
-//      The current value of this variable remains unchanged. */
-//  def maximizingIntValue(factors:Iterable[Factor]): Int = {
-//    val l = domain.size 
-//    val assignment = new DiscreteAssignment1(this, 0)
-//    var score = 0.0
-//    var maxScore = Double.NegativeInfinity
-//    var maxIntValue = -1
-//    var i = 0
-//    while (i < l) {
-//      assignment.intValue1 = i
-//      score = 0.0; factors.foreach(f => score += f.assignmentScore(assignment))   // compute score of variable with value 'i'
-//      if (score > maxScore) { maxScore = score; maxIntValue = i }
-//      i += 1
-//    }
-//    maxIntValue
-//  }
-//  /** Return the integer value of this variable would maximize the model's score, given that all other variables' values are fixed.
-//      The current value of this variable remains unchanged. */
-//  def maximizingIntValue(model:Model): Int = maximizingIntValue(model.factors(this))
-
   /** Return the distribution over values of this variable given the model and given that all other variables' values are fixed. */
   def caseFactorProportions(model:Model): Proportions1 = {
     val l = domain.size 
@@ -84,7 +64,8 @@ trait DiscreteVar extends VectorVar with VarWithDomain {
   override def toString = printName+"("+intValue+")"
 }
 
-/** A single discrete variable whose value can be changed. */
+/** A single discrete variable whose value can be changed.
+    @author Andrew McCallum */
 trait MutableDiscreteVar extends DiscreteVar with MutableVar with IterableSettings with VarWithDomain {
   private var __value: Int = -1
   @inline final protected def _value = __value
@@ -122,7 +103,8 @@ trait MutableDiscreteVar extends DiscreteVar with MutableVar with IterableSettin
   }
 }
 
-/** A concrete single discrete variable whose value can be changed. */
+/** A concrete single discrete variable whose value can be changed.
+    @author Andrew McCallum */
 abstract class DiscreteVariable extends MutableDiscreteVar {
   type Value = DiscreteValue
   def domain: DiscreteDomain
@@ -130,7 +112,8 @@ abstract class DiscreteVariable extends MutableDiscreteVar {
   def this(initialValue:DiscreteValue) = { this(); require(initialValue.dim1 == domain.size); _initialize(initialValue.intValue) }
 }
 
-
+/** Find a MutableDiscreteVar value that maximizes the scores of some factors.
+    @author Andrew McCallum */
 object MaximizeDiscrete extends Maximize[Iterable[MutableDiscreteVar],Model] {
   def intValue(d:DiscreteVar, factors:Iterable[Factor]): Int = {
     val l = d.domain.size 

@@ -1,7 +1,6 @@
-/* Copyright (C) 2008-2010 University of Massachusetts Amherst,
-   Department of Computer Science.
+/* Copyright (C) 2008-2014 University of Massachusetts Amherst.
    This file is part of "FACTORIE" (Factor graphs, Imperative, Extensible)
-   http://factorie.cs.umass.edu, http://code.google.com/p/factorie/
+   http://factorie.cs.umass.edu, http://github.com/factorie
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
    You may obtain a copy of the License at
@@ -50,6 +49,10 @@ trait Section extends Chain[Section,Token] with DocumentSubstring with Attr {
       (e.g. WSJ normalization of quotation styles or de-hyphenation, typically implemented using TokenString in the Token.attr) 
       from the Document's original raw string  */
   def string: String = document.string.substring(stringStart, stringEnd)
+  
+  /** Return the 0-based position of this Section in its Document's list of Sections.
+      Because document.sections is easily mutable, this method does a linear search, so don't call it in an inner loop. */
+  def indexInDocument:Int = document.sections.indexWhere(_ == this)
   
   /** The sequence of Tokens inside this Section.  This method is just a convenient alias for Chain.links. */
   def tokens: IndexedSeq[Token] = links

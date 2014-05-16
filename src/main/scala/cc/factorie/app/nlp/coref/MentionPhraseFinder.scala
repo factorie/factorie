@@ -1,10 +1,20 @@
+/* Copyright (C) 2008-2014 University of Massachusetts Amherst.
+   This file is part of "FACTORIE" (Factor graphs, Imperative, Extensible)
+   http://factorie.cs.umass.edu, http://github.com/factorie
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+    http://www.apache.org/licenses/LICENSE-2.0
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License. */
 package cc.factorie.app.nlp.coref
 
 import cc.factorie.app.nlp._
-import cc.factorie.app.nlp.coref._
 import cc.factorie.app.nlp.phrase._
-import cc.factorie.app.nlp.pos.{PennPosTag,PennPosDomain}
-import cc.factorie.app.nlp.ner._
+import cc.factorie.app.nlp.pos.PennPosDomain
 import scala.collection.mutable.ArrayBuffer
 import cc.factorie.app.nlp.Token
 import cc.factorie.app.nlp.ner.BilouConllNerTag
@@ -38,7 +48,7 @@ trait MentionPhraseFinder {
 object PronounFinder extends MentionPhraseFinder {
   def prereqAttrs = Seq(classOf[PennPosTag])
   def apply(document:Document): Iterable[Phrase] = { 
-    val phrases = document.tokens.filter(_.posTag.isPersonalPronoun).map(t => new Phrase(t.section, start=t.positionInSection, length=1))
+    val phrases = document.tokens.filter(_.posTag.isPersonalPronoun).map(t => new Phrase(t.section, start=t.positionInSection, length=1,offsetToHeadToken = -1))
     for (phrase <- phrases) phrase.attr += new NounPhraseType(phrase, "PRO")
     phrases
   }
@@ -54,23 +64,23 @@ object ConllProperNounPhraseFinder extends MentionPhraseFinder {
       if (token.attr[BilouConllNerTag].categoryValue != "O") {
         val attr = token.attr[BilouConllNerTag].categoryValue.split("-")
         if (attr(0) == "U") {
-          val phrase = new Phrase(section, token.positionInSection, length=1)
+          val phrase = new Phrase(section, token.positionInSection, length=1,offsetToHeadToken = -1)
           phrase.attr += new ConllPhraseEntityType(phrase, attr(1))
-          phrase.attr += new NounPhraseType(phrase, "NAM")
+          DeterministicNounPhraseTypeLabeler.process(phrase)
           result += phrase
         } else if (attr(0) == "B") {
           if (token.hasNext) {
             var lookFor = token.next
             while (lookFor.hasNext && lookFor.attr[BilouConllNerTag].categoryValue.matches("(I|L)-" + attr(1))) lookFor = lookFor.next
             // TODO Be more clever in determining the headTokenOffset
-            val phrase = new Phrase(section, token.positionInSection, length=lookFor.positionInSection - token.positionInSection)
+            val phrase = new Phrase(section, token.positionInSection, length=lookFor.positionInSection - token.positionInSection,offsetToHeadToken = -1)
             phrase.attr += new ConllPhraseEntityType(phrase, attr(1))
-            phrase.attr += new NounPhraseType(phrase, "NAM")
+            DeterministicNounPhraseTypeLabeler.process(phrase)
             result += phrase
           } else {
-            val phrase = new Phrase(section, token.positionInSection, length=1)
+            val phrase = new Phrase(section, token.positionInSection, length=1,offsetToHeadToken = -1)
             phrase.attr += new ConllPhraseEntityType(phrase, attr(1))
-            phrase.attr += new NounPhraseType(phrase, "NAM")
+            DeterministicNounPhraseTypeLabeler.process(phrase)
             result += phrase
           }
         }
@@ -89,7 +99,7 @@ object AcronymNounPhraseFinder extends MentionPhraseFinder {
     for (section <- doc.sections; token <- section.tokens) {
       // Matches middle word of "Yesterday IBM announced" but not "OBAMA WINS ELECTION"
       if ( token.string.length > 2 && !token.containsLowerCase && Character.isUpperCase(token.string(0)) && (token.getNext ++ token.getPrev).exists(_.containsLowerCase)) {
-        val phrase = new Phrase(section, token.positionInSection, length=1)
+        val phrase = new Phrase(section, token.positionInSection, length=1,offsetToHeadToken = -1)
         phrase.attr += new ConllPhraseEntityType(phrase, "ORG")
         phrase.attr += new NounPhraseType(phrase, "NAM")
         result += phrase
@@ -113,9 +123,9 @@ object NnpPosNounPhraseFinder extends MentionPhraseFinder {
         var end = start
         while (end < tokens.length && tokens(end).posTag.intValue == PennPosDomain.nnpIndex) end += 1
         if (end != start && tokens(end-1).posTag.intValue == PennPosDomain.nnpIndex) {
-          val phrase = new Phrase(section, token.positionInSection, length=end-start)
+          val phrase = new Phrase(section, token.positionInSection, length=end-start,offsetToHeadToken = -1)
           phrase.attr += new NounPhraseType(phrase, "NAM")
-          // phrase.attr += new ConllPhraseEntityType(phrase, "ORG") // TODO What should this be?
+          NounPhraseEntityTypeLabeler.process(phrase)
         }
         start = math.max(start+1, end)
       }

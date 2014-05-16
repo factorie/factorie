@@ -1,7 +1,6 @@
-/* Copyright (C) 2008-2010 University of Massachusetts Amherst,
-   Department of Computer Science.
+/* Copyright (C) 2008-2014 University of Massachusetts Amherst.
    This file is part of "FACTORIE" (Factor graphs, Imperative, Extensible)
-   http://factorie.cs.umass.edu, http://code.google.com/p/factorie/
+   http://factorie.cs.umass.edu, http://github.com/factorie
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
    You may obtain a copy of the License at
@@ -19,8 +18,9 @@ import cc.factorie.util.FastLogging
 import cc.factorie.model.{WeightsMap, WeightsSet}
 
 /**
- * A conjugate gradient optimizer. Should not be used unless you know you want it.
+ * A conjugate gradient optimizer. Should not be used unless you know you want it because LBFGS is often better.
  * @param initialStepSize The initial step size. Not too important because line search is performed.
+ * @author Andrew McCallum, Alexandre Passos
  */
 class ConjugateGradient(val initialStepSize: Double = 1.0) extends GradientOptimizer with FastLogging {
   private var _isConverged = false

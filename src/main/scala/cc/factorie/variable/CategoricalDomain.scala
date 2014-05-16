@@ -1,7 +1,6 @@
-/* Copyright (C) 2008-2010 University of Massachusetts Amherst,
-   Department of Computer Science.
+/* Copyright (C) 2008-2014 University of Massachusetts Amherst.
    This file is part of "FACTORIE" (Factor graphs, Imperative, Extensible)
-   http://factorie.cs.umass.edu, http://code.google.com/p/factorie/
+   http://factorie.cs.umass.edu, http://github.com/factorie
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
    You may obtain a copy of the License at
@@ -25,7 +24,8 @@ import cc.factorie.{variable, util}
 /** A value in a CategoricalDomain.  
     Each value is assigned an intValue in the range 0...size-1.
     Each value has a category of type C.
-    These are the values used to map from words to integer parameter indices, etc. */
+    These are the values used to map from words to integer parameter indices, etc.
+    @author Andrew McCallum */
 trait CategoricalValue[C] extends DiscreteValue {
   def domain: CategoricalDomain[C]
   def category: C
@@ -35,8 +35,8 @@ trait CategoricalValue[C] extends DiscreteValue {
 /** A domain for categorical variables.  It stores not only a size,
     but also the mapping from category values (of type T = this.CategoryType)
     to densely packed integers suitable for indices into parameter
-    vectors.  For example, a common use case is mapping words (from
-    NLP or document classification) into indices, and back. 
+    vectors.  For example, a common use case is mapping Strings (NLP or 
+    document classification words) into indices, and back. 
 
     Furthermore if domain.gatherCounts = true, this domain will count
     the number of calls to 'index'.  Then you can reduce the size of
@@ -55,7 +55,7 @@ class CategoricalDomain[C] extends DiscreteDomain(0) with IndexedSeq[Categorical
     def domain = CategoricalDomain.this
     def dim1 = CategoricalDomain.this.size
   }
-  type Value <: CategoricalValue
+  type Value <: variable.CategoricalValue[C]
   def this(values:Iterable[C]) = { this(); values.foreach(value(_)); freeze() }
 
   private val __indices: mutable.Map[C, Value] = JavaHashMap[C, Value]()
@@ -67,6 +67,11 @@ class CategoricalDomain[C] extends DiscreteDomain(0) with IndexedSeq[Categorical
   override def dimensionDomain: CategoricalDomain[C] = this
   @inline final override def length = lock.withReadLock { _elements.length }
   var growPastMaxSize: Boolean = true
+  /** Return the CategoricalValue associated with the given category. 
+      If the category is not already in this CategoricalDomain and 'frozen' is false,
+      and 'mazSize' will not be exceeded,
+      then add the category to this CategoricalDomain.
+      This method is thread-safe so that multiple threads may read and index data simultaneously. */
   def value(category: C): Value = {
     if (category == null) throw new Error("Null is not a valid category.")
     if (_frozen)_indices.getOrElse(category, null.asInstanceOf[Value])
@@ -109,6 +114,7 @@ class CategoricalDomain[C] extends DiscreteDomain(0) with IndexedSeq[Categorical
       }
     }
   }
+  /** Return the CategoricalValue at index i. */
   override def apply(i:Int): Value = _elements(i)
   def category(i:Int): C = lock.withReadLock {_elements(i).category.asInstanceOf[C]}
   def categories: Seq[C] = lock.withReadLock { _elements.map(_.category.asInstanceOf[C]) }
@@ -117,7 +123,11 @@ class CategoricalDomain[C] extends DiscreteDomain(0) with IndexedSeq[Categorical
     val v = value(category)
     if (v eq null) -1 else v.intValue
   }
-  /** Return the integer associated with the category, and also, if gatherCounts is true, also increment the count of category. */
+  /** Return the integer associated with the category, and also, if gatherCounts is true, also increment the count of category.
+      If the category is not already in this CategoricalDomain and 'frozen' is false,
+      and 'mazSize' will not be exceeded,
+      then add the category to this CategoricalDomain.
+      This method is thread-safe so that multiple threads may read and index data simultaneously. */
   def index(category:C): Int = {
     val i = indexOnly(category)
     if (gatherCounts && i != -1) incrementCount(i)

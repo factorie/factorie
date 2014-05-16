@@ -1,7 +1,6 @@
-/* Copyright (C) 2008-2010 University of Massachusetts Amherst,
-   Department of Computer Science.
+/* Copyright (C) 2008-2014 University of Massachusetts Amherst.
    This file is part of "FACTORIE" (Factor graphs, Imperative, Extensible)
-   http://factorie.cs.umass.edu, http://code.google.com/p/factorie/
+   http://factorie.cs.umass.edu, http://github.com/factorie
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
    You may obtain a copy of the License at
@@ -25,7 +24,8 @@ import cc.factorie.variable._
 //import cc.factorie.util.Substitutions
 import java.io._
 
-/** A Factor with one neighboring variable */
+/** A Factor with one neighboring variable 
+    @author Andrew McCallum */
 abstract class Factor1[N1<:Var](val _1:N1) extends Factor {
   type NeighborType1 = N1
 
@@ -90,7 +90,8 @@ abstract class Factor1[N1<:Var](val _1:N1) extends Factor {
 }
 
 /** A 1-neighbor Factor whose statistics have type Tuple1.
-    Only "score" method is abstract. */
+    Only "score" method is abstract.  
+    @author Andrew McCallum */
 abstract class FactorWithStatistics1[N1<:Var](override val _1:N1) extends Factor1[N1](_1) {
   type StatisticsType = N1#Value
   final override def statistics(v1:N1#Value): N1#Value = v1
@@ -98,7 +99,8 @@ abstract class FactorWithStatistics1[N1<:Var](override val _1:N1) extends Factor
 }
 
 /** A 1-neighbor Factor whose statistics have type Tensor.
-    Only "statistics" and "score" methods are abstract. */
+    Only "statistics" and "score" methods are abstract.  
+    @author Andrew McCallum */
 abstract class TensorFactor1[N1<:Var](override val _1:N1) extends Factor1[N1](_1) {
   type StatisticsType = Tensor
   override def statistics(v1:N1#Value): Tensor
@@ -111,7 +113,8 @@ abstract class TensorFactor1[N1<:Var](override val _1:N1) extends Factor1[N1](_1
 }
 
 /** A trait for 1-neighbor Factor whose neighbor has Tensor values, and whose statistics are the outer product of those values.
-    Only "statisticsScore" method is abstract.  DotFactorWithStatistics2 is also a subclass of this. */
+    Only "statisticsScore" method is abstract.  DotFactorWithStatistics2 is also a subclass of this.  
+    @author Andrew McCallum */
 trait TensorFactorStatistics1[N1<:TensorVar] extends TensorFactor1[N1] {
   final override def statistics(v1:N1#Value): N1#Value = v1
   final override def currentStatistics = _1.value.asInstanceOf[N1#Value] // TODO Why is this cast necessary?
@@ -121,12 +124,14 @@ trait TensorFactorStatistics1[N1<:TensorVar] extends TensorFactor1[N1] {
 
 /** A 1-neighbor Factor whose neighbor has Tensor values, 
     and whose statistics are the outer product of those values.
-    Only "statisticsScore" method is abstract. */
+    Only "statisticsScore" method is abstract.  
+    @author Andrew McCallum */
 abstract class TensorFactorWithStatistics1[N1<:TensorVar](override val _1:N1) extends TensorFactor1[N1](_1) with TensorFactorStatistics1[N1]
 
 /** A 1-neighbor Factor whose statistics have type Tensor, 
     and whose score is the dot product between this Tensor and a "weightsSet" parameter Tensor.
-    Only "statistics" and "weightsSet" methods are abstract. */
+    Only "statistics" and "weightsSet" methods are abstract.  
+    @author Andrew McCallum */
 abstract class DotFactor1[N1<:TensorVar](override val _1:N1) extends TensorFactor1[N1](_1) {
   def weights: Tensor
   def statisticsScore(t:Tensor): Double = weights dot t
@@ -135,14 +140,15 @@ abstract class DotFactor1[N1<:TensorVar](override val _1:N1) extends TensorFacto
 /** A 1-neighbor Factor whose neighbor has Tensor values, 
     and whose statistics are the outer product of those values,
     and whose score is the dot product between this Tensor and a "weightsSet" parameter Tensor.
-    Only "weightsSet" method is abstract. */
+    Only "weightsSet" method is abstract.  
+    @author Andrew McCallum */
 abstract class DotFactorWithStatistics1[N1<:TensorVar](override val _1:N1) extends DotFactor1[N1](_1) with TensorFactorStatistics1[N1] {
   override def valuesScore(valueTensor:Tensor) = valueTensor dot weights // Because valueTensor is the same as the statisticsTensor
 }
 
 
-// Family containing Factor1 (Families of Factors having one neighbor)
-
+/** Family containing Factor1 (Families of Factors having one neighbor) 
+    @author Andrew McCallum */
 trait Family1[N1<:Var] extends FamilyWithNeighborDomains {
   type NeighborType1 = N1
   /** Override this if you want to matchNeighborDomains */

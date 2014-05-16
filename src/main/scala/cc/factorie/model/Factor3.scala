@@ -1,7 +1,6 @@
-/* Copyright (C) 2008-2010 University of Massachusetts Amherst,
-   Department of Computer Science.
+/* Copyright (C) 2008-2014 University of Massachusetts Amherst.
    This file is part of "FACTORIE" (Factor graphs, Imperative, Extensible)
-   http://factorie.cs.umass.edu, http://code.google.com/p/factorie/
+   http://factorie.cs.umass.edu, http://github.com/factorie
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
    You may obtain a copy of the License at
@@ -18,7 +17,8 @@ import scala.collection.mutable.HashMap
 import cc.factorie.la._
 import cc.factorie.variable._
 
-/** The only abstract things are _1, _2, _3, statistics(Values), and StatisticsType */
+/** The only abstract things are _1, _2, _3, statistics(Values), and StatisticsType  
+    @author Andrew McCallum */
 abstract class Factor3[N1<:Var,N2<:Var,N3<:Var](val _1:N1, val _2:N2, val _3:N3) extends Factor {
   factor =>
   type NeighborType1 = N1
@@ -268,7 +268,8 @@ abstract class Factor3[N1<:Var,N2<:Var,N3<:Var](val _1:N1, val _2:N2, val _3:N3)
 }
 
 /** A 3-neighbor Factor whose statistics have type Tuple2.
-    Only "score" method is abstract. */
+    Only "score" method is abstract.  
+    @author Andrew McCallum */
 abstract class TupleFactorWithStatistics3[N1<:Var,N2<:Var,N3<:Var](override val _1:N1, override val _2:N2, override val _3:N3) extends Factor3[N1,N2,N3](_1, _2, _3) {
   type StatisticsType = ((N1#Value, N2#Value, N3#Value))
   final def statistics(v1:N1#Value, v2:N2#Value, v3:N3#Value) = (v1, v2, v3)
@@ -276,7 +277,8 @@ abstract class TupleFactorWithStatistics3[N1<:Var,N2<:Var,N3<:Var](override val 
 }
 
 /** A 3-neighbor Factor whose statistics have type Tensor.
-    Only "statistics" and "score" methods are abstract. */
+    Only "statistics" and "score" methods are abstract.  
+    @author Andrew McCallum */
 abstract class TensorFactor3[N1<:TensorVar,N2<:TensorVar,N3<:TensorVar](override val _1:N1, override val _2:N2, override val _3:N3) extends Factor3[N1,N2,N3](_1, _2, _3) {
   type StatisticsType = Tensor
   override def statistics(v1:N1#Value, v2:N2#Value, v3:N3#Value): Tensor
@@ -290,7 +292,8 @@ abstract class TensorFactor3[N1<:TensorVar,N2<:TensorVar,N3<:TensorVar](override
 
 /** A trait for 3-neighbor Factor whose neighbors have Tensor values,
     and whose statistics are the outer product of those values.
-    Only "statisticsScore" method is abstract.  DotFactorWithStatistics2 is also a subclass of this. */
+    Only "statisticsScore" method is abstract.  DotFactorWithStatistics2 is also a subclass of this.  
+    @author Andrew McCallum */
 trait TensorFactorStatistics3[N1<:TensorVar,N2<:TensorVar,N3<:TensorVar] extends TensorFactor3[N1,N2,N3] {
   final def statistics(v1:N1#Value, v2:N2#Value, v3:N3#Value) = cc.factorie.la.Tensor.outer(v1, v2, v3)
   final override def valuesStatistics(tensor:Tensor): Tensor = tensor
@@ -299,12 +302,14 @@ trait TensorFactorStatistics3[N1<:TensorVar,N2<:TensorVar,N3<:TensorVar] extends
 
 /** A 3-neighbor Factor whose neighbors have Tensor values, 
     and whose statistics are the outer product of those values.
-    Only "statisticsScore" method is abstract. */
+    Only "statisticsScore" method is abstract.  
+    @author Andrew McCallum */
 abstract class TensorFactorWithStatistics3[N1<:TensorVar,N2<:TensorVar,N3<:TensorVar](override val _1:N1, override val _2:N2, override val _3:N3) extends TensorFactor3[N1,N2,N3](_1, _2, _3) with TensorFactorStatistics3[N1,N2,N3]
 
 /** A 3-neighbor Factor whose statistics have type Tensor, 
     and whose score is the dot product between this Tensor and a "weightsSet" parameter Tensor.
-    Only "statistics" and "weightsSet" methods are abstract. */
+    Only "statistics" and "weightsSet" methods are abstract.  
+    @author Andrew McCallum */
 abstract class DotFactor3[N1<:TensorVar,N2<:TensorVar,N3<:TensorVar](override val _1:N1, override val _2:N2, override val _3:N3) extends TensorFactor3[N1,N2,N3](_1, _2, _3) {
   def weights: Tensor
   def statisticsScore(t:Tensor): Double = weights dot t
@@ -313,12 +318,15 @@ abstract class DotFactor3[N1<:TensorVar,N2<:TensorVar,N3<:TensorVar](override va
 /** A 3-neighbor Factor whose neighbors have Tensor values, 
     and whose statistics are the outer product of those values,
     and whose score is the dot product between this Tensor and a "weightsSet" parameter Tensor.
-    Only "weightsSet" method is abstract. */
+    Only "weightsSet" method is abstract.  
+    @author Andrew McCallum */
 abstract class DotFactorWithStatistics3[N1<:TensorVar,N2<:TensorVar,N3<:TensorVar](override val _1:N1, override val _2:N2, override val _3:N3) extends DotFactor3(_1, _2, _3) with TensorFactorStatistics3[N1,N2,N3] {
   override def valuesScore(valueTensor:Tensor) = weights dot valueTensor
 }
 
 
+/** Family containing Factor3 (Families of Factors having three neighbors).
+    @author Andrew McCallum */
 trait Family3[N1<:Var,N2<:Var,N3<:Var] extends FamilyWithNeighborDomains {
   type NeighborType1 = N1
   type NeighborType2 = N2

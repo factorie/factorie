@@ -1,11 +1,21 @@
+/* Copyright (C) 2008-2014 University of Massachusetts Amherst.
+   This file is part of "FACTORIE" (Factor graphs, Imperative, Extensible)
+   http://factorie.cs.umass.edu, http://github.com/factorie
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+    http://www.apache.org/licenses/LICENSE-2.0
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License. */
 package cc.factorie.app.nlp
 
 import java.io._
 import cc.factorie.app.nlp.parse._
 import java.net.{ServerSocket,Socket,SocketException}
-//import cc.factorie.app.nlp.coref.mention.{PhraseEntityTypeLabeler, NerAndPronounMentionFinder, ParseBasedMentionFinding}
 import cc.factorie.app.nlp.coref.MentionList
-import cc.factorie.app.nlp.phrase._
 
 /** A command-line driver for DocumentAnnotators.
     Launch on the command-line, specifying which NLP pipeline steps you want, 
@@ -35,23 +45,31 @@ object NLP {
 
       // named entity recognition
       val conllchainner = new CmdOption[String]("conll-chain-ner", null, "URL", "Annotate CoNLL-2003 NER") { override def invoke() = { if (value ne null) System.setProperty(classOf[ner.ConllChainNer].getName, value); annotators += cc.factorie.app.nlp.ner.ConllChainNer } }
-      val basicontonotesner = new CmdOption[String]("ontonotes-chain-ner", null, "URL", "Annotate Ontonotes NER")  { override def invoke() = { if (value ne null) System.setProperty(classOf[ner.BasicOntonotesNER].getName, value); annotators += cc.factorie.app.nlp.ner.NER2 } }
       val noembeddingsconllstackedchainner = new CmdOption[String]("stacked-chain-ner-noembeddings", null, "URL", "Annotate Conll NER using a stacked chain model that doesn't use embeddings")  { override def invoke() = { if (value ne null) System.setProperty(classOf[ner.NoEmbeddingsConllStackedChainNer].getName, value); annotators += cc.factorie.app.nlp.ner.NoEmbeddingsConllStackedChainNer } }
 
       // parsers
       //val parser1 = new CmdOption("parser1", ClasspathURL[DepParser1](".factorie").toString, "URL", "Annotate dependency parse with a simple shift-reduce transition-based model.") { override def invoke = { System.setProperty(classOf[DepParser1].getName, value); annotators += cc.factorie.app.nlp.parse.DepParser1 } }
       val transitionparser = new CmdOption[String]("transition-based-parser", null, "URL", "Annotate dependency parse with a state-of-the-art shift-reduce transition-based model.") { override def invoke() = { if (value ne null) System.setProperty(classOf[OntonotesTransitionBasedParser].getName, value); annotators += cc.factorie.app.nlp.parse.OntonotesTransitionBasedParser } }
-      val graphparser = new CmdOption[String]("graph-based-parser", null, "URL", "Annotate dependency parse with a first-order projective parser.") { override def invoke() = { if (value ne null) System.setProperty(classOf[OntonotesProjectiveGraphBasedParser].getName, value); annotators += cc.factorie.app.nlp.parse.OntonotesProjectiveGraphBasedParser } }
+      //val graphparser = new CmdOption[String]("graph-based-parser", null, "URL", "Annotate dependency parse with a first-order projective parser.") { override def invoke() = { if (value ne null) System.setProperty(classOf[OntonotesProjectiveGraphBasedParser].getName, value); annotators += cc.factorie.app.nlp.parse.OntonotesProjectiveGraphBasedParser } }
       
       // coref
       val deterministicNamedCoref = new CmdOption[String]("d-named-coref", null, "", "Simple deterministic coreference on named entities") { override def invoke() = { annotators += coref.DeterministicNamedCoref } }
-      //val forwardcoref = new CmdOption[String]("forward-coref", null, "URL", "Annotate within-document noun mention coreference using a state-of-the-art system") { override def invoke() = { annotators += phrase.NounPhraseEntityTypeLabeler ; if (value ne null) System.setProperty(classOf[coref.ForwardCoref].getName, value); annotators += cc.factorie.app.nlp.coref.ForwardCoref } }
-      //val nerforwardcoref = new CmdOption[String]("ner-forward-coref", null, "URL", "Annotate within-document proper- and pro-noun mention coreference using a state-of-the-art system") { override def invoke() = { if (value ne null) System.setProperty(classOf[coref.ForwardCoref].getName, value); annotators += coref.NerForwardCoref} }
-      //val mentiongender = new CmdOption[String]("mention-gender", null, "", "Annotate noun mention with male/female/person/neuter/unknown") { override def invoke() = { if (value ne null) System.setProperty(classOf[phrase.MentionPhraseNumberLabeler].getName, value); annotators += cc.factorie.app.nlp.phrase.MentionPhraseGenderLabeler } }
-      //val mentionnumber = new CmdOption[String]("mention-number", null, "", "Annotate noun mention with singular/plural/unknown") { override def invoke() = { if (value ne null) System.setProperty(classOf[phrase.MentionPhraseNumberLabeler].getName, value); annotators += cc.factorie.app.nlp.phrase.MentionPhraseNumberLabeler } }
-      //val phraseEntitytype = new CmdOption[String]("mention-entity-type", null, "URL", "Annotate noun mention with Ontonotes NER label") { override def invoke() = { if (value ne null) System.setProperty(classOf[MentionEntityTypeLabeler].getName, value); annotators += cc.factorie.app.nlp.coref.mention.MentionEntityTypeLabeler } }
+      val parsestructuredcoref = new CmdOption[String]("parse-lexical-coref", null, "URL", "Annotate within-document noun mention coreference using a state-of-the-art system and parse-based mention finding") { override def invoke() = {  if (value ne null) System.setProperty(classOf[coref.ParseStructuredCoref].getName, value); annotators += cc.factorie.app.nlp.coref.ParseStructuredCoref } }
+      val nerstructuredcoref = new CmdOption[String]("ner-lexical-coref", null, "URL", "Annotate within-document proper- and pro-noun mention coreference using a state-of-the-art system") { override def invoke() = { if (value ne null) System.setProperty(classOf[coref.NerStructuredCoref].getName, value); annotators += coref.NerStructuredCoref} }
+      val parseforwardcoref = new CmdOption[String]("parse-forward-coref", null, "URL", "Annotate within-document noun mention coreference using a state-of-the-art system and parse-based mention finding") { override def invoke() = {  if (value ne null) System.setProperty(classOf[coref.ParseForwardCoref].getName, value); annotators += cc.factorie.app.nlp.coref.ParseForwardCoref } }
+      val nerforwardcoref = new CmdOption[String]("ner-forward-coref", null, "URL", "Annotate within-document proper- and pro-noun mention coreference using a state-of-the-art system") { override def invoke() = { if (value ne null) System.setProperty(classOf[coref.NerForwardCoref].getName, value); annotators += coref.NerForwardCoref} }
+
     }
     opts.parse(args)
+    
+    if (!opts.values.exists(_.wasInvoked)) {
+       println("Usage: " + opts.usageString)
+       println("The tool will perform annotation for whatever tasks you specify, and the prereqs for these tasks. It will only print to stdout the the ones that you request, though.")
+       println("Note: if you have downloaded the models via mvn, you will not need to specify urls for the models")
+       println("Note: this tool requires nlp models being downloaded. To do this automatically, run \'mvn package -Pnlp-jar-with-dependencies\'")
+       sys.exit()
+     }
+    
     val map = new MutableDocumentAnnotatorMap ++= DocumentAnnotatorPipeline.defaultDocumentAnnotationMap
     for (annotator <- annotators) map += annotator
     val pipeline = DocumentAnnotatorPipeline(map=map.toMap, prereqs=Nil, annotators.flatMap(_.postAttrs))

@@ -1,7 +1,6 @@
-/* Copyright (C) 2008-2010 University of Massachusetts Amherst,
-   Department of Computer Science.
+/* Copyright (C) 2008-2014 University of Massachusetts Amherst.
    This file is part of "FACTORIE" (Factor graphs, Imperative, Extensible)
-   http://factorie.cs.umass.edu, http://code.google.com/p/factorie/
+   http://factorie.cs.umass.edu, http://github.com/factorie
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
    You may obtain a copy of the License at
@@ -19,24 +18,17 @@ import cc.factorie.variable
 /** The value of a BooleanDomain.  A subclass of CategoricalValue.
     @author Andrew McCallum */
 trait BooleanValue extends CategoricalValue[Boolean] { def domain: BooleanDomain = BooleanDomain }
-object TrueValue extends BooleanValue{
-  val singleIndex: Int = 1
-  val dim1: Int = 2
-  val category: Boolean = true
-}
-object FalseValue extends BooleanValue{
-  val singleIndex: Int = 0
-  val dim1: Int = 2
-  val category: Boolean = false
-}
-
 
 /** The Domain for BooleanVar, of size two, containing a falseValue
     (with intValue = 0) and a trueValue (with intValue = 1). 
     @author Andrew McCallum */
 class BooleanDomain extends CategoricalDomain[Boolean] with Domain {
-  val falseValue = super.value(false) // will get index == 0
-  val trueValue = super.value(true)   // will get index == 1
+  type Value = BooleanValue
+  protected class CategoricalValue(override val singleIndex:Int, override val category:Boolean) extends super.CategoricalValue(singleIndex, category) with BooleanValue {
+    override def domain: BooleanDomain = BooleanDomain
+  }
+  val falseValue: BooleanValue = super.value(false) // will get index == 0
+  val trueValue: BooleanValue = super.value(true)   // will get index == 1
   freeze()
   override protected def newCategoricalValue(i:Int, e:Boolean) = new CategoricalValue(i, e)
   // The above makes sure that the hashtable in the CategoricalDomain is consistent, 
@@ -60,8 +52,8 @@ object BooleanValue {
 trait BooleanVar extends CategoricalVar[Boolean] with VarWithDomain {
   type Value = BooleanValue
   def value: BooleanValue = intValue match {
-    case 1 => TrueValue
-    case 0 => FalseValue
+    case 1 => BooleanDomain.trueValue
+    case 0 => BooleanDomain.falseValue
   }
   //def domain: CategoricalDomain[Boolean] = BooleanDomain
   def domain: BooleanDomain = BooleanDomain
@@ -78,8 +70,8 @@ trait BooleanVar extends CategoricalVar[Boolean] with VarWithDomain {
     @author Andrew McCallum */
 trait MutableBooleanVar extends MutableCategoricalVar[Boolean] with BooleanVar {
   override def value = _value match {
-    case 1 => TrueValue
-    case 0 => FalseValue
+    case 1 => BooleanDomain.trueValue
+    case 0 => BooleanDomain.falseValue
   }
   // Avoid CategoricalVariable's HashMap lookup
   final def set(newBoolean:Boolean)(implicit d: DiffList): Unit = set(if (newBoolean) 1 else 0)

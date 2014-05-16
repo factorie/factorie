@@ -1,10 +1,23 @@
+/* Copyright (C) 2008-2014 University of Massachusetts Amherst.
+   This file is part of "FACTORIE" (Factor graphs, Imperative, Extensible)
+   http://factorie.cs.umass.edu, http://github.com/factorie
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+    http://www.apache.org/licenses/LICENSE-2.0
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License. */
 package cc.factorie.optimize
 
 import cc.factorie._
 import cc.factorie.la._
 import cc.factorie.model.{WeightsMap, WeightsSet}
 
-/** Base trait for optimizers that update weights according to a gradient. */
+/** Base trait for optimizers that update weights according to a gradient.
+    @author Andrew McCallum */
 trait GradientOptimizer {
   // TODO Why are we passing in weightsSet each time?  Couldn't this be dangerous?  -akm
   // I think passing it in here is probably a good compromise for optimizers that require no setup/teardown on weights or can do it automatically -luke

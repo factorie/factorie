@@ -1,3 +1,15 @@
+/* Copyright (C) 2008-2014 University of Massachusetts Amherst.
+   This file is part of "FACTORIE" (Factor graphs, Imperative, Extensible)
+   http://factorie.cs.umass.edu, http://github.com/factorie
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+    http://www.apache.org/licenses/LICENSE-2.0
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License. */
 package cc.factorie.app.nlp.pos
 import cc.factorie._
 import cc.factorie.app.nlp._
@@ -16,7 +28,7 @@ import cc.factorie.app.classify.backend.LinearMulticlassClassifier
 class ForwardPosTagger extends DocumentAnnotator {
   // Different ways to load saved parameters
   def this(stream:InputStream) = { this(); deserialize(stream) }
-  def this(file: File) = this(new FileInputStream(file))
+  def this(file: File) = {this(new FileInputStream(file)); println("ForwardPosTagger loading from "+file.getAbsolutePath)}
   def this(url:java.net.URL) = {
     this()
     val stream = url.openConnection.getInputStream
@@ -407,23 +419,23 @@ object OntonotesForwardPosTagger extends OntonotesForwardPosTagger(cc.factorie.u
 
 class ForwardPosOptions extends cc.factorie.util.DefaultCmdOptions with SharedNLPCmdOptions{
   val modelFile = new CmdOption("model", "", "FILENAME", "Filename for the model (saving a trained model or reading a running model.")
-  val testFile = new CmdOption("testFile", "", "FILENAME", "OWPL test file.")
-  val trainFile = new CmdOption("trainFile", "", "FILENAME", "OWPL training file.")
-  val testDir = new CmdOption("testDir", "", "FILENAME", "Directory containing OWPL test files (.dep.pmd).")
-  val trainDir = new CmdOption("trainDir", "", "FILENAME", "Directory containing OWPL training files (.dep.pmd).")
-  val testFiles = new CmdOption("testFiles", "", "STRING", "comma-separated list of OWPL test files (.dep.pmd).")
-  val trainFiles = new CmdOption("trainFiles", "", "STRING", "comma-separated list of OWPL training files (.dep.pmd).")
-  val l1 = new CmdOption("l1", 0.000001,"FLOAT","l1 regularization weight")
-  val l2 = new CmdOption("l2", 0.00001,"FLOAT","l2 regularization weight")
-  val rate = new CmdOption("rate", 10.0,"FLOAT","base learning rate")
-  val delta = new CmdOption("delta", 100.0,"FLOAT","learning rate decay")
+  val testFile = new CmdOption("test-file", "", "FILENAME", "OWPL test file.")
+  val trainFile = new CmdOption("train-file", "", "FILENAME", "OWPL training file.")
+  val testDir = new CmdOption("test-dir", "", "FILENAME", "Directory containing OWPL test files (.dep.pmd).")
+  val trainDir = new CmdOption("train-dir", "", "FILENAME", "Directory containing OWPL training files (.dep.pmd).")
+  val testFiles = new CmdOption("test-files", "", "STRING", "comma-separated list of OWPL test files (.dep.pmd).")
+  val trainFiles = new CmdOption("train-files", "", "STRING", "comma-separated list of OWPL training files (.dep.pmd).")
+  val l1 = new CmdOption("l1", 0.000001, "FLOAT", "l1 regularization weight")
+  val l2 = new CmdOption("l2", 0.00001, "FLOAT", "l2 regularization weight")
+  val rate = new CmdOption("rate", 1.0, "FLOAT", "base learning rate")
+  val delta = new CmdOption("delta", 0.1, "FLOAT", "learning rate decay")
   val cutoff = new CmdOption("cutoff", 2, "INT", "Discard features less frequent than this before training.")
   val updateExamples = new  CmdOption("update-examples", true, "BOOL", "Whether to update examples in later iterations during training.")
   val useHingeLoss = new CmdOption("use-hinge-loss", false, "BOOL", "Whether to use hinge loss (or log loss) during training.")
   val saveModel = new CmdOption("save-model", false, "BOOL", "Whether to save the trained model.")
   val runText = new CmdOption("run", "", "FILENAME", "Plain text file on which to run.")
-  val numIters = new CmdOption("num-iterations","5","INT","number of passes over the data for training")
-  val wsj = new CmdOption("wsj", false, "BOOL", "Whether the data is WSJ or otherwise (Ontonotes)")
+  val numIters = new CmdOption("num-iterations", 5, "INT", "number of passes over the data for training")
+  val owpl = new CmdOption("owpl", false, "BOOL", "Whether the data is in OWPL format or otherwise (Ontonotes)")
 }
 
 object ForwardPosTester {
@@ -437,7 +449,7 @@ object ForwardPosTester {
 	// otherwise ontonotes model
 	val pos = {
 	  if(opts.modelFile.wasInvoked) new ForwardPosTagger(new File(opts.modelFile.value))
-	  else if(opts.wsj.value) WSJForwardPosTagger
+	  else if(opts.owpl.value) WSJForwardPosTagger
 	  else OntonotesForwardPosTagger
 	}
 	
@@ -449,9 +461,13 @@ object ForwardPosTester {
       testFileList =  opts.testFiles.value.split(",")
     }
   
+	def posLabelMaker(tok: Token, labels: Seq[String]): LabeledPennPosTag = {
+      new LabeledPennPosTag(tok, if(labels(0) == "XX") "PUNC" else labels(0))
+    }
+	
 	val testPortionToTake =  if(opts.testPortion.wasInvoked) opts.testPortion.value else 1.0
 	val testDocs = testFileList.map(fname => {
-	  if(opts.wsj.value) load.LoadWSJMalt.fromFilename(fname).head
+	  if(opts.owpl.value) load.LoadOWPL.fromFilename(fname, posLabelMaker).head
 	  else load.LoadOntonotes5.fromFilename(fname).head
 	})
     val testSentencesFull = testDocs.flatMap(_.sentences)
@@ -487,12 +503,16 @@ object ForwardPosTrainer extends HyperparameterMain {
       testFileList =  opts.testFiles.value.split(",")
     }
     
+    def posLabelMaker(tok: Token, labels: Seq[String]): LabeledPennPosTag = {
+      new LabeledPennPosTag(tok, if(labels(0) == "XX") "PUNC" else labels(0))
+    }
+    
     val trainDocs = trainFileList.map(fname => {
-	  if(opts.wsj.value) load.LoadWSJMalt.fromFilename(fname).head
+	  if(opts.owpl.value) load.LoadOWPL.fromFilename(fname, posLabelMaker).head
 	  else load.LoadOntonotes5.fromFilename(fname).head
 	})
     val testDocs = testFileList.map(fname => {
-	  if(opts.wsj.value) load.LoadWSJMalt.fromFilename(fname).head
+	  if(opts.owpl.value) load.LoadOWPL.fromFilename(fname, posLabelMaker).head
 	  else load.LoadOntonotes5.fromFilename(fname).head
 	})
 
@@ -532,6 +552,7 @@ object ForwardPosOptimizer {
     val rate = cc.factorie.util.HyperParameter(opts.rate, new cc.factorie.util.LogUniformDoubleSampler(1e-4, 1e4))
     val delta = cc.factorie.util.HyperParameter(opts.delta, new cc.factorie.util.LogUniformDoubleSampler(1e-4, 1e4))
     val cutoff = cc.factorie.util.HyperParameter(opts.cutoff, new cc.factorie.util.SampleFromSeq(List(0,1,2,3)))
+    val iters = cc.factorie.util.HyperParameter(opts.numIters, new cc.factorie.util.SampleFromSeq(List(3,5,7)))
     /*
     val ssh = new cc.factorie.util.SSHActorExecutor("apassos",
       Seq("avon1", "avon2"),
@@ -540,8 +561,8 @@ object ForwardPosOptimizer {
       "cc.factorie.app.nlp.parse.DepParser2",
       10, 5)
       */
-    val qs = new cc.factorie.util.QSubExecutor(60, "cc.factorie.app.nlp.pos.ForwardPosTrainer")
-    val optimizer = new cc.factorie.util.HyperParameterSearcher(opts, Seq(l1, l2, rate, delta, cutoff), qs.execute, 200, 180, 60)
+    val qs = new cc.factorie.util.QSubExecutor(16, "cc.factorie.app.nlp.pos.ForwardPosTrainer")
+    val optimizer = new cc.factorie.util.HyperParameterSearcher(opts, Seq(l1, l2, rate, delta, cutoff, iters), qs.execute, 200, 180, 60)
     val result = optimizer.optimize()
     println("Got results: " + result.mkString(" "))
     println("Best l1: " + opts.l1.value + " best l2: " + opts.l2.value)

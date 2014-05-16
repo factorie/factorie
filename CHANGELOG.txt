@@ -1,6 +1,46 @@
 Changelog
 ===
 
+New in version 1.0
+---
+
+* Overall
+    - Miscellaneous code cleanup (launchers, app)
+
+* NLP
+    - Removed old hcoref package and renamed new xcoref to hcoref
+    - Removed old relation package
+
+New in version 1.0.0-RC2
+---
+
+* Overall
+    - Expanded tutorials and documentation, including a new User's Guide and javadoc
+    - Performance improvements to hashmaps (such as domains and lexicons)
+    - Many miscellaneous bug fixes and improvements
+    - Compatibility with Scala 2.11 (optional)
+
+* NLP
+    - Added high performance word embedding trainer based on Google's word vectors
+    - New Chinese word segmenter
+    - Rewritten dependency parser
+    - New within-document coreference system
+    - Added CRF based mention finding
+    - Rewritten hierarchical coreference system in the xcoref package
+    - Rewrite of Phrases/Mentions
+    - Usability improvements to command line NLP tool
+    - Performance improvement to Sparse LDA
+
+* Classifiers
+    - Added smoothed hinge loss with adjustable margin, costs, and smoothing
+    - Fixed bug in scaled hinge loss
+
+* Learning
+    - Fix to (Parallel)BatchTrainer to use maxIterations
+
+* Inference
+    - Refactored ChainModel to make fast inference and marginals more available for posterior regularization, etc
+
 New in version 1.0.0-RC1
 ---
 

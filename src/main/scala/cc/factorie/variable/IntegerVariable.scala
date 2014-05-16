@@ -1,7 +1,6 @@
-/* Copyright (C) 2008-2010 University of Massachusetts Amherst,
-   Department of Computer Science.
+/* Copyright (C) 2008-2014 University of Massachusetts Amherst.
    This file is part of "FACTORIE" (Factor graphs, Imperative, Extensible)
-   http://factorie.cs.umass.edu, http://code.google.com/p/factorie/
+   http://factorie.cs.umass.edu, http://github.com/factorie
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
    You may obtain a copy of the License at
@@ -15,9 +14,13 @@
 package cc.factorie.variable
 
 
+/** A Domain whose values are the integers.
+    @author Andrew McCallum */
 trait IntegerDomain extends Domain {
   type Value = Int
 }
+/** A Domain whose values are the integers.
+    @author Andrew McCallum */
 object IntegerDomain extends IntegerDomain
 
 /** An abstract variable with one Int value.  
@@ -34,7 +37,8 @@ trait IntegerVar extends ScalarVar with VarWithDomain {
 }
 
 /** An abstract variable with one Int value, which can be modified.
-    This trait makes no commitment about how the value is stored. */
+    This trait makes no commitment about how the value is stored.
+    @author Andrew McCallum */
 trait MutableIntegerVar extends IntegerVar with MutableVar
 
 /** A concrete variable with a mutable Int value.

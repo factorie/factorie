@@ -1,7 +1,6 @@
-/* Copyright (C) 2008-2010 University of Massachusetts Amherst,
-   Department of Computer Science.
+/* Copyright (C) 2008-2014 University of Massachusetts Amherst.
    This file is part of "FACTORIE" (Factor graphs, Imperative, Extensible)
-   http://factorie.cs.umass.edu, http://code.google.com/p/factorie/
+   http://factorie.cs.umass.edu, http://github.com/factorie
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
    You may obtain a copy of the License at
@@ -101,6 +100,7 @@ trait Factor extends Ordered[Factor] {
     case _ => false
   }
   var _hashCode = -1
+  /** A hashCode matching the criteria in equals, using hashCode of the Factor's class and of the Factor's neighboring variables. */
   override def hashCode: Int = {
     if (_hashCode == -1) {
       _hashCode = getClass.hashCode
@@ -120,9 +120,11 @@ trait Factor extends Ordered[Factor] {
 /** An iterable collection for efficiently holding a single Factor.
     Used in various Template classes and in an implicit conversion from Factor to IterableSingleFactor
     so that unroll1,2,3,4 methods (which are supposed to return Iterable[Factor] can be written
-    by end users to return a single Factor (which is then implicitly converted to this class). */
+    by end users to return a single Factor (which is then implicitly converted to this class). 
+    @author Andrew McCallum */
 class IterableSingleFactor[F<:Factor](val factor:F) extends Iterable[F] {
   def iterator = Iterator.single(factor)
   override def size = 1
   override def head = factor
 }
+

@@ -1,7 +1,6 @@
-/* Copyright (C) 2008-2010 University of Massachusetts Amherst,
-   Department of Computer Science.
+/* Copyright (C) 2008-2014 University of Massachusetts Amherst.
    This file is part of "FACTORIE" (Factor graphs, Imperative, Extensible)
-   http://factorie.cs.umass.edu, http://code.google.com/p/factorie/
+   http://factorie.cs.umass.edu, http://github.com/factorie
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
    You may obtain a copy of the License at
@@ -34,7 +33,7 @@ class TokenSpan(theSection:Section, initialStart:Int, initialLength:Int) extends
       If this is a multi-Token TokenSpan, this will include all original characters in the Document, including those skipped by tokenization. */
   def documentString: String = document.string.substring(tokens.head.stringStart, tokens.last.stringEnd) // TODO Handle Token.attr[TokenString] changes
   /** Return a String representation of this TokenSpan, concatenating each Token.string, separated by the given separator. */
-  def tokensString(separator:String): String = if (length == 1) chain(0).string else tokens.map(_.string).mkString(separator)
+  def tokensString(separator:String): String = if (length == 1) tokens(0).string else tokens.map(_.string).mkString(separator)
   /** Return a String representation of this TokenSpan, concatenating each Token.string, separated by a space.
       This nicely avoids newlines, HTML or other junk that might be in the phrase.documentString. */
   def string: String = tokensString(" ")
