@@ -188,4 +188,4 @@ class ResourceLexicons(val sourceFactory: String=>io.Source, val tokenizer:Strin
 
 /** Static access through classpath or file location (specified as Java System Property)
     @author Andrew McCallum */
-object ClasspathResourceLexicons extends ResourceLexicons(string => { io.Source.fromURL(ClasspathURL.fromDirectory[Lexicon](string)) })
+object ClasspathResourceLexicons extends ResourceLexicons(string => { io.Source.fromURL(ClasspathURL.fromDirectory[Lexicon](string))(io.Codec.UTF8) })
