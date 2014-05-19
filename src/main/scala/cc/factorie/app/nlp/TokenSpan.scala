@@ -59,6 +59,11 @@ class TokenSpan(theSection:Section, initialStart:Int, initialLength:Int) extends
     case label:LabeledCategoricalVariable[String @unchecked] => label.categoryValue
     case x => x.toString
   }
+
+  /**
+   * Returns the character offsets of this TokenSpan into the raw text of its original document.
+   */
+  def characterOffsets:(Int, Int) = this.apply(0).stringStart -> this.apply(length).stringEnd
 }
 trait TokenSpanCollection[S<:TokenSpan] extends SpanVarCollection[S, Section, Token]
 
