@@ -580,6 +580,24 @@ class ConllStackedChainNer(embeddingMap: SkipGramEmbedding,
 class NoEmbeddingsConllStackedChainNer(url:java.net.URL) extends ConllStackedChainNer(null, 0, 0.0, false, url)
 object NoEmbeddingsConllStackedChainNer extends NoEmbeddingsConllStackedChainNer(ClasspathURL[NoEmbeddingsConllStackedChainNer](".factorie"))
 
+class OntonotesStackedChainNer(embeddingMap: SkipGramEmbedding,
+                           embeddingDim: Int,
+                           scale: Double,
+                           useOffsetEmbedding: Boolean,
+                           url: java.net.URL=null) extends StackedChainNer[BilouOntonotesNerTag](BilouOntonotesNerDomain, (t, s) => new BilouOntonotesNerTag(t, s), l => l.token, embeddingMap, embeddingDim, scale, useOffsetEmbedding, url) {
+  override def process(document:Document): Document = {
+    if (document.tokenCount > 0) {
+      val doc = super.process(document)
+      // Add and populated NerSpanList attr to the document
+      doc.attr.+=(new ner.OntonotesNerSpanBuffer(document.sections.flatMap(section => BilouOntonotesNerDomain.spanList(section))))
+      doc
+    } else document
+  }
+}
+
+class NoEmbeddingsOntonotesStackedChainNer(url:java.net.URL) extends OntonotesStackedChainNer(null, 0, 0.0, false, url)
+object NoEmbeddingsOntonotesStackedChainNer extends NoEmbeddingsOntonotesStackedChainNer(ClasspathURL[NoEmbeddingsOntonotesStackedChainNer](".factorie"))
+
 class StackedChainNerOpts extends CmdOptions with SharedNLPCmdOptions{
   val trainFile =     new CmdOption("train", "eng.train", "FILE", "CoNLL formatted training file.")
   val testFile  =     new CmdOption("test",  "eng.testb", "FILE", "CoNLL formatted test file.")
