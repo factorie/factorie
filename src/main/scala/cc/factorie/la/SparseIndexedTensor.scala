@@ -22,7 +22,7 @@ trait SparseTensor extends SparseDoubleSeq with Tensor {
   def _makeReadable(): Unit
   // unsafe - call makeReadable first
   def _unsafeActiveDomainSize: Int
-  // unsafe - call makeReadable first
+  // unsafe - call makeReadable first (if you call this before making readable, you can get a reference to the wrong array)
   def _indices: Array[Int]
   // unsafe - call makeReadable first
   // this has to be a DoubleSeq and not an Array[Int] so we can efficiently return a UniformTensor for binary tensor values
@@ -132,7 +132,7 @@ trait ArraySparseIndexedTensor extends SparseIndexedTensor {
       case v:ArraySparseIndexedTensor => {
         v._makeReadable()
         val v1 = if (this.__npos < v.__npos) this else v
-        val v2 = if (v.__npos < this.__npos) v else this
+        val v2 = if (v.__npos < this.__npos) this else v
         var i = 0; var j = -1; var j2 = 0
         var result = 0.0
         while (i < v1.__npos) {
@@ -341,9 +341,10 @@ trait ArraySparseIndexedTensor extends SparseIndexedTensor {
           }
         case (t1: SingletonTensor, t2: SparseTensor) => {
           val i0 = t1.singleIndex
+          // Have to call activeDomainSize/makeReadable before reading out array of indices or this will have mismatched indices and values -luke
+          val len = t2.activeDomainSize
           val arr = t2._indices
           val values = t2._valuesSeq
-          val len = t2.activeDomainSize
           var i = 0
           while (i < len) {
             val singleidx = t.singleFlatIndex(i0, arr(i))
