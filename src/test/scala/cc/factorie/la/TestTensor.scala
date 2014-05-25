@@ -56,6 +56,15 @@ class TestTensor extends cc.factorie.util.FastLogging {
 
     assert(((t1 outer t2 outer t3) dot (t1 outer t2 outer t3)) == 64)
     assert(((t1 outer (t2 outer t3)) dot (t1 outer (t2 outer t3))) == 64)
+
+    t1 += (1, 3.0)
+
+    val t4 = new SingletonBinaryTensor1(10, 2)
+
+    val res = new SparseIndexedTensor2(10, 10) + (t4 outer t1)
+
+    assert(res(21) == 5.0, 0.0001)
+
   }
 
   @Test def testBinary(): Unit = {
@@ -127,6 +136,18 @@ class TestTensor extends cc.factorie.util.FastLogging {
     for (i <- 0 until 20) features.+=(random.nextInt(dim2))
     val statistics = new SingletonLayeredTensor2(dim1, dim2, 3, 0.3, features)
     assertEquals(dense dot statistics, sparse dot statistics, 0.0001)
+
+    val s1 = new SparseIndexedTensor1(10)
+    s1 += (1, 5.0)
+    s1 += (6, 2.0)
+    s1 += (8, -3.0)
+    val s2 = new SparseIndexedTensor1(10)
+    s2 += (1, -1.0)
+    s2 += (5, 2.0)
+    s2 += (8, 5.0)
+    s2 += (9, 5.0)
+
+    assertEquals(s1 dot s2, -20.0, 0.0001)
   }
 
   @Test def testPlusEqual() {
