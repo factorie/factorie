@@ -15,7 +15,7 @@ import cc.factorie.app.nlp.lemma._
 import cc.factorie.app.strings._
 
 object NumberWords extends WordLexicon("NumberWords", nonWhitespaceClassesSegmenter, LowercaseLemmatizer) {
-  this ++= 
+  this ++=
 """zero
 one
 two
@@ -28,6 +28,8 @@ eight
 nine
 ten
 tens
+dozen
+dozens
 eleven
 twelve
 thirteen
