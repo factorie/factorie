@@ -13,8 +13,7 @@ import cc.factorie.app.chain.Observation
 
 //FIXME doesnt seem to deal well with weird chars e.g. "André Gide"
 
-/** not actually a SuffixTree, based on Jinho Choi/ClearNLP's "AffixTree.java". goal here is given a query P and a
-set of words S, want O(P) time lookups.
+/** Based on Jinho Choi/ClearNLP's "AffixTree.java".
  * params:
  * prefix - passing "prefix" in as true means we build/lookup based on phrase "prefixes", not "suffixes"
   * but that is probably not relevant to our lives
