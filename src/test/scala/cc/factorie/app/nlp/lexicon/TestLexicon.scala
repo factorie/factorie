@@ -18,8 +18,45 @@ import cc.factorie.app.nlp._
 
 class TestLexicon extends JUnitSuite {
 
-  @Test def testHashyLexiconSingleWords(): Unit = {
-    val lexicon = new HashyLexicon("test1")
+  @Test def testOldVsNew(): Unit = {
+    val newlex = new PhraseLexicon("new")
+    val oldlex = new ChainPhraseLexicon("old")
+    val words = List("New York", "Paris", "San Franciscon")
+    words.foreach(word => {
+      newlex += word
+      oldlex += word
+    })
+
+    assert(newlex.contains("Paris") && oldlex.contains("Paris"))
+    assert(newlex.contains("New York") && oldlex.contains("New York"))
+
+    val string = "Yesterday I flew from Paris to New York."
+    val doc = DocumentAnnotatorPipeline(segment.DeterministicTokenizer).process(new Document(string))
+    val section = doc.asSection
+    val tok = section.tokens(4)
+    assert(tok.string == "Paris")
+    assert(newlex.contains(tok) && oldlex.contains(tok))
+
+    assert(section.tokens(6).string == "New")
+    val toks = List(section.tokens(6), section.tokens(7))
+    assert(newlex.contains(toks))
+    assert(oldlex.contains(toks))
+
+    /* the "startsAt" tests fail due to an Error thrown by ChainPhraseLexicon.startsAt */
+//    assert(newlex.startsAt(tok) == oldlex.startsAt(tok))
+
+  }
+
+// problems loading these due to classpath issues -KS
+//  @Test def testLexiconContent(): Unit = {
+//    val st = "accessor fds inc balanced allocation fd"
+//    val newlex = lexicon.iesl.Company
+//    val oldlex = lexicon.iesl.TestCompany
+//    assert (newlex.contains(st) && oldlex.contains(st))
+//  }
+
+  @Test def testLexiconSingleWords(): Unit = {
+    val lexicon = new PhraseLexicon("test1")
     lexicon += "one"
     lexicon += "two"
     lexicon += "three"
@@ -28,8 +65,8 @@ class TestLexicon extends JUnitSuite {
     assert(!lexicon.contains("four"))
   }
 
-  @Test def testHashyLexiconPhrases(): Unit = {
-    val lexicon = new HashyLexicon("test2")
+  @Test def testLexiconPhrases(): Unit = {
+    val lexicon = new PhraseLexicon("test2")
     lexicon += "Paris"
     assert(lexicon.contains("Paris"))
     lexicon += "San Fransisco"
@@ -67,8 +104,8 @@ class TestLexicon extends JUnitSuite {
   }
 
   
-  @Test def testLexiconSingleWords(): Unit = {
-    val lexicon = new PhraseLexicon("test1")
+  @Test def testChainLexiconSingleWords(): Unit = {
+    val lexicon = new ChainPhraseLexicon("test1")
     lexicon += "one"
     lexicon += "two"
     lexicon += "three"
@@ -77,8 +114,8 @@ class TestLexicon extends JUnitSuite {
     assert(!lexicon.contains("four"))
   }
   
-  @Test def testLexiconPhrases(): Unit = {
-    val lexicon = new PhraseLexicon("test2")
+  @Test def testChainLexiconPhrases(): Unit = {
+    val lexicon = new ChainPhraseLexicon("test2")
     lexicon += "Paris"
     assert(lexicon.contains("Paris"))
     lexicon += "San Fransisco"
