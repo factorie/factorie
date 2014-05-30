@@ -66,18 +66,13 @@ trait MutableLexicon extends Lexicon {
   def ++=(file:File, enc:String = "UTF-8"): this.type = ++=(Source.fromFile(file, enc))
 }
 
-
-
-/** Support for constructing Lexicons, which automatically will determine if a WordLexicon will suffice or a PhraseLexicon is required.
+/** Support for constructing Lexicons
     @author Andrew McCallum */
 object Lexicon {
   def fromSource(name:String, source:Source, tokenizer:StringSegmenter = cc.factorie.app.strings.nonWhitespaceSegmenter, lemmatizer:Lemmatizer = LowercaseLemmatizer): Lexicon = {
-    var result: MutableLexicon = new ChainWordLexicon(name, tokenizer, lemmatizer)
-    try { result ++= source } catch { case e:MultiWordException => {
-      result = new ChainPhraseLexicon(name, tokenizer, lemmatizer)
-      result ++= source.reset
-      source.close()
-    } }
+    var result: MutableLexicon = new PhraseLexicon(name, tokenizer, lemmatizer)
+    result ++= source
+    source.close()
     result
   }
   def fromFilename(filename:String, tokenizer:StringSegmenter = cc.factorie.app.strings.nonWhitespaceSegmenter, lemmatizer:Lemmatizer = LowercaseLemmatizer): Lexicon =
@@ -86,37 +81,39 @@ object Lexicon {
     fromSource(resourceFilename, io.Source.fromInputStream(getClass.getResourceAsStream(resourceFilename)))
 }
 
+/** A lexicon containing single words or multi-word phrases.
+  * @author Kate Silverstein
+  */
 class PhraseLexicon(val name: String, val tokenizer: StringSegmenter = cc.factorie.app.strings.nonWhitespaceSegmenter, val lemmatizer: Lemmatizer = LowercaseLemmatizer) extends MutableLexicon {
   def this(file: File) = { this(file.toString, cc.factorie.app.strings.nonWhitespaceSegmenter, LowercaseLemmatizer); this.++=(Source.fromFile(file)(scala.io.Codec.UTF8))}
-  val allwords = new ListBuffer[String]
   val wordTree = new SuffixTree(false)
   def +=(phrase:String): Unit = {
-    allwords += phrase
     val words: Seq[String] = tokenizer(phrase).toSeq
     wordTree.add(words.map(lemmatizer.lemmatize(_)))
   }
+  /** Checks whether the lexicon contains this already-lemmatized/tokenized single word */
   def containsLemmatizedWord(word: String): Boolean = {
-    containsLemmatizedWords(List(word).toSeq) //excuse my scala
+    containsLemmatizedWords(List(word).toSeq)
   }
-  /* checks whether the lexicon contains this already lemmatized/tokenized phrase (ie multi-word expr or single word) */
+  /** Checks whether the lexicon contains this already-lemmatized/tokenized phrase, where 'words' can either be
+    * single word or a multi-word expression. */
   def containsLemmatizedWords(words: Seq[String]): Boolean = {
     wordTree.contains(words)
   }
+  /** Tokenizes and lemmatizes the string of each entry in 'query', then checks if the sequence is in the lexicon*/
   def contains[T<:Observation[T]](query: Seq[T]): Boolean = {
-    val lem = query.map(_.string)
-    containsLemmatizedWords(lem.map(lemmatizer.lemmatize(_)).toSeq)
+    val strings = query.map(_.string)
+    val tokenized = strings.flatMap(tokenizer(_))
+    val lemmatized = tokenized.map(lemmatizer.lemmatize(_)).toSeq
+    containsLemmatizedWords(lemmatized)
   }
-  /* tokenize/lemmatize T.string first, then check if it's in the lexicon */
+  /** Tokenizes and lemmatizes query.string, then checks if the sequence is in the lexicon */
   def contains[T<:Observation[T]](query: T): Boolean = {
     val tokenized = tokenizer(query.string).toSeq
     val lemmatized = tokenized.map(lemmatizer.lemmatize(_))
     containsLemmatizedWords(lemmatized)
   }
-  override def toString(): String = { "<PhraseLexicon with "+allwords.length+" words>" }
-  /* print all the words contained in the lexicon */
-  def printWords(): Unit = { allwords.foreach(println) }
-  /* print the lexicon's suffix tree */
-  def printTree(): Unit = { print(wordTree.toString().slice(0,200)) }
+  override def toString(): String = { "<PhraseLexicon with "+wordTree.size+" words>" }
 
   /** Return length of match, or -1 if no match. */
   def startsAt[T<:Observation[T]](query:T): Int = {
@@ -129,7 +126,7 @@ class PhraseLexicon(val name: String, val tokenizer: StringSegmenter = cc.factor
   }
 }
 
-/** a union of many PhraseLexicons, in the style of lexicon.UnionLexicon
+/** a union of many PhraseLexicons
   * @author Kate Silverstein */
 class UnionLexicon(val name: String, val members: PhraseLexicon*) extends MutableLexicon {
   def tokenizer: StringSegmenter = members.head.tokenizer
@@ -138,7 +135,7 @@ class UnionLexicon(val name: String, val members: PhraseLexicon*) extends Mutabl
   def containsLemmatizedWords(word: Seq[String]): Boolean = members.exists(_.containsLemmatizedWords(word))
   def contains[T<:Observation[T]](query: T): Boolean = members.exists(_.contains(query))
   def contains[T<:Observation[T]](query: Seq[T]): Boolean = members.exists(_.contains(query))
-  def +=(s:String): Unit = {throw new Error("method not implemented for HashyUnionLexicon")}
+  def +=(s:String): Unit = {throw new Error("method not implemented for UnionLexicon")}
   override def toString(): String = {
     var st = "UNION { "
     members.foreach(st += _.toString()+" , ")
