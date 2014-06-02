@@ -51,7 +51,7 @@ trait MassesWithTotal extends Masses {
 
 /** A class for arbitrary tensors to become Masses. E.g.: GrowableSparseHashMasses1
     @author Dirk Weissenborn */
-trait WrappedTensorMasses[A <: Tensor] extends WrappedTensor[A] with MassesWithTotal {
+trait TensorWrapperMasses[A <: Tensor] extends TensorWrapper[A] with MassesWithTotal {
   final override def zero(): Unit = { tensor.zero(); _massTotal = 0.0 }
   final override def +=(i:Int, v:Double): Unit = { _massTotal += v; tensor.+=(i,v); assert(_massTotal >= 0.0); assert(tensor(i) >= 0.0) }
   final override def update(i: Int, v: Double): Unit = {this += (i,v - this(i))}
@@ -64,10 +64,10 @@ trait WrappedTensorMasses[A <: Tensor] extends WrappedTensor[A] with MassesWithT
   final override def :=(ds: Array[Double]) : Unit = { this := new DenseTensor1(ds) }
 }
 
-class TensorMasses1[A <: Tensor1](val tensor:A) extends WrappedTensorMasses[A] with WrappedTensor1[A] with Masses1
-class TensorMasses2[A <: Tensor2](val tensor:A) extends WrappedTensorMasses[A] with WrappedTensor2[A] with Masses2
-class TensorMasses3[A <: Tensor3](val tensor:A) extends WrappedTensorMasses[A] with WrappedTensor3[A] with Masses3
-class TensorMasses4[A <: Tensor4](val tensor:A) extends WrappedTensorMasses[A] with WrappedTensor4[A] with Masses4
+class TensorWrapperMasses1[A <: Tensor1](val tensor:A) extends TensorWrapperMasses[A] with TensorWrapper1[A] with Masses1
+class TensorWrapperMasses2[A <: Tensor2](val tensor:A) extends TensorWrapperMasses[A] with TensorWrapper2[A] with Masses2
+class TensorWrapperMasses3[A <: Tensor3](val tensor:A) extends TensorWrapperMasses[A] with TensorWrapper3[A] with Masses3
+class TensorWrapperMasses4[A <: Tensor4](val tensor:A) extends TensorWrapperMasses[A] with TensorWrapper4[A] with Masses4
 
 
 /** A DenseTensor Masses that provides a protected var for holding the massTotal.
@@ -206,10 +206,10 @@ object MassesVariable {
   def growableUniform(sizeProxy:Iterable[Any], uniformValue:Double) = new MassesVariable(new GrowableUniformMasses1(sizeProxy, uniformValue))
   def sortedSparseCounts(dim1:Int) = new MassesVariable(new SortedSparseCountsMasses1(dim1))
 
-  implicit def toMasses1(tensor:Tensor1) = new TensorMasses1(tensor)
-  implicit def toMasses2(tensor:Tensor2) = new TensorMasses2(tensor)
-  implicit def toMasses3(tensor:Tensor3) = new TensorMasses3(tensor)
-  implicit def toMasses4(tensor:Tensor4) = new TensorMasses4(tensor)
+  implicit def toMasses1(tensor:Tensor1) = new TensorWrapperMasses1(tensor)
+  implicit def toMasses2(tensor:Tensor2) = new TensorWrapperMasses2(tensor)
+  implicit def toMasses3(tensor:Tensor3) = new TensorWrapperMasses3(tensor)
+  implicit def toMasses4(tensor:Tensor4) = new TensorWrapperMasses4(tensor)
 
   def main(args:Array[String]) {
     val p = new MassesProportions1(new GrowableSparseHashTensor1(1 until 5))
