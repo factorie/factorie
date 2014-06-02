@@ -52,8 +52,12 @@ trait MassesWithTotal extends Masses {
 /** A class for arbitrary tensors to become Masses. E.g.: GrowableSparseHashMasses1
     @author Dirk Weissenborn */
 trait TensorWrapperMasses[A <: Tensor] extends TensorWrapper[A] with MassesWithTotal {
-  final override def zero(): Unit = { tensor.zero(); _massTotal = 0.0 }
-  final override def +=(i:Int, v:Double): Unit = { _massTotal += v; tensor.+=(i,v); assert(_massTotal >= 0.0); assert(tensor(i) >= 0.0) }
+  //initialize massTotal
+  require(tensor.forallActiveElements { case (_:Int,v:Double) => v >= 0 } )
+  _massTotal = tensor.sum
+
+  final override def zero(): Unit = { tensor.zero(); _massTotal = 0.0 }              //this might be a little slow
+  final override def +=(i:Int, v:Double): Unit = { _massTotal += v; tensor.+=(i,v)/*; assert(_massTotal >= 0.0); assert(tensor(i) >= 0.0)*/ }
   final override def update(i: Int, v: Double): Unit = {this += (i,v - this(i))}
   final override def *=(d:Double): Unit = { _massTotal *= d;  tensor*=d}
   final override def *=(ds:DoubleSeq): Unit = { tensor*=ds;_massTotal=tensor.sum}
@@ -210,10 +214,4 @@ object MassesVariable {
   implicit def toMasses2(tensor:Tensor2) = new TensorWrapperMasses2(tensor)
   implicit def toMasses3(tensor:Tensor3) = new TensorWrapperMasses3(tensor)
   implicit def toMasses4(tensor:Tensor4) = new TensorWrapperMasses4(tensor)
-
-  def main(args:Array[String]) {
-    val p = new MassesProportions1(new GrowableSparseHashTensor1(1 until 5))
-    p
-  }
-
 }
