@@ -13,10 +13,10 @@
 
 package cc.factorie.directed
 
-import cc.factorie._
 import scala.collection.mutable.ArrayBuffer
 import cc.factorie.model.{Family, Factor}
-import cc.factorie.variable.{Var, ProportionsVar, SortedSparseCountsProportions1, DenseProportions1}
+import cc.factorie.variable._
+import cc.factorie.variable.Var
 
 /* Contains various recipes that "collapse" variables
    by setting the value of variables to an internal state 
@@ -51,8 +51,8 @@ object DenseCountsProportionsCollapser extends Collapser {
           case f:PlatedDiscrete.Factor => (0 until f._1.length).foreach(i => p.value.masses.+=(f._1(i).intValue, 1.0))
           //case f:Dirichlet.Factor if (f.family == Dirichlet) => p.increment(f._2)(null)
           case f:Dirichlet.Factor => p.value match {
+            case pt:ProportionsWithPrior if model.parentFactor(p) eq f => pt.prior = f._2.value
             case pt:DenseProportions1 => pt.masses.+=(f._2.value)
-            case pt:SortedSparseCountsProportions1 if model.parentFactor(p) eq f => pt.prior = f._2.value
           }
           case _ => { println("DenseCountsProportionsCollapser unexpected factor "+f); return false }
         }
@@ -72,7 +72,10 @@ object DenseCountsProportionsMixtureCollapser extends Collapser {
         m.foreach(p => {
           p.value.masses.zero()
           model.parentFactor(p) match {
-            case f:Dirichlet.Factor => p.value.masses.+=(f._2.value)
+            case f:Dirichlet.Factor => p match {
+              case p if p.value.isInstanceOf[ProportionsWithPrior] => p.value.asInstanceOf[ProportionsWithPrior].prior = f._2.value
+              case _ => p.value.masses.+=(f._2.value)
+            }
           }
         })
         // TODO We really should create a mechanism indicating that a variable/factor is deterministic 

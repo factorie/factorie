@@ -43,6 +43,20 @@ trait Proportions extends Masses with ReadOnlyTensor {
   }
 }
 
+trait ProportionsWithPrior extends Proportions {
+  var prior:Masses
+
+  override def apply(index:Int): Double = {
+    if (prior eq null) {
+      if (masses.massTotal == 0) 1.0 / length
+      else masses(index) / masses.massTotal
+    } else {
+      if (masses.massTotal == 0) prior(index) / prior.massTotal
+      else (masses(index) + prior(index)) / (masses.massTotal+prior.massTotal)
+    }
+  }
+}
+
 object Proportions {
   /** Return a zero-mass Proportions with the same dimensionality and sparsity as the Tensor argument. */
   def blankCopy(t:Tensor1): Proportions1 = t match {
@@ -342,7 +356,7 @@ class SparseTensorProportions4(val tensor:SparseIndexedTensor4, checkNormalizati
     and which is stored with high-probability outcomes first, for efficient sampling.
     Extends SparseDoubleSeq.
     @author Andrew McCallum */
-class SortedSparseCountsProportions1(val dim1:Int) extends SparseDoubleSeq with Proportions1  {
+class SortedSparseCountsProportions1(val dim1:Int) extends SparseDoubleSeq with Proportions1 with ProportionsWithPrior  {
   val masses = new SortedSparseCountsMasses1(dim1)
   def activeDomainSize = masses.activeDomainSize
   override def foreachActiveElement(f: (Int, Double) => Unit) { masses.foreachActiveElement((i, v) => f(i, v/massTotal)) }
@@ -350,16 +364,7 @@ class SortedSparseCountsProportions1(val dim1:Int) extends SparseDoubleSeq with 
   def activeDomain = masses.activeDomain  // throw new Error("Not implemented")
   def isDense = false
   var prior: Masses = null  // TODO We need somehow to say that this isDeterministic function of this.prior.
-  
-  override def apply(index:Int): Double = {
-    if (prior eq null) {
-      if (masses.sparseCounts.countsTotal == 0) 1.0 / length
-      else masses.sparseCounts.countOfIndex(index).toDouble / masses.sparseCounts.countsTotal
-    } else {
-      if (masses.sparseCounts.countsTotal == 0) prior(index) / prior.massTotal
-      else masses.sparseCounts.countOfIndex(index).toDouble / masses.sparseCounts.countsTotal
-    }
-  }
+
   //remove this method, because proportions are read-only tensors
   //override def zero(): Unit = masses.zero()
   // Note that "def zero()" defined in SortedSparseCountsMasses1 does not zero this.prior
