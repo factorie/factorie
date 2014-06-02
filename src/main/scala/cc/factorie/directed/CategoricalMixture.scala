@@ -13,11 +13,7 @@
 
 package cc.factorie.directed
 
-import cc.factorie._
 import cc.factorie.util.SortedSparseCounts
-import scala.reflect.Manifest
-import scala.collection.mutable.{HashSet,HashMap}
-import scala.util.Random
 import cc.factorie.variable._
 import cc.factorie.model.Model
 import cc.factorie.infer.{DiscreteSummary1, Summary, SimpleDiscreteMarginal1, Maximize}

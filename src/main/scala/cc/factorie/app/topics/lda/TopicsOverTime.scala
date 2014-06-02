@@ -12,13 +12,8 @@
    limitations under the License. */
 package cc.factorie.app.topics.lda
 
-import scala.collection.mutable.{ArrayBuffer, HashMap, HashSet, ListBuffer}
-import scala.util.matching.Regex
-import scala.io.Source
+import scala.collection.mutable.{ArrayBuffer}
 import java.io.File
-import cc.factorie._
-import cc.factorie.app.topics.lda.TopicsOverTime.Word
-import cc.factorie.directed._
 import cc.factorie.app.strings.Stopwords
 import cc.factorie.app.strings.alphaSegmenter
 import java.util.Date
@@ -60,7 +55,7 @@ object TopicsOverTime {
         doc.date = file.lastModified
         doc.theta = ProportionsVariable.dense(numTopics) ~ Dirichlet(alphas)
         for (word <- alphaSegmenter(file).map(_.toLowerCase).filter(!Stopwords.contains(_))) {
-          val z = new Z :~ directed.Discrete(doc.theta)
+          val z = new Z :~ Discrete(doc.theta)
           val w = new Word(word)
           CategoricalMixture.newFactor(w, phis, z)
           doc += w

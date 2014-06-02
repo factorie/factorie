@@ -14,6 +14,7 @@
 package cc.factorie.la
 import cc.factorie._
 import cc.factorie.util._
+import scala.util.Random
 
 
 // Note: Many Tensor-like methods are actually implemented in DoubleSeq
@@ -74,12 +75,75 @@ trait Tensor extends MutableDoubleSeq with Serializable {
   def blankCopy: Tensor
 }
 
+/** A class for arbitrary tensors to become Masses.
+    @author Dirk Weissenborn */
+//TODO: as of scala 2.11 a macro can be used here (@delegate)
+trait WrappedTensor[A <: Tensor] extends Tensor {
+  def tensor:A
+
+  def activeDomain = tensor.activeDomain
+  def isDense = tensor.isDense
+  def activeDomainSize = tensor.activeDomainSize
+  def forallActiveElements(f: (Int, Double) => Boolean) = tensor.forallActiveElements(f)
+  def dot(ds: DoubleSeq) = tensor.dot(ds: DoubleSeq)
+  def copy = tensor.copy
+  def blankCopy = tensor.blankCopy
+  def apply(i: Int) = tensor.apply(i)
+  def foreachActiveElement(f: (Int, Double) => Unit) = tensor.foreachActiveElement(f)
+  def =+(a: Array[Double], offset: Int, f: Double) = tensor.=+(a,offset,f)
+  def max = tensor.max
+  def min = tensor.min
+  def indexOf(d: Double) = tensor.indexOf(d)
+  def contains(d: Double) = tensor.contains(d)
+  def oneNorm = tensor.oneNorm
+  def twoNormSquared = tensor.twoNormSquared
+  def infinityNorm = tensor.infinityNorm
+  def maxIndex = tensor.maxIndex
+  def maxIndex2 = tensor.maxIndex2
+  def toArray = tensor.toArray
+  def containsNaN = tensor.containsNaN
+  def sampleIndex(normalizer: Double)(implicit r: Random) = tensor.sampleIndex(normalizer)(r)
+  def update(i: Int, v: Double) = tensor.update(i,v)
+  def sum = tensor.sum
+  def zero(): Unit = tensor.zero()
+  def +=(i:Int, v:Double): Unit = tensor.+=(i:Int, v:Double)
+
+}
+
+trait WrappedTensor1[A <: Tensor1] extends WrappedTensor[A] with Tensor1 {
+  def dim1 = tensor.dim1
+}
+trait WrappedTensor2[A <: Tensor2] extends WrappedTensor[A] with Tensor2 {
+  def dim1 = tensor.dim1
+  def dim2 = tensor.dim2
+  def activeDomain1 = tensor.activeDomain1
+  def activeDomain2 = tensor.activeDomain2
+}
+trait WrappedTensor3[A <: Tensor3] extends WrappedTensor[A] with Tensor3 {
+  def dim1 = tensor.dim1
+  def dim2 = tensor.dim2
+  def dim3 = tensor.dim3
+  def activeDomain1 = tensor.activeDomain1
+  def activeDomain2 = tensor.activeDomain2
+  def activeDomain3 = tensor.activeDomain3
+}
+trait WrappedTensor4[A <: Tensor4] extends WrappedTensor[A] with Tensor4 {
+  def dim1 = tensor.dim1
+  def dim2 = tensor.dim2
+  def dim3 = tensor.dim3
+  def dim4 = tensor.dim4
+  def activeDomain1 = tensor.activeDomain1
+  def activeDomain2 = tensor.activeDomain2
+  def activeDomain3 = tensor.activeDomain3
+  def activeDomain4 = tensor.activeDomain4
+}
+
 
 trait ReadOnlyTensor extends Tensor {
   // Methods for mutability not implemented in all Tensors
-  def +=(i:Int, incr:Double): Unit = throw new Error("Method +=(Int,Double) not defined on class "+getClass.getName)
-  def zero(): Unit = throw new Error("Method zero() not defined on class "+getClass.getName) // TODO Rename this setZero, to avoid conflict with scala.math.Numeric so that RealValue can inherit from it.
-  def update(i:Int, v:Double): Unit = throw new Error("Method update(Int,Double) not defined on class "+getClass.getName)
+  final override def +=(i:Int, incr:Double): Unit = throw new Error("Method +=(Int,Double) not defined on class "+getClass.getName)
+  final override def zero(): Unit = throw new Error("Method zero() not defined on class "+getClass.getName) // TODO Rename this setZero, to avoid conflict with scala.math.Numeric so that RealValue can inherit from it.
+  final override def update(i:Int, v:Double): Unit = throw new Error("Method update(Int,Double) not defined on class "+getClass.getName)
 }
 
 object Tensor {
