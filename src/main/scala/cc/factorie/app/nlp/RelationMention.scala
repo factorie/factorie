@@ -24,11 +24,12 @@ class ArgFeatures(val arg: Mention, val first: Boolean) extends BinaryFeatureVec
   }
 }
 
-@deprecated("Marked for Possible Deletion")
 class RelationMentionsSet extends SetVariable[RelationMention]
 
-@deprecated("Marked for Possible Deletion")
-class RelationMention(val arg1: Mention, val arg2: Mention, val relationType: String, val relationSubType: Option[String]) extends ArrowVariable(arg1, arg2) with Attr {
+class RelationMention(val arg1: Mention, val arg2: Mention, val relationType: String, val evidence: String, val relationSubType: Option[String] = None) extends ArrowVariable(arg1, arg2) with Attr {
+  @deprecated("Marked for Possible Deletion")
   val arg1Features = new ArgFeatures(arg1, true)
+
+  @deprecated("Marked for Possible Deletion")
   val arg2Features = new ArgFeatures(arg2, false)
 }
