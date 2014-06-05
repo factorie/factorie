@@ -51,7 +51,7 @@ object DatePhraseFinder extends DocumentAnnotator with Parsers with ImplicitConv
     case weekDayToken => (weekDayToken, weekDayNr(weekDayToken.string.take(3).toLowerCase))
   }
 
-  val temporalPreps: Parser[Token] = acceptIf(_.string.matches("in|from|to|until|since"))(err)
+  val temporalPreps: Parser[Token] = hasLemma("in|from|to|until|since")
   val digits: Parser[(Token, Int)] = acceptIf(_.isDigits)(err) ^^ { case t => (t, t.string.toInt)}
   val bcAd: Parser[Token] = "B\\.?C\\.?|A\\.?D\\.?"
   val year: Parser[(Token, Int)] = bcAd.? ~ digits ~ bcAd.? ^^ { case bcAdOpt1 ~ y ~ bcAdOpt2 =>
