@@ -152,10 +152,10 @@ class WithinDocCoref(val document:Document) extends EvaluatableClustering[Within
   
   /** Given Span (typically the value of a Phrase), return the corresponding Mention.
       Note that Span is a case class, so the lookup is done by the span's boundaries, not by its identity. */
-  def mention(span:Span[Section,Token]): Mention = _spanToMention(span)
+  def mention(span:Span[Section,Token]): Option[Mention] = _spanToMention.get(span)
   /** Return the Mention corresponding to the given Phrase.  If none present, return null.
       Note that since the lookup happens by the Phrase's Span value, the returned mention.phrase may be different than this method's argument. */
-  def mention(phrase:Phrase): Mention = _spanToMention(phrase.value)
+  def mention(phrase:Phrase): Option[Mention] = _spanToMention.get(phrase.value)
   
   /** Create a new Mention whose entity will be null. */
   def addMention(phrase:Phrase): Mention = _spanToMention.getOrElse(phrase.value, new Mention1(phrase))
