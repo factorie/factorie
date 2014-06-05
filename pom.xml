@@ -20,7 +20,7 @@ limitations under the License.
   <name>Factorie</name>
   <groupId>cc.factorie</groupId>
   <artifactId>factorie</artifactId>
-  <version>1.1-SNAPSHOT</version>
+  <version>1.1-TAC-SNAPSHOT</version>
   <inceptionYear>2009</inceptionYear>
 
   <properties>
