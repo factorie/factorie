@@ -192,6 +192,17 @@ class ResourceLexicons(val sourceFactory: String=>io.Source, val tokenizer:Strin
     //object SongRedirectParen extends PhraseLexicon("song-redirect-paren")
 
   }
+
+  /**
+   * Mandarin Chinese lexicons collected from various sources around the WWW
+   * @author Kate Silverstein
+   */
+  object mandarin {
+    private implicit val dir = "mandarin"
+
+    object SurnamePinyin extends PhraseLexicon("surname-pinyin")
+    object GivenNamePinyin extends PhraseLexicon("givenname-pinyin")
+  }
 }
 
 /** Static access through classpath or file location (specified as Java System Property)
