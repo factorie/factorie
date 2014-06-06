@@ -24,50 +24,58 @@ import cc.factorie.util.ClasspathURL
 // To read from .jar in classpath use source = io.Source.fromInputStream(getClass.getResourceAsStream(_))
 // To read from directory in filesystem use source = io.Source.fromFile(new File(_))
 class ResourceLexicons(val sourceFactory: String=>io.Source, val tokenizer:StringSegmenter = cc.factorie.app.strings.nonWhitespaceSegmenter, val lemmatizer:Lemmatizer = LowercaseLemmatizer) {
-  class WordLexicon(name:String)(implicit dir:String) extends cc.factorie.app.nlp.lexicon.WordLexicon(dir+"/"+name, tokenizer, lemmatizer) {
+  /** deprecated **/
+  class ChainWordLexicon(name:String)(implicit dir:String) extends cc.factorie.app.nlp.lexicon.ChainWordLexicon(dir+"/"+name, tokenizer, lemmatizer) {
     this ++= sourceFactory(dir + "/" + name + ".txt")
   }
-  class PhraseLexicon(name:String)(implicit dir:String) extends cc.factorie.app.nlp.lexicon.PhraseLexicon(dir+"/"+name, tokenizer, lemmatizer) {
+  /** deprecated **/
+  class ChainPhraseLexicon(name:String)(implicit dir:String) extends cc.factorie.app.nlp.lexicon.ChainPhraseLexicon(dir+"/"+name, tokenizer, lemmatizer) {
     try { this ++= sourceFactory(dir + "/" + name + ".txt") } catch { case e:java.io.IOException => { throw new Error("Could not find "+dir+"/"+name+"\n") } }
   }
+
+  class PhraseLexicon(name:String)(implicit dir:String) extends cc.factorie.app.nlp.lexicon.PhraseLexicon(dir+"/"+name, tokenizer, lemmatizer) {
+    try { this ++= sourceFactory(dir + "/" + name + ".txt") } catch { case e:java.io.IOException => {throw new Error("Could not find "+dir+"/"+name+"\n") } }
+  }
+
   object iesl {
     private implicit val dir = "iesl"
-      
-    object Continents extends PhraseLexicon("continents") // TODO Rename this to continent
+
+    object Continents extends PhraseLexicon("continents")
     object Country extends PhraseLexicon("country")
     object City extends PhraseLexicon("city")
     object USState extends PhraseLexicon("us-state")
-    object PlaceSuffix extends WordLexicon("place-suffix")
+    object PlaceSuffix extends PhraseLexicon("place-suffix")
     object AllPlaces extends UnionLexicon("place-suffix", Continents, Country, City, USState)
 
     object JobTitle extends PhraseLexicon("jobtitle") // TODO Rename file to job-title
-    object Money extends WordLexicon("money")
+    object Money extends PhraseLexicon("money")
 
+    object TestCompany extends ChainPhraseLexicon("company")
     object Company extends PhraseLexicon("company")
     object OrgSuffix extends PhraseLexicon("org-suffix")
 
-    object Month extends WordLexicon("month")
-    object Day extends WordLexicon("day")
-    
-    object PersonHonorific extends WordLexicon("person-honorific")
-    object PersonFirstHighest extends WordLexicon("person-first-highest")
-    object PersonFirstHigh extends WordLexicon("person-first-high")
-    object PersonFirstMedium extends WordLexicon("person-first-medium")
+    object Month extends PhraseLexicon("month")
+    object Day extends PhraseLexicon("day")
+
+    object PersonHonorific extends PhraseLexicon("person-honorific")
+    object PersonFirstHighest extends PhraseLexicon("person-first-highest")
+    object PersonFirstHigh extends PhraseLexicon("person-first-high")
+    object PersonFirstMedium extends PhraseLexicon("person-first-medium")
     object PersonFirst extends UnionLexicon("person-first", PersonFirstHighest, PersonFirstHigh, PersonFirstMedium)
-    
-    object PersonLastHighest extends WordLexicon("person-last-highest")
-    object PersonLastHigh extends WordLexicon("person-last-high")
-    object PersonLastMedium extends WordLexicon("person-last-medium")
+
+    object PersonLastHighest extends PhraseLexicon("person-last-highest")
+    object PersonLastHigh extends PhraseLexicon("person-last-high")
+    object PersonLastMedium extends PhraseLexicon("person-last-medium")
     object PersonLast extends UnionLexicon("person-last", PersonLastHighest, PersonLastHigh, PersonLastMedium)
 
-    object Say extends WordLexicon("say")
-    
+    object Say extends PhraseLexicon("say")
+
     object Demonym extends PhraseLexicon(dir+"/demonyms") {
       try {
         for (line <- sourceFactory(dir + "/demonyms.txt").getLines(); entry <- line.trim.split("\t")) this += entry
       } catch { case e:java.io.IOException => { throw new Error("Could not find "+dir+"/demonyms\n") } }
     }
-    
+
     // Map from Chilean->Chile and Chileans->Chile
     object DemonymMap extends scala.collection.mutable.HashMap[String,String] {
       try {
@@ -75,50 +83,51 @@ class ResourceLexicons(val sourceFactory: String=>io.Source, val tokenizer:Strin
           val entries = line.trim.split("\t")
           val value = entries.head
           entries.foreach(e => this.update(e, value))
-        } 
+        }
       } catch { case e:java.io.IOException => { throw new Error("Could not find "+dir+"/demonyms\n") } }
     }
   }
-  
+
   // TODO Move these here
   object ssdi {
     private implicit val dir = "ssdi"
-    
-    object PersonFirstHighest extends WordLexicon("person-first-highest")
-    object PersonFirstHigh extends WordLexicon("person-first-high")
-    object PersonFirstMedium extends WordLexicon("person-first-medium")
+
+    object PersonFirstHighest extends PhraseLexicon("person-first-highest")
+    object PersonFirstHigh extends PhraseLexicon("person-first-high")
+    object PersonFirstMedium extends PhraseLexicon("person-first-medium")
     object PersonFirst extends UnionLexicon("person-first", PersonFirstHighest, PersonFirstHigh, PersonFirstMedium)
-    
-    object PersonLastHighest extends WordLexicon("person-last-highest")
-    object PersonLastHigh extends WordLexicon("person-last-high")
-    object PersonLastMedium extends WordLexicon("person-last-medium")
+
+    object PersonLastHighest extends PhraseLexicon("person-last-highest")
+    object PersonLastHigh extends PhraseLexicon("person-last-high")
+    object PersonLastMedium extends PhraseLexicon("person-last-medium")
     object PersonLast extends UnionLexicon("person-last", PersonLastHighest, PersonLastHigh, PersonLastMedium)
   }
-  
+
   object uscensus {
     private implicit val dir = "uscensus"
-    object PersonFirstFemale extends WordLexicon("person-first-female")
-    object PersonFirstMale extends WordLexicon("person-first-male")
-    object PersonLast extends WordLexicon("person-last")
+    object PersonFirstFemale extends PhraseLexicon("person-first-female")
+    object PersonFirstMale extends PhraseLexicon("person-first-male")
+    object PersonLast extends PhraseLexicon("person-last")
   }
-  
+
   object wikipedia {
     private implicit val dir = "wikipedia"
-      
+
     object Battle extends PhraseLexicon("battle")
     object BattleRedirect extends PhraseLexicon("battle-redirect")
     object BattleAndRedirect extends UnionLexicon("battle-and-redirect", Battle, BattleRedirect)
     object BattleDisambiguation extends PhraseLexicon("battle-disambiguation")
     //object BattleParen extends PhraseLexicon("battle-paren")
     //object BattleRedirectParen extends PhraseLexicon("battle-redirect-paren")
-    
+
     object Book extends PhraseLexicon("book")
     object BookRedirect extends PhraseLexicon("book-redirect")
     object BookAndRedirect extends UnionLexicon("book-and-redirect", Book, BookRedirect)
     object BookDisambiguation extends PhraseLexicon("book-disambiguation")
     //object BookParen extends PhraseLexicon("book-paren")
     //object BookRedirectParen extends PhraseLexicon("book-redirect-paren")
-    
+
+
     object Business extends PhraseLexicon("business")
     object BusinessRedirect extends PhraseLexicon("business-redirect")
     object BusinessAndRedirect extends UnionLexicon("business-and-redirect", Business, BusinessRedirect)
@@ -161,14 +170,13 @@ class ResourceLexicons(val sourceFactory: String=>io.Source, val tokenizer:Strin
     //object ManMadeThingParen extends PhraseLexicon("man_made_thing-paren")
     //object ManMadeThingRedirectParen extends PhraseLexicon("man_made_thing-redirect-paren")
 
-    
     object Organization extends PhraseLexicon("organization")
     object OrganizationRedirect extends PhraseLexicon("organization-redirect")
     object OrganizationAndRedirect extends UnionLexicon("organization-and-redirect", Organization, OrganizationRedirect)
     object OrganizationDisambiguation extends PhraseLexicon("organization-disambiguation")
     //object OrganizationParen extends PhraseLexicon("organization-paren")
     //object OrganizationRedirectParen extends PhraseLexicon("organization-redirect-paren")
-    
+
     object Person extends PhraseLexicon("person")
     object PersonRedirect extends PhraseLexicon("person-redirect")
     object PersonAndRedirect extends UnionLexicon("person-and-redirect", Person, PersonRedirect)
@@ -182,7 +190,18 @@ class ResourceLexicons(val sourceFactory: String=>io.Source, val tokenizer:Strin
     object SongDisambiguation extends PhraseLexicon("song-disambiguation")
     //object SongParen extends PhraseLexicon("song-paren") // paren lines need more processing to be useful
     //object SongRedirectParen extends PhraseLexicon("song-redirect-paren")
-    
+
+  }
+
+  /**
+   * Mandarin Chinese lexicons collected from various sources around the WWW
+   * @author Kate Silverstein
+   */
+  object mandarin {
+    private implicit val dir = "mandarin"
+
+    object SurnamePinyin extends PhraseLexicon("surname-pinyin")
+    object GivenNamePinyin extends PhraseLexicon("givenname-pinyin")
   }
 }
 
