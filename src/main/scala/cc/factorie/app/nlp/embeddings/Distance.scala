@@ -71,7 +71,7 @@ object EmbeddingDistance {
         var pq = new PriorityQueue[(String, Double)]()(dis)
         for (i <- 0 until vocab.size) if (words.size != 1 || !words(0).equals(vocab(i))) {
           val embedding_out = weights(i)
-          val score = TensorUtils.cosineDistance(embedding_in, embedding_out).abs
+          val score = TensorUtils.cosineDistance(embedding_in, embedding_out)
           if (i < top) pq.enqueue(vocab(i) -> score)
           else if (score > pq.head._2) { // if the score is greater the min, then add to the heap
             pq.dequeue

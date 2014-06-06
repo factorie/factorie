@@ -146,7 +146,10 @@ class ParseBasedPhraseFinder(val useNER: Boolean) extends DocumentAnnotator {
           // println(doc.owplString(DepParser1))
         }
       })
-      val goodChildren = children.filter(c => allowedChildLabels.contains(s.parse.label(c.positionInSentence).categoryValue))
+      val goodChildren = children.filter{c =>
+        val parseNode = s.parse.label(c.positionInSentence)
+        allowedChildLabels.contains(parseNode.categoryValue) || (parseNode.categoryValue == "prep" && c.string.toLowerCase == "of")
+      }
       val tokens = Seq(t) ++ goodChildren.map(c => s.parse.subtree(c.positionInSentence)).flatten
       val sTokens = tokens.sortBy(_.positionInSection)
       val start = sTokens.head.positionInSection
