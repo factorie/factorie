@@ -14,11 +14,15 @@ package cc.factorie.app.nlp.coref
 
 import cc.factorie.app.nlp._
 import cc.factorie.app.nlp.pos.PennPosTag
+import cc.factorie.app.nlp.ner.NerTag
+import cc.factorie.app.nlp.phrase.Phrase
 
 /** A dead-simple deterministic coreference system that operates only on named entities
     and resolves coreference only by exact string match. */
-object DeterministicNamedCoref extends DocumentAnnotator {
-  def prereqAttrs: Seq[Class[_]] = ConllProperNounPhraseFinder.prereqAttrs ++ Seq(classOf[PennPosTag])
+object DeterministicNamedCoref extends DeterministicNamedCoref(ConllProperNounPhraseFinder)
+
+class DeterministicNamedCoref(phraseFinder:MentionPhraseFinder) extends DocumentAnnotator {
+  def prereqAttrs: Seq[Class[_]] = phraseFinder.prereqAttrs ++ Seq(classOf[PennPosTag])
   def postAttrs = Seq(classOf[WithinDocCoref])
   def tokenAnnotationString(token: Token): String = {
     val entities = token.document.coref.entities.toSeq
@@ -33,7 +37,7 @@ object DeterministicNamedCoref extends DocumentAnnotator {
     }
   }
   def process(document: Document) = {
-    val phrases = ConllProperNounPhraseFinder(document)
+    val phrases = phraseFinder(document)
     val coref = new WithinDocCoref(document)
     for (phrase <- phrases) {
       val targetString = phrase.tokensString(" ")
@@ -45,5 +49,4 @@ object DeterministicNamedCoref extends DocumentAnnotator {
     document.attr += coref
     document
   }
-
 }
