@@ -143,6 +143,49 @@ class HyperParameterSearcher(cmds: CmdOptions,
   }
 }
 
+
+/**
+ * Run a job using the given executor on each set of the given parameters, where a set is defined as parameters
+ * with the same index from each list (each list of parameters should be the same length).
+ *
+ * @param cmds The options to be passed to the slaves
+ * @param parameters The parameters we want to vary between jobs, assumed to be a subset of cmds
+ * @param executor The main function that we want to run
+ * @param secondsToSleep How many seconds do we sleep for between polling the executors.
+ */
+// TODO HyperParameterSearcher should probably inherit from this or something like it
+class JobDistributor(cmds: CmdOptions,
+                             parameters: Map[CmdOption[Any],Seq[String]],
+                             executor: Array[String] => Future[Double],
+                             secondsToSleep: Int = 60) {
+//  private def sampledParameters(rng: Random): Array[String] = {
+//    parameters.foreach(_.set(rng))
+//    cmds.values.flatMap(_.unParse).toArray
+//  }
+
+  // the contract is that distribute will also set the appropriate values in cmds
+  def distribute: Int = {
+    val numParams = parameters.head._2.length
+    assert(parameters.map(_._2.length).filter(_ == numParams).isEmpty, "All parameter lists must be of the same length")
+
+    val settings = (0 until numParams).map(i => {parameters.foreach{ case(cmd, vals) => cmd.setValue(vals(i))}; cmds.values.flatMap(_.unParse).toArray})
+
+    println("Starting job distributor")
+    val futures = settings.map(s => (s,executor(s)))
+    var finished = false
+    var numSuccessfullyFinished = 0
+    while (!finished) {
+      Thread.sleep(secondsToSleep*1000)
+      val values = futures.filter(_._2.isCompleted).map(_._2.value.get.getOrElse(Double.NegativeInfinity))
+      numSuccessfullyFinished = values.count(!_.isInfinite)
+      finished = values.length >= numParams
+      println(s"Finished jobs: ${values.length} failed jobs: ${values.count(_.isInfinite)} remaining jobs: ${numParams-values.length}")
+    }
+    // return number of jobs successfully completed
+    numSuccessfullyFinished
+  }
+}
+
 // I created this because the return type of a reflection invocation is Object
 // and I don't want to assume things about how the scala doubles are boxed.
 case class BoxedDouble(d: Double)
@@ -190,7 +233,6 @@ abstract class JobQueueExecutor(memory: Int, className: String) extends Executor
     val as = serializeArgs(args)
     import scala.concurrent.ExecutionContext.Implicits.global
     future {
-      import sys.process._
       val thisPrefix = s"$prefix/job-$thisId"
       val outFile = thisPrefix+"-out"
       new java.io.File(thisPrefix).getParentFile.mkdirs()
