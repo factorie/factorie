@@ -166,7 +166,7 @@ class JobDistributor(cmds: CmdOptions,
   // the contract is that distribute will also set the appropriate values in cmds
   def distribute: Int = {
     val numParams = parameters.head._2.length
-    assert(parameters.map(_._2.length).filter(_ == numParams).isEmpty, "All parameter lists must be of the same length")
+    assert(parameters.map(_._2.length).filterNot(_ == numParams).isEmpty, "All parameter lists must be of the same length")
 
     val settings = (0 until numParams).map(i => {parameters.foreach{ case(cmd, vals) => cmd.setValue(vals(i))}; cmds.values.flatMap(_.unParse).toArray})
 
