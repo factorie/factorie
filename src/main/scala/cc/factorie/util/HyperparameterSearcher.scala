@@ -155,7 +155,7 @@ class HyperParameterSearcher(cmds: CmdOptions,
  */
 // TODO HyperParameterSearcher should probably inherit from this or something like it
 class JobDistributor(cmds: CmdOptions,
-                             parameters: Map[CmdOption[Any],Seq[String]],
+                             parameters: Map[CmdOption[T],Seq[T]] forSome {type T},
                              executor: Array[String] => Future[Double],
                              secondsToSleep: Int = 60) {
 //  private def sampledParameters(rng: Random): Array[String] = {
@@ -167,6 +167,15 @@ class JobDistributor(cmds: CmdOptions,
   def distribute: Int = {
     val numParams = parameters.head._2.length
     assert(parameters.map(_._2.length).filterNot(_ == numParams).isEmpty, "All parameter lists must be of the same length")
+
+//    val settings = (0 until numParams).map(i => {parameters.foreach{ case(cmdStr, vals) => {
+    //      if(cmds.get(cmdStr).isDefined){
+    //        val cmd = cmds.get(cmdStr).get
+    ////        cmd.setValue(vals(i).asInstanceOf[cmd.m.erasure.getClass])
+    ////        cmd.setValue(vals(i).asInstanceOf[cmd.value.type])
+    //        cmd.setValue(vals(i).asInstanceOf[cmd.valueClass])
+    //      }
+    //    }}; cmds.values.flatMap(_.unParse).toArray})
 
     val settings = (0 until numParams).map(i => {parameters.foreach{ case(cmd, vals) => cmd.setValue(vals(i))}; cmds.values.flatMap(_.unParse).toArray})
 
