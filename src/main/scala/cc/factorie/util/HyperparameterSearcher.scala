@@ -91,6 +91,25 @@ case class HyperParameter[T](option: CmdOption[T], sampler: ParameterSampler[T])
 }
 
 /**
+ * A container for a hyperparameter which will be optimized.
+ * @param option The CmdOption for the parameter
+ * @param params Range of settings to use for the parameter
+ */
+case class DistributorParameter[T](option: CmdOption[T], params: Seq[T]) {
+  var i = 0
+  val numParams = params.length
+  def set: Unit = {
+    if(i > numParams) throw new Error("Trying to set param more times than there are values")
+    else {
+      option.setValue(params(i))
+      i += 1
+    }
+  }
+  def reset: Unit = {i = 0}
+  def numSettings: Int = params.length
+}
+
+/**
  *
  * @param cmds The options to be passed to the slaves
  * @param parameters The hyperparameters we want to tune, assumed to be a subset of cmds
@@ -155,7 +174,7 @@ class HyperParameterSearcher(cmds: CmdOptions,
  */
 // TODO HyperParameterSearcher should probably inherit from this or something like it
 class JobDistributor(cmds: CmdOptions,
-                             parameters: Map[CmdOption[T],Seq[T]] forSome {type T},
+                             parameters: Seq[DistributorParameter[_]],
                              executor: Array[String] => Future[Double],
                              secondsToSleep: Int = 60) {
 //  private def sampledParameters(rng: Random): Array[String] = {
@@ -165,8 +184,8 @@ class JobDistributor(cmds: CmdOptions,
 
   // the contract is that distribute will also set the appropriate values in cmds
   def distribute: Int = {
-    val numParams = parameters.head._2.length
-    assert(parameters.map(_._2.length).filterNot(_ == numParams).isEmpty, "All parameter lists must be of the same length")
+    val numParams = parameters.head.numSettings
+    assert(parameters.map(_.numSettings).filterNot(_ == numParams).isEmpty, "All parameter lists must be of the same length")
 
 //    val settings = (0 until numParams).map(i => {parameters.foreach{ case(cmdStr, vals) => {
     //      if(cmds.get(cmdStr).isDefined){
@@ -177,7 +196,9 @@ class JobDistributor(cmds: CmdOptions,
     //      }
     //    }}; cmds.values.flatMap(_.unParse).toArray})
 
-    val settings = (0 until numParams).map(i => {parameters.foreach{ case(cmd, vals) => cmd.setValue(vals(i))}; cmds.values.flatMap(_.unParse).toArray})
+//    val settings = (0 until numParams).map(i => {parameters.foreach{ case(cmd, vals) => cmd.setValue(vals(i))}; cmds.values.flatMap(_.unParse).toArray})
+    val settings = (0 until numParams).map(i => {parameters.foreach(_.set); cmds.values.flatMap(_.unParse).toArray})
+
 
     println("Starting job distributor")
     val futures = settings.map(s => (s,executor(s)))
