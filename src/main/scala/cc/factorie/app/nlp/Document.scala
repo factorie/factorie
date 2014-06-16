@@ -85,6 +85,9 @@ class Document extends DocumentSubstring with Attr with UniqueId {
   // One of the following two is always null, the other non-null.  The later is used while multiple appendString() method calls are made.
   private var _string: String = ""
   private var _stringbuf: StringBuffer = null
+
+  /** Character-wise start offset of this document in its original file */
+  var startOffset: Int = 0
   
   /** Append the string 's' to this Document.
       @return the length of the Document's string before string 's' was appended. */

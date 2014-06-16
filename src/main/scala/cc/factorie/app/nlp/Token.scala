@@ -84,6 +84,10 @@ class Token(val stringStart:Int, val stringEnd:Int) extends cc.factorie.app.chai
   /** Return the 0-start index of this token in its Sentence.  If not part of a sentence, return -1. */
   def positionInSentence = if (sentence eq null) -1 else position - sentence.start // TODO Consider throwing an Error here? -akm
 
+  /** Character-wise string start of this token in the original file from which it came */
+  lazy val fileStringStart = stringStart + document.startOffset
+  lazy val fileStringEnd = stringEnd + document.startOffset
+
   // Common attributes, will return null if not present
   def posTag = attr[cc.factorie.app.nlp.pos.PennPosTag]
   def nerTag = attr[cc.factorie.app.nlp.ner.NerTag]
