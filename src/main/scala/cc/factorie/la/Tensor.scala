@@ -77,7 +77,7 @@ trait Tensor extends MutableDoubleSeq with Serializable {
 /** A class for arbitrary tensors to become Masses.
     @author Dirk Weissenborn */
 //TODO: as of scala 2.11 a macro can be used here (@delegate)
-trait TensorWrapper[A <: Tensor] extends Tensor {
+trait WrappedTensor[A <: Tensor] extends Tensor {
   def tensor:A
 
   def activeDomain = tensor.activeDomain
@@ -109,16 +109,16 @@ trait TensorWrapper[A <: Tensor] extends Tensor {
 
 }
 
-trait TensorWrapper1[A <: Tensor1] extends TensorWrapper[A] with Tensor1 {
+trait WrappedTensor1[A <: Tensor1] extends WrappedTensor[A] with Tensor1 {
   def dim1 = tensor.dim1
 }
-trait TensorWrapper2[A <: Tensor2] extends TensorWrapper[A] with Tensor2 {
+trait WrappedTensor2[A <: Tensor2] extends WrappedTensor[A] with Tensor2 {
   def dim1 = tensor.dim1
   def dim2 = tensor.dim2
   def activeDomain1 = tensor.activeDomain1
   def activeDomain2 = tensor.activeDomain2
 }
-trait TensorWrapper3[A <: Tensor3] extends TensorWrapper[A] with Tensor3 {
+trait WrappedTensor3[A <: Tensor3] extends WrappedTensor[A] with Tensor3 {
   def dim1 = tensor.dim1
   def dim2 = tensor.dim2
   def dim3 = tensor.dim3
@@ -126,7 +126,7 @@ trait TensorWrapper3[A <: Tensor3] extends TensorWrapper[A] with Tensor3 {
   def activeDomain2 = tensor.activeDomain2
   def activeDomain3 = tensor.activeDomain3
 }
-trait TensorWrapper4[A <: Tensor4] extends TensorWrapper[A] with Tensor4 {
+trait WrappedTensor4[A <: Tensor4] extends WrappedTensor[A] with Tensor4 {
   def dim1 = tensor.dim1
   def dim2 = tensor.dim2
   def dim3 = tensor.dim3

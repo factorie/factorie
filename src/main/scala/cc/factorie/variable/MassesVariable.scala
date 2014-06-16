@@ -51,7 +51,7 @@ trait MassesWithTotal extends Masses {
 
 /** A class for arbitrary tensors to become Masses. E.g.: GrowableSparseHashMasses1
     @author Dirk Weissenborn */
-trait TensorWrapperMasses[A <: Tensor] extends TensorWrapper[A] with MassesWithTotal {
+trait WrappedTensorMasses[A <: Tensor] extends WrappedTensor[A] with MassesWithTotal {
   //initialize massTotal
   require(tensor.forallActiveElements { case (_:Int,v:Double) => v >= 0 } )
   _massTotal = tensor.sum
@@ -68,10 +68,10 @@ trait TensorWrapperMasses[A <: Tensor] extends TensorWrapper[A] with MassesWithT
   final override def :=(ds: Array[Double]) : Unit = { this := new DenseTensor1(ds) }
 }
 
-class TensorWrapperMasses1[A <: Tensor1](val tensor:A) extends TensorWrapperMasses[A] with TensorWrapper1[A] with Masses1
-class TensorWrapperMasses2[A <: Tensor2](val tensor:A) extends TensorWrapperMasses[A] with TensorWrapper2[A] with Masses2
-class TensorWrapperMasses3[A <: Tensor3](val tensor:A) extends TensorWrapperMasses[A] with TensorWrapper3[A] with Masses3
-class TensorWrapperMasses4[A <: Tensor4](val tensor:A) extends TensorWrapperMasses[A] with TensorWrapper4[A] with Masses4
+class WrappedTensorMasses1[A <: Tensor1](val tensor:A) extends WrappedTensorMasses[A] with WrappedTensor1[A] with Masses1
+class WrappedTensorMasses2[A <: Tensor2](val tensor:A) extends WrappedTensorMasses[A] with WrappedTensor2[A] with Masses2
+class WrappedTensorMasses3[A <: Tensor3](val tensor:A) extends WrappedTensorMasses[A] with WrappedTensor3[A] with Masses3
+class WrappedTensorMasses4[A <: Tensor4](val tensor:A) extends WrappedTensorMasses[A] with WrappedTensor4[A] with Masses4
 
 
 /** A DenseTensor Masses that provides a protected var for holding the massTotal.
@@ -210,8 +210,8 @@ object MassesVariable {
   def growableUniform(sizeProxy:Iterable[Any], uniformValue:Double) = new MassesVariable(new GrowableUniformMasses1(sizeProxy, uniformValue))
   def sortedSparseCounts(dim1:Int) = new MassesVariable(new SortedSparseCountsMasses1(dim1))
 
-  implicit def toMasses1(tensor:Tensor1) = new TensorWrapperMasses1(tensor)
-  implicit def toMasses2(tensor:Tensor2) = new TensorWrapperMasses2(tensor)
-  implicit def toMasses3(tensor:Tensor3) = new TensorWrapperMasses3(tensor)
-  implicit def toMasses4(tensor:Tensor4) = new TensorWrapperMasses4(tensor)
+  implicit def toMasses1(tensor:Tensor1) = new WrappedTensorMasses1(tensor)
+  implicit def toMasses2(tensor:Tensor2) = new WrappedTensorMasses2(tensor)
+  implicit def toMasses3(tensor:Tensor3) = new WrappedTensorMasses3(tensor)
+  implicit def toMasses4(tensor:Tensor4) = new WrappedTensorMasses4(tensor)
 }

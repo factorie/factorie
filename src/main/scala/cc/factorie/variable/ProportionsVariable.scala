@@ -43,8 +43,8 @@ trait Proportions extends Masses with ReadOnlyTensor {
   }
 }
 
-trait ProportionsWithPrior extends Proportions {
-  var prior:Masses
+trait DirichletPrior extends Proportions {
+  var prior:Masses = null
 
   override def apply(index:Int): Double = {
     if (prior eq null) {
@@ -78,21 +78,21 @@ trait Proportions2 extends Masses2 with Proportions { def masses: Masses2 }
 trait Proportions3 extends Masses3 with Proportions { def masses: Masses3 }
 trait Proportions4 extends Masses4 with Proportions { def masses: Masses4 }
 
-trait MassesProportions[A <: Masses] extends TensorWrapper[A] with Proportions {
+trait MassesProportions[A <: Masses] extends WrappedTensor[A] with Proportions {
   def masses:A
   def tensor = masses
 }
 
-class MassesProportions1(val masses:Masses1) extends MassesProportions[Masses1] with TensorWrapper1[Masses1] with Proportions1 {
+class MassesProportions1(val masses:Masses1) extends MassesProportions[Masses1] with WrappedTensor1[Masses1] with Proportions1 {
   def this(t:Tensor1) = this(toMasses1(t))
 }
-class MassesProportions2(val masses:Masses2) extends MassesProportions[Masses2] with TensorWrapper2[Masses2] with Proportions2 {
+class MassesProportions2(val masses:Masses2) extends MassesProportions[Masses2] with WrappedTensor2[Masses2] with Proportions2 {
   def this(t:Tensor2) = this(toMasses2(t))
 }
-class MassesProportions3(val masses:Masses3) extends MassesProportions[Masses3] with TensorWrapper3[Masses3] with Proportions3 {
+class MassesProportions3(val masses:Masses3) extends MassesProportions[Masses3] with WrappedTensor3[Masses3] with Proportions3 {
   def this(t:Tensor3) = this(toMasses3(t))
 }
-class MassesProportions4(val masses:Masses4) extends MassesProportions[Masses4] with TensorWrapper4[Masses4] with Proportions4 {
+class MassesProportions4(val masses:Masses4) extends MassesProportions[Masses4] with WrappedTensor4[Masses4] with Proportions4 {
   def this(t:Tensor4) = this(toMasses4(t))
 }
 
@@ -356,14 +356,13 @@ class SparseTensorProportions4(val tensor:SparseIndexedTensor4, checkNormalizati
     and which is stored with high-probability outcomes first, for efficient sampling.
     Extends SparseDoubleSeq.
     @author Andrew McCallum */
-class SortedSparseCountsProportions1(val dim1:Int) extends SparseDoubleSeq with Proportions1 with ProportionsWithPrior  {
+class SortedSparseCountsProportions1(val dim1:Int) extends SparseDoubleSeq with Proportions1 with DirichletPrior  {
   val masses = new SortedSparseCountsMasses1(dim1)
   def activeDomainSize = masses.activeDomainSize
   override def foreachActiveElement(f: (Int, Double) => Unit) { masses.foreachActiveElement((i, v) => f(i, v/massTotal)) }
   def dot(t: DoubleSeq): Double = throw new Error("No efficient dot for " + this.getClass.getName)
   def activeDomain = masses.activeDomain  // throw new Error("Not implemented")
   def isDense = false
-  var prior: Masses = null  // TODO We need somehow to say that this isDeterministic function of this.prior.
 
   //remove this method, because proportions are read-only tensors
   //override def zero(): Unit = masses.zero()
