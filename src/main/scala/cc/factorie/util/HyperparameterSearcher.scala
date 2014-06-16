@@ -246,7 +246,7 @@ trait Executor {
  * @param memory How many gigabytes of RAM to use.
  * @param className The class which will be run.
  */
-abstract class JobQueueExecutor(memory: Int, className: String) extends Executor {
+abstract class JobQueueExecutor(memory: Int, className: String, logPrefix: String = "hyper-search") extends Executor {
   /**
    * Runs a job in the queue
    * @param script the file name of the shell script to be run
@@ -254,7 +254,7 @@ abstract class JobQueueExecutor(memory: Int, className: String) extends Executor
    */
   def runJob(script: String, logFile: String)
   val date = new SimpleDateFormat("yyyy-MM-dd-HH-mm-ss").format(new java.util.Date())
-  val prefix = s"hyper-search-$date"
+  val prefix = s"$logPrefix-$date"
   println(s"QSubExecutor saving logs in $prefix.")
   var id = 0
   def execute(args: Array[String]) = {
@@ -295,7 +295,7 @@ abstract class JobQueueExecutor(memory: Int, className: String) extends Executor
  * @param memory How many gigabytes of RAM to use.
  * @param className The class which will be run.
  */
-class QSubExecutor(memory: Int, className: String) extends JobQueueExecutor(memory, className) {
+class QSubExecutor(memory: Int, className: String, logPrefix: String = "hyper-search") extends JobQueueExecutor(memory, className, logPrefix) {
   import sys.process._
   def runJob(script: String, logFile: String) { s"qsub -sync y -l mem_token=${memory}G -cwd -j y -o $logFile -S /bin/sh $script".!! }
 }
