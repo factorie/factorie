@@ -214,15 +214,15 @@ trait ParseTree2 {
   //def label(childToken:Token): ParseTreeLabel2 = { require(childToken.sentence eq sentence); label(childToken.position - sentence.start) }
   override def toString: String = {
     val tokenStrings = {
-      if (sentence.tokens.forall(_.posTag ne null))
-        sentence.tokens.map(t => t.string + "/" + t.posTag.categoryValue)
+      if (_vertices.forall(_.token.posTag ne null))
+        _vertices.map(v => v.token.string + "/" + v.token.posTag.categoryValue)
       else
-        sentence.tokens.map(_.string)
+        _vertices.map(_.token.string)
     }
     val labelStrings = _labels.map(_.value.toString())
     val buff = new StringBuffer()
-    for (i <- 0 until sentence.length)
-      buff.append(i + " " + _parents(i) + " " + tokenStrings(i) + " " + labelStrings(i) + "\n")
+    for (i <- 0 until _vertices.length)
+      buff.append(i + " " + _parents(i).intValue + " " + tokenStrings(i) + " " + labelStrings(i) + "\n")
     buff.toString
   }
 
@@ -238,7 +238,7 @@ trait ParseTree2 {
       }
         builder
     }
-    val sentenceString = this.sentence.tokens.map(_.string).mkString(""" \& """) + """\\"""
+    val sentenceString = this._vertices.map(_.token.string).mkString(""" \& """) + """\\"""
 
     val rootId = this.rootChildIndex
     val rootLabel = this.label(rootId).categoryValue // should always be 'root'
@@ -314,7 +314,7 @@ class CollapsedParseTree(val parseTree:TokenParseTree) extends ParseTree2 with I
     val cf = doc.coref
     if(cf != null) {
       val mentions = cf.mentions
-      phrases ++= (mentions.map(_.phrase) ++ doc.attr.all[PhraseList].flatten).filter(sentence.contains)
+      phrases ++= (mentions.map(_.phrase) ++ doc.attr.all[PhraseList].flatten).filter(p => sentence.start <= p.start && sentence.end >= p.end)
     }
     phrases = phrases.distinct
     val phraseTokens = phrases.flatMap(p => p.tokens.map(_ -> p)).toMap
@@ -342,9 +342,13 @@ class CollapsedParseTree(val parseTree:TokenParseTree) extends ParseTree2 with I
       val t = vertices(i).token
       val l = parseTree.label(t.positionInSentence).categoryValue
       if(l != "prep") {
-        val parent = parseTree.parent(t.positionInSentence).vertex
+        var parent = parseTree.parent(t.positionInSentence).vertex
         //collapse prepositions
-        labels(i) = if(l =="pobj") new ParseTreeLabel2(this, parent.token.lemmaString) else new ParseTreeLabel2(this, l)
+        labels(i) = if(l =="pobj") {
+          val labelString = parent.token.lemmaString
+          parent = parseTree.parent(parent.token.positionInSentence).vertex
+          new ParseTreeLabel2(this, labelString)
+        } else new ParseTreeLabel2(this, l)
         if(parent != null)
           parents(i) = new ParseTreeParent(this, idxMap.getOrElse(parent.token, idxMap(phraseTokens(parent.token))))
         else parents(i) = new ParseTreeParent(this, ParseTree.rootIndex)

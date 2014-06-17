@@ -13,10 +13,11 @@ class TestCollapsedParseTree {
   @Test
   def testCollapsing() = {
     val testDoc = LoadOntonotes5.fromFilename(testFileName).head
-    val testSentence = testDoc.sentences.head
+    val testSentence = testDoc.sentences.tail.head
 
     val tree = ParseTree2.collapsedFromParseTree(testSentence.parse)
     Assert.assertNotNull(tree)
+    Assert.assertNotNull(tree.toString)
     Assert.assertEquals(tree.labels.length, tree.parents.length)
     Assert.assertEquals(tree.labels.length, tree.vertices.length)
   }
