@@ -215,9 +215,9 @@ trait ParseTree2 {
   override def toString: String = {
     val tokenStrings = {
       if (_vertices.forall(_.token.posTag ne null))
-        _vertices.map(v => v.token.string + "/" + v.token.posTag.categoryValue)
+        _vertices.map(v => v.tokens.map(_.string).mkString(" ") + "/" + v.token.posTag.categoryValue)
       else
-        _vertices.map(_.token.string)
+        _vertices.map(_.tokens.map(_.string).mkString(" "))
     }
     val labelStrings = _labels.map(_.value.toString())
     val buff = new StringBuffer()
@@ -238,7 +238,7 @@ trait ParseTree2 {
       }
         builder
     }
-    val sentenceString = this._vertices.map(_.token.string).mkString(""" \& """) + """\\"""
+    val sentenceString = this._vertices.map(_.tokens.map(_.string).mkString(" ")).mkString(""" \& """) + """\\"""
 
     val rootId = this.rootChildIndex
     val rootLabel = this.label(rootId).categoryValue // should always be 'root'
