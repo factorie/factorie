@@ -349,7 +349,8 @@ class SSHActorExecutor(user: String,
                        directory: String,
                        className: String,
                        memory: Int,
-                       timeoutMinutes: Int) extends Executor {
+                       timeoutMinutes: Int,
+                       logPrefix: String = "hyper-search") extends Executor {
   import com.typesafe.config.ConfigFactory
   val customConf = ConfigFactory.parseString("my-balanced-dispatcher { type = BalancingDispatcher }")
   val system = ActorSystem("ssh", customConf)
@@ -365,12 +366,12 @@ class SSHActorExecutor(user: String,
   }
   def shutdown() { system.shutdown() }
   val date = new SimpleDateFormat("yyyy-MM-dd-HH-mm-ss").format(new java.util.Date())
-  val logPrefix = s"hyper-search-$date/"
-  println(s"Writing log files to $logPrefix")
+  val log = s"$logPrefix-$date/"
+  println(s"Writing log files to $log")
   class SSHActor(machine: String, i: Int) extends Actor {
     def receive = {
       case ExecuteJob(args, j) =>
-        val logFile = logPrefix+"-job-"+j+".log"
+        val logFile = log+"ssh-job-"+j+".log"
         new java.io.File(logFile).getParentFile.mkdirs()
         val jvmCommand = s"java -Xmx${memory}g -classpath '$classpath' cc.factorie.util.SSHExecutor --className=$className  '--classArgs=$args'"
         val inSSh = s"cd $directory; $jvmCommand"
