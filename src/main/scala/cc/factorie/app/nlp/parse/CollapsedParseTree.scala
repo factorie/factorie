@@ -71,8 +71,8 @@ trait ParseTree2 {
 
   private lazy val vertexOfTokenMap = _vertices.flatMap(v => v.tokens.map(_ -> v)).toMap
 
-  require(_parents.length == _vertices.length)
-  require(_labels.length == _vertices.length)
+  //require(_parents.length == _vertices.length)
+  //require(_labels.length == _vertices.length)
 
   implicit def parentToInt(p:ParseTreeParent) = p.value
   implicit def tokenToVertex(token:Token) = vertexOfTokenMap.getOrElse(token,null)
@@ -91,7 +91,7 @@ trait ParseTree2 {
   def labelsAccuracy: Double = numLabelsCorrect.toDouble / _labels.length
 
   /** Returns the position in the sentence of the root token. */
-  def rootChildIndex: Int = firstChild(-1)
+  def rootChildIndex: Int = _parents.indexWhere(_.intValue == ParseTree.rootIndex)
   /** Return the vertex at the root of the parse tree.  The parent of this vertex is null.  The parentIndex of this position is -1. */
   def rootChild: ParseTreeVertex = _vertices(rootChildIndex)
 
@@ -288,9 +288,12 @@ trait ParseTree2 {
 }
 
 class TokenParseTree(val sentence:Sentence, theTargetParents:Seq[Int], theTargetLabels:Seq[String]) extends ParseTree2 {
-  override protected val _labels: Array[ParseTreeLabel2] = theTargetLabels.map(s => new ParseTreeLabel2(this, s)).toArray
-  override protected val _parents: Array[ParseTreeParent] = theTargetParents.map(p => new ParseTreeParent(this,p)).toArray
-  override protected val _vertices: Array[ParseTreeVertex] = sentence.tokens.map(t => new TokenParseTreeVertex(this,t)).toArray
+  override protected val _labels: Array[ParseTreeLabel2] =
+    theTargetLabels.map(s => new ParseTreeLabel2(this, s)).toArray
+  override protected val _parents: Array[ParseTreeParent] =
+    theTargetParents.map(p => new ParseTreeParent(this,p)).toArray
+  override protected val _vertices: Array[ParseTreeVertex] =
+    sentence.tokens.map(t => new TokenParseTreeVertex(this,t)).toArray
 }
 
 //inefficient functions for retrieving children
@@ -379,18 +382,25 @@ trait MutableParseTreeLike extends ParseTree2 {
 
 //Mixin for immutable trees that provides a set of more efficient getters/functions
 trait ImmutableParseTreeLike extends ParseTree2 {
-  lazy val _children = Array.tabulate(_parents.size)(_ => List[Int]())
-  ((_parents.length -1) to 0 by -1).foreach(child => if(_parents(child).value >= 0) _children(_parents(child).value) = child :: _children(_parents(child).value))
+  lazy val _children = {
+    val cs = Array.tabulate(_parents.size)(_ => List[Int]())
+    ((_parents.length -1) to 0 by -1).foreach(child => {
+      val parentIdx = _parents(child).value
+      if(parentIdx >= 0) cs(parentIdx) = child :: cs(parentIdx)
+    })
+    cs
+  }
 
   /** Return the token at the root of the parse tree.  The parent of this token is null.  The parentIndex of this position is -1. */
-  override val rootChild: ParseTreeVertex = super.rootChild
+  override lazy val rootChild: ParseTreeVertex = super.rootChild
 
   /** Returns the position in the sentence of the root token. */
-  override val rootChildIndex: Int = super.rootChildIndex
+  override lazy val rootChildIndex: Int = super.rootChildIndex
 
   /** Return the sentence index of the first token whose parent is 'parentIndex' */
   override protected def firstChild(parentIndex:Int): Int = {
-    _children(parentIndex).headOption.getOrElse(-1)
+    if(parentIndex < 0) rootChildIndex
+    else _children(parentIndex).headOption.getOrElse(-1)
   }
 
   override def getChildrenIndices(parentIndex:Int, filter : Int => Boolean = defaultFilter): Seq[Int] = {
