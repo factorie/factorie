@@ -13,9 +13,8 @@
 
 package cc.factorie.variable
 
-import cc.factorie._
 import cc.factorie.la._
-import cc.factorie.util.{SparseDoubleSeq, DoubleSeq, IntSeq}
+import cc.factorie.util.{SparseDoubleSeq, DoubleSeq}
 import scala.util.Random
 
 /** A Tensor containing only non-negative entries.  These are also the basis for Proportions.
@@ -50,12 +49,37 @@ trait MassesWithTotal extends Masses {
   override def update(i:Int, v:Double): Unit = throw new Error("Masses cannot be modified by update; use += instead.")
 }
 
+/** A class for arbitrary tensors to become Masses. E.g.: GrowableSparseHashMasses1
+    @author Dirk Weissenborn */
+trait WrappedTensorMasses[A <: Tensor] extends WrappedTensor[A] with MassesWithTotal {
+  //initialize massTotal
+  require(tensor.forallActiveElements { case (_:Int,v:Double) => v >= 0 } )
+  _massTotal = tensor.sum
+
+  final override def zero(): Unit = { tensor.zero(); _massTotal = 0.0 }              //this might be a little slow
+  final override def +=(i:Int, v:Double): Unit = { _massTotal += v; tensor.+=(i,v)/*; assert(_massTotal >= 0.0); assert(tensor(i) >= 0.0)*/ }
+  final override def update(i: Int, v: Double): Unit = {this += (i,v - this(i))}
+  final override def *=(d:Double): Unit = { _massTotal *= d;  tensor*=d}
+  final override def *=(ds:DoubleSeq): Unit = { tensor*=ds;_massTotal=tensor.sum}
+  final override def /=(ds:DoubleSeq): Unit = { tensor/=ds;_massTotal=tensor.sum}
+  final override def +=(ds:DoubleSeq, f:Double): Unit = { tensor.+=(ds,f); _massTotal += ds.sum }
+  final override def :=(v:Double): Unit = { tensor.:=(v); _massTotal = v * tensor.activeDomainSize }
+  final override def :=(ds:DoubleSeq): Unit = { tensor.:=(ds); _massTotal += tensor.sum}
+  final override def :=(ds: Array[Double]) : Unit = { this := new DenseTensor1(ds) }
+}
+
+class WrappedTensorMasses1[A <: Tensor1](val tensor:A) extends WrappedTensorMasses[A] with WrappedTensor1[A] with Masses1
+class WrappedTensorMasses2[A <: Tensor2](val tensor:A) extends WrappedTensorMasses[A] with WrappedTensor2[A] with Masses2
+class WrappedTensorMasses3[A <: Tensor3](val tensor:A) extends WrappedTensorMasses[A] with WrappedTensor3[A] with Masses3
+class WrappedTensorMasses4[A <: Tensor4](val tensor:A) extends WrappedTensorMasses[A] with WrappedTensor4[A] with Masses4
+
+
 /** A DenseTensor Masses that provides a protected var for holding the massTotal.
     @author Andrew McCallum */
 trait DenseMassesWithTotal extends DenseTensor with MassesWithTotal {
   final override def zero(): Unit = { super.zero(); _massTotal = 0.0 }
   final override def +=(i:Int, v:Double): Unit = { _massTotal += v; _values(i) += v; assert(_massTotal >= 0.0); assert(_values(i) >= 0.0) }
-  final override def update(i: Int, v: Double): Unit = {this += (v - this(i))}
+  final override def update(i: Int, v: Double): Unit = {this += (i,v - this(i))}
   final override def *=(d:Double): Unit = { _massTotal = 0.0; val l = length; var i = 0; var v = 0.0; while (i < l) { v = _values(i)*d; _massTotal += v; _values(i) = v; i += 1 }}
   final override def *=(ds:DoubleSeq): Unit = { _massTotal = 0.0; val l = length; var i = 0; var v = 0.0; while (i < l) { v = _values(i)*ds(i); _massTotal += v; _values(i) = v; i += 1 }}
   final override def /=(ds:DoubleSeq): Unit = { _massTotal = 0.0; val l = length; var i = 0; var v = 0.0; while (i < l) { v = _values(i)/ds(i); _massTotal += v; _values(i) = v; i += 1 }}
@@ -84,7 +108,7 @@ class DenseMasses4(val dim1:Int, val dim2:Int, val dim3:Int, val dim4:Int) exten
 }
 
 class UniformMasses1(dim1:Int, uniformValue:Double) extends UniformTensor1(dim1, uniformValue) with Masses1 with UniformTensor {
-  def massTotal = dim1 * uniformValue
+  override val massTotal = dim1 * uniformValue
   override def sampleIndex(massTotal:Double)(implicit r:Random): Int = r.nextInt(dim1)
 }
 
@@ -185,4 +209,9 @@ object MassesVariable {
   def growableDense(sizeProxy:Iterable[Any]) = new MassesVariable(new GrowableDenseMasses1(sizeProxy))
   def growableUniform(sizeProxy:Iterable[Any], uniformValue:Double) = new MassesVariable(new GrowableUniformMasses1(sizeProxy, uniformValue))
   def sortedSparseCounts(dim1:Int) = new MassesVariable(new SortedSparseCountsMasses1(dim1))
+
+  implicit def toMasses1(tensor:Tensor1) = new WrappedTensorMasses1(tensor)
+  implicit def toMasses2(tensor:Tensor2) = new WrappedTensorMasses2(tensor)
+  implicit def toMasses3(tensor:Tensor3) = new WrappedTensorMasses3(tensor)
+  implicit def toMasses4(tensor:Tensor4) = new WrappedTensorMasses4(tensor)
 }

@@ -13,9 +13,6 @@
 
 package cc.factorie.directed
 
-import cc.factorie._
-import cc.factorie.la._
-import scala.collection.mutable.{HashSet,ArrayBuffer}
 import cc.factorie.variable._
 import cc.factorie.model.Model
 import scala.Some
