@@ -61,6 +61,7 @@ trait PairContextGenerator[Vars <: NodeVariables[Vars]] {
       e = _allEntities(random.nextInt(_allEntities.size))
       if(tries==1) {
         performMaintenance
+        tries = 5
       }
     }
     e

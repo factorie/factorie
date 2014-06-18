@@ -58,11 +58,11 @@ trait CanopyPairGenerator[Vars <: NodeVariables[Vars] with Canopy] extends PairC
   canopyMap = canopyMap.filter(_._2.size > 1)
 
   def nextInCanopy(context:Node[Vars]):Node[Vars] = {
-    val canopies = context.variables.canopies.flatMap(canopyMap.get) //.sampleUniformly(random).sampleUniformly(random)
+    val canopies = canopyMap(context.variables.canopies.sampleUniformly(random))//.flatMap(canopyMap.get) //.sampleUniformly(random).sampleUniformly(random)
     if(canopies.size == 0) {
       randomNode
     } else {
-      canopies.sampleUniformly(random).sampleUniformly(random)
+      canopies.sampleUniformly(random)
     }
   }
 

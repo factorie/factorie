@@ -21,7 +21,8 @@ trait DefaultMoveGenerator[Vars <: NodeVariables[Vars]]  extends MoveGenerator[V
   this :SettingsSampler[(Node[Vars], Node[Vars])] =>
 
   def settings(c:(Node[Vars], Node[Vars])) = new MoveSettingIterator[Vars] {
-    val (e1, e2) = c
+    val (e1, e2Root) = c
+    var e2 = e2Root
 
     val moves = new scala.collection.mutable.ArrayBuffer[Move[Vars]]()
 
@@ -29,10 +30,13 @@ trait DefaultMoveGenerator[Vars <: NodeVariables[Vars]]  extends MoveGenerator[V
       if(e1.isMention && e1.isRoot && e2.isMention && e2.isRoot) {
         moves += new MergeUp[Vars](e1, e2)({d => newInstance(d)})
       } else {
-        if(e1.mentionCountVar.value > e2.mentionCountVar.value) {
-          moves += new MergeLeft[Vars](e1, e2)
-        } else {
-          moves += new MergeLeft[Vars](e2, e1)
+        while (e2 != null) {
+          if(e1.mentionCountVar.value > e2.mentionCountVar.value) {
+            moves += new MergeLeft[Vars](e1, e2)
+          } else {
+            moves += new MergeLeft[Vars](e2, e1)
+          }
+          e2 = e2.parent.getOrElse(null.asInstanceOf[Node[Vars]])
         }
       }
     } else {
