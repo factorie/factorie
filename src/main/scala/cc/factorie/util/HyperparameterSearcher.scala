@@ -379,8 +379,12 @@ class SSHActorExecutor(user: String,
         val sshCommand = s"ssh $userMachine  $inSSh 2> $logFile.stderr"
         import sys.process._
         (sshCommand #> new java.io.File(logFile)).!
-        val double = s"tail -n 1 $logFile".!!
-        sender ! double.toDouble
+        val doubleStr = s"tail -n 1 $logFile".!!
+        val ret = {
+          if(!doubleStr.matches("""/-?(?:0|[1-9]\d*)(?:\.\d*)?(?:[eE][+\-]?\d+)?/""")) Double.NaN
+          else doubleStr.toDouble
+        }
+        sender ! ret
     }
   }
 }
