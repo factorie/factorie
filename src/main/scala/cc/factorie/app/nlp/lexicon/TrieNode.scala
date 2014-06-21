@@ -28,14 +28,16 @@ import scala.collection.mutable.Map
  * It's similar to the SuffixTree implementation, but with an extra link used if 
  * the lookup at a specific node fails.
  */
-class TrieNode(val label : String, val output : String, var root : TrieNode, private var emit : Boolean, val sep : String, val depth : Int) extends Serializable {
+class TrieNode(val label : String, val output : String, var root : TrieNode, val sep : String, val depth : Int) extends Serializable {
     val transitionMap : Map[String, TrieNode] = JavaHashMap[String,TrieNode]()
     val outputSet : Set[(String,Int)] = JavaHashSet[(String,Int)]()
     @transient var failNode : TrieNode = root
     private var phrases : Int = 0
+    private var emit : Boolean = false
+    private var exactEmit : Boolean = false
 
     def this(sep : String) = {
-        this("","",null,false,sep,0)
+        this("","",null,sep,0)
         root = this
         failNode = this
     }
@@ -49,6 +51,11 @@ class TrieNode(val label : String, val output : String, var root : TrieNode, pri
      * Returns true if this node emits a value.
      */
     def getEmit() : Boolean = { emit }
+    
+    /**
+     * Returns true if this node emits a value it was constructed with.
+     */
+    def getExactEmit() : Boolean = { exactEmit }
 
     /**
      * Write the node out to the logger.
@@ -88,13 +95,14 @@ class TrieNode(val label : String, val output : String, var root : TrieNode, pri
     def +=(phrase : Queue[String]) : Unit = {
         if (phrase.isEmpty) {
             emit = true
-            //change here to add output to outputSet if change emit logic
+            exactEmit = true
             outputSet.add((output,depth))
         } else {
             val curWord : String = phrase.dequeue
             var transitionNode = transitionMap.getOrElse(curWord,null)
             if (transitionNode == null) {
-                transitionNode = new TrieNode(curWord, output + sep + curWord, root, false, sep, depth + 1)
+                val newOutput = if (this == root) {curWord} else {output + sep + curWord}
+                transitionNode = new TrieNode(curWord, newOutput, root, sep, depth + 1)
                 transitionMap += (curWord -> transitionNode)
             }
             transitionNode += phrase

@@ -40,6 +40,40 @@ class AhoCorasick(val sep : String) extends Serializable {
     }
 
     /**
+     * Checks if the input phrase appears exactly in the lexicon.
+     * This just treats the lexicon as a Trie, without using the fail transitions.
+     */
+    def findExactMention(input : Seq[String]) : Boolean = {
+        if (!constructed) {
+            setTransitions()
+        }
+        var i = 0;
+        var curNode = root;
+        var found = true;
+        //Iterate through the Trie testing to see if the next token exists
+        while ((i < input.length) && (found)) {
+            val head = input.get(i)
+            val next = curNode.transitionMap.getOrElse(head,null)
+            if (next != null) {
+                curNode = next;
+                i = i + 1;
+            } else {
+                //failed to find the next transition
+                found = false;
+            } 
+        }
+        //if we reached the end of the input stream
+        if (found) {
+            //check if the current node should emit and if the output matches the input
+            if (!curNode.getExactEmit) {
+                found = false;
+            }
+        }
+
+        return found;
+    }
+    
+    /**
      * Finds all mentions of the trie phrases in a tokenized input text.
      */
     def findMentions(input : Seq[String]) : Set[LexiconMention] = {

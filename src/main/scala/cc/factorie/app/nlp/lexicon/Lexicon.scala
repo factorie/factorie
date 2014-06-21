@@ -172,11 +172,10 @@ class TriePhraseLexicon(val name: String, val tokenizer: StringSegmenter = cc.fa
     /** Checks whether the lexicon contains this already-lemmatized/tokenized phrase, where 'words' can either be
      * single word or a multi-word expression. */
     def containsLemmatizedWords(words: Seq[String]): Boolean = {
-        val mentions = trie.findMentions(words)
-        if (mentions.size > 0) { true } else { false }
+        trie.findExactMention(words)
     }
   
-    /** Tokenizes and lemmatizes the string of each entry in 'query', then checks if the sequence is in the lexicon*/
+    /** Tokenizes and lemmatizes the string of each entry in 'query', then checks if the exact sequence is in the lexicon*/
     def contains[T<:Observation[T]](query: Seq[T]): Boolean = {
         val strings = query.map(_.string)
         val tokenized = strings.flatMap(tokenizer(_))
@@ -184,7 +183,7 @@ class TriePhraseLexicon(val name: String, val tokenizer: StringSegmenter = cc.fa
         containsLemmatizedWords(lemmatized)
     }
   
-    /** Tokenizes and lemmatizes query.string, then checks if the sequence is in the lexicon */
+    /** Tokenizes and lemmatizes query.string, then checks if the exact sequence is in the lexicon */
     def contains[T<:Observation[T]](query: T): Boolean = {
         val tokenized = tokenizer(query.string).toSeq
         val lemmatized = tokenized.map(lemmatizer.lemmatize(_))
