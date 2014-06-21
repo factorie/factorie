@@ -201,6 +201,18 @@ class BasicOntonotesNER extends DocumentAnnotator {
       //features ++= token.prevWindow(4).map(t2 => "PREVWINDOW="+simplifyDigits(t2.string).toLowerCase)
       //features ++= token.nextWindow(4).map(t2 => "NEXTWINDOW="+simplifyDigits(t2.string).toLowerCase)
     }
+    val tokenSequence = document.tokens.toSeq
+    val extractFeature = (t:Token)=>t.attr[FeaturesVariable]
+    lexicon.iesl.Money.tagText(tokenSequence,extractFeature,"MONEY")
+    lexicon.iesl.PersonFirst.tagText(tokenSequence,extractFeature,"PERSON-FIRST")
+    lexicon.iesl.Month.tagText(tokenSequence,extractFeature,"MONTH")
+    lexicon.iesl.PersonLast.tagText(tokenSequence,extractFeature,"PERSON-LAST")
+    lexicon.iesl.PersonHonorific.tagText(tokenSequence,extractFeature,"PERSON-HONORIFIC")
+    lexicon.iesl.Company.tagText(tokenSequence,extractFeature, "COMPANY")
+    lexicon.iesl.Country.tagText(tokenSequence,extractFeature, "COUNTRY")
+    lexicon.iesl.City.tagText(tokenSequence,extractFeature, "CITY")
+    lexicon.iesl.PlaceSuffix.tagText(tokenSequence,extractFeature, "PLACE-SUFFIX")
+    lexicon.iesl.USState.tagText(tokenSequence,extractFeature, "USSTATE")
     for (section <- document.sections)
       cc.factorie.app.chain.Observations.addNeighboringFeatureConjunctions(section.tokens, (t:Token)=>t.attr[FeaturesVariable], Seq(0), Seq(-1), Seq(-2), Seq(1), Seq(2))
   }

@@ -247,9 +247,54 @@ class StackedChainNer[L<:NerTag](labelDomain: CategoricalDomain[String],
 
   def initFeatures(document:Document, vf:Token=>CategoricalVectorVar[String]): Unit = {
     count=count+1
+    val tokenSequence = document.tokens.toSeq
+    /* This now does a lot of lemmatizing. It might be worth adding an extra 
+     * method to the lookup which pulls out the lemmatized form and creates it 
+     * using the lexicon's lemmatizer if it isn't there.
+     */ 
+    lexicon.iesl.Month.tagText(tokenSequence,vf,"MONTH")
+    lexicon.iesl.Day.tagText(tokenSequence,vf,"DAY")
+    
+    lexicon.iesl.PersonFirst.tagText(tokenSequence,vf,"PERSON-FIRST")
+    lexicon.iesl.PersonFirstHigh.tagText(tokenSequence,vf,"PERSON-FIRST-HIGH")
+    lexicon.iesl.PersonFirstHighest.tagText(tokenSequence,vf,"PERSON-FIRST-HIGHEST")
+    lexicon.iesl.PersonFirstMedium.tagText(tokenSequence,vf,"PERSON-FIRST-MEDIUM")
+    
+    lexicon.iesl.PersonLast.tagText(tokenSequence,vf,"PERSON-LAST")
+    lexicon.iesl.PersonLastHigh.tagText(tokenSequence,vf,"PERSON-LAST-HIGH")
+    lexicon.iesl.PersonLastHighest.tagText(tokenSequence,vf,"PERSON-LAST-HIGHEST")
+    lexicon.iesl.PersonLastMedium.tagText(tokenSequence,vf,"PERSON-LAST-MEDIUM")
+    
+    lexicon.iesl.PersonHonorific.tagText(tokenSequence,vf,"PERSON-HONORIFIC")
+    
+    lexicon.iesl.Company.tagText(tokenSequence,vf, "COMPANY")
+    lexicon.iesl.JobTitle.tagText(tokenSequence,vf, "JOB-TITLE")
+    lexicon.iesl.OrgSuffix.tagText(tokenSequence,vf, "ORG-SUFFIX")
+    
+    lexicon.iesl.Country.tagText(tokenSequence,vf, "COUNTRY")
+    lexicon.iesl.City.tagText(tokenSequence,vf, "CITY")
+    lexicon.iesl.PlaceSuffix.tagText(tokenSequence,vf, "PLACE-SUFFIX")
+    lexicon.iesl.USState.tagText(tokenSequence,vf, "USSTATE")
+    lexicon.iesl.Continents.tagText(tokenSequence,vf, "CONTINENT")
+    
+    lexicon.wikipedia.Person.tagText(tokenSequence,vf, "WIKI-PERSON")
+    lexicon.wikipedia.Event.tagText(tokenSequence,vf, "WIKI-EVENT")
+    lexicon.wikipedia.Location.tagText(tokenSequence,vf, "WIKI-LOCATION")
+    lexicon.wikipedia.Organization.tagText(tokenSequence,vf, "WIKI-ORG")
+    lexicon.wikipedia.ManMadeThing.tagText(tokenSequence,vf, "MANMADE")
+    lexicon.iesl.Demonym.tagText(tokenSequence,vf, "DEMONYM")
+    
+    lexicon.wikipedia.Book.tagText(tokenSequence,vf, "WIKI-BOOK")
+    lexicon.wikipedia.Business.tagText(tokenSequence,vf, "WIKI-BUSINESS")
+    lexicon.wikipedia.Film.tagText(tokenSequence,vf, "WIKI-FILM")
+    
+    lexicon.wikipedia.LocationAndRedirect.tagText(tokenSequence,vf, "WIKI-LOCATION-REDIRECT")
+    lexicon.wikipedia.PersonAndRedirect.tagText(tokenSequence,vf, "WIKI-PERSON-REDIRECT")
+    lexicon.wikipedia.OrganizationAndRedirect.tagText(tokenSequence,vf, "WIKI-ORG-REDIRECT")
+
     import cc.factorie.app.strings.simplifyDigits
     for (token <- document.tokens) {
-	    val features = vf(token)
+	  val features = vf(token)
       val rawWord = token.string
       val word = simplifyDigits(rawWord).toLowerCase
       features += "W="+word
@@ -258,46 +303,6 @@ class StackedChainNer[L<:NerTag](labelDomain: CategoricalDomain[String],
       features += "SHAPE="+cc.factorie.app.strings.stringShape(rawWord, 2)
       if (word.length > 5) { features += "P="+cc.factorie.app.strings.prefix(word, 4); features += "S="+cc.factorie.app.strings.suffix(word, 4) }
       if (token.isPunctuation) features += "PUNCTUATION"
-
-      if (lexicon.iesl.Month.containsLemmatizedWord(word)) features += "MONTH"
-      if (lexicon.iesl.Day.containsLemmatizedWord(word)) features += "DAY"
-
-      if (lexicon.iesl.PersonFirst.containsLemmatizedWord(word)) features += "PERSON-FIRST"
-      if (lexicon.iesl.PersonFirstHigh.containsLemmatizedWord(word)) features += "PERSON-FIRST-HIGH"
-      if (lexicon.iesl.PersonFirstHighest.containsLemmatizedWord(word)) features += "PERSON-FIRST-HIGHEST"
-      if (lexicon.iesl.PersonFirstMedium.containsLemmatizedWord(word)) features += "PERSON-FIRST-MEDIUM"
-
-      if (lexicon.iesl.PersonLast.containsLemmatizedWord(word)) features += "PERSON-LAST"
-      if (lexicon.iesl.PersonLastHigh.containsLemmatizedWord(word)) features += "PERSON-LAST-HIGH"
-      if (lexicon.iesl.PersonLastHighest.containsLemmatizedWord(word)) features += "PERSON-LAST-HIGHEST"
-      if (lexicon.iesl.PersonLastMedium.containsLemmatizedWord(word)) features += "PERSON-LAST-MEDIUM"
-
-      if (lexicon.iesl.PersonHonorific.containsLemmatizedWord(word)) features += "PERSON-HONORIFIC"
-
-      if (lexicon.iesl.Company.contains(token)) features += "COMPANY"
-      if (lexicon.iesl.JobTitle.contains(token)) features += "JOB-TITLE"
-      if (lexicon.iesl.OrgSuffix.contains(token)) features += "ORG-SUFFIX"
-
-      if (lexicon.iesl.Country.contains(token)) features += "COUNTRY"
-      if (lexicon.iesl.City.contains(token)) features += "CITY"
-      if (lexicon.iesl.PlaceSuffix.contains(token)) features += "PLACE-SUFFIX"
-      if (lexicon.iesl.USState.contains(token)) features += "USSTATE"
-      if (lexicon.iesl.Continents.contains(token)) features += "CONTINENT"
-
-      if (lexicon.wikipedia.Person.contains(token)) features += "WIKI-PERSON"
-      if (lexicon.wikipedia.Event.contains(token)) features += "WIKI-EVENT"
-      if (lexicon.wikipedia.Location.contains(token)) features += "WIKI-LOCATION"
-      if (lexicon.wikipedia.Organization.contains(token)) features += "WIKI-ORG"
-      if (lexicon.wikipedia.ManMadeThing.contains(token)) features += "MANMADE"
-      if (Demonyms.contains(token)) features += "DEMONYM"
-
-      if (lexicon.wikipedia.Book.contains(token)) features += "WIKI-BOOK"
-      if (lexicon.wikipedia.Business.contains(token)) features += "WIKI-BUSINESS"
-      if (lexicon.wikipedia.Film.contains(token)) features += "WIKI-FILM"
-
-      if (lexicon.wikipedia.LocationAndRedirect.contains(token)) features += "WIKI-LOCATION-REDIRECT"
-      if (lexicon.wikipedia.PersonAndRedirect.contains(token)) features += "WIKI-PERSON-REDIRECT"
-      if (lexicon.wikipedia.OrganizationAndRedirect.contains(token)) features += "WIKI-ORG-REDIRECT"
 
       if (clusters.size > 0 && clusters.contains(rawWord)) {
         features += "CLUS="+prefix(4,clusters(rawWord))
