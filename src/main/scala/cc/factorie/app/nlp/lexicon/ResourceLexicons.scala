@@ -37,6 +37,10 @@ class ResourceLexicons(val sourceFactory: String=>io.Source, val tokenizer:Strin
     try { this ++= sourceFactory(dir + "/" + name + ".txt") } catch { case e:java.io.IOException => {throw new Error("Could not find "+dir+"/"+name+"\n") } }
   }
 
+  class TriePhraseLexicon(name:String)(implicit dir:String) extends cc.factorie.app.nlp.lexicon.TriePhraseLexicon(dir+"/"+name, tokenizer, lemmatizer) {
+    try { this ++= sourceFactory(dir + "/" + name + ".txt") } catch { case e:java.io.IOException => {throw new Error("Could not find "+dir+"/"+name+"\n") } }
+  }
+
   object iesl {
     private implicit val dir = "iesl"
 
