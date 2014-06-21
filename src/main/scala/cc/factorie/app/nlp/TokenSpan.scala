@@ -77,6 +77,8 @@ class TokenSpanBuffer[S<:TokenSpan] extends SpanVarBuffer[S, Section, Token] wit
 object TokenSpan {
 
   //TODO this doesn't seem to be used anywhere, can it be deleted? -KS
+  //TODO If this is used, it could be incorporated into the TriePhraseLexcion 
+  //     using the AhoCorasick findMention method - craigacp
   def fromLexicon(lexicon:cc.factorie.app.nlp.lexicon.PhraseLexicon, document:Document): Int = {
     var spanCount = 0
     for (section <- document.sections; token <- section.tokens) {
