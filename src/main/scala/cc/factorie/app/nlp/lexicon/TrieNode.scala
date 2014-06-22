@@ -35,6 +35,7 @@ class TrieNode(val label : String, val output : String, var root : TrieNode, val
     private var phrases : Int = 0
     private var emit : Boolean = false
     private var exactEmit : Boolean = false
+    private var maxEmitDepth : Int = 0
 
     def this(sep : String) = {
         this("","",null,sep,0)
@@ -56,6 +57,11 @@ class TrieNode(val label : String, val output : String, var root : TrieNode, val
      * Returns true if this node emits a value it was constructed with.
      */
     def getExactEmit() : Boolean = { exactEmit }
+
+    /**
+     * Returns the maximum depth in the outputSet.
+     */
+    def getEmitDepth() : Int = { maxEmitDepth }
 
     /**
      * Write the node out to the logger.
@@ -97,6 +103,7 @@ class TrieNode(val label : String, val output : String, var root : TrieNode, val
             emit = true
             exactEmit = true
             outputSet.add((output,depth))
+            maxEmitDepth = depth
         } else {
             val curWord : String = phrase.dequeue
             var transitionNode = transitionMap.getOrElse(curWord,null)
@@ -107,6 +114,17 @@ class TrieNode(val label : String, val output : String, var root : TrieNode, val
             }
             transitionNode += phrase
             phrases = phrases + 1
+        }
+    }
+
+    /**
+     * Updates the maxEmitDepth.
+     */
+    private def updateEmitDepth() : Unit = {
+        for (e <- outputSet) {
+            if (e._2 > maxEmitDepth) {
+                maxEmitDepth = e._2
+            }
         }
     }
     
@@ -141,6 +159,7 @@ object TrieNode {
                     if (tmp.emit) {
                         childNode.emit = true
                         childNode.outputSet ++= tmp.outputSet
+                        childNode.updateEmitDepth()
                     }
                 }
             }

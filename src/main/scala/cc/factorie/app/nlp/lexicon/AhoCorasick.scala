@@ -90,7 +90,7 @@ class AhoCorasick(val sep : String) extends Serializable {
             if (next != null) {
                 curNode = next;
                 i = i + 1;
-            } else if (curNode.failNode != root) {
+            } else if (curNode != root) {
                 curNode = curNode.failNode;
             } else {
                 curNode = curNode.failNode;
@@ -121,7 +121,7 @@ class AhoCorasick(val sep : String) extends Serializable {
             if (next != null) {
                 curNode = next;
                 i = i + 1;
-            } else if (curNode.failNode != root) {
+            } else if (curNode != root) {
                 curNode = curNode.failNode;
             } else {
                 curNode = curNode.failNode;
@@ -130,7 +130,7 @@ class AhoCorasick(val sep : String) extends Serializable {
             if (curNode.getEmit) {
                 //annotate tokens
                 var j = i - 1
-                while (j >= (i - curNode.depth)) {
+                while (j >= (i - curNode.getEmitDepth)) {
                     featureFunc(input.get(j)) += tag
                     j = j - 1
                 }
@@ -154,7 +154,7 @@ class AhoCorasick(val sep : String) extends Serializable {
             if (next != null) {
                 curNode = next;
                 i = i + 1;
-            } else if (curNode.failNode != root) {
+            } else if (curNode != root) {
                 curNode = curNode.failNode;
             } else {
                 curNode = curNode.failNode;
@@ -163,7 +163,7 @@ class AhoCorasick(val sep : String) extends Serializable {
             if (curNode.getEmit) {
                 //annotate tokens
                 var j = i - 1
-                while (j >= (i - curNode.depth)) {
+                while (j >= (i - curNode.getEmitDepth)) {
                     featureFunc(input.get(j)) += tag
                     j = j - 1
                 }
