@@ -26,7 +26,7 @@ import scala.collection.JavaConversions._
  * An implementation of the Aho-Corasick (1975) string matching automaton.
  */
 class AhoCorasick(val sep : String) extends Serializable {
-    private val logger = new Logger("cc.factorie.app.nlp.lexicon.AhoCorasick")
+    private val logger = Logger.getLogger("cc.factorie.app.nlp.lexicon.AhoCorasick")
     
     val root : TrieNode = new TrieNode(sep)
     var constructed : Boolean = false

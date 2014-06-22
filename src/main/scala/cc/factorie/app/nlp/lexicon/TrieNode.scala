@@ -117,7 +117,7 @@ class TrieNode(val label : String, val output : String, var root : TrieNode, val
 }
 
 object TrieNode {
-    private val logger : Logger = new Logger("cc.factorie.app.nlp.lexicon.TrieNode")
+    private val logger : Logger = Logger.getLogger("cc.factorie.app.nlp.lexicon.TrieNode")
 
     def setFailureTransitions(root : TrieNode) : Unit = {
         //logger.log(Level.INFO,"Setting failure transitions.")

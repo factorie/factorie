@@ -74,7 +74,7 @@ class ResourceLexicons(val sourceFactory: String=>io.Source, val tokenizer:Strin
 
     object Say extends TriePhraseLexicon("say")
 
-    object Demonym extends TriePhraseLexicon(dir+"/demonyms") {
+    object Demonym extends TriePhraseLexicon("demonyms") {
       try {
         for (line <- sourceFactory(dir + "/demonyms.txt").getLines(); entry <- line.trim.split("\t")) this += entry
       } catch { case e:java.io.IOException => { throw new Error("Could not find "+dir+"/demonyms\n") } }
