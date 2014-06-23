@@ -27,7 +27,7 @@ object CollapsedParseTreeLabelDomain extends EnumDomain {
   ParseTreeLabelDomain.foreach(v => index(v.category))
 
   //for collapsed parse trees
-  Seq("about", "above", "across", "after", "against", "around", "at", "before", "behind", "below", "beneath", "beside", "besides",
+  Seq("about", "above", "across", "after", "against", "around", "at", "as", "before", "behind", "below", "beneath", "beside", "besides",
     "between", "beyond", "by", "down", "during", "except", "for", "from", "in", "inside", "into", "like", "near", "of", "off", "on", "out",
     "outside", "over", "since", "through", "throughout", "till", "to", "toward", "under", "until", "up", "upon", "with", "without").foreach(index)
 
