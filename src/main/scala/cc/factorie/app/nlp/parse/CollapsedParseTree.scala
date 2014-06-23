@@ -29,10 +29,9 @@ object CollapsedParseTreeLabelDomain extends EnumDomain {
   //for collapsed parse trees
   Seq("about", "above", "across", "after", "against", "around", "at", "as", "before", "behind", "below", "beneath", "beside", "besides",
     "between", "beyond", "by", "down", "during", "except", "for", "from", "in", "inside", "into", "like", "near", "of", "off", "on", "out",
-    "outside", "over", "since", "through", "throughout", "till", "to", "toward", "under", "until", "up", "upon", "with", "without").foreach(index)
+    "outside", "over", "since", "through", "throughout", "till", "to", "than", "toward", "under", "until", "up", "upon", "via",   "with", "without").foreach(index)
 
   index("") // necessary for empty categories
-  freeze()
   def defaultCategory = "nn"
 }
 
@@ -321,7 +320,7 @@ class CollapsedParseTree(val parseTree:TokenParseTree) extends ParseTree2 with I
     val vertices = ArrayBuffer[ParseTreeVertex]()
     val idxMap = sentence.tokens.foldLeft(mutable.HashMap[AnyRef,Int]())((map,t) => {
       if(!phraseTokens.contains(t)) {
-        if(parseTree.label(t.positionInSentence).categoryValue != "prep") {
+        if(parseTree.label(t.positionInSentence).categoryValue != "prep" || parseTree.getChildrenIndices(t.positionInSentence).exists(c => !parseTree.label(c).categoryValue.matches("pobj|pcomp"))) {
           map += t -> map.size
           vertices += new TokenParseTreeVertex(this,t)
         }
@@ -341,18 +340,22 @@ class CollapsedParseTree(val parseTree:TokenParseTree) extends ParseTree2 with I
     while(i < aLength) {
       val t = vertices(i).token
       val l = parseTree.label(t.positionInSentence).categoryValue
-      if(l != "prep") {
-        var parent = parseTree.parent(t.positionInSentence).vertex
-        //collapse prepositions
-        labels(i) = if(l =="pobj") {
-          val labelString = parent.token.lemmaString
-          parent = parseTree.parent(parent.token.positionInSentence).vertex
-          new ParseTreeLabel2(this, labelString)
-        } else new ParseTreeLabel2(this, l)
-        if(parent != null)
-          parents(i) = new ParseTreeParent(this, idxMap.getOrElse(parent.token, idxMap(phraseTokens(parent.token))))
-        else parents(i) = new ParseTreeParent(this, ParseTree.rootIndex)
-      }
+      var parent = parseTree.parent(t.positionInSentence).vertex
+      //collapse prepositions
+      labels(i) = if((l =="pobj"|| l =="pcomp") && !idxMap.contains(parent.token)) {
+        val labelString = parent.token.lemmaString
+        parent = parseTree.parent(parent.token.positionInSentence).vertex
+        new ParseTreeLabel2(this, labelString)
+      } else new ParseTreeLabel2(this, l)
+      if(parent != null) {
+        try {
+          val parentIdx = idxMap.getOrElse(parent.token, idxMap(phraseTokens(parent.token)))
+          parents(i) = new ParseTreeParent(this, parentIdx)
+        } catch {
+          case e:Throwable =>
+            println(e.printStackTrace())
+        }
+      } else parents(i) = new ParseTreeParent(this, ParseTree.rootIndex)
       i += 1
     }
     (labels,parents,vertices.toArray)
