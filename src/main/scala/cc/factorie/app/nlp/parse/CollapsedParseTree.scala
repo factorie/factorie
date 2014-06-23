@@ -411,7 +411,7 @@ trait ImmutableParseTreeLike extends ParseTree2 {
     if(filter == defaultFilter)
       _children(parentIndex)
     else
-      _children(parentIndex).takeWhile( i => !filter(i))
+      _children(parentIndex).filter( i => !filter(i))
   }
 
   override def leftChildren(parentIndex:Int) = getChildrenIndices(parentIndex).withFilter(_ < parentIndex).map(_vertices(_))
