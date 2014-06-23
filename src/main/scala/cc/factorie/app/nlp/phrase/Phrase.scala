@@ -62,7 +62,7 @@ object HeadTokenOffset {
     if (parse ne null) {
       var headSentenceIndex = span.end-1 - sentence.start
       var parentSentenceIndex = parse.parentIndex(headSentenceIndex)
-      while (span.contains(parentSentenceIndex)) {
+      while (span.contains(parentSentenceIndex + sentence.start)) {
         headSentenceIndex = parentSentenceIndex
         parentSentenceIndex = parse.parentIndex(parentSentenceIndex)
       }
