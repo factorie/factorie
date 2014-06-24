@@ -66,6 +66,14 @@ object HeadTokenOffset {
         headSentenceIndex = parentSentenceIndex
         parentSentenceIndex = parse.parentIndex(parentSentenceIndex)
       }
+      //Sometimes phrases are broken, consisting of more than one subgraph in the parse tree; check if parent of exit is not again part of mention
+      if(parentSentenceIndex >= 0) {
+        parentSentenceIndex = parse.parentIndex(parentSentenceIndex)
+        while (span.contains(parentSentenceIndex + sentence.start)) {
+          headSentenceIndex = parentSentenceIndex
+          parentSentenceIndex = parse.parentIndex(parentSentenceIndex)
+        }
+      }
       return headSentenceIndex + sentence.start - span.start
     } else {
       // If there is a preposition, select the word just before the first preposition
