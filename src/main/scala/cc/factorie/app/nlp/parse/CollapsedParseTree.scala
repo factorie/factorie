@@ -312,9 +312,11 @@ class CollapsedParseTree(val parseTree:TokenParseTree) extends ParseTree2 with I
     val doc = sentence.document
     val cf = doc.coref
     if(cf != null) {
+      def addPhrase(p:Phrase) = p.foreach(t => if(phraseTokens.get(t).fold(-1)(_.length) < p.length) phraseTokens += t -> p)
       val mentions = cf.mentions
-      mentions.foreach(m => m.phrase.tokens.foreach(t => phraseTokens += t -> m.phrase))
-      doc.attr.all[PhraseList].foreach(_.withFilter(p => sentence.start <= p.start && sentence.end >= p.end).foreach(p => p.tokens.foreach(t => phraseTokens += t -> p)))
+      //Sometimes there are nested phrases, so the largest should be chosen
+      mentions.foreach(m => addPhrase(m.phrase))
+      doc.attr.all[PhraseList].foreach(_.withFilter(p => sentence.start <= p.start && sentence.end >= p.end).foreach(addPhrase))
     }
     val vertices = ArrayBuffer[ParseTreeVertex]()
     val idxMap = sentence.tokens.foldLeft(mutable.HashMap[AnyRef,Int]())((map,t) => {
