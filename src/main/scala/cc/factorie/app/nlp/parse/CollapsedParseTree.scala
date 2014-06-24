@@ -308,18 +308,18 @@ class ImmutableParseTree(sentence:Sentence, targetParents:Seq[Int], targetLabels
 class CollapsedParseTree(val parseTree:TokenParseTree) extends ParseTree2 with ImmutableParseTreeLike {
   override val sentence: Sentence = parseTree.sentence
   override protected val (_labels, _parents, _vertices): (Array[ParseTreeLabel2],Array[ParseTreeParent], Array[ParseTreeVertex]) = {
-    var phrases = List[Phrase]()
+    var phraseTokens = mutable.Map[Token,Phrase]()
     val doc = sentence.document
     val cf = doc.coref
     if(cf != null) {
       val mentions = cf.mentions
-      phrases ++= (mentions.map(_.phrase) ++ doc.attr.all[PhraseList].flatten).filter(p => sentence.start <= p.start && sentence.end >= p.end)
+      mentions.foreach(m => m.phrase.tokens.foreach(t => phraseTokens += t -> m.phrase))
+      doc.attr.all[PhraseList].foreach(_.withFilter(p => sentence.start <= p.start && sentence.end >= p.end).foreach(p => p.tokens.foreach(t => phraseTokens += t -> p)))
     }
-    phrases = phrases.distinct
-    val phraseTokens = phrases.flatMap(p => p.tokens.map(_ -> p)).toMap
     val vertices = ArrayBuffer[ParseTreeVertex]()
     val idxMap = sentence.tokens.foldLeft(mutable.HashMap[AnyRef,Int]())((map,t) => {
       if(!phraseTokens.contains(t)) {
+        //collapse simple prepositions
         if(parseTree.label(t.positionInSentence).categoryValue != "prep" || parseTree.getChildrenIndices(t.positionInSentence).exists(c => !parseTree.label(c).categoryValue.matches("pobj|pcomp"))) {
           map += t -> map.size
           vertices += new TokenParseTreeVertex(this,t)
