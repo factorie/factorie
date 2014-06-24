@@ -315,7 +315,7 @@ class CollapsedParseTree(val parseTree:TokenParseTree) extends ParseTree2 with I
       def addPhrase(p:Phrase) = p.foreach(t => if(phraseTokens.get(t).fold(-1)(_.length) < p.length) phraseTokens += t -> p)
       val mentions = cf.mentions
       //Sometimes there are nested phrases, so the largest should be chosen
-      mentions.foreach(m => addPhrase(m.phrase))
+      mentions.withFilter(p => sentence.start <= p.start && sentence.end >= p.end).foreach(m => addPhrase(m.phrase))
       doc.attr.all[PhraseList].foreach(_.withFilter(p => sentence.start <= p.start && sentence.end >= p.end).foreach(addPhrase))
     }
     val vertices = ArrayBuffer[ParseTreeVertex]()
@@ -362,7 +362,7 @@ class CollapsedParseTree(val parseTree:TokenParseTree) extends ParseTree2 with I
     }
     (labels,parents,vertices.toArray)
   }
-}
+}   
 
 trait MutableParseTreeLike extends ParseTree2 {
   /** Set the parent of the token at position 'child' to be at position 'parentIndex'.  A parentIndex of -1 indicates the root.  */
