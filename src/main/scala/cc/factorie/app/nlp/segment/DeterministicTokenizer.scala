@@ -12,7 +12,7 @@
    limitations under the License. */
 package cc.factorie.app.nlp.segment
 
-import cc.factorie.app.nlp.{DocumentAnnotator, Token, Document}
+import cc.factorie.app.nlp.{UnknownDocumentAnnotator, DocumentAnnotator, Token, Document}
 
 /** Split a String into a sequence of Tokens.  Aims to adhere to tokenization rules used in Ontonotes and Penn Treebank.
     Note that CoNLL tokenization would use tokenizeAllDashedWords=true.
@@ -137,6 +137,7 @@ class DeterministicTokenizer(caseSensitive:Boolean = false, tokenizeSgml:Boolean
         if (string == ".") prevTokenPeriod = true else prevTokenPeriod = false
       }
     }
+    if (!document.annotators.contains(classOf[Token])) document.annotators(classOf[Token]) = UnknownDocumentAnnotator.getClass
     document
   }
   def prereqAttrs: Iterable[Class[_]] = Nil
