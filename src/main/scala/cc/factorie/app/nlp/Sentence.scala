@@ -12,8 +12,6 @@
    limitations under the License. */
 
 package cc.factorie.app.nlp
-import cc.factorie._
-import scala.collection.mutable.ArrayBuffer
 
 
 /** A span of Tokens making up a sentence within a Section of a Document.
@@ -33,7 +31,8 @@ class Sentence(sec:Section, initialStart:Int, initialLength:Int) extends TokenSp
   def this(doc:Document) = this(doc.asSection)
 
   // Initialization
-  if (!sec.document.annotators.contains(classOf[Sentence])) sec.document.annotators(classOf[Sentence]) = UnknownDocumentAnnotator.getClass
+  // removed for efficiency -- shouldn't we do this in the annotators / loaders ?
+//  if (!sec.document.annotators.contains(classOf[Sentence])) sec.document.annotators(classOf[Sentence]) = UnknownDocumentAnnotator.getClass
   sec.addSentence(this)
   private val _indexInSection: Int = sec.sentences.length - 1
 
