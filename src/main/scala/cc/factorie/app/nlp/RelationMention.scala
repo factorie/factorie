@@ -3,6 +3,7 @@ package cc.factorie.app.nlp
 import cc.factorie.variable._
 import cc.factorie.app.nlp.coref._
 import cc.factorie.util.Attr
+import scala.collection.mutable.ArrayBuffer
 
 object RelationArgFeaturesDomain extends CategoricalDomain[String]
 
@@ -25,6 +26,8 @@ class ArgFeatures(val arg: Mention, val first: Boolean) extends BinaryFeatureVec
 }
 
 class RelationMentionsSet extends SetVariable[RelationMention]
+
+class RelationMentionList extends ArrayBuffer[RelationMention]() with Attr
 
 class RelationMention(val arg1: Mention, val arg2: Mention, val relationType: String, val evidence: String, val relationSubType: Option[String] = None) extends ArrowVariable(arg1, arg2) with Attr {
   @deprecated("Marked for Possible Deletion")
