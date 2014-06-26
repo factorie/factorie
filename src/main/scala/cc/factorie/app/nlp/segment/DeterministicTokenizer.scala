@@ -137,7 +137,8 @@ class DeterministicTokenizer(caseSensitive:Boolean = false, tokenizeSgml:Boolean
         if (string == ".") prevTokenPeriod = true else prevTokenPeriod = false
       }
     }
-    if (!document.annotators.contains(classOf[Token])) document.annotators(classOf[Token]) = UnknownDocumentAnnotator.getClass
+    if (!document.annotators.contains(classOf[Token]))
+      document.annotators(classOf[Token]) = this.getClass
     document
   }
   def prereqAttrs: Iterable[Class[_]] = Nil

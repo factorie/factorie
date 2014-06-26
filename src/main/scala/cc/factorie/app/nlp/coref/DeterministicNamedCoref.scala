@@ -47,6 +47,8 @@ class DeterministicNamedCoref(phraseFinder:MentionPhraseFinder) extends Document
       else {val entity = coref.newEntity(); val mention = coref.addMention(phrase, entity); entity.canonicalMention = mention}
     }
     document.attr += coref
+    if (!document.annotators.contains(classOf[WithinDocCoref]))
+      document.annotators(classOf[WithinDocCoref]) = this.getClass
     document
   }
 }
