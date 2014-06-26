@@ -230,7 +230,7 @@ class TransitionBasedParser extends DocumentAnnotator {
   def process(doc: Document) = {
     doc.sentences.foreach(process)
     if (!doc.annotators.contains(classOf[ParseTree]))
-      document.annotators(classOf[ParseTree]) = this.getClass
+      doc.annotators(classOf[ParseTree]) = this.getClass
     doc
   }
   def prereqAttrs = Seq(classOf[Sentence], classOf[PennPosTag], classOf[lemma.WordNetTokenLemma]) // Sentence also includes Token
