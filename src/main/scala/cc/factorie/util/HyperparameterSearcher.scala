@@ -381,7 +381,7 @@ class SSHActorExecutor(user: String,
         (sshCommand #> new java.io.File(logFile)).!
         val doubleStr = s"tail -n 1 $logFile".!!
         val ret = {
-          if(!doubleStr.matches("""/-?(?:0|[1-9]\d*)(?:\.\d*)?(?:[eE][+\-]?\d+)?/""")) Double.NaN
+          if(!doubleStr.matches("""/-?(?:0|[1-9]\d*)(?:\.\d*)?(?:[eE][+\-]?\d+)?/""")) Double.NegativeInfinity
           else doubleStr.toDouble
         }
         sender ! ret
