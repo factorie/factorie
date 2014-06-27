@@ -177,9 +177,7 @@ class AhoCorasick(val sep : String) extends Serializable {
     def ++=(input : Seq[Seq[String]]) : Unit = {
         logger.log(Logger.INFO)("Appending to automaton")
         for (e <- input) {
-            val queue = new Queue[String]()
-            queue ++= e
-            root += queue
+            root.add(e,0)
         }
         setTransitions()
     }
@@ -188,9 +186,7 @@ class AhoCorasick(val sep : String) extends Serializable {
      * Adds a single phrase to the Trie. The failure transitions will be recalculated on the next lookup.
      */
     def +=(input : Seq[String]) : Unit = {
-        val queue = new Queue[String]()
-        queue ++= input
-        root += queue
+        root.add(input,0)
         constructed = false
     }
 

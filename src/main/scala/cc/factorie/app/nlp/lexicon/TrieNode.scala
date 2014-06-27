@@ -98,21 +98,21 @@ class TrieNode(val label : String, val output : String, var root : TrieNode, val
     /**
      * Appends a phrase to the current node.
      */
-    def +=(phrase : Queue[String]) : Unit = {
-        if (phrase.isEmpty) {
+    def add(phrase : Seq[String], index : Int) : Unit = {
+        if (phrase.length <= index) {
             emit = true
             exactEmit = true
             outputSet.add((output,depth))
             maxEmitDepth = depth
         } else {
-            val curWord : String = phrase.dequeue
+            val curWord : String = phrase(index)
             var transitionNode = transitionMap.getOrElse(curWord,null)
             if (transitionNode == null) {
                 val newOutput = if (this == root) {curWord} else {output + sep + curWord}
                 transitionNode = new TrieNode(curWord, newOutput, root, sep, depth + 1)
                 transitionMap += (curWord -> transitionNode)
             }
-            transitionNode += phrase
+            transitionNode.add(phrase,index+1)
             phrases = phrases + 1
         }
     }
