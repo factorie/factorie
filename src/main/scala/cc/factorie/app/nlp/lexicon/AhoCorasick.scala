@@ -100,10 +100,12 @@ class AhoCorasick(val sep : String) extends Serializable {
                 for (e <- curNode.outputSet) {
                     val strBuffer = new StringBuffer()
                     var j = i - e
-                    while (j < i) {
+                    while (j < i-1) {
                         strBuffer.append(input.get(j))
+                        strBuffer.append(sep)
                         j = j + 1
                     }
+                    strBuffer.append(input.get(j))
                     mentions.add(new LexiconMention(strBuffer.toString,i-e,i))
                 }
             } 
