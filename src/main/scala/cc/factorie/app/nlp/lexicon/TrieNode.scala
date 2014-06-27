@@ -28,9 +28,10 @@ import scala.collection.mutable.Map
  * It's similar to the SuffixTree implementation, but with an extra link used if 
  * the lookup at a specific node fails.
  */
-class TrieNode(val label : String, val output : String, var root : TrieNode, val sep : String, val depth : Int) extends Serializable {
-    val transitionMap : Map[String, TrieNode] = JavaHashMap[String,TrieNode]()
-    val outputSet : Set[(String,Int)] = JavaHashSet[(String,Int)]()
+class TrieNode(val label : String, var root : TrieNode, val sep : String, val depth : Int) extends Serializable {
+    //Most nodes have < 2 elements in the map, so start it smaller than a standard Java HashMap.
+    val transitionMap : Map[String, TrieNode] = JavaHashMap[String,TrieNode](2)
+    val outputSet : Set[Int] = JavaHashSet[Int](2)
     @transient var failNode : TrieNode = root
     private var phrases : Int = 0
     private var emit : Boolean = false
@@ -38,7 +39,7 @@ class TrieNode(val label : String, val output : String, var root : TrieNode, val
     private var maxEmitDepth : Int = 0
 
     def this(sep : String) = {
-        this("","",null,sep,0)
+        this("",null,sep,0)
         root = this
         failNode = this
     }
@@ -78,8 +79,8 @@ class TrieNode(val label : String, val output : String, var root : TrieNode, val
             buffer.append(failNode.label)
             buffer.append("\n")
         }
-        buffer.append("Output = ")
-        buffer.append(output)
+        buffer.append("Depth = ")
+        buffer.append(depth)
         buffer.append("\n")
         if (emit) {
             buffer.append("Emit = true\n")
@@ -102,14 +103,13 @@ class TrieNode(val label : String, val output : String, var root : TrieNode, val
         if (phrase.length <= index) {
             emit = true
             exactEmit = true
-            outputSet.add((output,depth))
+            outputSet.add(depth)
             maxEmitDepth = depth
         } else {
             val curWord : String = phrase(index)
             var transitionNode = transitionMap.getOrElse(curWord,null)
             if (transitionNode == null) {
-                val newOutput = if (this == root) {curWord} else {output + sep + curWord}
-                transitionNode = new TrieNode(curWord, newOutput, root, sep, depth + 1)
+                transitionNode = new TrieNode(curWord, root, sep, depth + 1)
                 transitionMap += (curWord -> transitionNode)
             }
             transitionNode.add(phrase,index+1)
@@ -122,8 +122,8 @@ class TrieNode(val label : String, val output : String, var root : TrieNode, val
      */
     private def updateEmitDepth() : Unit = {
         for (e <- outputSet) {
-            if (e._2 > maxEmitDepth) {
-                maxEmitDepth = e._2
+            if (e > maxEmitDepth) {
+                maxEmitDepth = e
             }
         }
     }

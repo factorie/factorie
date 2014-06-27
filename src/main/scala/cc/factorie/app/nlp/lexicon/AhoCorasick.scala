@@ -98,7 +98,13 @@ class AhoCorasick(val sep : String) extends Serializable {
             }
             if (curNode.getEmit) {
                 for (e <- curNode.outputSet) {
-                    mentions.add(new LexiconMention(e._1,i-e._2,i))
+                    val strBuffer = new StringBuffer()
+                    var j = i - e
+                    while (j < i) {
+                        strBuffer.append(input.get(j))
+                        j = j + 1
+                    }
+                    mentions.add(new LexiconMention(strBuffer.toString,i-e,i))
                 }
             } 
         }
