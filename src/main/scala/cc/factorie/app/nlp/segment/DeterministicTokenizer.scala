@@ -31,7 +31,8 @@ class DeterministicTokenizer(caseSensitive:Boolean = false, tokenizeSgml:Boolean
   val html = "(?:<script[^>]*>(?:[^\u0000](?!</script>))*[^\u0000]?</script>)|(?:<style[^>]*>(?:[^\u0000](?!</style>))*[^\u0000]?</style>)"; if (!tokenizeSgml) patterns += html // The [^\u0000] ensures we match newline also
   val htmlComment = "(?:<|&lt;)!--(?:[^\u0000](?!-->))*[^\u0000]?--(?:>|&gt;)"; patterns += htmlComment
   val sgml2 = "<%(?:[^\u0000](?!%>))*[^\u0000]?%>"; patterns += sgml2 // Some HTML contains "<% blah %>" tags.
-  val sgml = "</?[A-Za-z!](?:[^>]|%>)*(?<!%)>"; patterns += sgml // Closing with "%>" doesn't count
+  val sgml = "</?[A-Za-z!].*?(?<!%)>"; patterns += sgml // Closing with "%>" doesn't count
+
   val htmlSymbol = "&(?:HT|TL|UR|LR|QC|QL|QR|amp|copy|reg|trade|odq|nbsp|cdq|lt|gt|#[0-9A-Za-z]+);"; patterns += htmlSymbol // TODO Make this list complete
   val url = "https?://[^ \t\n\f\r\"<>|()]+[^ \t\n\f\r\"<>|.!?(){},-]"; patterns += url
   val url2 = "(?:(?:www\\.(?:[^ \t\n\f\r\"<>|.!?(){},]+\\.)+[a-zA-Z]{2,4})|(?:(?:[^ \t\n\f\r\"`'<>|.!?(){},-_$]+\\.)+(?:com|org|net|edu|gov|cc|info|uk|de|fr|ca)))(?:/[^ \t\n\f\r\"<>|()]+[^ \t\n\f\r\"<>|.!?(){},-])?"; patterns += url2 // Common simple URL without the http
