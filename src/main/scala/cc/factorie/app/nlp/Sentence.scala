@@ -13,7 +13,6 @@
 
 package cc.factorie.app.nlp
 
-
 /** A span of Tokens making up a sentence within a Section of a Document.
     A Sentence is a special case of a TokenSpan, stored in its Section, and available through the Section.sentences method.
     From the Sentence you can get its sequence of Tokens, the Section that contains it, and the Document that contains it.

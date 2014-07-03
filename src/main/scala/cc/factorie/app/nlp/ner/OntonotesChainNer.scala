@@ -16,7 +16,7 @@ import model._
 import variable._
 import cc.factorie.app.nlp._
 import java.io.{BufferedInputStream, BufferedOutputStream, File}
-import cc.factorie.util.{BinarySerializer, CubbieConversions}
+import cc.factorie.util.{Logger, BinarySerializer, CubbieConversions}
 import cc.factorie.optimize.{Trainer, LikelihoodExample}
 import cc.factorie.infer.{InferByBPChain, DiscreteProposalMaximizer, MaximizeByBPChain}
 import cc.factorie.variable.{BinaryFeatureVectorVariable, CategoricalVectorDomain, DiscreteVar}
@@ -25,9 +25,11 @@ import cc.factorie.model.{DotTemplateWithStatistics2, TemplateModel, DotTemplate
 /** A simple named entity recognizer, trained on Ontonotes data.
     It does not have sufficient features to be state-of-the-art. */
 class BasicOntonotesNER extends DocumentAnnotator {
+  private val logger = Logger.getLogger(this.getClass.getName)
+
   def this(url:java.net.URL) = {
     this()
-    println("NER2 loading from "+url)
+    logger.debug("NER2 loading from "+url)
     deserialize(url.openConnection.getInputStream)
   }
 
@@ -201,6 +203,18 @@ class BasicOntonotesNER extends DocumentAnnotator {
       //features ++= token.prevWindow(4).map(t2 => "PREVWINDOW="+simplifyDigits(t2.string).toLowerCase)
       //features ++= token.nextWindow(4).map(t2 => "NEXTWINDOW="+simplifyDigits(t2.string).toLowerCase)
     }
+    val tokenSequence = document.tokens.toSeq
+    val extractFeature = (t:Token)=>t.attr[FeaturesVariable]
+    lexicon.iesl.Money.tagText(tokenSequence,extractFeature,"MONEY")
+    lexicon.iesl.PersonFirst.tagText(tokenSequence,extractFeature,"PERSON-FIRST")
+    lexicon.iesl.Month.tagText(tokenSequence,extractFeature,"MONTH")
+    lexicon.iesl.PersonLast.tagText(tokenSequence,extractFeature,"PERSON-LAST")
+    lexicon.iesl.PersonHonorific.tagText(tokenSequence,extractFeature,"PERSON-HONORIFIC")
+    lexicon.iesl.Company.tagText(tokenSequence,extractFeature, "COMPANY")
+    lexicon.iesl.Country.tagText(tokenSequence,extractFeature, "COUNTRY")
+    lexicon.iesl.City.tagText(tokenSequence,extractFeature, "CITY")
+    lexicon.iesl.PlaceSuffix.tagText(tokenSequence,extractFeature, "PLACE-SUFFIX")
+    lexicon.iesl.USState.tagText(tokenSequence,extractFeature, "USSTATE")
     for (section <- document.sections)
       cc.factorie.app.chain.Observations.addNeighboringFeatureConjunctions(section.tokens, (t:Token)=>t.attr[FeaturesVariable], Seq(0), Seq(-1), Seq(-2), Seq(1), Seq(2))
   }

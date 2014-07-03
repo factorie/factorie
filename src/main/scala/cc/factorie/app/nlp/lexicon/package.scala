@@ -17,4 +17,5 @@ package object lexicon {
   val uscensus = ClasspathResourceLexicons.uscensus
   val wikipedia = ClasspathResourceLexicons.wikipedia
   val ssdi = ClasspathResourceLexicons.ssdi
+  val mandarin = ClasspathResourceLexicons.mandarin
 }

@@ -19,7 +19,7 @@ import scala.collection.mutable.{HashMap, ArrayBuffer}
 import scala.util.parsing.json.JSON
 import scala.annotation.tailrec
 import java.io._
-import cc.factorie.util.{BinarySerializer, FileUtils}
+import cc.factorie.util.{Logger, BinarySerializer, FileUtils}
 import scala._
 import cc.factorie.optimize._
 import scala.concurrent.Await
@@ -31,13 +31,15 @@ import scala.Some
 
 /** Default transition-based dependency parser. */
 class TransitionBasedParser extends DocumentAnnotator {
+  private val logger = Logger.getLogger(this.getClass.getName)
+
   def this(stream:InputStream) = { this(); deserialize(stream) }
   def this(file: File) = this(new FileInputStream(file))
   def this(url:java.net.URL) = {
     this()
     val stream = url.openConnection.getInputStream
     if (stream.available <= 0) throw new Error("Could not open "+url)
-    println("TransitionBasedParser loading from "+url)
+    logger.debug("TransitionBasedParser loading from "+url)
     deserialize(stream)
   }
 

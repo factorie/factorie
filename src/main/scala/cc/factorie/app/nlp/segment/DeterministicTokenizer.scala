@@ -27,11 +27,11 @@ class DeterministicTokenizer(caseSensitive:Boolean = false, tokenizeSgml:Boolean
   def tokenAnnotationString(token: Token) = token.stringStart.toString+'\t'+token.stringEnd.toString
   
   val patterns = new scala.collection.mutable.ArrayBuffer[String]
-  
+
   val html = "(?:<script[^>]*>(?:[^\u0000](?!</script>))*[^\u0000]?</script>)|(?:<style[^>]*>(?:[^\u0000](?!</style>))*[^\u0000]?</style>)"; if (!tokenizeSgml) patterns += html // The [^\u0000] ensures we match newline also
   val htmlComment = "(?:<|&lt;)!--(?:[^\u0000](?!-->))*[^\u0000]?--(?:>|&gt;)"; patterns += htmlComment
   val sgml2 = "<%(?:[^\u0000](?!%>))*[^\u0000]?%>"; patterns += sgml2 // Some HTML contains "<% blah %>" tags.
-  val sgml = "</?[A-Za-z!](?:[^>]|%>)*(?<!%)>"; patterns += sgml // Closing with "%>" doesn't count
+  val sgml = "</?[A-Za-z!].*?(?<!%)>"; patterns += sgml // Closing with "%>" doesn't count
   val htmlSymbol = "&(?:HT|TL|UR|LR|QC|QL|QR|amp|copy|reg|trade|odq|nbsp|cdq|lt|gt|#[0-9A-Za-z]+);"; patterns += htmlSymbol // TODO Make this list complete
   val url = "https?://[^ \t\n\f\r\"<>|()]+[^ \t\n\f\r\"<>|.!?(){},-]"; patterns += url
   val url2 = "(?:(?:www\\.(?:[^ \t\n\f\r\"<>|.!?(){},]+\\.)+[a-zA-Z]{2,4})|(?:(?:[^ \t\n\f\r\"`'<>|.!?(){},-_$]+\\.)+(?:com|org|net|edu|gov|cc|info|uk|de|fr|ca)))(?:/[^ \t\n\f\r\"<>|()]+[^ \t\n\f\r\"<>|.!?(){},-])?"; patterns += url2 // Common simple URL without the http
@@ -50,7 +50,7 @@ class DeterministicTokenizer(caseSensitive:Boolean = false, tokenizeSgml:Boolean
   // Abbreviation handling
   val consonantNonAbbrevs = "(?:Ng|cwm|nth|pm)(?=\\.)"; patterns += consonantNonAbbrevs // the "val abbrev" below matches all sequences of consonants followed by a period; these are exceptions to that rule
   val month = "Jan|Feb|Mar|Apr|Jun|Jul|Aug|Sep|Sept|Oct|Nov|Dec" // Note that "May" is not included because it is not an abbreviation
-  val day = "Mon|Tue|Tues|Wed|Thu|Thurs|Fri" 
+  val day = "Mon|Tue|Tues|Wed|Thu|Thurs|Fri"
   val state = "Ala|Alab|Ariz|Ark|Calif|Colo|Conn|Del|Fla|Ill|Ind|Kans|Kan|Ken|Kent|Mass|Mich|Minn|Miss|Mont|Nebr|Neb|Nev|Dak|Okla|Oreg|Tenn|Tex|Virg|Wash|Wis|Wyo"
   val state2 = "Ak|As|Az|Ar|Ca|Co|Ct|De|Fm|Fl|Ga|Gu|Hi|Id|Il|Ia|Ks|Ky|La|Mh|Md|Ma|Mi|Mn|Ms|Mo|Mt|Ne|Nv|Mp|Pw|Pa|Pr|Tn|Tx|Ut|Vt|Vi|Va|Wa|Wi|Wy"
   // Removed two-word state abbreviations and also ME, OK, OR, OH
@@ -65,7 +65,7 @@ class DeterministicTokenizer(caseSensitive:Boolean = false, tokenizeSgml:Boolean
   patterns += abbrevs
   val noAbbrev = "[Nn]o\\.(?=\\p{Z}*\\p{Nd})"; patterns += noAbbrev // Capture "No." when followed by a number (as in "No. 5", where it is an abbreviation of "number").  // TODO Consider a token normalization to "number"? -akm
   val latin2 = "(?:i.e|e.g)(?!\\p{L})"; patterns += latin2 // i.e e.g
-    
+
   //val htmlLetter = "(?:&[aeiounyAEIOUNY](acute|grave|uml|circ|ring|tilde);)"
   val htmlAccentedLetter = "(?:&[aeiouyntlAEIOUYNTL](?:acute|grave|uml|circ|orn|tilde|ring);)"; patterns += htmlAccentedLetter // TODO Make this list complete; see http://www.starr.net/is/type/htmlcodes.html
   val letter = s"(?:[\\p{L}\\p{M}]|$htmlAccentedLetter)"

@@ -105,10 +105,14 @@ class TokenSpanList[S<:TokenSpan](spans:Iterable[S]) extends SpanVarList[S, Sect
 class TokenSpanBuffer[S<:TokenSpan] extends SpanVarBuffer[S, Section, Token] with TokenSpanCollection[S]
 
 object TokenSpan {
+
+  //TODO this doesn't seem to be used anywhere, can it be deleted? -KS
+  //TODO If this is used, it could be incorporated into the TriePhraseLexcion 
+  //     using the AhoCorasick findMention method - craigacp
   def fromLexicon(lexicon:cc.factorie.app.nlp.lexicon.PhraseLexicon, document:Document): Int = {
     var spanCount = 0
     for (section <- document.sections; token <- section.tokens) {
-      val len = lexicon.startsAt(token) 
+      val len = lexicon.startsAt(token)
       if (len > 0) {
         throw new Error("Not yet implemented.")  // To what SpanList should these tokens be added? -akm
         val span = new TokenSpan(section, token.position, len)
