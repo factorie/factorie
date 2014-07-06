@@ -29,139 +29,139 @@ import scala.collection.mutable.Map
  * the lookup at a specific node fails.
  */
 class TrieNode(val label : String, var root : TrieNode, val sep : String, val depth : Int) extends Serializable {
-    //Most nodes have < 2 elements in the map, so start it smaller than a standard Java HashMap.
-    val transitionMap : Map[String, TrieNode] = JavaHashMap[String,TrieNode](2)
-    val outputSet : Set[Int] = JavaHashSet[Int](2)
-    @transient var failNode : TrieNode = root
-    private var phrases : Int = 0
-    private var emit : Boolean = false
-    private var exactEmit : Boolean = false
-    private var maxEmitDepth : Int = 0
-
-    def this(sep : String) = {
-        this("",null,sep,0)
-        root = this
-        failNode = this
+  //Most nodes have < 2 elements in the map, so start it smaller than a standard Java HashMap.
+  val transitionMap : Map[String, TrieNode] = JavaHashMap[String,TrieNode](2)
+  val outputSet : Set[Int] = JavaHashSet[Int](2)
+  @transient var failNode : TrieNode = root
+  private var phrases : Int = 0
+  private var emit : Boolean = false
+  private var exactEmit : Boolean = false
+  private var maxEmitDepth : Int = 0
+  
+  def this(sep : String) = {
+    this("",null,sep,0)
+    root = this
+    failNode = this
+  }
+  
+  /** Returns the number of phrases below this node. */
+  def getNumPhrases() : Int = { phrases }
+  
+  /** Returns true if this node emits a value. */
+  def getEmit() : Boolean = { emit }
+  
+  /** Returns true if this node emits a value it was constructed with. */
+  def getExactEmit() : Boolean = { exactEmit }
+  
+  /** Returns the maximum depth in the outputSet. */
+  def getEmitDepth() : Int = { maxEmitDepth }
+  
+  /** Write the node out to the logger. */
+  def logNode() : Unit = {
+    val buffer = new StringBuilder()
+    buffer.append("Label = ")
+    buffer.append(label)
+    buffer.append("\n")
+    buffer.append("Fail state = ")
+    if (root == failNode) {
+      buffer.append("<root>\n")
+    } else {
+      buffer.append(failNode.label)
+      buffer.append("\n")
     }
-
-    /** Returns the number of phrases below this node. */
-    def getNumPhrases() : Int = { phrases }
-
-    /** Returns true if this node emits a value. */
-    def getEmit() : Boolean = { emit }
-    
-    /** Returns true if this node emits a value it was constructed with. */
-    def getExactEmit() : Boolean = { exactEmit }
-
-    /** Returns the maximum depth in the outputSet. */
-    def getEmitDepth() : Int = { maxEmitDepth }
-
-    /** Write the node out to the logger. */
-    def logNode() : Unit = {
-        val buffer = new StringBuilder()
-        buffer.append("Label = ")
-        buffer.append(label)
-        buffer.append("\n")
-        buffer.append("Fail state = ")
-        if (root == failNode) {
-            buffer.append("<root>\n")
-        } else {
-            buffer.append(failNode.label)
-            buffer.append("\n")
-        }
-        buffer.append("Depth = ")
-        buffer.append(depth)
-        buffer.append("\n")
-        if (emit) {
-            buffer.append("Emit = true\n")
-        } else {
-            buffer.append("Emit = false\n")
-        }
-        buffer.append("Transition table:\n")
-        for (e <- transitionMap) {
-            buffer.append("\t\t")
-            buffer.append(e._1)
-            buffer.append("\n")
-        }
-        TrieNode.logger.log(Logger.INFO)(buffer.toString())
+    buffer.append("Depth = ")
+    buffer.append(depth)
+    buffer.append("\n")
+    if (emit) {
+      buffer.append("Emit = true\n")
+    } else {
+      buffer.append("Emit = false\n")
     }
-    
-    /** Appends a phrase to the current node. */
-    def add(phrase : Seq[String], index : Int) : Unit = {
-        if (phrase.length <= index) {
-            emit = true
-            exactEmit = true
-            outputSet.add(depth)
-            maxEmitDepth = depth
-        } else {
-            val curWord : String = phrase(index)
-            var transitionNode = transitionMap.getOrElse(curWord,null)
-            if (transitionNode == null) {
-                transitionNode = new TrieNode(curWord, root, sep, depth + 1)
-                transitionMap += (curWord -> transitionNode)
-            }
-            transitionNode.add(phrase,index+1)
-            phrases = phrases + 1
-        }
+    buffer.append("Transition table:\n")
+    for (e <- transitionMap) {
+      buffer.append("\t\t")
+      buffer.append(e._1)
+      buffer.append("\n")
     }
-
-    /** Updates the maxEmitDepth. */
-    private def updateEmitDepth() : Unit = {
-        for (e <- outputSet) {
-            if (e > maxEmitDepth) {
-                maxEmitDepth = e
-            }
-        }
+    TrieNode.logger.log(Logger.INFO)(buffer.toString())
+  }
+  
+  /** Appends a phrase to the current node. */
+  def add(phrase : Seq[String], index : Int) : Unit = {
+    if (phrase.length <= index) {
+      emit = true
+      exactEmit = true
+      outputSet.add(depth)
+      maxEmitDepth = depth
+    } else {
+      val curWord : String = phrase(index)
+      var transitionNode = transitionMap.getOrElse(curWord,null)
+      if (transitionNode == null) {
+        transitionNode = new TrieNode(curWord, root, sep, depth + 1)
+        transitionMap += (curWord -> transitionNode)
+      }
+      transitionNode.add(phrase,index+1)
+      phrases = phrases + 1
     }
-    
-    /**
-     * Serialization method. It's usually faster to reconstruct the Trie from the source, but this ensures compatibility.
-     */
-    def readObject(in : java.io.ObjectInputStream) : Unit = { in.defaultReadObject(); failNode = root }
+  }
+  
+  /** Updates the maxEmitDepth. */
+  private def updateEmitDepth() : Unit = {
+    for (e <- outputSet) {
+      if (e > maxEmitDepth) {
+        maxEmitDepth = e
+      }
+    }
+  }
+  
+  /**
+   * Serialization method. It's usually faster to reconstruct the Trie from the source, but this ensures compatibility.
+   */
+  def readObject(in : java.io.ObjectInputStream) : Unit = { in.defaultReadObject(); failNode = root }
 }
 
 object TrieNode {
-    private val logger : Logger = Logger.getLogger("cc.factorie.app.nlp.lexicon.TrieNode")
-
-    def setFailureTransitions(root : TrieNode) : Unit = {
-        //logger.log(Level.INFO,"Setting failure transitions.")
-        val queue = new Queue[TrieNode]()
-        queue ++= root.transitionMap.values
-
-        while (!queue.isEmpty) {
-            val curNode = queue.dequeue()
-            for (e <- curNode.transitionMap) {
-                val childNode = e._2
-                queue += childNode
-                var curFailNode = curNode.failNode
-                while ((curFailNode != root) && (!curFailNode.transitionMap.contains(childNode.label))) {
-                    curFailNode = curFailNode.failNode
-                }
-                
-                val tmp = curFailNode.transitionMap.getOrElse(childNode.label,null)
-                if ((tmp != null) && (tmp != childNode)) {
-                    childNode.failNode = tmp
-                    if (tmp.emit) {
-                        childNode.emit = true
-                        childNode.outputSet ++= tmp.outputSet
-                        childNode.updateEmitDepth()
-                    }
-                }
-            }
+  private val logger : Logger = Logger.getLogger("cc.factorie.app.nlp.lexicon.TrieNode")
+  
+  def setFailureTransitions(root : TrieNode) : Unit = {
+    //logger.log(Level.INFO,"Setting failure transitions.")
+    val queue = new Queue[TrieNode]()
+    queue ++= root.transitionMap.values
+    
+    while (!queue.isEmpty) {
+      val curNode = queue.dequeue()
+      for (e <- curNode.transitionMap) {
+        val childNode = e._2
+        queue += childNode
+        var curFailNode = curNode.failNode
+        while ((curFailNode != root) && (!curFailNode.transitionMap.contains(childNode.label))) {
+          curFailNode = curFailNode.failNode
         }
-    }
-
-    def logTrie(root : TrieNode) : Unit = {
-        logger.log(Logger.INFO)("Logging trie")
-        val queue = new Queue[TrieNode]()
-        queue ++= root.transitionMap.values
-
-        root.logNode()
         
-        while (!queue.isEmpty) {
-            val curNode = queue.dequeue()
-            curNode.logNode()
-            queue ++= curNode.transitionMap.values
+        val tmp = curFailNode.transitionMap.getOrElse(childNode.label,null)
+        if ((tmp != null) && (tmp != childNode)) {
+          childNode.failNode = tmp
+          if (tmp.emit) {
+            childNode.emit = true
+            childNode.outputSet ++= tmp.outputSet
+            childNode.updateEmitDepth()
+          }
         }
+      }
     }
+  }
+  
+  def logTrie(root : TrieNode) : Unit = {
+    logger.log(Logger.INFO)("Logging trie")
+    val queue = new Queue[TrieNode]()
+    queue ++= root.transitionMap.values
+    
+    root.logNode()
+    
+    while (!queue.isEmpty) {
+      val curNode = queue.dequeue()
+      curNode.logNode()
+      queue ++= curNode.transitionMap.values
+    }
+  }
 }
