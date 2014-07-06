@@ -31,13 +31,8 @@ class AhoCorasick(val sep : String) extends Serializable {
     val root : TrieNode = new TrieNode(sep)
     var constructed : Boolean = false
     
-    /**
-     * Construct an instance from a Seq of phrases.
-     */
-    def this(sep : String, lexicon : Seq[Seq[String]]) = {
-        this(sep)
-        this ++= lexicon
-    }
+    /** Construct an instance from a Seq of phrases. */
+    def this(sep : String, lexicon : Seq[Seq[String]]) = { this(sep); this ++= lexicon }
 
     /**
      * Checks if the input phrase appears exactly in the lexicon.
@@ -47,54 +42,51 @@ class AhoCorasick(val sep : String) extends Serializable {
         if (!constructed) {
             setTransitions()
         }
-        var i = 0;
-        var curNode = root;
-        var found = true;
+        var i = 0
+        var curNode = root
+        var found = true
         //Iterate through the Trie testing to see if the next token exists
         while ((i < input.length) && (found)) {
             val head = input.get(i)
             val next = curNode.transitionMap.getOrElse(head,null)
             if (next != null) {
-                curNode = next;
-                i = i + 1;
+                curNode = next
+                i = i + 1
             } else {
                 //failed to find the next transition
-                found = false;
+                found = false
             } 
         }
         //if we reached the end of the input stream
         if (found) {
             //check if the current node should emit and if the output matches the input
             if (!curNode.getExactEmit) {
-                found = false;
+                found = false
             }
         }
-
-        return found;
+        found
     }
     
-    /**
-     * Finds all mentions of the trie phrases in a tokenized input text.
-     */
+    /** Finds all mentions of the trie phrases in a tokenized input text. */
     def findMentions(input : Seq[String]) : Set[LexiconMention] = {
         if (!constructed) {
             setTransitions()
         }
         val mentions : Set[LexiconMention] = new java.util.HashSet[LexiconMention]()
         var i = 0
-        var curNode = root;
+        var curNode = root
         while (i < input.length) {
             val head : String = input.get(i)
             //logger.log(Level.INFO, "Head = " + head + ", idx = " + index + ", label = " + label)
             val next = curNode.transitionMap.getOrElse(head,null)
             if (next != null) {
-                curNode = next;
-                i = i + 1;
+                curNode = next
+                i = i + 1
             } else if (curNode != root) {
-                curNode = curNode.failNode;
+                curNode = curNode.failNode
             } else {
-                curNode = curNode.failNode;
-                i = i + 1;
+                curNode = curNode.failNode
+                i = i + 1
             }
             if (curNode.getEmit) {
                 for (e <- curNode.outputSet) {
@@ -110,30 +102,28 @@ class AhoCorasick(val sep : String) extends Serializable {
                 }
             } 
         }
-        return mentions
+        mentions
     }
 
-    /**
-     * Tags a Token's features with a specific tag, if it's context forms a phrase in the trie.
-     */
+    /** Tags a Token's features with a specific tag, if it's context forms a phrase in the trie. */
     def tagMentions(input : Seq[Token], featureFunc : (Token => CategoricalVectorVar[String]), tag : String) : Unit = {
         if (!constructed) {
             setTransitions()
         }
         var i = 0
-        var curNode = root;
+        var curNode = root
         while (i < input.length) {
             val tokenString : String = input.get(i).string
             //logger.log(Level.INFO, "Head = " + head + ", idx = " + index + ", label = " + label)
             val next = curNode.transitionMap.getOrElse(tokenString,null)
             if (next != null) {
-                curNode = next;
-                i = i + 1;
+                curNode = next
+                i = i + 1
             } else if (curNode != root) {
-                curNode = curNode.failNode;
+                curNode = curNode.failNode
             } else {
-                curNode = curNode.failNode;
-                i = i + 1;
+                curNode = curNode.failNode
+                i = i + 1
             }
             if (curNode.getEmit) {
                 //annotate tokens
@@ -154,19 +144,19 @@ class AhoCorasick(val sep : String) extends Serializable {
             setTransitions()
         }
         var i = 0
-        var curNode = root;
+        var curNode = root
         while (i < input.length) {
             val tokenString : String = lemmatizer.lemmatize(input.get(i).string)
             //logger.log(Level.INFO, "Head = " + head + ", idx = " + index + ", label = " + label)
             val next = curNode.transitionMap.getOrElse(tokenString,null)
             if (next != null) {
-                curNode = next;
-                i = i + 1;
+                curNode = next
+                i = i + 1
             } else if (curNode != root) {
-                curNode = curNode.failNode;
+                curNode = curNode.failNode
             } else {
-                curNode = curNode.failNode;
-                i = i + 1;
+                curNode = curNode.failNode
+                i = i + 1
             }
             if (curNode.getEmit) {
                 //annotate tokens
@@ -179,14 +169,10 @@ class AhoCorasick(val sep : String) extends Serializable {
         }
     }
     
-    /**
-     * Adds a Seq of phrases into the current Trie, and fixes the failure transitions.
-     */
+    /** Adds a Seq of phrases into the current Trie, and fixes the failure transitions. */
     def ++=(input : Seq[Seq[String]]) : Unit = {
         logger.log(Logger.INFO)("Appending to automaton")
-        for (e <- input) {
-            root.add(e,0)
-        }
+        for (e <- input) { root.add(e,0) }
         setTransitions()
     }
 
@@ -198,9 +184,7 @@ class AhoCorasick(val sep : String) extends Serializable {
         constructed = false
     }
 
-    /**
-     * Calculate the failure transitions.
-     */
+    /** Calculate the failure transitions. */
     def setTransitions() : Unit = {
         TrieNode.setFailureTransitions(root)
         constructed = true
@@ -208,9 +192,7 @@ class AhoCorasick(val sep : String) extends Serializable {
 
     def size() : Int = { root.getNumPhrases() }
 
-    /**
-     * Logs the tree structure to stderr.
-     */
+    /** Logs the tree structure to stderr. */
     def logTrie() : Unit = { TrieNode.logTrie(root) }
 
     override def toString() : String = { "Aho-Corasick automaton containing " + size() + " phrases." }
@@ -233,21 +215,21 @@ class LexiconMention(val mention : String, val startIdx : Int, val endIdx : Int)
 
     override def equals(obj : Any) : Boolean = {
         if (obj == null) {
-            return false;
+            return false
         }
         if (getClass() != obj.getClass()) {
-            return false;
+            return false
         }
         val other = obj.asInstanceOf[LexiconMention]
         if (!this.mention.equals(other.mention)) {
-            return false;
+            return false
         }
         if (this.startIdx != other.startIdx) {
-            return false;
+            return false
         }
         if (this.endIdx != other.endIdx) {
-            return false;
+            return false
         }
-        return true;
+        return true
     }
 }

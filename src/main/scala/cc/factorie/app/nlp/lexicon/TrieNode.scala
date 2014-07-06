@@ -44,29 +44,19 @@ class TrieNode(val label : String, var root : TrieNode, val sep : String, val de
         failNode = this
     }
 
-    /**
-     * Returns the number of phrases below this node.
-     */
+    /** Returns the number of phrases below this node. */
     def getNumPhrases() : Int = { phrases }
 
-    /**
-     * Returns true if this node emits a value.
-     */
+    /** Returns true if this node emits a value. */
     def getEmit() : Boolean = { emit }
     
-    /**
-     * Returns true if this node emits a value it was constructed with.
-     */
+    /** Returns true if this node emits a value it was constructed with. */
     def getExactEmit() : Boolean = { exactEmit }
 
-    /**
-     * Returns the maximum depth in the outputSet.
-     */
+    /** Returns the maximum depth in the outputSet. */
     def getEmitDepth() : Int = { maxEmitDepth }
 
-    /**
-     * Write the node out to the logger.
-     */
+    /** Write the node out to the logger. */
     def logNode() : Unit = {
         val buffer = new StringBuilder()
         buffer.append("Label = ")
@@ -96,9 +86,7 @@ class TrieNode(val label : String, var root : TrieNode, val sep : String, val de
         TrieNode.logger.log(Logger.INFO)(buffer.toString())
     }
     
-    /**
-     * Appends a phrase to the current node.
-     */
+    /** Appends a phrase to the current node. */
     def add(phrase : Seq[String], index : Int) : Unit = {
         if (phrase.length <= index) {
             emit = true
@@ -117,9 +105,7 @@ class TrieNode(val label : String, var root : TrieNode, val sep : String, val de
         }
     }
 
-    /**
-     * Updates the maxEmitDepth.
-     */
+    /** Updates the maxEmitDepth. */
     private def updateEmitDepth() : Unit = {
         for (e <- outputSet) {
             if (e > maxEmitDepth) {
@@ -155,7 +141,6 @@ object TrieNode {
                 val tmp = curFailNode.transitionMap.getOrElse(childNode.label,null)
                 if ((tmp != null) && (tmp != childNode)) {
                     childNode.failNode = tmp
-                    //Should this emit if the childNode doesn't?
                     if (tmp.emit) {
                         childNode.emit = true
                         childNode.outputSet ++= tmp.outputSet
