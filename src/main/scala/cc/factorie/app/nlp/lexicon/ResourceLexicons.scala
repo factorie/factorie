@@ -24,50 +24,62 @@ import cc.factorie.util.ClasspathURL
 // To read from .jar in classpath use source = io.Source.fromInputStream(getClass.getResourceAsStream(_))
 // To read from directory in filesystem use source = io.Source.fromFile(new File(_))
 class ResourceLexicons(val sourceFactory: String=>io.Source, val tokenizer:StringSegmenter = cc.factorie.app.strings.nonWhitespaceSegmenter, val lemmatizer:Lemmatizer = LowercaseLemmatizer) {
-  class WordLexicon(name:String)(implicit dir:String) extends cc.factorie.app.nlp.lexicon.WordLexicon(dir+"/"+name, tokenizer, lemmatizer) {
+  /** deprecated **/
+  class ChainWordLexicon(name:String)(implicit dir:String) extends cc.factorie.app.nlp.lexicon.ChainWordLexicon(dir+"/"+name, tokenizer, lemmatizer) {
     this ++= sourceFactory(dir + "/" + name + ".txt")
   }
-  class PhraseLexicon(name:String)(implicit dir:String) extends cc.factorie.app.nlp.lexicon.PhraseLexicon(dir+"/"+name, tokenizer, lemmatizer) {
+  /** deprecated **/
+  class ChainPhraseLexicon(name:String)(implicit dir:String) extends cc.factorie.app.nlp.lexicon.ChainPhraseLexicon(dir+"/"+name, tokenizer, lemmatizer) {
     try { this ++= sourceFactory(dir + "/" + name + ".txt") } catch { case e:java.io.IOException => { throw new Error("Could not find "+dir+"/"+name+"\n") } }
   }
+
+  class PhraseLexicon(name:String)(implicit dir:String) extends cc.factorie.app.nlp.lexicon.PhraseLexicon(dir+"/"+name, tokenizer, lemmatizer) {
+    try { this ++= sourceFactory(dir + "/" + name + ".txt") } catch { case e:java.io.IOException => {throw new Error("Could not find "+dir+"/"+name+"\n") } }
+  }
+
+  class TriePhraseLexicon(name:String)(implicit dir:String) extends cc.factorie.app.nlp.lexicon.TriePhraseLexicon(dir+"/"+name, tokenizer, lemmatizer) {
+    try { this ++= sourceFactory(dir + "/" + name + ".txt") } catch { case e:java.io.IOException => {throw new Error("Could not find "+dir+"/"+name+"\n") } }
+  }
+
   object iesl {
     private implicit val dir = "iesl"
-      
-    object Continents extends PhraseLexicon("continents") // TODO Rename this to continent
-    object Country extends PhraseLexicon("country")
-    object City extends PhraseLexicon("city")
-    object USState extends PhraseLexicon("us-state")
-    object PlaceSuffix extends WordLexicon("place-suffix")
-    object AllPlaces extends UnionLexicon("place-suffix", Continents, Country, City, USState)
 
-    object JobTitle extends PhraseLexicon("jobtitle") // TODO Rename file to job-title
-    object Money extends WordLexicon("money")
+    object Continents extends TriePhraseLexicon("continents")
+    object Country extends TriePhraseLexicon("country")
+    object City extends TriePhraseLexicon("city")
+    object USState extends TriePhraseLexicon("us-state")
+    object PlaceSuffix extends TriePhraseLexicon("place-suffix")
+    object AllPlaces extends TrieUnionLexicon("place-suffix", Continents, Country, City, USState)
 
-    object Company extends PhraseLexicon("company")
-    object OrgSuffix extends PhraseLexicon("org-suffix")
+    object JobTitle extends TriePhraseLexicon("jobtitle") // TODO Rename file to job-title
+    object Money extends TriePhraseLexicon("money")
 
-    object Month extends WordLexicon("month")
-    object Day extends WordLexicon("day")
-    
-    object PersonHonorific extends WordLexicon("person-honorific")
-    object PersonFirstHighest extends WordLexicon("person-first-highest")
-    object PersonFirstHigh extends WordLexicon("person-first-high")
-    object PersonFirstMedium extends WordLexicon("person-first-medium")
-    object PersonFirst extends UnionLexicon("person-first", PersonFirstHighest, PersonFirstHigh, PersonFirstMedium)
-    
-    object PersonLastHighest extends WordLexicon("person-last-highest")
-    object PersonLastHigh extends WordLexicon("person-last-high")
-    object PersonLastMedium extends WordLexicon("person-last-medium")
-    object PersonLast extends UnionLexicon("person-last", PersonLastHighest, PersonLastHigh, PersonLastMedium)
+    object TestCompany extends ChainPhraseLexicon("company")
+    object Company extends TriePhraseLexicon("company")
+    object OrgSuffix extends TriePhraseLexicon("org-suffix")
 
-    object Say extends WordLexicon("say")
-    
-    object Demonym extends PhraseLexicon(dir+"/demonyms") {
+    object Month extends TriePhraseLexicon("month")
+    object Day extends TriePhraseLexicon("day")
+
+    object PersonHonorific extends TriePhraseLexicon("person-honorific")
+    object PersonFirstHighest extends TriePhraseLexicon("person-first-highest")
+    object PersonFirstHigh extends TriePhraseLexicon("person-first-high")
+    object PersonFirstMedium extends TriePhraseLexicon("person-first-medium")
+    object PersonFirst extends TrieUnionLexicon("person-first", PersonFirstHighest, PersonFirstHigh, PersonFirstMedium)
+
+    object PersonLastHighest extends TriePhraseLexicon("person-last-highest")
+    object PersonLastHigh extends TriePhraseLexicon("person-last-high")
+    object PersonLastMedium extends TriePhraseLexicon("person-last-medium")
+    object PersonLast extends TrieUnionLexicon("person-last", PersonLastHighest, PersonLastHigh, PersonLastMedium)
+
+    object Say extends TriePhraseLexicon("say")
+
+    object Demonym extends TriePhraseLexicon("demonyms") {
       try {
         for (line <- sourceFactory(dir + "/demonyms.txt").getLines(); entry <- line.trim.split("\t")) this += entry
       } catch { case e:java.io.IOException => { throw new Error("Could not find "+dir+"/demonyms\n") } }
     }
-    
+
     // Map from Chilean->Chile and Chileans->Chile
     object DemonymMap extends scala.collection.mutable.HashMap[String,String] {
       try {
@@ -75,114 +87,125 @@ class ResourceLexicons(val sourceFactory: String=>io.Source, val tokenizer:Strin
           val entries = line.trim.split("\t")
           val value = entries.head
           entries.foreach(e => this.update(e, value))
-        } 
+        }
       } catch { case e:java.io.IOException => { throw new Error("Could not find "+dir+"/demonyms\n") } }
     }
   }
-  
+
   // TODO Move these here
   object ssdi {
     private implicit val dir = "ssdi"
-    
-    object PersonFirstHighest extends WordLexicon("person-first-highest")
-    object PersonFirstHigh extends WordLexicon("person-first-high")
-    object PersonFirstMedium extends WordLexicon("person-first-medium")
-    object PersonFirst extends UnionLexicon("person-first", PersonFirstHighest, PersonFirstHigh, PersonFirstMedium)
-    
-    object PersonLastHighest extends WordLexicon("person-last-highest")
-    object PersonLastHigh extends WordLexicon("person-last-high")
-    object PersonLastMedium extends WordLexicon("person-last-medium")
-    object PersonLast extends UnionLexicon("person-last", PersonLastHighest, PersonLastHigh, PersonLastMedium)
+
+    object PersonFirstHighest extends TriePhraseLexicon("person-first-highest")
+    object PersonFirstHigh extends TriePhraseLexicon("person-first-high")
+    object PersonFirstMedium extends TriePhraseLexicon("person-first-medium")
+    object PersonFirst extends TrieUnionLexicon("person-first", PersonFirstHighest, PersonFirstHigh, PersonFirstMedium)
+
+    object PersonLastHighest extends TriePhraseLexicon("person-last-highest")
+    object PersonLastHigh extends TriePhraseLexicon("person-last-high")
+    object PersonLastMedium extends TriePhraseLexicon("person-last-medium")
+    object PersonLast extends TrieUnionLexicon("person-last", PersonLastHighest, PersonLastHigh, PersonLastMedium)
   }
-  
+
   object uscensus {
     private implicit val dir = "uscensus"
-    object PersonFirstFemale extends WordLexicon("person-first-female")
-    object PersonFirstMale extends WordLexicon("person-first-male")
-    object PersonLast extends WordLexicon("person-last")
+    object PersonFirstFemale extends TriePhraseLexicon("person-first-female")
+    object PersonFirstMale extends TriePhraseLexicon("person-first-male")
+    object PersonLast extends TriePhraseLexicon("person-last")
   }
-  
+
   object wikipedia {
     private implicit val dir = "wikipedia"
-      
-    object Battle extends PhraseLexicon("battle")
-    object BattleRedirect extends PhraseLexicon("battle-redirect")
-    object BattleAndRedirect extends UnionLexicon("battle-and-redirect", Battle, BattleRedirect)
-    object BattleDisambiguation extends PhraseLexicon("battle-disambiguation")
-    //object BattleParen extends PhraseLexicon("battle-paren")
-    //object BattleRedirectParen extends PhraseLexicon("battle-redirect-paren")
-    
-    object Book extends PhraseLexicon("book")
-    object BookRedirect extends PhraseLexicon("book-redirect")
-    object BookAndRedirect extends UnionLexicon("book-and-redirect", Book, BookRedirect)
-    object BookDisambiguation extends PhraseLexicon("book-disambiguation")
-    //object BookParen extends PhraseLexicon("book-paren")
-    //object BookRedirectParen extends PhraseLexicon("book-redirect-paren")
-    
-    object Business extends PhraseLexicon("business")
-    object BusinessRedirect extends PhraseLexicon("business-redirect")
-    object BusinessAndRedirect extends UnionLexicon("business-and-redirect", Business, BusinessRedirect)
-    object BusinessDisambiguation extends PhraseLexicon("business-disambiguation")
-    //object BusinessParen extends PhraseLexicon("business-paren")
-    //object BusinessRedirectParen extends PhraseLexicon("business-redirect-paren")
 
-    object Competition extends PhraseLexicon("competition")
-    object CompetitionRedirect extends PhraseLexicon("competition-redirect")
-    object CompetitionAndRedirect extends UnionLexicon("competition-and-redirect", Competition, CompetitionRedirect)
-    object CompetitionDisambiguation extends PhraseLexicon("competition-disambiguation")
-    //object CompetitionParen extends PhraseLexicon("competition-paren")
-    //object CompetitionRedirectParent extends PhraseLexicon("competition-redirect-paren")
+    object Battle extends TriePhraseLexicon("battle")
+    object BattleRedirect extends TriePhraseLexicon("battle-redirect")
+    object BattleAndRedirect extends TrieUnionLexicon("battle-and-redirect", Battle, BattleRedirect)
+    object BattleDisambiguation extends TriePhraseLexicon("battle-disambiguation")
+    //object BattleParen extends TriePhraseLexicon("battle-paren")
+    //object BattleRedirectParen extends TriePhraseLexicon("battle-redirect-paren")
 
-    object Event extends PhraseLexicon("events") // TODO Change this name to event
-    object EventRedirect extends PhraseLexicon("events-redirect")
-    object EventAndRedirect extends UnionLexicon("events-and-redirect", Event, EventRedirect)
-    object EventDisambiguation extends PhraseLexicon("event-disambiguation")
-    //object EventParen extends PhraseLexicon("events-paren")
-    //object EventRedirectParen extends PhraseLexicon("events-redirect-paren")
+    object Book extends TriePhraseLexicon("book")
+    object BookRedirect extends TriePhraseLexicon("book-redirect")
+    object BookAndRedirect extends TrieUnionLexicon("book-and-redirect", Book, BookRedirect)
+    object BookDisambiguation extends TriePhraseLexicon("book-disambiguation")
+    //object BookParen extends TriePhraseLexicon("book-paren")
+    //object BookRedirectParen extends TriePhraseLexicon("book-redirect-paren")
 
-    object Film extends PhraseLexicon("film")
-    object FilmRedirect extends PhraseLexicon("film-redirect")
-    object FilmAndRedirect extends UnionLexicon("film-and-redirect", Film, FilmRedirect)
-    object FilmDisambiguation extends PhraseLexicon("film-disambiguation")
-    //object FilmParen extends PhraseLexicon("film-paren")
-    //object FilmRedirectParen extends PhraseLexicon("film-redirect-paren")
 
-    object Location extends PhraseLexicon("location")
-    object LocationRedirect extends PhraseLexicon("location-redirect")
-    object LocationAndRedirect extends UnionLexicon("location-and-redirect", Location, LocationRedirect)
-    object LocationDisambiguation extends PhraseLexicon("location-disambiguation")
-    //object LocationParen extends PhraseLexicon("location-paren")
-    //object LocationRedirectParen extends PhraseLexicon("location-redirect-paren")
+    object Business extends TriePhraseLexicon("business")
+    object BusinessRedirect extends TriePhraseLexicon("business-redirect")
+    object BusinessAndRedirect extends TrieUnionLexicon("business-and-redirect", Business, BusinessRedirect)
+    object BusinessDisambiguation extends TriePhraseLexicon("business-disambiguation")
+    //object BusinessParen extends TriePhraseLexicon("business-paren")
+    //object BusinessRedirectParen extends TriePhraseLexicon("business-redirect-paren")
 
-    object ManMadeThing extends PhraseLexicon("man_made_thing")
-    object ManMadeThingRedirect extends PhraseLexicon("man_made_thing-redirect")
-    object ManMadeThingAndRedirect extends UnionLexicon("man_made_thing-and-redirect", ManMadeThing, ManMadeThingRedirect)
-    object ManMadeThingDisambiguation extends PhraseLexicon("man_made_thing-disambiguation")
-    //object ManMadeThingParen extends PhraseLexicon("man_made_thing-paren")
-    //object ManMadeThingRedirectParen extends PhraseLexicon("man_made_thing-redirect-paren")
+    object Competition extends TriePhraseLexicon("competition")
+    object CompetitionRedirect extends TriePhraseLexicon("competition-redirect")
+    object CompetitionAndRedirect extends TrieUnionLexicon("competition-and-redirect", Competition, CompetitionRedirect)
+    object CompetitionDisambiguation extends TriePhraseLexicon("competition-disambiguation")
+    //object CompetitionParen extends TriePhraseLexicon("competition-paren")
+    //object CompetitionRedirectParent extends TriePhraseLexicon("competition-redirect-paren")
 
-    
-    object Organization extends PhraseLexicon("organization")
-    object OrganizationRedirect extends PhraseLexicon("organization-redirect")
-    object OrganizationAndRedirect extends UnionLexicon("organization-and-redirect", Organization, OrganizationRedirect)
-    object OrganizationDisambiguation extends PhraseLexicon("organization-disambiguation")
-    //object OrganizationParen extends PhraseLexicon("organization-paren")
-    //object OrganizationRedirectParen extends PhraseLexicon("organization-redirect-paren")
-    
-    object Person extends PhraseLexicon("person")
-    object PersonRedirect extends PhraseLexicon("person-redirect")
-    object PersonAndRedirect extends UnionLexicon("person-and-redirect", Person, PersonRedirect)
-    object PersonDisambiguation extends PhraseLexicon("person-disambiguation")
-    //object PersonParen extends PhraseLexicon("person-paren") // paren lines need more processing to be useful
-    //object PersonRedirectParen extends PhraseLexicon("person-redirect-paren")
+    object Event extends TriePhraseLexicon("events") // TODO Change this name to event
+    object EventRedirect extends TriePhraseLexicon("events-redirect")
+    object EventAndRedirect extends TrieUnionLexicon("events-and-redirect", Event, EventRedirect)
+    object EventDisambiguation extends TriePhraseLexicon("event-disambiguation")
+    //object EventParen extends TriePhraseLexicon("events-paren")
+    //object EventRedirectParen extends TriePhraseLexicon("events-redirect-paren")
 
-    object Song extends PhraseLexicon("song")
-    object SongRedirect extends PhraseLexicon("song-redirect")
-    object SongAndRedirect extends UnionLexicon("song-and-redirect", Song, SongRedirect)
-    object SongDisambiguation extends PhraseLexicon("song-disambiguation")
-    //object SongParen extends PhraseLexicon("song-paren") // paren lines need more processing to be useful
-    //object SongRedirectParen extends PhraseLexicon("song-redirect-paren")
-    
+    object Film extends TriePhraseLexicon("film")
+    object FilmRedirect extends TriePhraseLexicon("film-redirect")
+    object FilmAndRedirect extends TrieUnionLexicon("film-and-redirect", Film, FilmRedirect)
+    object FilmDisambiguation extends TriePhraseLexicon("film-disambiguation")
+    //object FilmParen extends TriePhraseLexicon("film-paren")
+    //object FilmRedirectParen extends TriePhraseLexicon("film-redirect-paren")
+
+    object Location extends TriePhraseLexicon("location")
+    object LocationRedirect extends TriePhraseLexicon("location-redirect")
+    object LocationAndRedirect extends TrieUnionLexicon("location-and-redirect", Location, LocationRedirect)
+    object LocationDisambiguation extends TriePhraseLexicon("location-disambiguation")
+    //object LocationParen extends TriePhraseLexicon("location-paren")
+    //object LocationRedirectParen extends TriePhraseLexicon("location-redirect-paren")
+
+    object ManMadeThing extends TriePhraseLexicon("man_made_thing")
+    object ManMadeThingRedirect extends TriePhraseLexicon("man_made_thing-redirect")
+    object ManMadeThingAndRedirect extends TrieUnionLexicon("man_made_thing-and-redirect", ManMadeThing, ManMadeThingRedirect)
+    object ManMadeThingDisambiguation extends TriePhraseLexicon("man_made_thing-disambiguation")
+    //object ManMadeThingParen extends TriePhraseLexicon("man_made_thing-paren")
+    //object ManMadeThingRedirectParen extends TriePhraseLexicon("man_made_thing-redirect-paren")
+
+    object Organization extends TriePhraseLexicon("organization")
+    object OrganizationRedirect extends TriePhraseLexicon("organization-redirect")
+    object OrganizationAndRedirect extends TrieUnionLexicon("organization-and-redirect", Organization, OrganizationRedirect)
+    object OrganizationDisambiguation extends TriePhraseLexicon("organization-disambiguation")
+    //object OrganizationParen extends TriePhraseLexicon("organization-paren")
+    //object OrganizationRedirectParen extends TriePhraseLexicon("organization-redirect-paren")
+
+    object Person extends TriePhraseLexicon("person")
+    object PersonRedirect extends TriePhraseLexicon("person-redirect")
+    object PersonAndRedirect extends TrieUnionLexicon("person-and-redirect", Person, PersonRedirect)
+    object PersonDisambiguation extends TriePhraseLexicon("person-disambiguation")
+    //object PersonParen extends TriePhraseLexicon("person-paren") // paren lines need more processing to be useful
+    //object PersonRedirectParen extends TriePhraseLexicon("person-redirect-paren")
+
+    object Song extends TriePhraseLexicon("song")
+    object SongRedirect extends TriePhraseLexicon("song-redirect")
+    object SongAndRedirect extends TrieUnionLexicon("song-and-redirect", Song, SongRedirect)
+    object SongDisambiguation extends TriePhraseLexicon("song-disambiguation")
+    //object SongParen extends TriePhraseLexicon("song-paren") // paren lines need more processing to be useful
+    //object SongRedirectParen extends TriePhraseLexicon("song-redirect-paren")
+
+  }
+
+  /**
+   * Mandarin Chinese lexicons collected from various sources around the WWW
+   * @author Kate Silverstein
+   */
+  object mandarin {
+    private implicit val dir = "mandarin"
+
+    object SurnamePinyin extends TriePhraseLexicon("surname-pinyin")
+    object GivenNamePinyin extends TriePhraseLexicon("givenname-pinyin")
   }
 }
 

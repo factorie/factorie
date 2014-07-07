@@ -86,23 +86,29 @@ class ConllChainNer extends DocumentAnnotator {
       features += "W="+word
       features += "SHAPE="+cc.factorie.app.strings.stringShape(rawWord, 2)
       if (token.isPunctuation) features += "PUNCTUATION"
-      if (lexicon.iesl.PersonFirst.containsLemmatizedWord(word)) features += "PERSON-FIRST"
-      if (lexicon.iesl.Month.containsLemmatizedWord(word)) features += "MONTH"
-      if (lexicon.iesl.PersonLast.containsLemmatizedWord(word)) features += "PERSON-LAST"
-      if (lexicon.iesl.PersonHonorific.containsLemmatizedWord(word)) features += "PERSON-HONORIFIC"
-      if (lexicon.iesl.Company.contains(token)) features += "COMPANY"
-      if (lexicon.iesl.Country.contains(token)) features += "COUNTRY"
-      if (lexicon.iesl.City.contains(token)) features += "CITY"
-      if (lexicon.iesl.PlaceSuffix.contains(token)) features += "PLACE-SUFFIX"
-      if (lexicon.iesl.USState.contains(token)) features += "USSTATE"
-      if (lexicon.wikipedia.Person.contains(token)) features += "WIKI-PERSON"
-      if (lexicon.wikipedia.Event.contains(token)) features += "WIKI-EVENT"
-      if (lexicon.wikipedia.Location.contains(token)) features += "WIKI-LOCATION"
-      if (lexicon.wikipedia.Organization.contains(token)) features += "WIKI-ORG"
-      if (lexicon.wikipedia.ManMadeThing.contains(token)) features += "MANMADE"
-      if (lexicon.wikipedia.Event.contains(token)) features += "EVENT"
       if (Demonyms.contains(token)) features += "DEMONYM"
     }
+    val tokenSequence = document.tokens.toSeq
+    val vf = (t:Token)=>t.attr[FeaturesVariable]
+    lexicon.iesl.PersonFirst.tagText(tokenSequence,vf,"PERSON-FIRST")
+    lexicon.iesl.Month.tagText(tokenSequence,vf,"MONTH")
+    lexicon.iesl.PersonLast.tagText(tokenSequence,vf,"PERSON-LAST")
+    lexicon.iesl.PersonHonorific.tagText(tokenSequence,vf,"PERSON-HONORIFIC")
+    
+    lexicon.iesl.Company.tagText(tokenSequence,vf, "COMPANY")
+    lexicon.iesl.Country.tagText(tokenSequence,vf, "COUNTRY")
+    lexicon.iesl.City.tagText(tokenSequence,vf, "CITY")
+
+    lexicon.iesl.PlaceSuffix.tagText(tokenSequence,vf, "PLACE-SUFFIX")
+    lexicon.iesl.USState.tagText(tokenSequence,vf, "USSTATE")
+    
+    lexicon.wikipedia.Person.tagText(tokenSequence,vf, "WIKI-PERSON")
+    lexicon.wikipedia.Event.tagText(tokenSequence,vf, "WIKI-EVENT")
+    lexicon.wikipedia.Location.tagText(tokenSequence,vf, "WIKI-LOCATION")
+    lexicon.wikipedia.Organization.tagText(tokenSequence,vf, "WIKI-ORG")
+    lexicon.wikipedia.ManMadeThing.tagText(tokenSequence,vf, "MANMADE")
+    lexicon.wikipedia.Event.tagText(tokenSequence,vf, "EVENT")
+    
     //for (sentence <- document.sentences) cc.factorie.app.chain.Observations.addNeighboringFeatureConjunctions(sentence.tokens, (t:Token)=>t.attr[FeaturesVariable], List(0), List(0,0), List(0,0,-1), List(0,0,1), List(1), List(2), List(-1), List(-2))
     for (sentence <- document.sentences) cc.factorie.app.chain.Observations.addNeighboringFeatureConjunctions(sentence.tokens, (t:Token)=>t.attr[FeaturesVariable], List(0), List(1), List(2), List(-1), List(-2))
     //for (sentence <- document.sentences) cc.factorie.app.chain.Observations.addNeighboringFeatureConjunctions(sentence.tokens, (t:Token)=>t.attr[FeaturesVariable], List(0), List(1), List(2), List(-1), List(-2), List(0,-1), List(0,1))

@@ -186,7 +186,7 @@ class ParallelOnlineTrainer(weightsSet: WeightsSet, val optimizer: GradientOptim
     this synchronized {
       examplesProcessed += 1
       accumulatedValue += value.value
-      if (examplesProcessed % logEveryN == 0) {
+      if (logEveryN != 0 && examplesProcessed % logEveryN == 0) {
         val accumulatedTime = System.currentTimeMillis() - t0
         logger.info(TrainerHelpers.getOnlineTrainerStatus(examplesProcessed, logEveryN, accumulatedTime, accumulatedValue))
         t0 = System.currentTimeMillis()

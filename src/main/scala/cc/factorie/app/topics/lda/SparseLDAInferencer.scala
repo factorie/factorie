@@ -92,7 +92,7 @@ class SparseLDAInferencer(
   }
 
   def export(phis:Seq[ProportionsVar], beta1:Double = 0.0, numTopics: Int=0): Unit = {
-    phis.foreach(_.value.zero())
+    phis.foreach(_.value.masses.zero())
     for (wi <- 0 until wordDomain.size)  {
       (0 until numTopics).foreach(ti => phis(ti).value.masses.+=(wi, beta1))
       phiCounts(wi).forCounts((ti,count) => phis(ti).value.masses.+=(wi, count))

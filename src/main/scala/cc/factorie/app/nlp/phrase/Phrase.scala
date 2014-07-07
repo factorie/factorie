@@ -62,9 +62,17 @@ object HeadTokenOffset {
     if (parse ne null) {
       var headSentenceIndex = span.end-1 - sentence.start
       var parentSentenceIndex = parse.parentIndex(headSentenceIndex)
-      while (span.contains(parentSentenceIndex)) {
+      while (span.contains(parentSentenceIndex + sentence.start)) {
         headSentenceIndex = parentSentenceIndex
         parentSentenceIndex = parse.parentIndex(parentSentenceIndex)
+      }
+      //Sometimes phrases are broken, consisting of more than one subgraph in the parse tree; check if parent of exit is not again part of mention
+      if(parentSentenceIndex >= 0) {
+        parentSentenceIndex = parse.parentIndex(parentSentenceIndex)
+        while (span.contains(parentSentenceIndex + sentence.start)) {
+          headSentenceIndex = parentSentenceIndex
+          parentSentenceIndex = parse.parentIndex(parentSentenceIndex)
+        }
       }
       return headSentenceIndex + sentence.start - span.start
     } else {

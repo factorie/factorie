@@ -26,14 +26,19 @@ import cc.factorie.app.classify.backend.LinearMulticlassClassifier
     For the Viterbi-based part-of-speech tagger, see ChainPosTagger.  
     @author Andrew McCallum, */
 class ForwardPosTagger extends DocumentAnnotator {
+  private val logger = Logger.getLogger(this.getClass.getName)
+
   // Different ways to load saved parameters
   def this(stream:InputStream) = { this(); deserialize(stream) }
-  def this(file: File) = {this(new FileInputStream(file)); println("ForwardPosTagger loading from "+file.getAbsolutePath)}
+  def this(file: File) = {
+    this(new FileInputStream(file))
+    logger.debug("ForwardPosTagger loading from "+file.getAbsolutePath)
+  }
   def this(url:java.net.URL) = {
     this()
     val stream = url.openConnection.getInputStream
     if (stream.available <= 0) throw new Error("Could not open "+url)
-    println("ForwardPosTagger loading from "+url)
+    logger.debug("ForwardPosTagger loading from "+url)
     deserialize(stream)
   }
   
