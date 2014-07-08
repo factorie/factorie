@@ -36,7 +36,9 @@ trait EvaluatableClustering[ClusterIdType,PointIdType] {
       clusterIds.forall(clusterId => {
         val thisPoints = pointIds(clusterId)
         if (thisPoints.isEmpty) return true
-        val otherPoints = other.pointIds(other.clusterId(thisPoints.head))
+        val otherClusterId = other.clusterId(thisPoints.head)
+        if(otherClusterId == null) return false
+        val otherPoints = other.pointIds(otherClusterId)
         thisPoints.toSet == otherPoints.toSet
       })
     case _ => false
