@@ -34,4 +34,21 @@ class FileUtils {
       null
     }
   }
+
+  /**
+   * Get a recursive listing of all files beneath the given directory.
+   * TODO make this tail recursive
+   * @param dir directory from which to get list of files
+   * @return Seq of files that are contained recursively beneath the original directory
+   */
+  def getRecursiveListOfFiles(dir: File): Seq[File] = {
+    val files = dir.listFiles
+    files ++ files.filter(_.isDirectory).flatMap(getRecursiveListOfFiles)
+  }
+
+  /**
+   * Get a recursive listing of all files beneath the given directory name
+   * @param dirName name of directory from which to get the list of files
+   */
+  def getRecursiveListOfFiles(dirName: String): Seq[File] = getRecursiveListOfFiles(new File(dirName))
 }
