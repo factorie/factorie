@@ -43,7 +43,7 @@ class FileUtils {
    */
   def getRecursiveListOfFiles(dir: File): Seq[File] = {
     val files = dir.listFiles
-    files ++ files.filter(_.isDirectory).flatMap(getRecursiveListOfFiles)
+    files.filterNot(_.isDirectory) ++ files.filter(_.isDirectory).flatMap(getRecursiveListOfFiles)
   }
 
   /**
