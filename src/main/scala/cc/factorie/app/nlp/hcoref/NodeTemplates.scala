@@ -119,79 +119,6 @@ abstract class ChildParentTemplate[Vars <: NodeVariables[Vars]](initWeights:Tens
   def weights: Weights = _weights
 }
 
-class BagOfWordsTensorEntropy[Vars <:NodeVariables[Vars], T <: TensorVar](initialWeight:Double, getBag:(Vars => T))(implicit ct:ClassTag[Vars], params:Parameters)
-  extends Template2[Node[Vars]#Exists, Vars]
-  with DotFamily2[Node[Vars]#Exists, Vars]
-  with DebuggableTemplate {
-
-
-  def name: String = "BagOfWordsEntropy"
-
-  val _weights = params.Weights(Tensor1(initialWeight))
-  def weights: Weights = _weights
-
-  def unroll1(v: Node[Vars]#Exists) = Factor(v, v.node.variables)
-
-  def unroll2(v: Vars) = Factor(v.node.existsVar, v)
-
-  override def statistics(exists: Node[Vars]#Exists#Value, vars: Vars#Value) = {
-    val bag = getBag(vars).value
-    var entropy = 0.0
-    var n = 0.0
-    if(exists.booleanValue /*&& isEntity.booleanValue*/){
-      val l1Norm = bag.oneNorm
-      bag.foreachActiveElement{ case(k,v) =>
-        entropy -= (v/l1Norm)*math.log(v/l1Norm)
-        n+=1.0
-      }
-    }
-    if(n>1)entropy /= scala.math.log(n) //normalized entropy in [0,1]
-    if(entropy.isNaN) {
-      println("Warning entropy is NaN!")
-      println("n=:" + n)
-      println("active size: %d\tone norm: %.4f\t".format(bag.activeDomainSize, bag.oneNorm))
-      bag.foreachActiveElement{ case (index, value) =>
-        println("index:%d\tvalue:%.4f\t(value/oneNorm):%.4f\tlog(value/oneNorm:%.4f".format(index, value, value/bag.oneNorm, math.log(value/bag.oneNorm)))
-      }
-    }
-    entropy = -entropy
-    if(_debug)println("  "+debug(entropy*initialWeight))
-    Tensor1(entropy)
-  }
-}
-
-/**
- * This feature template is for representing features where an entity is uniquely identified by a value. eg, no person can have more than one SSN
- * @param getBag
- * @param ct
- * @param params
- * @tparam Vars
- */
-class ExclusivityTemplate[Vars <: NodeVariables[Vars]](getBag:(Vars => BagOfWordsVariable))(implicit ct:ClassTag[Vars], params:Parameters)
-
-
-abstract class BagOfWordsTemplate[Vars <: NodeVariables[Vars]](initialWeights: Tensor1)(implicit v1: ClassTag[Vars], params: Parameters)
-  extends Template1[Vars]
-  with DotFamily1[Vars] {
-  override def unroll1(v: Vars) = Option(v) match {
-    case Some(v) => Factor(v)
-    case None => Nil
-  }
-
-  val _weights: Weights = params.Weights(initialWeights)
-
-  def weights: Weights = _weights
-}
-
-abstract class StructuralTemplate[A <: Var](initialWeights: Tensor1)(implicit v1: ClassTag[A], params: Parameters)
-  extends Template1[A]
-  with DotFamily1[A] {
-
-  val _weights: Weights = params.Weights(initialWeights)
-
-  def weights: Weights = _weights
-}
-
 class ChildParentCosineDistance[Vars <: NodeVariables[Vars]](weight:Double, shift: Double, getBag:(Vars => BagOfWordsVariable))(implicit c:ClassTag[Vars], p:Parameters) extends ChildParentTemplate[Vars](Tensor1(weight)) with DebuggableTemplate {
   override def name: String = "ChildParentCosineDistance: %s".format(getBag)
 
@@ -204,5 +131,20 @@ class ChildParentCosineDistance[Vars <: NodeVariables[Vars]](weight:Double, shif
       println(debug(v*weight))
     }
     Tensor1(v)
+  }
+}
+
+class ExclusiveConstraintFactor[Vars <: NodeVariables[Vars]](getBag:(Vars => BagOfWordsVariable))(implicit ct:ClassTag[Vars]) extends TupleTemplateWithStatistics3[Node[Vars]#Exists, Node[Vars]#IsRoot, Vars] {
+  def unroll1(exists:Node[Vars]#Exists) = Factor(exists,exists.node.isRootVar,exists.node.variables)
+  def unroll2(isEntity:Node[Vars]#IsRoot) = Factor(isEntity.node.existsVar,isEntity,isEntity.node.variables)
+  def unroll3(bag:Vars) = Factor(bag.node.existsVar,bag.node.isRootVar,bag) // this should really never happen
+
+  def score(exists: Node[Vars]#Exists#Value, isRoot: Node[Vars]#IsRoot#Value, vars: Vars) = {
+    val bag = getBag(vars)
+    if(exists.booleanValue && bag.value.size >= 2) {
+      -999999.0
+    } else {
+      0.0
+    }
   }
 }
