@@ -15,7 +15,7 @@ package cc.factorie.app.nlp.hcoref
 /**
  * @author John Sullivan
  */
-trait ContextGenerator[Vars <: NodeVariables[Vars]] {
+trait PairGenerator[Vars <: NodeVariables[Vars]] {
   def nextContext:(Node[Vars], Node[Vars])
   def iterations:Int
   def mentions:Iterable[Node[Vars]]

@@ -23,7 +23,7 @@ import scala.reflect.ClassTag
  */
 abstract class CorefSampler[Vars <: NodeVariables[Vars]](override val model:CorefModel[Vars], val mentions:Iterable[Node[Vars]], val iterations:Int)(implicit override val random:Random, val varsTag:ClassTag[Vars])
   extends SettingsSampler[(Node[Vars], Node[Vars])](model) {
-  this: ContextGenerator[Vars] with MoveGenerator[Vars] =>
+  this: PairGenerator[Vars] with MoveGenerator[Vars] =>
 
   this.temperature = 0.001
 
@@ -32,7 +32,7 @@ abstract class CorefSampler[Vars <: NodeVariables[Vars]](override val model:Core
 
   def infer {
     beforeInferHook
-    processAll(contexts)
+    contexts foreach process
   }
 
 }

@@ -18,7 +18,7 @@ import cc.factorie.infer.Proposal
  * @author John Sullivan
  */
 trait DebugCoref[Vars <: NodeVariables[Vars]]{
-  this: CorefSampler[Vars] with ContextGenerator[Vars] with MoveGenerator[Vars]=>
+  this: CorefSampler[Vars] with PairGenerator[Vars] with MoveGenerator[Vars]=>
 
   var printEvery:Int = 10000
 

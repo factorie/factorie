@@ -6,7 +6,7 @@ import scala.collection.mutable
 /**
  * @author John Sullivan
  */
-trait DeterministicPairGenerator[Vars <: NodeVariables[Vars]] extends ContextGenerator[Vars]{
+trait DeterministicPairGenerator[Vars <: NodeVariables[Vars]] extends PairGenerator[Vars]{
   this:SettingsSampler[(Node[Vars], Node[Vars])] =>
 
   var i = 0

@@ -8,6 +8,7 @@ import cc.factorie._
 import cc.factorie.util.EvaluatableClustering
 import scala.io.Source
 import java.io.{FileWriter, BufferedWriter}
+import cc.factorie.infer.SettingsMaximizer
 
 /**
  * @author John Sullivan
@@ -149,7 +150,7 @@ object HierCorefDemo {
     val time = System.currentTimeMillis()
     val sampler = new CorefSampler[WikiCorefVars](WikiCorefModel, allMentions, numSamples)
       with CanopyPairGenerator[WikiCorefVars]
-      with DefaultMoveGenerator[WikiCorefVars]
+      with NoSplitMoveGenerator[WikiCorefVars]
       with DebugCoref[WikiCorefVars] {
 
       def mentionSequence = mentionSeq

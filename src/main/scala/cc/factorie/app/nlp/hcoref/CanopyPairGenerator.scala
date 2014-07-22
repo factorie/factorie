@@ -11,7 +11,13 @@ trait Canopy {
   def canopies:Seq[String]
 }
 
-trait CanopyPairGenerator[Vars <: NodeVariables[Vars] with Canopy] extends ContextGenerator[Vars] {
+trait SingularCanopy extends Canopy {
+  final def canopies = Seq(canopy)
+
+  def canopy:String
+}
+
+trait CanopyPairGenerator[Vars <: NodeVariables[Vars] with Canopy] extends PairGenerator[Vars] {
   this:SettingsSampler[(Node[Vars], Node[Vars])] =>
 
   val entMap = new mutable.HashMap[String, Node[Vars]]()
