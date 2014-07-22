@@ -46,6 +46,63 @@ class EntitySizePrior[Vars <: NodeVariables[Vars]](val weight:Double=0.1, val ex
   }
 }
 
+class BagOfWordsEntropy[Vars <:NodeVariables[Vars]](initialWeight:Double, getBag:(Vars => BagOfWordsVariable))(implicit ct:ClassTag[Vars], params:Parameters)
+  extends Template2[Node[Vars]#Exists, Vars]
+  with DotFamily2[Node[Vars]#Exists, Vars]
+  with DebuggableTemplate {
+
+
+  def name: String = "BagOfWordsEntropy"
+
+  val _weights = params.Weights(Tensor1(initialWeight))
+  def weights: Weights = _weights
+
+  def unroll1(v: Node[Vars]#Exists) = Factor(v, v.node.variables)
+
+  def unroll2(v: Vars) = Factor(v.node.existsVar, v)
+
+  override def statistics(exists: Node[Vars]#Exists#Value, vars: Vars#Value) = {
+    val bag = getBag(vars).value
+    var entropy = 0.0
+    var n = 0.0
+    if(exists.booleanValue /*&& isEntity.booleanValue*/){
+      val l1Norm = bag.l1Norm
+      bag.asHashMap.foreach{ case(k,v) =>
+        entropy -= (v/l1Norm)*math.log(v/l1Norm)
+        n+=1.0
+      }
+    }
+    if(n>1)entropy /= scala.math.log(n) //normalized entropy in [0,1]
+    entropy = -entropy
+    if(_debug)println("  "+debug(entropy))
+    Tensor1(entropy)
+  }
+}
+
+class BagOfWordsSizePrior[Vars <: NodeVariables[Vars]](initialWeight:Double=1.0, getBag:(Vars => BagOfWordsVariable))(implicit ct:ClassTag[Vars], params:Parameters)
+  extends Template3[Node[Vars]#Exists,Node[Vars]#IsRoot,Vars]
+  with DotFamily3[Node[Vars]#Exists,Node[Vars]#IsRoot,Vars] {
+  println("BagOfWordsPriorWithStatistics("+initialWeight+")")
+
+  def unroll1(exists: Node[Vars]#Exists) = Factor(exists, exists.node.isRootVar, exists.node.variables)
+  def unroll2(isRoot: Node[Vars]#IsRoot) = Factor(isRoot.node.existsVar, isRoot, isRoot.node.variables)
+  def unroll3(vars: Vars) = Factor(vars.node.existsVar, vars.node.isRootVar, vars)
+
+  def statistics(exists: Node[Vars]#Exists#Value, isRoot: Node[Vars]#IsRoot#Value, vars: Vars) = {
+    val bag = getBag(vars)
+    if(exists.booleanValue && isRoot.booleanValue && bag.size > 0) {
+      Tensor1(- bag.size.toDouble / bag.value.l1Norm)
+    } else {
+      Tensor1(0.0)
+    }
+  }
+
+  val _weights: Weights = params.Weights(Tensor1(initialWeight))
+
+  def weights: Weights = _weights
+
+}
+
 
 abstract class ChildParentTemplate[Vars <: NodeVariables[Vars]](initWeights:Tensor1)(implicit v1:ClassTag[Vars], params:Parameters)
   extends Template3[ArrowVariable[Node[Vars], Node[Vars]], Vars, Vars]
@@ -112,46 +169,6 @@ class BagOfWordsTensorEntropy[Vars <:NodeVariables[Vars], T <: TensorVar](initia
  */
 class ExclusivityTemplate[Vars <: NodeVariables[Vars]](getBag:(Vars => BagOfWordsVariable))(implicit ct:ClassTag[Vars], params:Parameters)
 
-class BagOfWordsEntropy[Vars <:NodeVariables[Vars]](initialWeight:Double, getBag:(Vars => BagOfWordsVariable))(implicit ct:ClassTag[Vars], params:Parameters)
-  extends Template2[Node[Vars]#Exists, Vars]
-  with DotFamily2[Node[Vars]#Exists, Vars]
-  with DebuggableTemplate {
-
-
-  def name: String = "BagOfWordsEntropy"
-
-  val _weights = params.Weights(Tensor1(initialWeight))
-  def weights: Weights = _weights
-
-  def unroll1(v: Node[Vars]#Exists) = Factor(v, v.node.variables)
-
-  def unroll2(v: Vars) = Factor(v.node.existsVar, v)
-
-  override def statistics(exists: Node[Vars]#Exists#Value, vars: Vars#Value) = {
-    val bag = getBag(vars).value
-    var entropy = 0.0
-    var n = 0.0
-    if(exists.booleanValue /*&& isEntity.booleanValue*/){
-      val l1Norm = bag.l1Norm
-      bag.asHashMap.foreach{ case(k,v) =>
-        entropy -= (v/l1Norm)*math.log(v/l1Norm)
-        n+=1.0
-      }
-    }
-    if(n>1)entropy /= scala.math.log(n) //normalized entropy in [0,1]
-    if(entropy.isNaN) {
-      println("Warning entropy is NaN!")
-      println("n=:" + n)
-      println("active size: %d\tone norm: %.4f\t".format(bag.size, bag.l1Norm))
-      bag.asHashMap.foreach{ case (index, value) =>
-        println("index:%s\tvalue:%.4f\t(value/oneNorm):%.4f\tlog(value/oneNorm:%.4f".format(index, value, value/bag.l1Norm, math.log(value/bag.l1Norm)))
-      }
-    }
-    entropy = -entropy
-    if(_debug)println("  "+debug(entropy))
-    Tensor1(entropy)
-  }
-}
 
 abstract class BagOfWordsTemplate[Vars <: NodeVariables[Vars]](initialWeights: Tensor1)(implicit v1: ClassTag[Vars], params: Parameters)
   extends Template1[Vars]
