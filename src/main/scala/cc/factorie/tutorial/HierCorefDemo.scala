@@ -136,7 +136,7 @@ object HierCorefDemo {
 
     println(allMentions.groupBy(_.variables.trueCluster).mapValues(_.size))
 
-    val mentionSeq = Source.fromFile("move-listing").getLines().map{ line =>
+    val mentionSeq = Source.fromFile("gold-moves").getLines().map{ line =>
       val (e1, e2, parent) = line.split('\t') match {
         case Array(e) => (e, "NONE", "NONE")
         case Array(eOne, eTwo) => (eOne, eTwo, "NONE")
@@ -145,15 +145,19 @@ object HierCorefDemo {
       (e1, e2, parent)
     }.toIndexedSeq
 
-    val numSamples = 200000
+    val numSamples = 100000
     val time = System.currentTimeMillis()
     val sampler = new CorefSampler[WikiCorefVars](WikiCorefModel, allMentions, numSamples)
-      with CanopyPairGenerator[WikiCorefVars]
-     // with DeterministicPairGenerator[WikiCorefVars]
-     // with VerboseSampler[(Node[WikiCorefVars], Node[WikiCorefVars])]
-     // with VerboseMoveGenerator[WikiCorefVars]
+      //with PairContextGenerator[WikiCorefVars]
+      with LegacyCanopyGenerator[WikiCorefVars]
+      //with DeterministicPairGenerator[WikiCorefVars]
+      //with VerboseSampler[(Node[WikiCorefVars], Node[WikiCorefVars])]
+      //with VerboseMoveGenerator[WikiCorefVars]
       with DefaultMoveGenerator[WikiCorefVars]
       with DebugCoref[WikiCorefVars] {
+
+      def mentionSequence = mentionSeq
+
 
       def newInstance(implicit d: DiffList): Node[WikiCorefVars] = {
         // println("New old WikiCoref Node")
@@ -163,7 +167,7 @@ object HierCorefDemo {
         }
       }
 
-      //def outerGetBagSize(n: Node[WikiCorefVars]) = n.variables.context.size
+      def outerGetBagSize(n: Node[WikiCorefVars]) = n.variables.context.size
 
       //def mentionSequence = mentionSeq
     }

@@ -30,9 +30,9 @@ trait CanopyPairGenerator[Vars <: NodeVariables[Vars] with Canopy] extends PairC
   proposalHooks += { p:Proposal[(Node[Vars], Node[Vars])] =>
     val (e1, e2) = p.context
     e1.parent match {
-      case Some(p) => addToCanopy(p)
+      case Some(p) if p.exists => addToCanopy(p)
       case None => e2.parent match {
-        case Some(p) => addToCanopy(p)
+        case Some(p) if p.exists => addToCanopy(p)
         case None => Unit
       }
     }
@@ -57,6 +57,9 @@ trait CanopyPairGenerator[Vars <: NodeVariables[Vars] with Canopy] extends PairC
 
   canopyMap = canopyMap.filter(_._2.size > 1)
 
+  println("generated %d canopies".format(canopyMap.keySet.size))
+  canopyMap.foreach{case (k, v) => println("%s -> %d".format(k, v.size))}
+
   def nextInCanopy(context:Node[Vars]):Node[Vars] = {
     val canopies = canopyMap(context.variables.canopies.sampleUniformly(random))//.flatMap(canopyMap.get) //.sampleUniformly(random).sampleUniformly(random)
     if(canopies.size == 0) {
@@ -68,10 +71,13 @@ trait CanopyPairGenerator[Vars <: NodeVariables[Vars] with Canopy] extends PairC
 
   override def nextContext: (Node[Vars], Node[Vars]) = {
     if(mentions.size == 1) {throw new Error("Cannot sample pairs from a single node")}
+
+    //println("Generating contexts from depths: %s".format(_allEntities.groupBy(_.depth).mapValues(_.size).toSeq))
+
     val n1 = randomNode
-    var n2 = nextInCanopy(n1)
+    var n2 = randomNode //nextInCanopy(n1)
     while(n1 == n2) {
-      n2 = nextInCanopy(n1)
+      n2 = randomNode //nextInCanopy(n1)
     }
     n1 -> n2
   }

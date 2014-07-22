@@ -62,7 +62,7 @@ trait DeterministicPairGenerator[Vars <: NodeVariables[Vars]] extends PairContex
     val numEnts = _allEntities.size
     var e: Node[Vars] = null.asInstanceOf[Node[Vars]]
     while({tries -=1; tries} >= 0 && (e == null || !e.exists)) {
-      e = _allEntities(random.nextInt(numEnts))
+      e = _allEntities.toSeq(random.nextInt(numEnts))
       if(tries==1) {
         performMaintenance
       }

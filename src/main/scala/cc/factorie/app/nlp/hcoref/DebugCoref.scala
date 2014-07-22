@@ -18,7 +18,7 @@ import cc.factorie.infer.Proposal
  * @author John Sullivan
  */
 trait DebugCoref[Vars <: NodeVariables[Vars]]{
-  this: CorefSampler[Vars] with PairContextGenerator[Vars] with MoveGenerator[Vars]=>
+  this: CorefSampler[Vars] with ContextGenerator[Vars] with MoveGenerator[Vars]=>
 
   var printEvery:Int = 10000
 
@@ -64,6 +64,7 @@ trait DebugCoref[Vars <: NodeVariables[Vars]]{
       println(f"\t max depth: $maxDepth min depth: $minDepth ave depth: $aveDepth%.2f")
       println(f"\t max children: $maxChildren min children: $minChildren ave children: $aveChildren%.2f")
       println(f"\t max mentions: $maxMentions min mentions: $minMentions ave mentions: $aveMentions%.2f")
+      //println("%d non mention samples".format(multiSamples))
       startTime = stopTime
       acceptedThisRound = 0.0
     }

@@ -7,6 +7,8 @@ import scala.collection.mutable
 trait Verbosity {
   var samplingStep:Int = 0
   var deltaScore:Double = 0.0
+
+  def dScoreString = "%.5f".format(deltaScore)
   var prec:Double = 0.0
   var recall:Double = 0.0
   var fOne:Double = 0.0
@@ -34,7 +36,7 @@ trait Verbosity {
   var numEnts:Int = 0
   var numSubEnts:Int = 0
 
-  def writeOut:String = s"$samplingStep\t$moveType\t$srcId\t$dstId\t$newParentId\t$deltaScore\t$prec\t$recall\t$fOne\t$accepted\t$consideredBefore\t$srcDepth\t$dstDepth\t$srcBagSize\t$dstBagSize\t$srcMentionCount\t$dstMentionCount\t$srcIsMent\t$dstIsMent\t$srcIsEnt\t$dstIsEnt\t$numEnts\t$numSubEnts"
+  def writeOut:String = s"$samplingStep\t$moveType\t$srcId\t$dstId\t$newParentId\t$dScoreString\t$prec\t$recall\t$fOne\t$accepted\t$consideredBefore\t$srcDepth\t$dstDepth\t$srcBagSize\t$dstBagSize\t$srcMentionCount\t$dstMentionCount\t$srcIsMent\t$dstIsMent\t$srcIsEnt\t$dstIsEnt\t$numEnts\t$numSubEnts"
 }
 object Verbosity {
   def header:String = "Sampling Steps\tMove Type\tSource Id\tDest Id\tNew Parent Id\tDelta Model Score\tPrecision\tRecall\tF1\tAccepted?\tConsidered Before?\tSource Depth\tDest Depth\tSource Bag Size\tDest Bag Size\tSource Mention Count\t Dest MentionCount\tSource Mention?\tDest Mention?\tSource Entity?\t Dest Entity?\tNumber of Entities\tNumber of Sub-Entities"
@@ -98,16 +100,27 @@ trait VerboseMoveGenerator[Vars <: NodeVariables[Vars]] extends MoveGenerator[Va
       if(e1.isMention && e1.isRoot && e2.isMention && e2.isRoot) {
         moves += new MergeUp[Vars](e1, e2)({d => newInstance(d)}) with VerboseMove[Vars] {def getBagSize(n:Node[Vars]) = outerGetBagSize(n)}
       } else {
-        var e1Opt:Option[Node[Vars]] = Some(e1)
-       // while(e1Opt.isDefined) {
-          e1 = e1Opt.get
-          if(e1.mentionCountVar.value > e2.mentionCountVar.value) {
+        /*
+        println("merging left between e1:%s and e2:%s".format(e1.id, e2.id))
+        e1.parent.foreach { e1P =>
+          println("e1 has parent e1p1:%s".format(e1P.id))
+        }
+        */
+        while (e1 != null) {
+          if(e1.mentionCountVar.value >= e2.mentionCountVar.value) {
             moves += new MergeLeft[Vars](e1, e2) with VerboseMove[Vars] {def getBagSize(n:Node[Vars]) = outerGetBagSize(n)}
           } else {
             moves += new MergeLeft[Vars](e2, e1) with VerboseMove[Vars] {def getBagSize(n:Node[Vars]) = outerGetBagSize(n)}
           }
+          e1 = e1.parent.getOrElse(null.asInstanceOf[Node[Vars]])
+        }
+        /*
+        var e1Opt:Option[Node[Vars]] = Some(e1)
+       // while(e1Opt.isDefined) {
+          e1 = e1Opt.get
           e1Opt = e1.parent
        // }
+       */
       }
     } else {
       if(e1.mentionCountVar.value > e2.mentionCountVar.value) {
