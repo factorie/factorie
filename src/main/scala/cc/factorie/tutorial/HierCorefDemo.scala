@@ -2,13 +2,9 @@ package cc.factorie.tutorial
 
 import cc.factorie.app.nlp.hcoref._
 import cc.factorie.variable.BagOfWordsVariable
-import cc.factorie.variable.{Var, DiffList}
 import com.mongodb.{MongoClient, DB}
 import cc.factorie._
 import cc.factorie.util.EvaluatableClustering
-import scala.io.Source
-import java.io.{FileWriter, BufferedWriter}
-import cc.factorie.infer.SettingsMaximizer
 
 /**
  * @author John Sullivan
@@ -90,7 +86,6 @@ object HierCorefDemo {
       } else {
         new WikiCorefVars(names, context, mentions, truth)
       }
-      //new WikiCorefVars(vars(0).asInstanceOf[BagOfWordsVariable], vars(1).asInstanceOf[BagOfWordsVariable], vars(2).asInstanceOf[BagOfWordsVariable], truth)(null)
     }
 
     protected def newNodeCubbie: HcorefNodeCubbie = new HcorefNodeCubbie
@@ -130,22 +125,6 @@ object HierCorefDemo {
     val allMentions = corefCollection.loadAll.filterNot(_.variables.trueCluster == null).filterNot(_.source == "wp")
     println("Done loading")
 
-    //println("Found %d unmovable entities, here is an example: %s".format(allMentions.count(e => !e.moveable), allMentions.filter(e => !e.moveable).head))
-
-    println(allMentions.map(_.variables.truth).toSet)
-    //assert(allMentions.map(_.variables.truth).toSet.size == 4)
-
-    println(allMentions.groupBy(_.variables.trueCluster).mapValues(_.size))
-
-    val mentionSeq = Source.fromFile("gold-moves").getLines().map{ line =>
-      val (e1, e2, parent) = line.split('\t') match {
-        case Array(e) => (e, "NONE", "NONE")
-        case Array(eOne, eTwo) => (eOne, eTwo, "NONE")
-        case Array(eOne, eTwo, pOne) => (eOne, eTwo, pOne)
-      }
-      (e1, e2, parent)
-    }.toIndexedSeq
-
     val numSamples = 100000
     val time = System.currentTimeMillis()
     val sampler = new CorefSampler[WikiCorefVars](WikiCorefModel, allMentions, numSamples)
@@ -153,38 +132,14 @@ object HierCorefDemo {
       with CanopyPairGenerator[WikiCorefVars]
       with NoSplitMoveGenerator[WikiCorefVars]
       with DebugCoref[WikiCorefVars] {
-
-
       def autoStopThreshold = 10000
 
-      def mentionSequence = mentionSeq
-
-
-      def newInstance(implicit d: DiffList): Node[WikiCorefVars] = {
-        // println("New old WikiCoref Node")
-        new Node[WikiCorefVars](new WikiCorefVars/*, nextId*/) {
-
-          def canopyIds: Set[String] = Set.empty[String]
-        }
+      def newInstance(implicit d: DiffList): Node[WikiCorefVars] = new Node[WikiCorefVars](new WikiCorefVars/*, nextId*/) {
+        def canopyIds: Set[String] = Set.empty[String]
       }
-
-      def outerGetBagSize(n: Node[WikiCorefVars]) = n.variables.context.size
-
-      //def mentionSequence = mentionSeq
     }
 
     sampler.infer
-    /*
-    val wrt = new BufferedWriter(new FileWriter("trace"))
-    wrt.write(Verbosity.header)
-    wrt.newLine()
-    sampler.verbosities.foreach { v =>
-      wrt.write(v.writeOut)
-      wrt.newLine()
-    }
-    wrt.flush()
-    wrt.close()
-    */
 
     println(EvaluatableClustering.evaluationString(allMentions.predictedClustering, allMentions.trueClustering))
   }
