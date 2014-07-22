@@ -1,6 +1,6 @@
 package cc.factorie.app.nlp.hcoref
 
-import cc.factorie.infer.{Proposal, SettingsSampler}
+import cc.factorie.infer.SettingsSampler
 
 /**
  * @author John Sullivan

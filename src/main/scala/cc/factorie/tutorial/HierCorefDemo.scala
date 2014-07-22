@@ -149,9 +149,13 @@ object HierCorefDemo {
     val numSamples = 100000
     val time = System.currentTimeMillis()
     val sampler = new CorefSampler[WikiCorefVars](WikiCorefModel, allMentions, numSamples)
+      with AutoStoppingSampler[WikiCorefVars]
       with CanopyPairGenerator[WikiCorefVars]
       with NoSplitMoveGenerator[WikiCorefVars]
       with DebugCoref[WikiCorefVars] {
+
+
+      def autoStopThreshold = 10000
 
       def mentionSequence = mentionSeq
 
