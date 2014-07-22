@@ -22,7 +22,7 @@ import cc.factorie.variable.{BooleanValue, BagOfWordsVariable}
  * @author John Sullivan
  */
 trait TrainingObjective[Vars <: NodeVariables[Vars] with GroundTruth] {
-  this:CorefSampler[Vars] with PairContextGenerator[Vars] =>
+  this:CorefSampler[Vars] with PairGenerator[Vars] =>
 
   override def objective = new CorefTrainerModel[Vars]
 

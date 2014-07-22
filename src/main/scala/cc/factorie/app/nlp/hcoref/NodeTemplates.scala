@@ -89,6 +89,15 @@ class BagOfWordsTensorEntropy[Vars <:NodeVariables[Vars], T <: TensorVar](initia
   }
 }
 
+/**
+ * This feature template is for representing features where an entity is uniquely identified by a value. eg, no person can have more than one SSN
+ * @param getBag
+ * @param ct
+ * @param params
+ * @tparam Vars
+ */
+class ExclusivityTemplate[Vars <: NodeVariables[Vars]](getBag:(Vars => BagOfWordsVariable))(implicit ct:ClassTag[Vars], params:Parameters)
+
 class BagOfWordsEntropy[Vars <:NodeVariables[Vars]](initialWeight:Double, getBag:(Vars => BagOfWordsVariable))(implicit ct:ClassTag[Vars], params:Parameters)
   extends Template2[Node[Vars]#Exists, Vars]
   with DotFamily2[Node[Vars]#Exists, Vars]
