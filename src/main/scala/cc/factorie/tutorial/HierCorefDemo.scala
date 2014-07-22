@@ -19,31 +19,9 @@ object HierCorefDemo {
     def this(n:Map[String, Double], c:Map[String, Double], m:Map[String, Double]) = this(new BagOfWordsVariable(Nil, n), new BagOfWordsVariable(Nil, c), new BagOfWordsVariable(Nil, m))
     def this()(implicit d:DiffList) = this(new BagOfWordsVariable(), new BagOfWordsVariable(), new BagOfWordsVariable())
 
-    private def newBagAdding(b1:BagOfWordsVariable, b2:BagOfWordsVariable)(implicit d:DiffList):BagOfWordsVariable = {
-      val n = new BagOfWordsVariable()
-      b1.foreach{ case(word, value) =>
-        n.add(word, value)(d)
-      }
-      b2.foreach{ case(word, value) =>
-        n.add(word, value)(d)
-      }
-      n
-    }
+    def ++(other: WikiCorefVars)(implicit d: DiffList): WikiCorefVars = new WikiCorefVars(this.names ++ other.names,this.context ++ other.context, this.mentions ++ other.mentions)
 
-    private def newBagSubtracting(b1:BagOfWordsVariable, b2:BagOfWordsVariable)(implicit d:DiffList):BagOfWordsVariable = {
-      val n = new BagOfWordsVariable()
-      b1.foreach{ case(word, value) =>
-        n.add(word, value)(d)
-      }
-      b2.foreach{ case(word, value) =>
-        n.remove(word,value)(d)
-      }
-      n
-    }
-
-    def ++(other: WikiCorefVars)(implicit d: DiffList): WikiCorefVars = new WikiCorefVars(newBagAdding(this.names, other.names), newBagAdding(this.context, other.context), newBagAdding(this.mentions, other.mentions))
-
-    def --(other: WikiCorefVars)(implicit d: DiffList): WikiCorefVars = new WikiCorefVars(newBagSubtracting(this.names, other.names), newBagSubtracting(this.context, other.context), newBagSubtracting(this.mentions, other.mentions))
+    def --(other: WikiCorefVars)(implicit d: DiffList): WikiCorefVars = new WikiCorefVars(this.names -- other.names, this.context -- other.context, this.mentions -- other.mentions)
 
     def ++=(other: WikiCorefVars)(implicit d: DiffList) {
       this.names.add(other.names.members)(d)
