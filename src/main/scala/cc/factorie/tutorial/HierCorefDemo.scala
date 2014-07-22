@@ -148,11 +148,7 @@ object HierCorefDemo {
     val numSamples = 100000
     val time = System.currentTimeMillis()
     val sampler = new CorefSampler[WikiCorefVars](WikiCorefModel, allMentions, numSamples)
-      //with PairContextGenerator[WikiCorefVars]
-      with LegacyCanopyGenerator[WikiCorefVars]
-      //with DeterministicPairGenerator[WikiCorefVars]
-      //with VerboseSampler[(Node[WikiCorefVars], Node[WikiCorefVars])]
-      //with VerboseMoveGenerator[WikiCorefVars]
+      with CanopyPairGenerator[WikiCorefVars]
       with DefaultMoveGenerator[WikiCorefVars]
       with DebugCoref[WikiCorefVars] {
 

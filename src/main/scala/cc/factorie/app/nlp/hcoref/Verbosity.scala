@@ -100,12 +100,6 @@ trait VerboseMoveGenerator[Vars <: NodeVariables[Vars]] extends MoveGenerator[Va
       if(e1.isMention && e1.isRoot && e2.isMention && e2.isRoot) {
         moves += new MergeUp[Vars](e1, e2)({d => newInstance(d)}) with VerboseMove[Vars] {def getBagSize(n:Node[Vars]) = outerGetBagSize(n)}
       } else {
-        /*
-        println("merging left between e1:%s and e2:%s".format(e1.id, e2.id))
-        e1.parent.foreach { e1P =>
-          println("e1 has parent e1p1:%s".format(e1P.id))
-        }
-        */
         while (e1 != null) {
           if(e1.mentionCountVar.value >= e2.mentionCountVar.value) {
             moves += new MergeLeft[Vars](e1, e2) with VerboseMove[Vars] {def getBagSize(n:Node[Vars]) = outerGetBagSize(n)}
@@ -114,13 +108,6 @@ trait VerboseMoveGenerator[Vars <: NodeVariables[Vars]] extends MoveGenerator[Va
           }
           e1 = e1.parent.getOrElse(null.asInstanceOf[Node[Vars]])
         }
-        /*
-        var e1Opt:Option[Node[Vars]] = Some(e1)
-       // while(e1Opt.isDefined) {
-          e1 = e1Opt.get
-          e1Opt = e1.parent
-       // }
-       */
       }
     } else {
       if(e1.mentionCountVar.value > e2.mentionCountVar.value) {
@@ -136,11 +123,6 @@ trait VerboseMoveGenerator[Vars <: NodeVariables[Vars]] extends MoveGenerator[Va
 
 trait VerboseSampler[C] {
   this: SettingsSampler[C] =>
-
-  //val wrt = new BufferedWriter(new FileWriter("new-proposal-analysis.tsv"))
-  //wrt.write(Verbosity.header)
-  //wrt.newLine()
-
 
   private val _verbosities = new mutable.ArrayBuffer[Verbosity]()
   def verbosities:Iterable[Verbosity] = _verbosities
@@ -192,9 +174,7 @@ trait VerboseSampler[C] {
             v.newParentId = ""
           }
           _verbosities += v
-        //wrt.write(v.writeOut)
-        //wrt.newLine()
-        //wrt.flush()
+
         case _ => Unit
       }
     }

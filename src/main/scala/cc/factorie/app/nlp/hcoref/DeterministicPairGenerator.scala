@@ -6,7 +6,7 @@ import scala.collection.mutable
 /**
  * @author John Sullivan
  */
-trait DeterministicPairGenerator[Vars <: NodeVariables[Vars]] extends PairContextGenerator[Vars]{
+trait DeterministicPairGenerator[Vars <: NodeVariables[Vars]] extends ContextGenerator[Vars]{
   this:SettingsSampler[(Node[Vars], Node[Vars])] =>
 
   var i = 0
@@ -42,11 +42,11 @@ trait DeterministicPairGenerator[Vars <: NodeVariables[Vars]] extends PairContex
     mentionMap.getOrElse(e1Id,sampleEntity) -> mentionMap.getOrElse(e2Id, sampleEntity)
   }
 
-  //protected val _allEntities = mutable.ArrayBuffer[Node[Vars]]()
+  protected val _allEntities = mutable.ArrayBuffer[Node[Vars]]()
 
   _allEntities ++= mentions
 
-  //def addEntity(e:Node[Vars]) {_allEntities += e}
+  def addEntity(e:Node[Vars]) {_allEntities += e}
 
   def allEntities:Iterable[Node[Vars]] = _allEntities
 
