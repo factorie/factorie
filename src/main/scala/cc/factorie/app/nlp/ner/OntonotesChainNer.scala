@@ -365,9 +365,9 @@ class BasicOntonotesNER extends DocumentAnnotator {
     // A label having the most frequent value of all labels associated with all Tokens having the same string as the given Token, or null if there is no Token with matching string
     def mostFrequentLabel(token:Token): BilouOntonotesNerTag = filterByToken(token) match {
       case Nil => null
-      case tokens: Seq[Token] => tokens.groupBy(_.attr[BilouOntonotesNerTag].baseCategoryValue).maxBy(_._2.size)._2.head.attr[BilouOntonotesNerTag]
+      case tokens: Seq[Token] => tokens.groupBy(_.attr[BilouOntonotesNerTag].shortCategoryValue).maxBy(_._2.size)._2.head.attr[BilouOntonotesNerTag]
     }
-    private def mostFrequentLabel(tokens:Seq[Token]): BilouOntonotesNerTag = tokens.groupBy(_.attr[BilouOntonotesNerTag].baseCategoryValue).maxBy(_._2.size)._2.head.attr[BilouOntonotesNerTag]
+    private def mostFrequentLabel(tokens:Seq[Token]): BilouOntonotesNerTag = tokens.groupBy(_.attr[BilouOntonotesNerTag].shortCategoryValue).maxBy(_._2.size)._2.head.attr[BilouOntonotesNerTag]
 
     // Add a Token to the Queue and also to the internal hash
     override def +=(token:Token): this.type = {
@@ -375,7 +375,7 @@ class BasicOntonotesNER extends DocumentAnnotator {
       if (java.lang.Character.isUpperCase(str(0)) && !lexicon.StopWords.containsWord(str.toLowerCase)) { // Only add capitalized, non-stopword Tokens
         super.+=(token)
         hash.getOrElseUpdate(token.string, new scala.collection.mutable.Queue[Token]) += token
-        if (debugPrintCount % 1000 == 0) println("HashedTokenQueue %20s %20s  %-20s  %s true=%-10s  pred=%-10s  freq=%-5s  %s".format(token.getPrev.map(_.string).getOrElse(null), token.string, token.getNext.map(_.string).getOrElse(null), if (token.attr[LabeledBilouOntonotesNerTag].valueIsTarget) " " else "*", token.attr[LabeledBilouOntonotesNerTag].target.categoryValue, token.attr[BilouOntonotesNerTag].categoryValue, mostFrequentLabel(hash(token.string)).baseCategoryValue, hash(token.string).map(_.attr[BilouOntonotesNerTag].categoryValue).mkString(" ")))
+        if (debugPrintCount % 1000 == 0) println("HashedTokenQueue %20s %20s  %-20s  %s true=%-10s  pred=%-10s  freq=%-5s  %s".format(token.getPrev.map(_.string).getOrElse(null), token.string, token.getNext.map(_.string).getOrElse(null), if (token.attr[LabeledBilouOntonotesNerTag].valueIsTarget) " " else "*", token.attr[LabeledBilouOntonotesNerTag].target.categoryValue, token.attr[BilouOntonotesNerTag].categoryValue, mostFrequentLabel(hash(token.string)).shortCategoryValue, hash(token.string).map(_.attr[BilouOntonotesNerTag].categoryValue).mkString(" ")))
         debugPrintCount += 1
         if (length > maxSize) dequeue()
       }

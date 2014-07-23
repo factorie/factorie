@@ -25,8 +25,6 @@ import cc.factorie.variable._
 abstract class NerTag(val token:Token, initialCategory:String) extends CategoricalVariable(initialCategory) {
   /** Return "PER" instead of "I-PER". */
   def shortCategoryValue: String = if (categoryValue.length > 1 && categoryValue(1) == '-') categoryValue.substring(2) else categoryValue
-  def baseCategoryValue: String = if (intValue == 0) "O" else categoryValue.drop(2)
-  // TODO Pick just one of the above.
 }
 
 /** A categorical variable holding the named entity type of a TokenSpan.
