@@ -130,9 +130,9 @@ object ForwardBackwardPOS {
 
   def main(args: Array[String]): Unit = {
     object opts extends cc.factorie.util.DefaultCmdOptions {
-      val trainFile = new CmdOption("train", "", "FILE", "An OWPL train file.") { override def required = true }
-      val devFile =   new CmdOption("dev", "", "FILE", "An OWPL dev file") { override def required = true }
-      val testFile =  new CmdOption("test", "", "FILE", "An OWPL test file.") { override def required = true }
+      val trainFile = new CmdOption("train", "", "FILE", "An OWPL train file.", true)
+      val devFile =   new CmdOption("dev", "", "FILE", "An OWPL dev file", true)
+      val testFile =  new CmdOption("test", "", "FILE", "An OWPL test file.", true)
       val takeOnly =  new CmdOption("takeOnly", "-1", "INT", "A limit on the number of sentences loaded from each file.")
       val iterations =new CmdOption("iterations", "10", "INT", "The number of iterations to train for.")
       val modelDir =  new CmdOption("model", "", "DIR", "Directory in which to save the trained model.")
