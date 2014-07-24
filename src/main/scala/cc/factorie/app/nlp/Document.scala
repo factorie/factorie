@@ -184,7 +184,7 @@ class Document extends DocumentSubstring with Attr with UniqueId {
   /** Return the WithinDocCoref solution for this Document.  If not already present create it. */
   def getCoref: WithinDocCoref = this.attr.getOrElseUpdate[WithinDocCoref](new WithinDocCoref(this))
   /** Return the gold-standard WithinDocCoref.target solution for this Document.  If not already present create it. */
-  def getTargetCoref: WithinDocCoref = { val coref = this.coref; if (coref.target eq null) coref.target = new WithinDocCoref(this); coref.target }
+  def getTargetCoref: WithinDocCoref = { val coref = this.getCoref; if (coref.target eq null) coref.target = new WithinDocCoref(this); coref.target }
   
   /** Return a String containing the Token strings in the document, formatted with one-word-per-line 
       and various tab-separated attributes appended on each line, generated as specified by the argument. */
@@ -213,6 +213,11 @@ class Document extends DocumentSubstring with Attr with UniqueId {
     case pipeline:DocumentAnnotationPipeline => owplString(pipeline.annotators.map(a => a.tokenAnnotationString(_)))
     case annotator:DocumentAnnotator => owplString(Seq(annotator.tokenAnnotationString(_)))
   }
+
+  def getSectionByOffsets(strStart:Int, strEnd:Int):Option[Section] =
+    this.sections.map(sec => (sec.stringStart, sec.stringEnd, sec)).sortBy(_._1)
+      .find{case(start, end, _) => start <= strStart && end >= strEnd}.map(_._3)
+
 
 }
 
