@@ -16,7 +16,7 @@ import cc.factorie.app.nlp._
 import cc.factorie.la._
 import cc.factorie.util._
 import java.io._
-import cc.factorie.variable.{BinaryFeatureVectorVariable, CategoricalVectorDomain}
+import cc.factorie.variable.{MutableCategoricalVar, BinaryFeatureVectorVariable, CategoricalVectorDomain}
 import cc.factorie.optimize.Trainer
 import cc.factorie.app.classify.backend.LinearMulticlassClassifier
 
@@ -465,9 +465,9 @@ object ForwardPosTester {
     }else if (opts.testFiles.wasInvoked){
       testFileList =  opts.testFiles.value.split(",")
     }
-  
-	def posLabelMaker(tok: Token, labels: Seq[String]): LabeledPennPosTag = {
-      new LabeledPennPosTag(tok, if(labels(0) == "XX") "PUNC" else labels(0))
+
+    def posLabelMaker(tok: Token, labels: Seq[String]): Seq[MutableCategoricalVar[String]] = {
+      Seq(new LabeledPennPosTag(tok, if(labels(0) == "XX") "PUNC" else labels(0)))
     }
 	
 	val testPortionToTake =  if(opts.testPortion.wasInvoked) opts.testPortion.value else 1.0
@@ -507,9 +507,9 @@ object ForwardPosTrainer extends HyperparameterMain {
     }else if (opts.testFiles.wasInvoked){
       testFileList =  opts.testFiles.value.split(",")
     }
-    
-    def posLabelMaker(tok: Token, labels: Seq[String]): LabeledPennPosTag = {
-      new LabeledPennPosTag(tok, if(labels(0) == "XX") "PUNC" else labels(0))
+
+    def posLabelMaker(tok: Token, labels: Seq[String]): Seq[MutableCategoricalVar[String]] = {
+      Seq(new LabeledPennPosTag(tok, if(labels(0) == "XX") "PUNC" else labels(0)))
     }
     
     val trainDocs = trainFileList.map(fname => {
