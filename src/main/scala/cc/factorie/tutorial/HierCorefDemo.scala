@@ -104,14 +104,14 @@ object HierCorefDemo {
     implicit val random = new scala.util.Random()
 
     val mongoConn = new MongoClient("localhost", 27017)
-    val mongoDb = mongoConn.getDB("wikicoref")
+    val mongoDb = mongoConn.getDB("wikicoref-ny")
     val corefCollection = new HcorefCubbieCollection(Seq("mentions", "cbag", "nbag", "mbag"), mongoDb)
     val allMentions = corefCollection.loadAll.filterNot(_.variables.truth.size == 0).filterNot(_.source == "wp")
     println("Done loading")
 
     val model = new WikiCorefModel(2.0, -0.25, 2.0, -0.25, 2.0, -0.25)
 
-    val numSamples = 100000
+    val numSamples = 200000
     val time = System.currentTimeMillis()
 
     val sampler = new CorefSampler[WikiCorefVars](model, allMentions, numSamples)
@@ -137,7 +137,7 @@ object HierCorefDemo {
   def doCoreference:Iterable[(String, String)] = {
 
     val mongoConn = new MongoClient("localhost", 27017)
-    val mongoDb = mongoConn.getDB("wikicoref")
+    val mongoDb = mongoConn.getDB("wikicoref-bos")
     val corefCollection = new HcorefCubbieCollection(Seq("mentions", "cbag", "nbag", "mbag"), mongoDb)
 
     implicit val random = new Random()
