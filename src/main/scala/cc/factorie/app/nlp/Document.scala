@@ -12,7 +12,6 @@
    limitations under the License. */
 
 package cc.factorie.app.nlp
-import cc.factorie._
 import scala.collection.mutable.ArrayBuffer
 import scala.collection.mutable
 import cc.factorie.util.{Cubbie, Attr}
