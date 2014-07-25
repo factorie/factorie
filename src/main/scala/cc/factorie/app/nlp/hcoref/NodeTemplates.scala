@@ -17,7 +17,6 @@ import cc.factorie.model._
 import cc.factorie.variable._
 import scala.reflect.ClassTag
 import cc.factorie.la.{Tensor, Tensor1}
-import scala.Some
 import cc.factorie.Parameters
 
 /**
@@ -134,6 +133,11 @@ class ChildParentCosineDistance[Vars <: NodeVariables[Vars]](weight:Double, shif
   }
 }
 
+/**
+ * This feature serves to ensure that certain merges are forbidden. Specifically no two nodes that share the same value
+ * in the [[BagOfWordsVariable]] should be permitted to merge. Together with [[IdentityFactor]] it can create uniquely
+ * identifying features.
+ */
 class ExclusiveConstraintFactor[Vars <: NodeVariables[Vars]](getBag:(Vars => BagOfWordsVariable))(implicit ct:ClassTag[Vars]) extends TupleTemplateWithStatistics3[Node[Vars]#Exists, Node[Vars]#IsRoot, Vars] {
   def unroll1(exists:Node[Vars]#Exists) = Factor(exists,exists.node.isRootVar,exists.node.variables)
   def unroll2(isEntity:Node[Vars]#IsRoot) = Factor(isEntity.node.existsVar,isEntity,isEntity.node.variables)
@@ -141,10 +145,39 @@ class ExclusiveConstraintFactor[Vars <: NodeVariables[Vars]](getBag:(Vars => Bag
 
   def score(exists: Node[Vars]#Exists#Value, isRoot: Node[Vars]#IsRoot#Value, vars: Vars) = {
     val bag = getBag(vars)
+    var result = 0.0
     if(exists.booleanValue && bag.value.size >= 2) {
-      -999999.0
+      result = -999999.0
     } else {
-      0.0
+      result = 0.0
     }
+    result
+  }
+}
+
+/**
+ * This feature serves to account for special information that may uniquely identify an entity. If a merge is proposed
+ * between two nodes that share a value in getBag they will be merged. This feature does not ensure that the value in
+ * getBag is unique, [[ExclusiveConstraintFactor]] manages that separately.
+ */
+class IdentityFactor[Vars <: NodeVariables[Vars]](getBag:(Vars => BagOfWordsVariable))(implicit ct:ClassTag[Vars])
+  extends TupleTemplateWithStatistics3[ArrowVariable[Node[Vars], Node[Vars]], Vars, Vars] {
+  override def unroll1(v: ArrowVariable[Node[Vars], Node[Vars]]) = Option(v.dst) match { // If the parent-child relationship exists, we generate factors for it
+    case Some(dest) => Factor(v, v.src.variables, dest.variables)
+    case None => Nil
+  }
+  def unroll2(v: Vars) = Nil
+  def unroll3(v: Vars) = Nil
+
+  def score(v1: (Node[Vars], Node[Vars]), child: Vars, parent: Vars) = {
+    val childBag = getBag(child)
+    val parentBag = getBag(parent)
+    var result = 0.0
+    if(childBag.value.asHashMap.exists{case (id, _) => parentBag.value.asHashMap.contains(id)}) {
+      result = 999999.0
+    } else {
+      result = 0.0
+    }
+    result
   }
 }
