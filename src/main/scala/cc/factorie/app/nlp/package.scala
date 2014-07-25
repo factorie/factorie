@@ -42,7 +42,7 @@ package object nlp {
     val types = strings.map(a => if (a.length > 1) a(1) else "")
     var start = -1; var prevType = ""
     for (i <- 0 until labels.length) {
-      val atBoundary = bilous(i) == "B" || bilous(i) == "U"
+      val atBoundary = types(i) != prevType || bilous(i) == "B" || bilous(i) == "U"
       if (bilous(i) == "U") result.+=((i, 1, types(i)))
       else if (start >= 0 && atBoundary) { result.+=((start, i-start, types(i-1))); start = -1 }
       if (types(i) != "" && atBoundary) start = i
