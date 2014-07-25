@@ -65,6 +65,8 @@ class LoadAPFCoref(apfFile:File) extends DocumentAnnotator{
         }
       }
     }
+
+    document.annotators += classOf[WithinDocCoref] -> classOf[LoadAPFCoref]
     document
   }
 }
@@ -74,27 +76,79 @@ class OffsetMapper(f:File) {
   val src = Source.fromFile(f)
   private val rawText = src.mkString
   src.close()
-  private val offsets = TagRegex.findAllIn(rawText).matchData.map{m => (m.end, m.end - m.start)}.toSeq
 
-  def fixOffset(apfOffset:Int):Int = offsets.takeWhile(_._1 < apfOffset).map(_._2).sum + apfOffset
+  private var numXMLChars = 0
+  private val newOffsets = TagRegex.findAllIn(rawText).matchData.map{ m =>
+    numXMLChars += m.matched.length
+    math.max(0, m.start - numXMLChars) -> numXMLChars
+  }.toSeq
+
+
+  def fixOffset(apfOffset:Int) = newOffsets.takeWhile(_._1 <= apfOffset).last._2 + apfOffset
 }
 
 
 case class APFMentionId(value:String)
 
+
 object LoadAPFCoref {
+
+  // the APF XML has newlines with indents within mention strings that occur across newlines, this is a hack to remove them and replace them with a newline
+  val trimRegex = """\n\s+""".r
+  def fixMentionString(str:String):String = trimRegex.replaceAllIn(str, "\n")
+
+  def getOffsets(sgmFile:File):Seq[((Int, Int), String)] = NonValidatingXML.load(new FileInputStream(sgmFile)) \\ "entity_mention" map { mentNode =>
+    val charSeq = (mentNode \ "extent" \ "charseq").head
+    val mentSpan = charSeq.attribute("START").get.text.toInt -> (charSeq.attribute("END").get.text.toInt + 1)
+    val mentString = fixMentionString(charSeq.text)
+    assert(mentSpan._2 - mentSpan._1 == mentString.length, "lengths don't match in annotation! span %s, strlen %s for string %s".format(mentSpan._2 - mentSpan._1, mentString.length, mentString))
+
+    mentSpan -> mentString
+  }
+
 
   val TagRegex = new Regex("""<[/\w\d "=]+>""")
   def main(args:Array[String]) {
     val apfFile = new File("/Users/johnsullivan/data/ace08_eval_sample/CNN889-3.940928.LDC98T25.apf.xml")
     val sgmFile = new File("/Users/johnsullivan/data/ace08_eval_sample/CNN889-3.940928.LDC98T25.sgm")
 
-    val doc = new Document(TagRegex.replaceAllIn(Source.fromFile(sgmFile).getLines().mkString("\n"), ""))
+    val apfOffsets = getOffsets(apfFile).sortBy(_._1._1)
 
+    //println("generated offsets: %s".format(apfOffsets))
+
+    val mapper = new OffsetMapper(sgmFile)
+
+
+    val adjustedOffsets = apfOffsets.map {case ((start, end), text) =>
+      val len = end - start
+      val adjStart = mapper.fixOffsetNew(start)
+      (adjStart, adjStart + len)
+    }
+    val docString = Source.fromFile(sgmFile).getLines().mkString("\n")
+
+    //println("loaded in document of length: %s".format(docString.length))
+    var ctr = 0
+    var totalCtr = 0
+    apfOffsets zip adjustedOffsets foreach { case (((origStart, origEnd), text), (adjStart, adjEnd)) =>
+      val adjString = docString.substring(adjStart, adjEnd)
+      totalCtr += 1
+      if(adjString != text) {
+        ctr += 1
+        println("Raw offsets at %s yield |%s|, adjusted at %s yield |%s|(%s), should be |%s|(%s)".format(origStart -> origEnd, docString.substring(origStart, origEnd), adjStart -> adjEnd, adjString, adjString.length, text, text.length))
+      }
+      assert(adjString.length == text.length, "lengths don't match, labeled: %s adjusted: %s".format(text.length, adjString.length))
+    }
+    println("%s in error in total, out of %s".format(ctr, totalCtr))
+
+    //val doc = new Document(Source.fromFile(sgmFile).getLines().mkString("\n"))
+
+
+    /*
     (DeterministicTokenizer.process _ andThen DeterministicSentenceSegmenter.process)(doc)
     println("tokenized doc")
     val corefAnnotator = new LoadAPFCoref(apfFile)
     println("built anno")
+    */
     /*
     val secs = doc.sections
 
@@ -107,7 +161,7 @@ object LoadAPFCoref {
 
     println("found section at %s : %s".format(100 -> 1000, doc.getSectionByOffsets(100, 1000)))
     */
-
+    /*
     corefAnnotator.process(doc)
     println("annotated with coref")
 
@@ -117,6 +171,6 @@ object LoadAPFCoref {
         println("\tMention: %s with offsets: %s and id: %s".format(ment.phrase.string, ment.phrase.characterOffsets, ment.attr[APFMentionId].value))
       }
     }
-
+    */
   }
 }
