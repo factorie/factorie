@@ -25,10 +25,10 @@ package object nlp {
     val strings = labels.map(_.split('-'))
     val iobs = strings.map(_.apply(0))
     val types = strings.map(a => if (a.length > 1) a(1) else "")
-    var start = -1; var length = 0; var prevType = ""
+    var start = -1; var prevType = ""
     for (i <- 0 until labels.length) {
       val atBoundary = types(i) != prevType || iobs(i) == "B"
-      if (start >= 0 && atBoundary) { result.+=((start, i-start, types(i))); start = -1 }
+      if (start >= 0 && atBoundary) { result.+=((start, i-start, types(i-1))); start = -1 }
       if (types(i) != "" && atBoundary) start = i
       prevType = types(i)
     }
@@ -40,31 +40,19 @@ package object nlp {
     val strings = labels.map(_.split('-'))
     val bilous = strings.map(_.apply(0))
     val types = strings.map(a => if (a.length > 1) a(1) else "")
-    var start = -1; var length = 0; var prevType = ""
+    var start = -1; var prevType = ""
     for (i <- 0 until labels.length) {
       val atBoundary = bilous(i) == "B" || bilous(i) == "U"
       if (bilous(i) == "U") result.+=((i, 1, types(i)))
-      else if (start >= 0 && atBoundary) { result.+=((start, i-start, types(i))); start = -1 }
+      else if (start >= 0 && atBoundary) { result.+=((start, i-start, types(i-1))); start = -1 }
       if (types(i) != "" && atBoundary) start = i
       prevType = types(i)
     }
     result
   }
-  
-  def bioBoundaries(labels:Seq[String]): Seq[(Int,Int,String)] = {
-    val result = new scala.collection.mutable.ArrayBuffer[(Int,Int,String)]
-    val strings = labels.map(_.split('-'))
-    val bios = strings.map(_.apply(0))
-    val types = strings.map(a => if (a.length > 1) a(1) else "")
-    var start = -1; var length = 0; var prevType = ""
-    for (i <- 0 until labels.length) {
-      val atBoundary = bios(i) == "B"
-      if (start >= 0 && atBoundary) { result.+=((start, i-start, types(i))); start = -1 }
-      if (types(i) != "" && atBoundary) start = i
-      prevType = types(i)
-    }
-    result
-  }
+
+  /** Convenience alias for @see cc.factorie.app.nlp.iobBoundaries */
+  def bioBoundaries(labels:Seq[String]): Seq[(Int,Int,String)] = iobBoundaries(labels)
 
 
   /** Command-line options available on all NLP model trainers.

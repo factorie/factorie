@@ -115,7 +115,7 @@ object ForwardBackwardPOS {
 
     // add the labels and features if they aren't there already.
     if (document.tokens.head.attr.get[PennPosTag] == None) {
-      document.tokens.foreach(t => t.attr += labelMaker(t))
+      document.tokens.foreach(t => t.attr += labelMaker(t)(0))
       initPosFeatures(document)
     }
 
@@ -126,7 +126,7 @@ object ForwardBackwardPOS {
     try { PennPosDomain.categories.head }
     catch { case e: NoSuchElementException => throw new Error("The domain must be loaded before it is accessed.") }
   }
-  def labelMaker(t: Token, l: Seq[String] = Seq(defaultCategory)) = new LabeledPennPosTag(t, l(0))
+  def labelMaker(t: Token, l: Seq[String] = Seq(defaultCategory)) = Seq(new LabeledPennPosTag(t, l(0)))
 
   def main(args: Array[String]): Unit = {
     object opts extends cc.factorie.util.DefaultCmdOptions {
@@ -143,7 +143,7 @@ object ForwardBackwardPOS {
     import opts._
 
     if (trainFile.wasInvoked && devFile.wasInvoked && testFile.wasInvoked) {
-      def load(f: String): Seq[Document] = LoadOWPL.fromFilename(f, labelMaker, takeOnly.value.toInt)
+      def load(f: String): Seq[Document] = LoadOWPL.fromFilename(f, labelMaker, limitSentenceCount=takeOnly.value.toInt)
 
       // load the data
       val trainDocs = load(trainFile.value)
