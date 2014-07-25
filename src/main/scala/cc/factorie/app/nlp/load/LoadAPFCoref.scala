@@ -21,6 +21,7 @@ import scala.util.matching.Regex
  */
 class LoadAPFCoref(apfFile:File) extends DocumentAnnotator{
 
+  val offset = new OffsetMapper(apfFile)
 
   def tokenAnnotationString(token: Token) = ???
 
@@ -40,9 +41,7 @@ class LoadAPFCoref(apfFile:File) extends DocumentAnnotator{
         case _ => ()
       }
       (entNode \ "entity_mention").foreach { mentNode =>
-        val charSeq = (mentNode \ "head" \ "charseq").head
-
-        //val offset = new OffsetMapper(new File("/Users/johnsullivan/data/ace08_eval_sample/CNN889-3.940928.LDC98T25.sgm"))
+        val charSeq = (mentNode \ "extent" \ "charseq").head
 
         //println("found mentNode: %s".format(charSeq))
         val (mentStart, mentEnd) = charSeq.attribute("START").get.text.toInt -> charSeq.attribute("END").get.text.toInt //these offsets include the xml/sgml of the original file
