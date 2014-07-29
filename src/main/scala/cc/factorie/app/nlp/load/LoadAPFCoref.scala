@@ -2,7 +2,7 @@ package cc.factorie.app.nlp.load
 
 import cc.factorie.app.nlp._
 import cc.factorie.app.nlp.coref.WithinDocCoref
-import java.io.{FileInputStream, File}
+import java.io.{BufferedInputStream, InputStream, FileInputStream, File}
 import cc.factorie.util.NonValidatingXML
 import scala.Some
 import cc.factorie.app.nlp.phrase.Phrase
@@ -21,63 +21,65 @@ import scala.xml.Node
  *
  * @author John Sullivan
  */
-class LoadAPFCoref(apfFile:File, loadAsTarget:Boolean = true) extends DocumentAnnotator{
+class LoadAPFCoref(mentions:Seq[SerializableAPFMention], loadAsTarget:Boolean) extends DocumentAnnotator {
 
-  // the APF XML has newlines with indents within mention strings that occur across newlines, this is a hack to remove them and replace them with a newline
-  private val trimRegex = """\n\s+""".r
-  private def fixMentionString(str:String):String = trimRegex.replaceAllIn(str, "\n")
-  private def offsetsFromCharSeq(charSeq:Node)(implicit offset:OffsetMapper):(Int, Int) = {
-    val (start, end) = (charSeq \ "@START").text.toInt -> ((charSeq \ "@END").text.toInt + 1)//these offsets include the xml/sgml of the original file
+  def this(apfFile:File, loadAsTarget:Boolean = true) = this({
+    val xml = NonValidatingXML load new FileInputStream(apfFile)
+    val docId = (xml \\ "document" \ "@DOCID").text
+    (xml \\ "entity").flatMap{ entNode =>
+      val (entId, entName) = (entNode \ "@ID").text -> (entNode \ "entity_attributes" \ "name" match {
+        case name if name.nonEmpty => name.head.attribute("NAME").map(a => LoadAPFCoref.fixMentionString(a.head.text))
+        case _ => None
+      })
+      (entNode \ "entity_mention").map{ mentNode =>
+        val mentId = (mentNode \ "@ID").text
+        val mentSpan = LoadAPFCoref.offsetsFromCharSeq((mentNode \ "extent" \ "charseq").head) // we actually don't need to/can't fix these here
+      val mentHeadSpan = LoadAPFCoref.offsetsFromCharSeq((mentNode \ "head" \ "charseq").head)
+        SerializableAPFMention(docId, entId, entName, mentId, mentSpan, mentHeadSpan)
+      }
+    }
+  }, loadAsTarget)
+
+  def tokenAnnotationString(token: Token) = null
+
+  def prereqAttrs = Seq(classOf[Token], classOf[Sentence], classOf[PennPosTag])
+  def postAttrs = Seq(classOf[WithinDocCoref])
+
+  def fixOffsets(span:(Int, Int))(implicit offset:OffsetMapper):(Int, Int) = {
+    val (start, end) = span
     val startAdj = offset.fixOffset(start)
     val endAdj = startAdj + (end - start)
     startAdj -> endAdj
   }
-
-  def tokenAnnotationString(token: Token) = ""
-
-  def prereqAttrs = Seq(classOf[Token], classOf[Sentence], classOf[PennPosTag])
-  def postAttrs = Seq(classOf[WithinDocCoref])
 
   //todo do we want to add NER Types while we're at it?
   def process(document: Document) = {
     val coref = if(loadAsTarget) document.getTargetCoref else document.getCoref
     implicit val offset = new OffsetMapper(document.string)
 
-    val allMentions = (NonValidatingXML.load(new FileInputStream(apfFile)) \\ "entity").flatMap{ entNode =>
-      val ent = (entNode \ "@ID").text -> (entNode \ "entity_attributes" \ "name" match {
-        case name if name.nonEmpty => name.head.attribute("NAME").map(a => fixMentionString(a.head.text))
-        case _ => None
-      })
-      val ments = (entNode \ "entity_mention") flatMap  { mentNode =>
-
-        val (mentStart, mentEnd) = offsetsFromCharSeq((mentNode \ "extent" \ "charseq").head)
-        val (headStart, headEnd) = offsetsFromCharSeq((mentNode \ "head" \ "charseq").head)
-
-
-        document.getSectionByOffsets(mentStart, mentEnd) flatMap { sec =>
-          sec.tokens.dropWhile(_.stringEnd <= mentStart).takeWhile(_.stringStart <= mentEnd) match {
-            case toks if toks.size != 0 =>
-              //token seq and head token index
-              Some((mentStart -> mentEnd, toks, toks.dropWhile(_.stringEnd <= headStart).takeWhile(_.stringStart <= headEnd).headOption.map( t => t.position - toks.head.position).getOrElse(0)))
-            case _ => None
-          }
-        }
-      }
-      ments.map(_ -> ent)
-    }.sortBy{case (((start, end), _, _), _) => (end - start) * -1} // this puts the longest mentions first
-
-    allMentions foreach { case((_, mentToks, mentHead), (entId, entName)) =>
+    mentions.sortBy{case SerializableAPFMention(_, _, _, _, (start, end), _) => (end - start) * -1} // sorting by length here means only the longest of overlapping mentions will be loaded later.
+      .foreach { case SerializableAPFMention(_, entId, entName, mentId, mentSpan, mentHeadSpan) =>
       val ent = coref.entityFromUniqueId(entId)
       if(ent.canonicalName != null && entName.isDefined) {
         ent.canonicalName = entName.get
       }
-      val mentSpan = new TokenSpan(mentToks)
-      coref.findOverlapping(mentSpan) match {
-        case Some(existingMention) => ent += existingMention
-        case None => coref.addMention(new Phrase(mentSpan, mentHead), ent)
+      val (mentStart, mentEnd) = fixOffsets(mentSpan)
+      val (mentHeadStart, mentHeadEnd) = fixOffsets(mentHeadSpan)
+
+      document.getSectionByOffsets(mentStart, mentEnd).foreach { sec =>
+        sec.tokens.dropWhile(_.stringEnd <= mentStart).takeWhile(_.stringStart <= mentEnd) match {
+          case toks if toks.size != 0 =>
+            val headIndex = toks.dropWhile(_.stringEnd <= mentHeadStart).takeWhile(_.stringStart <= mentHeadEnd).headOption.map( t => t.position - toks.head.position).getOrElse(0)
+            val tokSpan = new TokenSpan(toks)
+            coref.findOverlapping(tokSpan) match {
+              case Some(existingMention) => ent += existingMention
+              case None => coref.addMention(new Phrase(tokSpan, headIndex), ent)
+            }
+          case _ => ()
+        }
       }
     }
-
+    coref.trimEmptyEntities()
     document.annotators += classOf[WithinDocCoref] -> classOf[LoadAPFCoref]
     document
   }
@@ -98,7 +100,28 @@ class OffsetMapper(private val rawText:String) {
   def fixOffset(apfOffset:Int) = offsets.takeWhile(_._1 <= apfOffset ).last._2 + apfOffset
 }
 
+case class SerializableAPFMention(docId:String, entId:String, entName:Option[String], mentId:String, mentSpan:(Int, Int), mentHeadSpan:(Int, Int)) {
+  def serialize:String = Seq(docId, entId, entName.getOrElse(""), mentId, "%s|%s".format(mentSpan._1, mentSpan._2), "%s|%s".format(mentHeadSpan._1,mentHeadSpan._2)).mkString("\t")
+}
+
+object SerializableAPFMention {
+  def deserialize(str:String):Option[SerializableAPFMention] = str.split("\t") match {
+    case Array(docId, entId, entNameStr, mentId, mentSpanStr, mentHeadSpanStr) =>
+      val entName = if(entNameStr.isEmpty) None else Some(entNameStr)
+      val Array(mentStart, mentEnd) = mentSpanStr.split("|")
+      val Array(mentHeadStart, mentHeadEnd) = mentHeadSpanStr.split("|")
+      val mentSpan = mentStart.toInt -> mentEnd.toInt
+      val mentHeadSpan = mentHeadStart.toInt -> mentHeadEnd.toInt
+      Some(SerializableAPFMention(docId, entId, entName, mentId, mentSpan, mentHeadSpan))
+    case _ => None
+  }
+}
+
 object LoadAPFCoref {
+
+  private val trimRegex = """\n\s+""".r
+  private def fixMentionString(str:String):String = trimRegex.replaceAllIn(str, "\n")
+  private def offsetsFromCharSeq(charSeq:Node):(Int, Int) = (charSeq \ "@START").text.toInt -> ((charSeq \ "@END").text.toInt + 1)//these offsets include the xml/sgml of the original file
 
   val TagRegex = new Regex("""<[/\w\d "=]+>""")
   def main(args:Array[String]) {
