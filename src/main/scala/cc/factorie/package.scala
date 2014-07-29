@@ -35,6 +35,10 @@ package object factorie extends CubbieConversions {
   implicit def traversableExtras[A](t: Traversable[A]) = new cc.factorie.util.TraversableExtras[A](t)
   implicit def stringExtras(x:String) = new cc.factorie.util.StringExtras(x)
   implicit def singleFactorIterable[F<:Factor](f:F): Iterable[F] = new IterableSingleFactor(f)
+  implicit class IntPairExtras(val x:(Int, Int)) {
+    def overlapsWith(y:(Int, Int)):Boolean = (x._1 >= y._1 && x._1 <= y._2) || (x._2 >= y._1 && x._2 <= y._2)
+  }
+
 
   def assertStringEquals(expr:Any, str:String) = org.junit.Assert.assertTrue("The string representation '" + expr.toString + "' does not match the expected value: '" + str +"'", expr.toString == str)
   def assertMinimalAccuracy(got:Double, goal:Double): Unit = assert(got >= goal, s"Accuracy ${got} is less than expected ${goal}.")
