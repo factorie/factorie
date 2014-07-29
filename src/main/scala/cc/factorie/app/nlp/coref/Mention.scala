@@ -16,6 +16,7 @@ import cc.factorie.app.nlp._
 import cc.factorie.app.nlp.phrase._
 import cc.factorie.util.{Attr,UniqueId,ImmutableArrayIndexedSeq,EvaluatableClustering}
 import cc.factorie.variable._
+import cc.factorie._
 import scala.collection.mutable.ArrayBuffer
 
 /** Either a mention, entity or sub-entity in an coreference or entity resolution model.
@@ -170,6 +171,12 @@ class WithinDocCoref(val document:Document) extends EvaluatableClustering[Within
   def deleteMention(mention:Mention): Unit = {
     if (mention.entity ne null) mention.entity -= mention
     _spanToMention.remove(mention.phrase.value)
+  }
+
+  /** Checks whether the given tokenspan overlaps with an existing mention, returns the overlapping mention if it does. */
+  def findOverlapping(tokenSpan:TokenSpan):Option[Mention] = tokenSpan match {
+    case ts if ts.document == this.document => mentions.find(_.phrase.characterOffsets overlapsWith ts.characterOffsets)
+    case _ => None
   }
   
   /** Return all Mentions in this coreference solution. */

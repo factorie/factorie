@@ -10,20 +10,28 @@ import scala.io.Source
 import cc.factorie.app.nlp.segment.{DeterministicSentenceSegmenter, DeterministicTokenizer}
 import cc.factorie.app.nlp.pos.PennPosTag
 import scala.util.matching.Regex
+import scala.xml.Node
 
 /**
  * Takes a document and an apf.xml file that contains coreference annotation for that
  * document and annotates that document.
  *
- * If the document already has a target coref, this will overwrite it!
+ * If the document already has a (target) coref, this will overwrite mentions that
+ * overlap with the mentions annotated here.
  *
  * @author John Sullivan
  */
-class LoadAPFCoref(apfFile:File) extends DocumentAnnotator{
+class LoadAPFCoref(apfFile:File, loadAsTarget:Boolean = true) extends DocumentAnnotator{
 
   // the APF XML has newlines with indents within mention strings that occur across newlines, this is a hack to remove them and replace them with a newline
   private val trimRegex = """\n\s+""".r
   private def fixMentionString(str:String):String = trimRegex.replaceAllIn(str, "\n")
+  private def offsetsFromCharSeq(charSeq:Node)(implicit offset:OffsetMapper):(Int, Int) = {
+    val (start, end) = (charSeq \ "@START").text.toInt -> ((charSeq \ "@END").text.toInt + 1)//these offsets include the xml/sgml of the original file
+    val startAdj = offset.fixOffset(start)
+    val endAdj = startAdj + (end - start)
+    startAdj -> endAdj
+  }
 
   def tokenAnnotationString(token: Token) = ""
 
@@ -32,35 +40,41 @@ class LoadAPFCoref(apfFile:File) extends DocumentAnnotator{
 
   //todo do we want to add NER Types while we're at it?
   def process(document: Document) = {
-    val targetCoref = document.getTargetCoref
-    val offset = new OffsetMapper(document.string)
+    val coref = if(loadAsTarget) document.getTargetCoref else document.getCoref
+    implicit val offset = new OffsetMapper(document.string)
 
-    (NonValidatingXML.load(new FileInputStream(apfFile)) \\ "entity").foreach { entNode =>
+    val allMentions = (NonValidatingXML.load(new FileInputStream(apfFile)) \\ "entity").flatMap{ entNode =>
+      val ent = (entNode \ "@ID").text -> (entNode \ "entity_attributes" \ "name" match {
+        case name if name.nonEmpty => name.head.attribute("NAME").map(a => fixMentionString(a.head.text))
+        case _ => None
+      })
+      val ments = (entNode \ "entity_mention") flatMap  { mentNode =>
 
-      val ent = targetCoref.entityFromUniqueId(entNode.attribute("ID").get.text)
-      entNode \ "entity_attributes" \ "name" match {
-        case name if name.nonEmpty => name.head.attribute("NAME").foreach(nameNode => ent.canonicalName = fixMentionString(nameNode.text))
-        case _ => ()
-      }
-      (entNode \ "entity_mention").foreach { mentNode =>
-        val charSeq = (mentNode \ "extent" \ "charseq").head
+        val (mentStart, mentEnd) = offsetsFromCharSeq((mentNode \ "extent" \ "charseq").head)
+        val (headStart, headEnd) = offsetsFromCharSeq((mentNode \ "head" \ "charseq").head)
 
-        val (mentStart, mentEnd) = charSeq.attribute("START").get.text.toInt -> (charSeq.attribute("END").get.text.toInt + 1)//these offsets include the xml/sgml of the original file
-        val mentStartAdj = offset.fixOffset(mentStart)
-        val mentEndAdj = mentStartAdj + (mentEnd - mentStart)
 
-        document.getSectionByOffsets(mentStartAdj, mentEndAdj) match {
-          case Some(sec) =>
-            sec.tokens.dropWhile(_.stringEnd <= mentStartAdj).takeWhile(_.stringStart <= mentEndAdj) match {
-              case toks if toks.size != 0 =>
-                val ment = targetCoref.addMention(new Phrase(
-                  new TokenSpan(toks), 0), ent) // todo use head annotation to find phrase head
-                ment.attr += APFMentionId(mentNode.attribute("ID").get.text)
-              case _ => () // todo should we do something?
-
-            }
-          case None => //todo do something
+        document.getSectionByOffsets(mentStart, mentEnd) flatMap { sec =>
+          sec.tokens.dropWhile(_.stringEnd <= mentStart).takeWhile(_.stringStart <= mentEnd) match {
+            case toks if toks.size != 0 =>
+              //token seq and head token index
+              Some((mentStart -> mentEnd, toks, toks.dropWhile(_.stringEnd <= headStart).takeWhile(_.stringStart <= headEnd).headOption.map( t => t.position - toks.head.position).getOrElse(0)))
+            case _ => None
+          }
         }
+      }
+      ments.map(_ -> ent)
+    }.sortBy{case (((start, end), _, _), _) => (end - start) * -1} // this puts the longest mentions first
+
+    allMentions foreach { case((_, mentToks, mentHead), (entId, entName)) =>
+      val ent = coref.entityFromUniqueId(entId)
+      if(ent.canonicalName != null && entName.isDefined) {
+        ent.canonicalName = entName.get
+      }
+      val mentSpan = new TokenSpan(mentToks)
+      coref.findOverlapping(mentSpan) match {
+        case Some(existingMention) => ent += existingMention
+        case None => coref.addMention(new Phrase(mentSpan, mentHead), ent)
       }
     }
 
@@ -83,10 +97,6 @@ class OffsetMapper(private val rawText:String) {
 
   def fixOffset(apfOffset:Int) = offsets.takeWhile(_._1 <= apfOffset ).last._2 + apfOffset
 }
-
-
-case class APFMentionId(value:String)
-
 
 object LoadAPFCoref {
 
@@ -111,7 +121,7 @@ object LoadAPFCoref {
     doc.targetCoref.entities.foreach { ent =>
       println("Entity: %s".format(ent.canonicalName -> ent.uniqueId))
       ent.mentions.foreach{ ment =>
-        println("\tMention: %s with offsets: %s and id: %s".format(ment.phrase.string, ment.phrase.characterOffsets, ment.attr[APFMentionId].value))
+        println("\tMention: %s with offsets: %s ".format(ment.phrase.string, ment.phrase.characterOffsets))
       }
     }
 
