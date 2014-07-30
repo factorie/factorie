@@ -23,22 +23,7 @@ import scala.xml.Node
  */
 class LoadAPFCoref(mentions:Seq[SerializableAPFMention], loadAsTarget:Boolean) extends DocumentAnnotator {
 
-  def this(apfFile:File, loadAsTarget:Boolean = true) = this({
-    val xml = NonValidatingXML load new FileInputStream(apfFile)
-    val docId = (xml \\ "document" \ "@DOCID").text
-    (xml \\ "entity").flatMap{ entNode =>
-      val (entId, entName) = (entNode \ "@ID").text -> (entNode \ "entity_attributes" \ "name" match {
-        case name if name.nonEmpty => name.head.attribute("NAME").map(a => LoadAPFCoref.fixMentionString(a.head.text))
-        case _ => None
-      })
-      (entNode \ "entity_mention").map{ mentNode =>
-        val mentId = (mentNode \ "@ID").text
-        val mentSpan = LoadAPFCoref.offsetsFromCharSeq((mentNode \ "extent" \ "charseq").head) // we actually don't need to/can't fix these here
-      val mentHeadSpan = LoadAPFCoref.offsetsFromCharSeq((mentNode \ "head" \ "charseq").head)
-        SerializableAPFMention(docId, entId, entName, mentId, mentSpan, mentHeadSpan)
-      }
-    }
-  }, loadAsTarget)
+  def this(apfFile:File, loadAsTarget:Boolean = true) = this(SerializableAPFMention.fromAPFXML(NonValidatingXML loadFile apfFile), loadAsTarget)
 
   def tokenAnnotationString(token: Token) = null
 
@@ -115,13 +100,30 @@ object SerializableAPFMention {
       Some(SerializableAPFMention(docId, entId, entName, mentId, mentSpan, mentHeadSpan))
     case _ => None
   }
-}
-
-object LoadAPFCoref {
 
   private val trimRegex = """\n\s+""".r
   private def fixMentionString(str:String):String = trimRegex.replaceAllIn(str, "\n")
   private def offsetsFromCharSeq(charSeq:Node):(Int, Int) = (charSeq \ "@START").text.toInt -> ((charSeq \ "@END").text.toInt + 1)//these offsets include the xml/sgml of the original file
+
+  def fromAPFXML(xml:Node):Seq[SerializableAPFMention] = {
+    val docId = (xml \\ "document" \ "@DOCID").text
+    val mentions = (xml \\ "entity").flatMap{ entNode =>
+      val (entId, entName) = (entNode \ "@ID").text -> (entNode \ "entity_attributes" \ "name" match {
+        case name if name.nonEmpty => name.head.attribute("NAME").map(a => fixMentionString(a.head.text))
+        case _ => None
+      })
+      (entNode \ "entity_mention").map{ mentNode =>
+        val mentId = (mentNode \ "@ID").text
+        val mentSpan = offsetsFromCharSeq((mentNode \ "extent" \ "charseq").head) // we actually don't need to/can't fix these here
+      val mentHeadSpan = offsetsFromCharSeq((mentNode \ "head" \ "charseq").head)
+        SerializableAPFMention(docId, entId, entName, mentId, mentSpan, mentHeadSpan)
+      }
+    }
+    mentions
+  }
+}
+
+object LoadAPFCoref {
 
   val TagRegex = new Regex("""<[/\w\d "=]+>""")
   def main(args:Array[String]) {
