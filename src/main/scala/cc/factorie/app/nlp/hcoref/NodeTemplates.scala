@@ -120,47 +120,39 @@ class BagOfWordsSizePrior[Vars <: NodeVariables[Vars]](initialWeight:Double, get
 class EmptyBagPenalty[Vars <: NodeVariables[Vars]](initialWeight:Double, getBag:(Vars => BagOfWordsVariable))(implicit ct:ClassTag[Vars], params:Parameters)
   extends RootNodeBagTemplate[Vars](initialWeight, getBag, {bag => if (bag.size == 0) -1.0 else 0.0}, "EmptyBagPenalty")
 
-/*
+class EntityNameTemplate[Vars <: NodeVariables[Vars]](val firstLetterWeight:Double=4.0, val fullNameWeight:Double=4.0,val weight:Double=64,val saturation:Double=128.0, val penaltyOnNoName:Double=2.0, getBag:(Vars => BagOfWordsVariable))(implicit ct:ClassTag[Vars], params:Parameters)
+  extends TupleTemplateWithStatistics3[Node[Vars]#Exists,Node[Vars]#IsRoot,Vars]
+  with DebuggableTemplate {
 
-class EntityNameTemplate[B<:BagOfWordsVariable with EntityAttr](val firstLetterWeight:Double=4.0, val fullNameWeight:Double=4.0,val weight:Double=64,val saturation:Double=128.0, val penaltyOnNoName:Double=2.0)(implicit m:Manifest[B]) extends TupleTemplateWithStatistics3[EntityExists,IsEntity,B] with DebuggableTemplate{
-  val name = "EntityNameTemplate(flWeight="+firstLetterWeight+", fnWeight="+fullNameWeight+", weight="+weight+" sat="+saturation+")"
-  println("EntityNameTemplate("+weight+")")
-  def unroll1(exists:EntityExists) = Factor(exists,exists.entity.attr[IsEntity],exists.entity.attr[B])
-  def unroll2(isEntity:IsEntity) = Factor(isEntity.entity.attr[EntityExists],isEntity,isEntity.entity.attr[B])
-  def unroll3(bag:B) = Factor(bag.entity.attr[EntityExists],bag.entity.attr[IsEntity],bag)//throw new Exception("An entitie's status as a mention should never change.")
-  def score(exists:EntityExists#Value, isEntity:IsEntity#Value, bag:B#Value): Double ={
-    var result = 0.0
-    if(exists.booleanValue){
-      val bagSeq = bag.iterator.filter(_._1.length>0).toSeq
-      var firstLetterMismatches = 0
-      var nameMismatches = 0
-      var i=0;var j=0
-      while(i<bagSeq.size){
-        val (wordi,weighti) = bagSeq(i)
-        j=i+1
-        while(j<bagSeq.size){
-          val (wordj,weightj) = bagSeq(j)
-          if(wordi.charAt(0) != wordj.charAt(0))firstLetterMismatches += 1 //weighti*weightj
-          else if(FeatureUtils.isInitial(wordi) && FeatureUtils.isInitial(wordj) && wordi != wordj)firstLetterMismatches += 1
-          if(wordi.length>1 && wordj.length>1 && !FeatureUtils.isInitial(wordi) && !FeatureUtils.isInitial(wordj))nameMismatches += wordi.editDistance(wordj)
-          j += 1
-        }
-        i += 1
+  val name = "EntityNameTemplate"
+
+  def unroll1(exists: Node[Vars]#Exists) = Factor(exists, exists.node.isRootVar, exists.node.variables)
+  def unroll2(isRoot: Node[Vars]#IsRoot) = Factor(isRoot.node.existsVar, isRoot, isRoot.node.variables)
+  def unroll3(vars: Vars) = Factor(vars.node.existsVar, vars.node.isRootVar, vars)
+
+
+  override def score(exists: Node[Vars]#Exists#Value, isRoot: Node[Vars]#IsRoot#Value, vars: Vars) = {
+    var score = 0.0
+    var firstLetterMismatches = 0
+    var nameMismatches = 0
+    val bag = getBag(vars)
+    bag.value.asHashMap.keySet.pairs.foreach { case(tokI, tokJ) =>
+      if(tokI.charAt(0) != tokJ.charAt(0)) {
+        firstLetterMismatches += 1
       }
-      result -= scala.math.min(saturation,firstLetterMismatches*firstLetterWeight)
-      result -= scala.math.min(saturation,nameMismatches*fullNameWeight)
-      result = result*weight
-      //if(isEntity.booleanValue){
-      if(bag.size==0){
-        if(isEntity.booleanValue)result -= penaltyOnNoName
+      if(tokI.length > 1 && tokJ.length > 1) {
+        nameMismatches += tokI editDistance tokJ
       }
-      //}
-      if(_debug)println("  "+debug(result))
     }
-    result
+    score -= math.min(saturation, firstLetterMismatches * firstLetterWeight)
+    score -= math.min(saturation, nameMismatches * fullNameWeight)
+    if(bag.size == 0 && isRoot.booleanValue) {
+      score -= penaltyOnNoName
+    }
+    report(score, weight)
+    score * weight
   }
 }
-*/
 
 abstract class ChildParentTemplate[Vars <: NodeVariables[Vars]](val initWeights:Tensor1)(implicit v1:ClassTag[Vars], params:Parameters)
   extends Template3[ArrowVariable[Node[Vars], Node[Vars]], Vars, Vars]
