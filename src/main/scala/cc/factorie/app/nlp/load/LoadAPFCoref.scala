@@ -86,15 +86,15 @@ class OffsetMapper(private val rawText:String) {
 }
 
 case class SerializableAPFMention(docId:String, entId:String, entName:Option[String], mentId:String, mentSpan:(Int, Int), mentHeadSpan:(Int, Int)) {
-  def serialize:String = Seq(docId, entId, entName.getOrElse(""), mentId, "%s|%s".format(mentSpan._1, mentSpan._2), "%s|%s".format(mentHeadSpan._1,mentHeadSpan._2)).mkString("\t")
+  def serialize:String = Seq(docId, entId, entName.getOrElse(""), mentId, "%s,%s".format(mentSpan._1, mentSpan._2), "%s,%s".format(mentHeadSpan._1,mentHeadSpan._2)).mkString("\t")
 }
 
 object SerializableAPFMention {
   def deserialize(str:String):Option[SerializableAPFMention] = str.split("\t") match {
     case Array(docId, entId, entNameStr, mentId, mentSpanStr, mentHeadSpanStr) =>
       val entName = if(entNameStr.isEmpty) None else Some(entNameStr)
-      val Array(mentStart, mentEnd) = mentSpanStr.split("|")
-      val Array(mentHeadStart, mentHeadEnd) = mentHeadSpanStr.split("|")
+      val Array(mentStart, mentEnd) = mentSpanStr.split(",")
+      val Array(mentHeadStart, mentHeadEnd) = mentHeadSpanStr.split(",")
       val mentSpan = mentStart.toInt -> mentEnd.toInt
       val mentHeadSpan = mentHeadStart.toInt -> mentHeadEnd.toInt
       Some(SerializableAPFMention(docId, entId, entName, mentId, mentSpan, mentHeadSpan))
