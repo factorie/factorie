@@ -118,8 +118,8 @@ class ChainModel[Label <: MutableDiscreteVar, Features <: CategoricalVectorVar[S
     for (i <- 0 until vars.length) vars(i).set(result.mapValues(i))
   }
 
-  def getMaximizedLabels(vars: Seq[Label])(implicit d: DiffList): Unit = {
-    if (vars.isEmpty) return
+  def getMaximizedLabels(vars: Seq[Label])(implicit d: DiffList): Seq[Int] = {
+    if (vars.isEmpty) return Seq()
     val result = ChainHelper.viterbiFast(getCliqueValues(vars))
     for (i <- 0 until vars.length) yield result.mapValues(i)
   }
