@@ -118,6 +118,12 @@ class ChainModel[Label <: MutableDiscreteVar, Features <: CategoricalVectorVar[S
     for (i <- 0 until vars.length) vars(i).set(result.mapValues(i))
   }
 
+  def getMaximizedLabels(vars: Seq[Label])(implicit d: DiffList): Unit = {
+    if (vars.isEmpty) return
+    val result = ChainHelper.viterbiFast(getCliqueValues(vars))
+    for (i <- 0 until vars.length) yield result.mapValues(i)
+  }
+
   def getHammingLossScores(varying: Seq[Label with LabeledMutableDiscreteVar]): Array[Tensor1] = {
     val domainSize = varying.head.domain.size
     val localScores = new Array[Tensor1](varying.size)
