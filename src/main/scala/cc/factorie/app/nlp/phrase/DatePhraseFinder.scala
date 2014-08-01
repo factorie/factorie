@@ -6,6 +6,7 @@ import cc.factorie.app.nlp.pos.PennPosTag
 import scala.util.parsing.input.{Reader, Position}
 import java.util.GregorianCalendar
 import scala.collection.mutable.ArrayBuffer
+import cc.factorie.app.nlp.lemma.TokenLemma
 
 /**
  * Finds and parses all kinds of dates in a document, Basic formats were taken from http://en.wikipedia.org/wiki/Calendar_date.
@@ -16,7 +17,7 @@ import scala.collection.mutable.ArrayBuffer
 object DatePhraseFinder extends DocumentAnnotator with Parsers with ImplicitConversions {
   type Elem = Token
 
-  def prereqAttrs = List(classOf[PennPosTag])
+  def prereqAttrs = List(classOf[TokenLemma])
 
   def postAttrs: Iterable[Class[_]] = List()
 
@@ -194,7 +195,7 @@ object DatePhraseFinder extends DocumentAnnotator with Parsers with ImplicitConv
   class DatePhraseList(phrases: Iterable[DatePhrase]) extends PhraseList(phrases)
 
   class DatePhrase(startToken: Token, length: Int = 1, val day: Int = -1, val month: Int = -1, val year: Int = Int.MinValue, val weekDay: Int = -1)
-    extends Phrase(startToken.section, startToken.positionInSection, length, -1) {
+    extends Phrase(startToken.section, startToken.positionInSection, length, 0) {
 
     def toJavaDate: java.util.Date = new GregorianCalendar(year, month, day).getTime
 
