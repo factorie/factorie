@@ -82,7 +82,7 @@ class OffsetMapper(private val rawText:String) {
   }.toSeq
 
 
-  def fixOffset(apfOffset:Int) = offsets.takeWhile(_._1 <= apfOffset ).last._2 + apfOffset
+  def fixOffset(apfOffset:Int) = offsets.takeWhile(_._1 <= apfOffset ).lastOption.getOrElse(0 -> 0)._2 + apfOffset
 }
 
 case class SerializableAPFMention(docId:String, entId:String, entName:Option[String], mentId:String, mentSpan:(Int, Int), mentHeadSpan:(Int, Int)) {
