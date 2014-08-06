@@ -2,8 +2,8 @@ package cc.factorie.app.nlp.load
 
 import cc.factorie.app.nlp._
 import cc.factorie.app.nlp.coref.WithinDocCoref
-import java.io.{BufferedInputStream, InputStream, FileInputStream, File}
-import cc.factorie.util.NonValidatingXML
+import java.io._
+import cc.factorie.util.{DefaultCmdOptions, NonValidatingXML}
 import scala.Some
 import cc.factorie.app.nlp.phrase.Phrase
 import scala.io.Source
@@ -11,6 +11,8 @@ import cc.factorie.app.nlp.segment.{DeterministicSentenceSegmenter, Deterministi
 import cc.factorie.app.nlp.pos.PennPosTag
 import scala.util.matching.Regex
 import scala.xml.Node
+import scala.Some
+import java.util.zip.GZIPInputStream
 
 /**
  * Takes a document and an apf.xml file that contains coreference annotation for that
@@ -70,19 +72,100 @@ class LoadAPFCoref(mentions:Seq[SerializableAPFMention], loadAsTarget:Boolean) e
   }
 }
 
-class OffsetMapper(private val rawText:String) {
+class OffsetMapper(private val offsets:Seq[(Int, Int)]) {
+  def this(rawText:String) = this{
+    var numXMLChars = 0
+    new Regex("""<[/\w\d "=]+>""").findAllIn(rawText).matchData.map{ m =>
+      numXMLChars += m.matched.length
+      math.max(0, m.start - numXMLChars) -> numXMLChars
+    }.toSeq
+  }
+
   def this(f:File) = this(Source.fromFile(f).mkString("\n"))
 
-  private val TagRegex = new Regex("""<[/\w\d "=]+>""")
-
-  private var numXMLChars = 0
-  private val offsets = TagRegex.findAllIn(rawText).matchData.map{ m =>
-    numXMLChars += m.matched.length
-    math.max(0, m.start - numXMLChars) -> numXMLChars
-  }.toSeq
 
 
   def fixOffset(apfOffset:Int) = offsets.takeWhile(_._1 <= apfOffset ).lastOption.getOrElse(0 -> 0)._2 + apfOffset
+
+  def serialize:String = offsets.map{case (i, j) => i + "?" + j}.mkString(",")
+}
+
+object OffsetMapper {
+  def deserialize(str:String):OffsetMapper = new OffsetMapper(str.split(",").map{ s =>
+    val Array(i, j) = s.split("?")
+    i.toInt -> j.toInt
+  }.toSeq)
+
+  def buildMapperLine(docId:String, docString:String):String = docId + "\t" + new OffsetMapper(docString).serialize
+
+  def main(args:Array[String]) {
+    val opts = new OffsetMapperOpts
+    opts.parse(args)
+
+
+    val iter = Source.fromFile(opts.docOffsetFile.value).getLines()
+    val wrt = new BufferedWriter(new FileWriter(opts.outputFile.value))
+
+    var count = 0
+
+    var Array(docId, filePath, startOffsetStr) = iter.next().split("\t")
+    var startOffset = startOffsetStr.toInt
+    var tacBlockReader = new BufferedReader(new InputStreamReader(new GZIPInputStream(new FileInputStream(opts.tacRoot.value + "/" + filePath)), "UTF-8"))
+    while (iter.hasNext) {
+
+
+      val Array(nextDocId, nextFilePath, endOffsetStr) = iter.next().split("\t")
+      val endOffset = endOffsetStr.toInt
+
+      var docString:String = null
+
+      if(filePath == nextFilePath) { // we're in the same file, so we can use the offsets there
+        val chars = new Array[Char](endOffset - startOffset)
+
+        // this reads the raw string of docId (not nextDocId) into chars
+        tacBlockReader.read(chars, 0, endOffset - startOffset)
+        docString = new String(chars)
+
+      } else { // the next file is different, we just want to get to the end of the current one.
+        val rdr = new BufferedReader(tacBlockReader)
+        val docStringBuf = new StringBuffer()
+        var line = rdr.readLine()
+        while (line != null) {
+          docStringBuf append line
+          line = rdr.readLine()
+        }
+        docString = docStringBuf.toString
+        // we've consumed the old file reader and need a new one for the next tac file block
+        tacBlockReader.close()
+        tacBlockReader = new BufferedReader(new InputStreamReader(new GZIPInputStream(new FileInputStream(opts.tacRoot.value + "/" + nextFilePath))))
+      }
+      //this is what we actually came here for - serializing the apf offsets for document
+      wrt write buildMapperLine(docId, docString)
+      wrt.newLine()
+      if(count % 1000 == 0) { // this number is a total guess
+        println("Wrote offsets for %d files".format(count))
+        wrt.flush()
+      }
+
+
+      //preparing for the next iteration
+      docId = nextDocId
+      startOffset = endOffset
+      filePath = nextFilePath
+      count += 1
+    }
+
+    wrt.flush()
+    wrt.close()
+
+  }
+
+}
+
+class OffsetMapperOpts extends DefaultCmdOptions {
+  val docOffsetFile = new CmdOption("doc-offset", "", "FILE", "A file containing the offsets of documents into the raw tac document.")
+  val tacRoot = new CmdOption("tac-root", "", "DIRECTORY", "The root directory in which tac data is stored.")
+  val outputFile = new CmdOption("output-file", "", "FILE", "The file into which to write the resulting offsets.")
 }
 
 case class SerializableAPFMention(docId:String, entId:String, entName:Option[String], mentId:String, mentSpan:(Int, Int), mentHeadSpan:(Int, Int)) {
