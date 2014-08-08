@@ -45,9 +45,9 @@ object HierCorefDemo {
   }
 
   class WikiCorefModel(namesWeight:Double, namesShift: Double, contextWeight:Double, contextShift: Double, mentionsWeight:Double, mentionsShift: Double)  extends CorefModel[WikiCorefVars] {
-    this += new ChildParentCosineDistance(namesWeight, namesShift, {w:WikiCorefVars => w.names}) {this.debugOff()}
-    this += new ChildParentCosineDistance(contextWeight, contextShift, {w:WikiCorefVars => w.context}) {this.debugOff()}
-    this += new ChildParentCosineDistance(mentionsWeight, mentionsShift, {w:WikiCorefVars => w.mentions}) {this.debugOff()}
+    this += new ChildParentCosineDistance(namesWeight, namesShift, {w:WikiCorefVars => w.names}, "names") {this.debugOff()}
+    this += new ChildParentCosineDistance(contextWeight, contextShift, {w:WikiCorefVars => w.context}, "context") {this.debugOff()}
+    this += new ChildParentCosineDistance(mentionsWeight, mentionsShift, {w:WikiCorefVars => w.mentions}, "mentions") {this.debugOff()}
     this += new BagOfWordsEntropy(0.25, {w:WikiCorefVars => w.names})
   }
 

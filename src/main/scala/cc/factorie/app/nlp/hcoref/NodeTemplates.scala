@@ -22,19 +22,6 @@ import cc.factorie.Parameters
 /**
  * @author John Sullivan
  */
-trait DebuggableTemplate {
-  protected var _debug: Boolean = false
-  def debugOn() = _debug = true
-  def debugOff() = _debug = false
-  def name: String
-
-  def report(score:Double, weight:Double) {
-    if(_debug) {
-    println("\t%.4f = %.4f * %.4f (score * weight)  [%s]".format(score * weight, score, weight, name))
-    }
-  }
-}
-
 class EntitySizePrior[Vars <: NodeVariables[Vars]](val weight:Double=0.1, val exponent:Double=1.2, val saturation:Double=128)
   extends TupleTemplateWithStatistics3[Node[Vars]#Exists,Node[Vars]#IsRoot,Node[Vars]#MentionCount]{
 
@@ -74,7 +61,7 @@ with DebuggableTemplate {
 
 }
 
-class BagOfWordsEntropy[Vars <: NodeVariables[Vars]](initialWeight:Double, getBag:(Vars => BagOfWordsVariable))(implicit ct:ClassTag[Vars], params:Parameters)
+class BagOfWordsEntropy[Vars <: NodeVariables[Vars]](initialWeight:Double, getBag:(Vars => BagOfWordsVariable), bagName:String = "")(implicit ct:ClassTag[Vars], params:Parameters)
   extends SingleBagTemplate[Vars](initialWeight, getBag, {b =>
     val bag = b.value
     var entropy = 0.0
@@ -86,7 +73,7 @@ class BagOfWordsEntropy[Vars <: NodeVariables[Vars]](initialWeight:Double, getBa
     }
     if(n>1)entropy /= scala.math.log(n) //normalized entropy in [0,1]
     -entropy
-  }, "BagOfWordsEntropy")
+  }, "BagOfWordsEntropy: %s".format(bagName))
 
 class RootNodeBagTemplate[Vars <: NodeVariables[Vars]](initialWeight:Double, getBag:(Vars => BagOfWordsVariable), getScore:(BagOfWordsVariable => Double), val name:String)(implicit ct:ClassTag[Vars], params:Parameters)
   extends Template3[Node[Vars]#Exists,Node[Vars]#IsRoot,Vars]
@@ -114,17 +101,17 @@ class RootNodeBagTemplate[Vars <: NodeVariables[Vars]](initialWeight:Double, get
 
 }
 
-class BagOfWordsSizePrior[Vars <: NodeVariables[Vars]](initialWeight:Double, getBag:(Vars => BagOfWordsVariable))(implicit ct:ClassTag[Vars], params:Parameters)
-  extends RootNodeBagTemplate[Vars](initialWeight, getBag, {bag => if (bag.size > 0) - bag.size.toDouble / bag.value.l1Norm else 0.0}, "BagOfWordsSizePrior")
+class BagOfWordsSizePrior[Vars <: NodeVariables[Vars]](initialWeight:Double, getBag:(Vars => BagOfWordsVariable), bagName:String = "")(implicit ct:ClassTag[Vars], params:Parameters)
+  extends RootNodeBagTemplate[Vars](initialWeight, getBag, {bag => if (bag.size > 0) - bag.size.toDouble / bag.value.l1Norm else 0.0}, "BagOfWordsSizePrior: %s".format(bagName))
 
-class EmptyBagPenalty[Vars <: NodeVariables[Vars]](initialWeight:Double, getBag:(Vars => BagOfWordsVariable))(implicit ct:ClassTag[Vars], params:Parameters)
-  extends RootNodeBagTemplate[Vars](initialWeight, getBag, {bag => if (bag.size == 0) -1.0 else 0.0}, "EmptyBagPenalty")
+class EmptyBagPenalty[Vars <: NodeVariables[Vars]](initialWeight:Double, getBag:(Vars => BagOfWordsVariable), bagName:String = "")(implicit ct:ClassTag[Vars], params:Parameters)
+  extends RootNodeBagTemplate[Vars](initialWeight, getBag, {bag => if (bag.size == 0) -1.0 else 0.0}, "EmptyBagPenalty: %s".format(bagName))
 
-class EntityNameTemplate[Vars <: NodeVariables[Vars]](val firstLetterWeight:Double=4.0, val fullNameWeight:Double=4.0,val weight:Double=64,val saturation:Double=128.0, val penaltyOnNoName:Double=2.0, getBag:(Vars => BagOfWordsVariable))(implicit ct:ClassTag[Vars], params:Parameters)
+class EntityNameTemplate[Vars <: NodeVariables[Vars]](val firstLetterWeight:Double=4.0, val fullNameWeight:Double=4.0,val weight:Double=64,val saturation:Double=128.0, val penaltyOnNoName:Double=2.0, getBag:(Vars => BagOfWordsVariable), bagName:String = "")(implicit ct:ClassTag[Vars], params:Parameters)
   extends TupleTemplateWithStatistics3[Node[Vars]#Exists,Node[Vars]#IsRoot,Vars]
   with DebuggableTemplate {
 
-  val name = "EntityNameTemplate"
+  val name = "EntityNameTemplate: %s".format(bagName)
 
   def unroll1(exists: Node[Vars]#Exists) = Factor(exists, exists.node.isRootVar, exists.node.variables)
   def unroll2(isRoot: Node[Vars]#IsRoot) = Factor(isRoot.node.existsVar, isRoot, isRoot.node.variables)
@@ -169,8 +156,8 @@ abstract class ChildParentTemplate[Vars <: NodeVariables[Vars]](val initWeights:
   def weights: Weights = _weights
 }
 
-class ChildParentCosineDistance[Vars <: NodeVariables[Vars]](weight:Double, shift: Double, getBag:(Vars => BagOfWordsVariable))(implicit c:ClassTag[Vars], p:Parameters) extends ChildParentTemplate[Vars](Tensor1(weight)) with DebuggableTemplate {
-  val name: String = "ChildParentCosineDistance: %s".format(getBag)
+class ChildParentCosineDistance[Vars <: NodeVariables[Vars]](weight:Double, shift: Double, getBag:(Vars => BagOfWordsVariable), bagName:String = "")(implicit c:ClassTag[Vars], p:Parameters) extends ChildParentTemplate[Vars](Tensor1(weight)) with DebuggableTemplate {
+  val name: String = "ChildParentCosineDistance: %s".format(bagName)
 
   override def statistics(v1: (Node[Vars], Node[Vars]), child: Vars, parent: Vars): Tensor = {
     val childBag = getBag(child)
@@ -187,10 +174,10 @@ class ChildParentCosineDistance[Vars <: NodeVariables[Vars]](weight:Double, shif
  * in the [[BagOfWordsVariable]] should be permitted to merge. Together with [[IdentityFactor]] it can create uniquely
  * identifying features.
  */
-class ExclusiveConstraintFactor[Vars <: NodeVariables[Vars]](getBag:(Vars => BagOfWordsVariable))(implicit ct:ClassTag[Vars])
+class ExclusiveConstraintFactor[Vars <: NodeVariables[Vars]](getBag:(Vars => BagOfWordsVariable), bagName:String = "")(implicit ct:ClassTag[Vars])
   extends TupleTemplateWithStatistics3[ArrowVariable[Node[Vars], Node[Vars]], Vars, Vars]
   with DebuggableTemplate {
-  val name = "ExclusiveConstraintFactor"
+  val name = "ExclusiveConstraintFactor: %s".format(bagName)
 
   override def unroll1(v: ArrowVariable[Node[Vars], Node[Vars]]) = Option(v.dst) match { // If the parent-child relationship exists, we generate factors for it
     case Some(dest) => Factor(v, v.src.variables, dest.variables)
@@ -219,10 +206,10 @@ class ExclusiveConstraintFactor[Vars <: NodeVariables[Vars]](getBag:(Vars => Bag
  * between two nodes that share a value in getBag they will be merged. This feature does not ensure that the value in
  * getBag is unique, [[ExclusiveConstraintFactor]] manages that separately.
  */
-class IdentityFactor[Vars <: NodeVariables[Vars]](getBag:(Vars => BagOfWordsVariable))(implicit ct:ClassTag[Vars])
+class IdentityFactor[Vars <: NodeVariables[Vars]](getBag:(Vars => BagOfWordsVariable), bagName:String = "")(implicit ct:ClassTag[Vars])
   extends TupleTemplateWithStatistics3[ArrowVariable[Node[Vars], Node[Vars]], Vars, Vars]
   with DebuggableTemplate {
-  val name = "IdentityFactor"
+  val name = "IdentityFactor: %s".format(bagName)
 
   override def unroll1(v: ArrowVariable[Node[Vars], Node[Vars]]) = Option(v.dst) match { // If the parent-child relationship exists, we generate factors for it
     case Some(dest) => Factor(v, v.src.variables, dest.variables)
