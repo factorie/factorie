@@ -39,19 +39,16 @@ class LoadAPFCoref(mentions:Seq[SerializableAPFMention], loadAsTarget:Boolean) e
     startAdj -> endAdj
   }
 
-  //todo do we want to add NER Types while we're at it?
-  def process(document: Document) = {
+  def processFromOffsets(offset:OffsetMapper, document:Document):Document = {
     val coref = if(loadAsTarget) document.getTargetCoref else document.getCoref
-    implicit val offset = new OffsetMapper(document.string)
-
     mentions.sortBy{case SerializableAPFMention(_, _, _, _, (start, end), _) => (end - start) * -1} // sorting by length here means only the longest of overlapping mentions will be loaded later.
       .foreach { case SerializableAPFMention(_, entId, entName, mentId, mentSpan, mentHeadSpan) =>
       val ent = coref.entityFromUniqueId(entId)
       if(ent.canonicalName != null && entName.isDefined) {
         ent.canonicalName = entName.get
       }
-      val (mentStart, mentEnd) = fixOffsets(mentSpan)
-      val (mentHeadStart, mentHeadEnd) = fixOffsets(mentHeadSpan)
+      val (mentStart, mentEnd) = fixOffsets(mentSpan)(offset)
+      val (mentHeadStart, mentHeadEnd) = fixOffsets(mentHeadSpan)(offset)
 
       document.getSectionByOffsets(mentStart, mentEnd).foreach { sec =>
         sec.tokens.dropWhile(_.stringEnd <= mentStart).takeWhile(_.stringStart <= mentEnd) match {
@@ -67,6 +64,16 @@ class LoadAPFCoref(mentions:Seq[SerializableAPFMention], loadAsTarget:Boolean) e
       }
     }
     coref.trimEmptyEntities()
+    document
+  }
+
+  //todo do we want to add NER Types while we're at it?
+  def process(document: Document) = {
+
+    implicit val offset = new OffsetMapper(document.string)
+    // side effects!
+    processFromOffsets(offset, document)
+
     document.annotators += classOf[WithinDocCoref] -> classOf[LoadAPFCoref]
     document
   }
@@ -92,17 +99,142 @@ class OffsetMapper(private val offsets:Seq[(Int, Int)]) {
 
 object OffsetMapper {
   def deserialize(str:String):OffsetMapper = new OffsetMapper(str.split(",").map{ s =>
-    val Array(i, j) = s.split("?")
+    val Array(i, j) = s.split('?')
     i.toInt -> j.toInt
   }.toSeq)
 
   def buildMapperLine(docId:String, docString:String):String = docId + "\t" + new OffsetMapper(docString).serialize
 
+
+
+  def tacDocumentSplitter(tacDocFile:File):Iterator[String] = new Iterator[String] {
+
+    private val docEndString = """</doc>"""
+    private val webDocStartString = """<DOC>"""
+    private val docIdRegex = """(?i)<DOC ID="([^"]+)"[^>]*>""".r
+    private val webDocIdRegex = """(?i)<DOCID> ([^ ])+ </DOCID>""".r
+
+    private val tacReader = if(tacDocFile.getName.endsWith(".gz")) {
+      new BufferedReader(new InputStreamReader(new GZIPInputStream(new FileInputStream(tacDocFile))))
+    } else {
+      new BufferedReader(new InputStreamReader(new FileInputStream(tacDocFile)))
+    }
+
+    //priming the pump
+    private var line = tacReader.readLine()
+    private var lineNum = 1
+
+    // grouping together to avoid forgetting something
+    @inline
+    private def advanceLine(docBuffer:StringBuilder) {
+      docBuffer append line
+      docBuffer append "\n"
+      line = tacReader.readLine()
+      lineNum += 1
+    }
+
+
+    def next() = {
+      val docBuffer = new StringBuilder()
+
+
+      var docIdMatchOpt = docIdRegex.findFirstMatchIn(line)
+
+      // We should be at the start of a new document here, otherwise we have a problem.
+      assert(line.equalsIgnoreCase(webDocStartString) || docIdMatchOpt.isDefined, "Found line: |%s| that was not a valid doc start at line %d in %s".format(line, lineNum, tacDocFile.getName))
+
+      val docId = if(docIdMatchOpt.isDefined) {
+        docIdMatchOpt.get.toString()
+      } else if(line equalsIgnoreCase webDocStartString) { // we know that one must be true but let's not tempt fate
+        advanceLine(docBuffer)
+        webDocIdRegex.findFirstMatchIn(line).get.toString()
+      } else {
+        throw new Exception("Found line: |%s| that was not a valid doc start at line %d in %s".format(line, lineNum, tacDocFile.getName))
+      }
+
+      while(!line.equalsIgnoreCase(docEndString)) {
+        advanceLine(docBuffer)
+      }
+      // the loop exits when the doc end is found, but that us still part of the previous document so we need to consume it.
+      advanceLine(docBuffer)
+      docBuffer.toString()
+    }
+
+    def hasNext = line != null
+  }
+
+  def splitByLine(docOffsetFile:String, tacRoot:String, outputFile:String) {
+
+    val docEndString = """</doc>"""
+    val webDocStartString = """<DOC>"""
+    val docIdRegex = """(?i)<DOC ID="([^"]+)"[^>]*>""".r
+    val webDocIdRegex = """(?i)<DOCID> ([^ ])+ </DOCID>""".r
+    val wrt = new BufferedWriter(new FileWriter(outputFile))
+    var count = 0
+    var lineCount = 0
+    var docStringBuf = new StringBuilder()
+    var prevLine = null.asInstanceOf[String]
+    var line = null.asInstanceOf[String]
+
+    Source.fromFile(docOffsetFile).getLines().map {_.split('\t').apply(1)}.toSet.foreach{ filePath:String =>
+      val tacFileReader = new BufferedReader(new InputStreamReader(new GZIPInputStream(new FileInputStream(tacRoot + "/" + filePath)), "UTF-8"))
+      line = tacFileReader.readLine()
+      lineCount += 1
+
+
+      var docIdRegex(docId) = line
+      while (line != null) {
+        docStringBuf append line
+        if(line equalsIgnoreCase docEndString) {
+          // write out the doc offsets
+          wrt write buildMapperLine(docId, docStringBuf.toString())
+          wrt.newLine()
+
+          // clear out the buffer
+          docStringBuf = new StringBuilder()
+
+          // report our results
+          if(count % 1000 == 0) { // this number is a total guess
+            println("Wrote offsets for %d files".format(count))
+            wrt.flush()
+          }
+          count += 1
+        }
+        prevLine = line
+        line = tacFileReader.readLine()
+        if(line != null && prevLine != null && prevLine.equalsIgnoreCase(docEndString)) {
+          var docIdRegex(docId) = line
+        }
+
+        //prepare for next round
+
+        /*
+        if(line != null && prevLine.equalsIgnoreCase(docEndString)) {
+          docStringBuf = new StringBuilder()
+          docStringBuf append line
+          docIdRegex.findFirstIn(line) match {
+            case Some(m) => ()
+            case None => printf("didn't match the line start. Line is |%s| in file %s, on line %d", line, filePath)
+          }
+          var docIdRegex(docId) = line
+        }
+        */
+      }
+    }
+
+    wrt.flush()
+    wrt.close()
+    println("Wrote offsets for %d files".format(count))
+
+  }
+
   def main(args:Array[String]) {
     val opts = new OffsetMapperOpts
     opts.parse(args)
 
+    splitByLine(opts.docOffsetFile.value, opts.tacRoot.value, opts.outputFile.value)
 
+    /*
     val iter = Source.fromFile(opts.docOffsetFile.value).getLines()
     val wrt = new BufferedWriter(new FileWriter(opts.outputFile.value))
 
@@ -157,7 +289,7 @@ object OffsetMapper {
 
     wrt.flush()
     wrt.close()
-
+    */
   }
 
 }
