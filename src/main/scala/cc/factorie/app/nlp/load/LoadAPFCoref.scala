@@ -79,7 +79,7 @@ class LoadAPFCoref(mentions:Seq[SerializableAPFMention], loadAsTarget:Boolean) e
   }
 }
 
-class OffsetMapper(private val offsets:Seq[(Int, Int)]) {
+class OffsetMapper(val offsets:Seq[(Int, Int)]) {
   def this(rawText:String) = this{
     var numXMLChars = 0
     new Regex("""<[/\w\d "=]+>""").findAllIn(rawText).matchData.map{ m =>
