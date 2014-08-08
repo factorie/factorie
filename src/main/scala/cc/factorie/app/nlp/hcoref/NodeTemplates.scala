@@ -188,18 +188,23 @@ class ChildParentCosineDistance[Vars <: NodeVariables[Vars]](weight:Double, shif
  * identifying features.
  */
 class ExclusiveConstraintFactor[Vars <: NodeVariables[Vars]](getBag:(Vars => BagOfWordsVariable))(implicit ct:ClassTag[Vars])
-  extends TupleTemplateWithStatistics3[Node[Vars]#Exists, Node[Vars]#IsRoot, Vars]
+  extends TupleTemplateWithStatistics3[ArrowVariable[Node[Vars], Node[Vars]], Vars, Vars]
   with DebuggableTemplate {
   val name = "ExclusiveConstraintFactor"
 
-  def unroll1(exists:Node[Vars]#Exists) = Factor(exists,exists.node.isRootVar,exists.node.variables)
-  def unroll2(isEntity:Node[Vars]#IsRoot) = Factor(isEntity.node.existsVar,isEntity,isEntity.node.variables)
-  def unroll3(bag:Vars) = Factor(bag.node.existsVar,bag.node.isRootVar,bag) // this should really never happen
+  override def unroll1(v: ArrowVariable[Node[Vars], Node[Vars]]) = Option(v.dst) match { // If the parent-child relationship exists, we generate factors for it
+    case Some(dest) => Factor(v, v.src.variables, dest.variables)
+    case None => Nil
+  }
+  def unroll2(v: Vars) = Nil
+  def unroll3(v: Vars) = Nil
 
-  def score(exists: Node[Vars]#Exists#Value, isRoot: Node[Vars]#IsRoot#Value, vars: Vars) = {
-    val bag = getBag(vars)
+  def score(v1: (Node[Vars], Node[Vars]), child: Vars, parent: Vars) = {
+    val childBag = getBag(child)
+    val parentBag = getBag(parent)
+
     var result = 0.0
-    if(exists.booleanValue && bag.value.size >= 2) {
+    if((childBag.value.asHashMap.keySet & parentBag.value.asHashMap.keySet).nonEmpty) {
       result = -999999.0
     } else {
       result = 0.0
