@@ -189,9 +189,8 @@ class ExclusiveConstraintFactor[Vars <: NodeVariables[Vars]](getBag:(Vars => Bag
   def score(v1: (Node[Vars], Node[Vars]), child: Vars, parent: Vars) = {
     val childBag = getBag(child)
     val parentBag = getBag(parent)
-
     var result = 0.0
-    if((childBag.value.asHashMap.keySet & parentBag.value.asHashMap.keySet).nonEmpty) {
+    if((childBag.value.asHashMap.keySet & parentBag.--(childBag)(null).value.asHashMap.keySet).nonEmpty) {
       result = -999999.0
     } else {
       result = 0.0
