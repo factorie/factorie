@@ -29,7 +29,11 @@ package object nlp {
     for (i <- 0 until labels.length) {
       val atBoundary = types(i) != prevType || iobs(i) == "B"
       if (start >= 0 && atBoundary) { result.+=((start, i-start, types(i-1))); start = -1 }
-      if (types(i) != "" && atBoundary) start = i
+      if (types(i) != "" && atBoundary){
+        start = i
+        if (i == labels.length-1)
+          result.+=((start, 1, types(i)))
+      }
       prevType = types(i)
     }
     result
@@ -45,7 +49,11 @@ package object nlp {
       val atBoundary = types(i) != prevType || bilous(i) == "B" || bilous(i) == "U"
       if (bilous(i) == "U") result.+=((i, 1, types(i)))
       else if (start >= 0 && atBoundary) { result.+=((start, i-start, types(i-1))); start = -1 }
-      if (types(i) != "" && atBoundary) start = i
+      if (types(i) != "" && atBoundary){
+        start = i
+        if (i == labels.length-1)
+          result.+=((start, 1, types(i)))
+      }
       prevType = types(i)
     }
     result
