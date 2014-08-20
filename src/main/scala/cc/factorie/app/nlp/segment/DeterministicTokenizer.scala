@@ -92,7 +92,8 @@ class DeterministicTokenizer(caseSensitive:Boolean = false, tokenizeSgml:Boolean
   val fraction = "[\u00BC\u00BD\u00BE\u2153\u2154]|&(?:frac14|frac12|frac34);|(?:\\p{N}{1,4}[- \u00A0])?\\p{N}{1,4}(?:\\\\?/|\u2044)\\p{N}{1,4}"; patterns += fraction
   val contractedWord = s"[\\p{L}\\p{M}]+(?=(?:$contraction))"; patterns += contractedWord // Includes any combination of letters and accent characters before a contraction
   val caps = s"\\p{Lu}+(?:[&+](?!(?:$htmlSymbol|$htmlAccentedLetter))(?:\\p{Lu}(?!\\p{Ll}))+)+"; patterns += caps // For "AT&T" but don't grab "LAT&Eacute;" and be sure not to grab "PE&gym"
-  val word = s"(?:$letter)(?:[\\p{L}\\p{M}\\p{Nd}_]|$letter)*(?!-$date)(?:-\\p{Nd}+)?"; patterns += word // Includes any combination of letters, accent characters, numbers and underscores, dash-followed-by-numbers (as in "G-20" but not "NYT-03-04-2012").  It may include a & as long as it is followed by a letter but not an HTML symbol encoding
+  val word = s"$letter(?:[\\p{L}\\p{M}\\p{Nd}_]|$letter)*+"; patterns += word // Includes any combination of letters, accent characters, numbers and underscores, dash-followed-by-numbers (as in "G-20" but not "NYT-03-04-2012").  It may include a & as long as it is followed by a letter but not an HTML symbol encoding
+
   // TODO Not sure why the pattern above is not getting the last character of a word ending in \u00e9 -akm
   val number = s"(?<![\\p{Nd}])[-\\+\\.,]?(?!$date)\\p{Nd}+(?:[\\.:,]\\p{Nd}+)*"; patterns += number // begin with an optional [+-.,] and a number, followed by numbers or .:, punc, ending in number.  Avoid matching dates inside "NYT-03-04-2012".  Cannot be preceded by number (or letter? why?  do we need "USD32"?), in order to separate "1989-1990" into three tokens.
   val number2 = ap+"\\p{Nd}{2}"; patterns += number2 // For years, like '91
@@ -109,6 +110,7 @@ class DeterministicTokenizer(caseSensitive:Boolean = false, tokenizeSgml:Boolean
   val space = "(?:\\p{Z}|&nbsp;)+" // but not tokenized here
 
   val tokenRegexString = patterns.filter(_.length != 0).mkString("|")
+//  val tokenRegex = if (!caseSensitive) ("(?i)"+tokenRegexString).r else tokenRegexString.r
   val tokenRegex = if (!caseSensitive) ("(?i)"+tokenRegexString).r else tokenRegexString.r
 
   def process(document: Document): Document = {
