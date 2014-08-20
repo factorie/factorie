@@ -25,7 +25,12 @@ import java.util.zip.GZIPInputStream
  */
 class LoadAPFCoref(mentions:Seq[SerializableAPFMention], loadAsTarget:Boolean) extends DocumentAnnotator {
 
-  def this(apfFile:File, loadAsTarget:Boolean = true) = this(SerializableAPFMention.fromAPFXML(NonValidatingXML loadFile apfFile), loadAsTarget)
+  def this(apfFile:File, loadAsTarget:Boolean = true) = this({
+    val src = new BufferedInputStream(new FileInputStream(apfFile))
+    val offsets = SerializableAPFMention.fromAPFXML(NonValidatingXML load src)
+    src.close()
+    offsets
+  }, loadAsTarget)
 
   def tokenAnnotationString(token: Token) = null
 
@@ -88,7 +93,12 @@ class OffsetMapper(val offsets:Seq[(Int, Int)]) {
     }.toSeq
   }
 
-  def this(f:File) = this(Source.fromFile(f).mkString("\n"))
+  def this(f:File) = this{
+    val src = Source.fromFile(f)
+    val docString = src.mkString("\n")
+    src.close()
+    docString
+  }
 
 
 
@@ -205,20 +215,6 @@ object OffsetMapper {
         if(line != null && prevLine != null && prevLine.equalsIgnoreCase(docEndString)) {
           var docIdRegex(docId) = line
         }
-
-        //prepare for next round
-
-        /*
-        if(line != null && prevLine.equalsIgnoreCase(docEndString)) {
-          docStringBuf = new StringBuilder()
-          docStringBuf append line
-          docIdRegex.findFirstIn(line) match {
-            case Some(m) => ()
-            case None => printf("didn't match the line start. Line is |%s| in file %s, on line %d", line, filePath)
-          }
-          var docIdRegex(docId) = line
-        }
-        */
       }
     }
 
@@ -234,62 +230,6 @@ object OffsetMapper {
 
     splitByLine(opts.docOffsetFile.value, opts.tacRoot.value, opts.outputFile.value)
 
-    /*
-    val iter = Source.fromFile(opts.docOffsetFile.value).getLines()
-    val wrt = new BufferedWriter(new FileWriter(opts.outputFile.value))
-
-    var count = 0
-
-    var Array(docId, filePath, startOffsetStr) = iter.next().split("\t")
-    var startOffset = startOffsetStr.toInt
-    var tacBlockReader = new BufferedReader(new InputStreamReader(new GZIPInputStream(new FileInputStream(opts.tacRoot.value + "/" + filePath)), "UTF-8"))
-    while (iter.hasNext) {
-
-
-      val Array(nextDocId, nextFilePath, endOffsetStr) = iter.next().split("\t")
-      val endOffset = endOffsetStr.toInt
-
-      var docString:String = null
-
-      if(filePath == nextFilePath) { // we're in the same file, so we can use the offsets there
-        val chars = new Array[Char](endOffset - startOffset)
-
-        // this reads the raw string of docId (not nextDocId) into chars
-        tacBlockReader.read(chars, 0, endOffset - startOffset)
-        docString = new String(chars)
-
-      } else { // the next file is different, we just want to get to the end of the current one.
-        val rdr = new BufferedReader(tacBlockReader)
-        val docStringBuf = new StringBuffer()
-        var line = rdr.readLine()
-        while (line != null) {
-          docStringBuf append line
-          line = rdr.readLine()
-        }
-        docString = docStringBuf.toString
-        // we've consumed the old file reader and need a new one for the next tac file block
-        tacBlockReader.close()
-        tacBlockReader = new BufferedReader(new InputStreamReader(new GZIPInputStream(new FileInputStream(opts.tacRoot.value + "/" + nextFilePath))))
-      }
-      //this is what we actually came here for - serializing the apf offsets for document
-      wrt write buildMapperLine(docId, docString)
-      wrt.newLine()
-      if(count % 1000 == 0) { // this number is a total guess
-        println("Wrote offsets for %d files".format(count))
-        wrt.flush()
-      }
-
-
-      //preparing for the next iteration
-      docId = nextDocId
-      startOffset = endOffset
-      filePath = nextFilePath
-      count += 1
-    }
-
-    wrt.flush()
-    wrt.close()
-    */
   }
 
 }
