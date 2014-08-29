@@ -30,8 +30,11 @@ import scala.collection.mutable.Map
  */
 class TrieNode(val label : String, var root : TrieNode, val sep : String, val depth : Int) extends Serializable {
   //Most nodes have < 2 elements in the map, so start it smaller than a standard Java HashMap.
-  val transitionMap : Map[String, TrieNode] = JavaHashMap[String,TrieNode](2)
-  val outputSet : Set[Int] = JavaHashSet[Int](2)
+  private var transitionMap : Map[String, TrieNode] = null//JavaHashMap[String,TrieNode](2)
+  private var key : String = null // key value pair to save transitionMap overhead
+  private var value : TrieNode = null // key value pair to save transitionMap overhead
+  private var outputSet : Set[Int] = null//JavaHashSet[Int](2)
+  private var output : Int = -1 // save outputSet overhead
   @transient var failNode : TrieNode = root
   private var phrases : Int = 0
   private var emit : Boolean = false
@@ -78,38 +81,108 @@ class TrieNode(val label : String, var root : TrieNode, val sep : String, val de
       buffer.append("Emit = false\n")
     }
     buffer.append("Transition table:\n")
-    for (e <- transitionMap) {
+    if (transitionMap != null) {
+      for (e <- transitionMap) {
+        buffer.append("\t\t")
+        buffer.append(e._1)
+        buffer.append("\n")
+      }
+    } else if (key != null) {
       buffer.append("\t\t")
-      buffer.append(e._1)
+      buffer.append(key)
       buffer.append("\n")
     }
     TrieNode.logger.log(Logger.INFO)(buffer.toString())
   }
   
+  def lookupToken(tok : String) : Option[TrieNode] = {
+    if (transitionMap == null) {
+      if (tok.equals(key)) { Some(value) } else { None }
+    } else {
+      transitionMap.get(tok)
+    }
+  }
+
+  def getOutputSet() : Set[Int] = {
+    if (outputSet == null) {
+      val set = JavaHashSet[Int](1)
+      if (output != -1) { set.add(output) }
+      set
+    } else { outputSet }
+  }
+
   /** Appends a phrase to the current node. */
   def add(phrase : Seq[String], index : Int) : Unit = {
     if (phrase.length <= index) {
       emit = true
       exactEmit = true
-      outputSet.add(depth)
+      if (output == -1) {
+        output = depth
+      } else {
+        if (outputSet == null) { constructSet }
+        outputSet.add(depth)
+      }
       maxEmitDepth = depth
     } else {
       val curWord : String = phrase(index)
-      var transitionNode = transitionMap.getOrElse(curWord,null)
-      if (transitionNode == null) {
-        transitionNode = new TrieNode(curWord, root, sep, depth + 1)
-        transitionMap += (curWord -> transitionNode)
+      if (curWord.equals(key)) {
+        value.add(phrase,index+1)
+      } else {
+        var transitionNode : TrieNode = null
+        if ((transitionMap == null) && (key == null)) {
+          transitionNode = new TrieNode(curWord, root, sep, depth + 1)
+          key = curWord
+          value = transitionNode
+        } else {
+          if (transitionMap == null) {
+            constructMap()
+          }
+          transitionNode = transitionMap.getOrElse(curWord,null)
+          if (transitionNode == null) {
+            transitionNode = new TrieNode(curWord, root, sep, depth + 1)
+            transitionMap += (curWord -> transitionNode)
+          }
+        }
+        transitionNode.add(phrase,index+1)
       }
-      transitionNode.add(phrase,index+1)
       phrases = phrases + 1
     }
   }
+
+  /** Helper methods */
+  private def constructMap() : Unit = {
+    transitionMap = JavaHashMap[String,TrieNode](3)
+    transitionMap += (key -> value)
+    key = null
+    value = null
+  }
+
+  private def constructSet() : Unit = {
+    outputSet = JavaHashSet[Int](3)
+    outputSet.add(output)
+    output = -1
+  }
   
+  
+  private def appendOutputSet(other : Set[Int]) : Unit = {
+    if ((output == -1) && (other.size == 1)) {
+      output = other.last
+    } else {
+      constructSet()
+      outputSet ++= other
+    }
+  }
+
   /** Updates the maxEmitDepth. */
   private def updateEmitDepth() : Unit = {
-    for (e <- outputSet) {
-      if (e > maxEmitDepth) {
-        maxEmitDepth = e
+    if (outputSet == null) {
+      if (output == -1) {
+        //shouldn't happen
+        maxEmitDepth = 0
+      } else { maxEmitDepth = output }
+    } else {
+      for (e <- outputSet) {
+        if (e > maxEmitDepth) { maxEmitDepth = e }
       }
     }
   }
@@ -126,42 +199,76 @@ object TrieNode {
   def setFailureTransitions(root : TrieNode) : Unit = {
     //logger.log(Level.INFO,"Setting failure transitions.")
     val queue = new Queue[TrieNode]()
-    queue ++= root.transitionMap.values
-    
+    if (root.transitionMap != null) {
+        queue ++= root.transitionMap.values
+    } else if (root.key != null) {
+        queue += root.value
+    }
+
     while (!queue.isEmpty) {
       val curNode = queue.dequeue()
-      for (e <- curNode.transitionMap) {
-        val childNode = e._2
+      if (curNode.transitionMap != null) {
+        for (e <- curNode.transitionMap) {
+          val childNode = e._2
+          queue += childNode
+          var curFailNode = curNode.failNode
+          while ((curFailNode != root) && (curFailNode.lookupToken(childNode.label) == None)) {
+            curFailNode = curFailNode.failNode
+          }
+          
+          val tmp = curFailNode.lookupToken(childNode.label)
+          if ((tmp != None) && (tmp.get != childNode)) {
+            val node = tmp.get
+            childNode.failNode = node
+            if (node.emit) {
+              childNode.emit = true
+              childNode.appendOutputSet(node.getOutputSet)
+              childNode.updateEmitDepth()
+            }
+          }
+        }
+      } else if (curNode.key != null) {
+        //a transition in (key,value)
+        val childNode = curNode.value
         queue += childNode
         var curFailNode = curNode.failNode
-        while ((curFailNode != root) && (!curFailNode.transitionMap.contains(childNode.label))) {
+        while ((curFailNode != root) && (curFailNode.lookupToken(childNode.label) == None)) {
           curFailNode = curFailNode.failNode
         }
         
-        val tmp = curFailNode.transitionMap.getOrElse(childNode.label,null)
-        if ((tmp != null) && (tmp != childNode)) {
-          childNode.failNode = tmp
-          if (tmp.emit) {
+        val tmp = curFailNode.lookupToken(childNode.label)
+        if ((tmp != None) && (tmp.get != childNode)) {
+          val node = tmp.get
+          childNode.failNode = node
+          if (node.emit) {
             childNode.emit = true
-            childNode.outputSet ++= tmp.outputSet
+            childNode.appendOutputSet(node.getOutputSet)
             childNode.updateEmitDepth()
           }
         }
       }
     }
   }
-  
+
   def logTrie(root : TrieNode) : Unit = {
     logger.log(Logger.INFO)("Logging trie")
     val queue = new Queue[TrieNode]()
-    queue ++= root.transitionMap.values
-    
+    if (root.transitionMap != null) {
+      queue ++= root.transitionMap.values
+    } else if (root.key != null) {
+      queue += root.value
+    }
+
     root.logNode()
     
     while (!queue.isEmpty) {
       val curNode = queue.dequeue()
       curNode.logNode()
-      queue ++= curNode.transitionMap.values
+      if (curNode.transitionMap != null) {
+        queue ++= curNode.transitionMap.values
+      } else if (curNode.key != null) {
+        queue += curNode.value
+      }
     }
   }
 }

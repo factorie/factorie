@@ -48,9 +48,9 @@ class AhoCorasick(val sep : String) extends Serializable {
     //Iterate through the Trie testing to see if the next token exists
     while ((i < input.length) && (found)) {
       val head = input.get(i)
-      val next = curNode.transitionMap.getOrElse(head,null)
-      if (next != null) {
-        curNode = next
+      val next = curNode.lookupToken(head)
+      if (next != None) {
+        curNode = next.get
         i = i + 1
       } else {
         //failed to find the next transition
@@ -78,9 +78,9 @@ class AhoCorasick(val sep : String) extends Serializable {
     while (i < input.length) {
       val head : String = input.get(i)
       //logger.log(Level.INFO, "Head = " + head + ", idx = " + index + ", label = " + label)
-      val next = curNode.transitionMap.getOrElse(head,null)
-      if (next != null) {
-        curNode = next
+      val next = curNode.lookupToken(head)
+      if (next != None) {
+        curNode = next.get
         i = i + 1
       } else if (curNode != root) {
         curNode = curNode.failNode
@@ -89,7 +89,7 @@ class AhoCorasick(val sep : String) extends Serializable {
         i = i + 1
       }
       if (curNode.getEmit) {
-        for (e <- curNode.outputSet) {
+        for (e <- curNode.getOutputSet) {
           val strBuffer = new StringBuffer()
           var j = i - e
           while (j < i-1) {
@@ -115,9 +115,9 @@ class AhoCorasick(val sep : String) extends Serializable {
     while (i < input.length) {
       val tokenString : String = input.get(i).string
       //logger.log(Level.INFO, "Head = " + head + ", idx = " + index + ", label = " + label)
-      val next = curNode.transitionMap.getOrElse(tokenString,null)
-      if (next != null) {
-        curNode = next
+      val next = curNode.lookupToken(tokenString)
+      if (next != None) {
+        curNode = next.get
         i = i + 1
       } else if (curNode != root) {
         curNode = curNode.failNode
@@ -148,9 +148,9 @@ class AhoCorasick(val sep : String) extends Serializable {
     while (i < input.length) {
       val tokenString : String = lemmatizer.lemmatize(input.get(i).string)
       //logger.log(Level.INFO, "Head = " + head + ", idx = " + index + ", label = " + label)
-      val next = curNode.transitionMap.getOrElse(tokenString,null)
-      if (next != null) {
-        curNode = next
+      val next = curNode.lookupToken(tokenString)
+      if (next != None) {
+        curNode = next.get
         i = i + 1
       } else if (curNode != root) {
         curNode = curNode.failNode
@@ -197,9 +197,7 @@ class AhoCorasick(val sep : String) extends Serializable {
   
   override def toString() : String = { "Aho-Corasick automaton containing " + size() + " phrases." }
   
-  /**
-   * Serialization methods. Reconstructing the Trie from a source is usually faster.
-   */
+  /** Serialization methods. Reconstructing the Trie from a source is usually faster. */
   def writeObject(out : java.io.ObjectOutputStream) : Unit = { out.defaultWriteObject() }
   def readObject(in : java.io.ObjectInputStream) : Unit = { in.defaultReadObject(); setTransitions() }
 }
