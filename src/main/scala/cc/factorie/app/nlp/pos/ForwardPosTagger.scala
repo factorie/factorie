@@ -16,7 +16,7 @@ import cc.factorie.app.nlp._
 import cc.factorie.la._
 import cc.factorie.util._
 import java.io._
-import cc.factorie.variable.{BinaryFeatureVectorVariable, CategoricalVectorDomain}
+import cc.factorie.variable.{MutableCategoricalVar, BinaryFeatureVectorVariable, CategoricalVectorDomain}
 import cc.factorie.optimize.Trainer
 import cc.factorie.app.classify.backend.LinearMulticlassClassifier
 
@@ -26,14 +26,19 @@ import cc.factorie.app.classify.backend.LinearMulticlassClassifier
     For the Viterbi-based part-of-speech tagger, see ChainPosTagger.  
     @author Andrew McCallum, */
 class ForwardPosTagger extends DocumentAnnotator {
+  private val logger = Logger.getLogger(this.getClass.getName)
+
   // Different ways to load saved parameters
   def this(stream:InputStream) = { this(); deserialize(stream) }
-  def this(file: File) = {this(new FileInputStream(file)); println("ForwardPosTagger loading from "+file.getAbsolutePath)}
+  def this(file: File) = {
+    this(new FileInputStream(file))
+    logger.debug("ForwardPosTagger loading from "+file.getAbsolutePath)
+  }
   def this(url:java.net.URL) = {
     this()
     val stream = url.openConnection.getInputStream
     if (stream.available <= 0) throw new Error("Could not open "+url)
-    println("ForwardPosTagger loading from "+url)
+    logger.debug("ForwardPosTagger loading from "+url)
     deserialize(stream)
   }
   
@@ -460,9 +465,9 @@ object ForwardPosTester {
     }else if (opts.testFiles.wasInvoked){
       testFileList =  opts.testFiles.value.split(",")
     }
-  
-	def posLabelMaker(tok: Token, labels: Seq[String]): LabeledPennPosTag = {
-      new LabeledPennPosTag(tok, if(labels(0) == "XX") "PUNC" else labels(0))
+
+    def posLabelMaker(tok: Token, labels: Seq[String]): Seq[MutableCategoricalVar[String]] = {
+      Seq(new LabeledPennPosTag(tok, if(labels(0) == "XX") "PUNC" else labels(0)))
     }
 	
 	val testPortionToTake =  if(opts.testPortion.wasInvoked) opts.testPortion.value else 1.0
@@ -502,9 +507,9 @@ object ForwardPosTrainer extends HyperparameterMain {
     }else if (opts.testFiles.wasInvoked){
       testFileList =  opts.testFiles.value.split(",")
     }
-    
-    def posLabelMaker(tok: Token, labels: Seq[String]): LabeledPennPosTag = {
-      new LabeledPennPosTag(tok, if(labels(0) == "XX") "PUNC" else labels(0))
+
+    def posLabelMaker(tok: Token, labels: Seq[String]): Seq[MutableCategoricalVar[String]] = {
+      Seq(new LabeledPennPosTag(tok, if(labels(0) == "XX") "PUNC" else labels(0)))
     }
     
     val trainDocs = trainFileList.map(fname => {

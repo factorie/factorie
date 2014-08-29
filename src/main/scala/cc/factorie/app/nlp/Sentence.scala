@@ -12,9 +12,6 @@
    limitations under the License. */
 
 package cc.factorie.app.nlp
-import cc.factorie._
-import scala.collection.mutable.ArrayBuffer
-
 
 /** A span of Tokens making up a sentence within a Section of a Document.
     A Sentence is a special case of a TokenSpan, stored in its Section, and available through the Section.sentences method.

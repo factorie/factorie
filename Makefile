@@ -2,7 +2,7 @@
 # To compile FACTORIE use Maven2, by typing "mvn compile"
 
 default:
-	echo To compile FACTORIE use Maven2, "mvn compile"
+	@echo To compile FACTORIE use Maven2, "mvn compile"
 
 
 strip-first-comment:

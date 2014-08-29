@@ -120,6 +120,30 @@ class BagOfWordsVariable(initialWords: Iterable[String] = Nil, initialMap: Map[S
   final def --=(xs: Iterable[String]): Unit = xs.foreach(remove(_)(null))
   final def ++=(xs: HashMap[String, Double]): Unit = for ((k, v) <- xs) add(k, v)(null)
   final def --=(xs: HashMap[String, Double]): Unit = for ((k, v) <- xs) remove(k, v)(null)
+
+  def ++(that:BagOfWordsVariable)(implicit d:DiffList):BagOfWordsVariable = {
+    val n = new BagOfWordsVariable()
+    this.foreach{ case(word, value) =>
+      n.add(word, value)(d)
+    }
+    that.foreach{ case(word, value) =>
+      n.add(word, value)(d)
+    }
+    n
+  }
+
+  def --(that:BagOfWordsVariable)(implicit d:DiffList):BagOfWordsVariable = {
+    val n = new BagOfWordsVariable()
+    this.foreach{ case(word, value) =>
+      n.add(word, value)(d)
+    }
+    that.foreach{ case(word, value) =>
+      n.remove(word,value)(d)
+    }
+    n
+  }
+
+
   case class BagOfWordsVariableAddStringDiff(added: String, w: Double) extends Diff {
     // Console.println ("new SetVariableAddDiff added="+added)
     def variable: BagOfWordsVariable = BagOfWordsVariable.this
