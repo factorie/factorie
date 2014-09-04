@@ -19,7 +19,6 @@
  */
 package cc.factorie.tutorial
 object TutorialDomain extends App {
-  import org.junit.Assert._
   import cc.factorie._
   import cc.factorie.variable.{ DoubleDomain, DoubleVariable, DiscreteDomain, DiffList }
   /*&
@@ -72,7 +71,7 @@ object TutorialDomain extends App {
    * DiscreteDomain instances are also responsible for constructing all the DiscreteValue instances that are their values.
    */
   val dieDomain = new DiscreteDomain(6)
-  assertEquals(dieDomain.size, 6)
+  assert(dieDomain.size == 6)
 
   /*&
    * DiscreteDomain instances inherit from IndexedSeq[DiscreteValue],
@@ -80,8 +79,8 @@ object TutorialDomain extends App {
    * of DiscreteValues, where each such value is accessible by its index.
    */
   val ddv2 = dieDomain(2)
-  assertEquals(ddv2.intValue, 2)
-  assertEquals(22.0, ddv2 dot new la.DenseTensor1(Array(0.0, 11.0, 22.0, 33.0, 44.0, 55.0)), 0.01)
+  assert(ddv2.intValue == 2)
+  assertDoubleEquals(22.0, ddv2 dot new la.DenseTensor1(Array(0.0, 11.0, 22.0, 33.0, 44.0, 55.0)), 0.01)
 
   /*&
    * Alternatively to setting the size of a DiscreteDomain with a constant integer at the DiscreteDomain's construction,
@@ -90,10 +89,10 @@ object TutorialDomain extends App {
    */
   val names = new scala.collection.mutable.ArrayBuffer[String] ++= List("Alan", "Barbara", "Carol", "Denis")
   val students = new DiscreteDomain(names)
-  assertEquals(4, students.size)
+  assert(4 == students.size)
   //& 4
   names += "Ernie"
-  assertEquals(students.size, 5)
+  assert(students.size == 5)
 }
 
 /*& This allows a DiscreteDomain to grow in size after its construction. */

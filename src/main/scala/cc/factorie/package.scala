@@ -15,9 +15,7 @@ package cc
 import scala.util.Random
 import cc.factorie.util._
 import scala.language.implicitConversions
-import scala.reflect.ClassTag
-import cc.factorie.model.{IterableSingleFactor, Factor}
-import cc.factorie.variable.TensorVar
+import cc.factorie.model.IterableSingleFactor
 import scala.reflect.runtime.universe._
 
 package object factorie extends CubbieConversions {
@@ -36,8 +34,9 @@ package object factorie extends CubbieConversions {
   implicit def stringExtras(x:String) = new cc.factorie.util.StringExtras(x)
   implicit def singleFactorIterable[F<:Factor](f:F): Iterable[F] = new IterableSingleFactor(f)
 
-  def assertStringEquals(expr:Any, str:String) = org.junit.Assert.assertTrue("The string representation '" + expr.toString + "' does not match the expected value: '" + str +"'", expr.toString == str)
+  def assertStringEquals(expr:Any, str:String) = assert(expr.toString == str, "The string representation '" + expr.toString + "' does not match the expected value: '" + str +"'")
   def assertMinimalAccuracy(got:Double, goal:Double): Unit = assert(got >= goal, s"Accuracy ${got} is less than expected ${goal}.")
+  def assertDoubleEquals(got:Double, goal:Double, epsilon:Double): Unit = assert(Math.abs(got-goal) < epsilon, s"Got: $got, expected: $goal")
 
   type DenseTensor1 = cc.factorie.la.DenseTensor1
   type DenseTensor2 = cc.factorie.la.DenseTensor2

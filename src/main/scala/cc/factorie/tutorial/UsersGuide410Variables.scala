@@ -27,19 +27,18 @@
 **/
 package cc.factorie.tutorial
 object TutorialVariables extends App {
-  import org.junit.Assert._
   import cc.factorie._
   import cc.factorie.variable._
   
   // Create a variable that holds an integer value
   val i = new IntegerVariable(0)
   println("Variable i has value " + i.value)
-  assertEquals(i.value, 0)
+  assert(i.value == 0)
 
   // Set its value to 2
   i := 2 // TODO Make this use an implicit DiffList defaulting to null.
   println("After i := 2, variable i has value " + i.value)
-  assertEquals(i.value, 2)
+  assert(i.value == 2)
 
   // === tests equality of Variable values. == tests Variable object identity
   val j = new IntegerVariable(2)
@@ -61,14 +60,14 @@ object TutorialVariables extends App {
   val d = new DiffList
   i.set(3)(d) // This method will create a Diff object and append it to the DiffList d.
   println("After i.set(2), variable i has value " + i.value)
-  assertEquals(3, i.value)
+  assert(3 == i.value)
   d.undo()
   println("After DiffList.undo, variable i has value " + i.value)
-  assertEquals(2, i.value)
+  assert(2 == i.value)
   // A Diff and a DiffList can be re-done also
   d.redo()
   println("After DiffList.redo, variable i has value " + i.value)
-  assertEquals(3, i.value)
+  assert(3 == i.value)
 
   // Variables can be sub-classed, and often are in order to represent relations among data
   class MyIntegerVariable(initialValue: Int, val partner: IntegerVariable) extends IntegerVariable(initialValue)
@@ -148,7 +147,7 @@ object TutorialVariables extends App {
   val st = new SparseTensor1(999999) 
   st(555) = 2.3
   println("Tensor st oneNorm is " + st.oneNorm)
-  assertEquals(st.oneNorm, 2.3, 0.01)
+  assertDoubleEquals(st.oneNorm, 2.3, 0.01)
   // A vector of length 33, in which all values are 0.1
   val ut = new UniformTensor1(33, 0.1) 
   // A Tensor with 4 dimensions, storing 3*4*5*2 numbers.
@@ -203,24 +202,24 @@ object TutorialVariables extends App {
   val md = new MyDiscrete(4) 
   println("md value is " + md.value)
   println("md integer value is " + md.intValue)
-  assertEquals(4, md.intValue)
+  assert(4 == md.intValue)
   println("md domain size is " + md.domain.size)
-  assertEquals(md.domain.size, 10)
+  assert(md.domain.size == 10)
 
   // CategoricalDomain[A] has type parameter A indicating the type of the category.
   // CategoricalDomain can be initialized with a list of such categories,
   //  or it can grow dynamically as values for new categories are requested.
   val cd = new CategoricalDomain[String]
   println("The index of category 'apple' is " + cd.index("apple"))
-  assertEquals(0, cd.index("apple"))
+  assert(0 == cd.index("apple"))
   println("The index of category 'pear'  is " + cd.index("pear"))
-  assertEquals(1, cd.index("pear"))
+  assert(1 == cd.index("pear"))
   println("The index of category 'kiwi'  is " + cd.index("kiwi"))
-  assertEquals(2, cd.index("kiwi"))
+  assert(2 == cd.index("kiwi"))
   println("The index of category 'apple' is " + cd.index("apple"))
-  assertEquals(0, cd.index("apple"))
+  assert(0 == cd.index("apple"))
   println("The category of index 2 is " + cd.category(2))
-  assertEquals("kiwi", cd.category(2))
+  assert("kiwi" == cd.category(2))
   // Clearly, CategoricalDomains are useful for mapping from Strings to integers and back,
   // and heavily used in NLP. They are also typically used for class label in tasks
   // such as document classification.
@@ -233,12 +232,12 @@ object TutorialVariables extends App {
   val cv2 = new MyCategorical("plum")
   println("cv1 value is " + cv1.value)
   println("cv1 category value is " + cv1.categoryValue)
-  assertEquals("peach", cv1.categoryValue)
+  assert("peach" == cv1.categoryValue)
   println("cv1 integer value is " + cv1.intValue)
-  assertEquals(cv1.intValue, cd.index("peach"))
+  assert(cv1.intValue == cd.index("peach"))
   // The domain grew automatically to accomodate the new category values
   println("The cd CategoricalDomain size is now " + cd.size)
-  assertEquals(5, cd.size)
+  assert(5 == cd.size)
   // You cannot create CategoricalValue or DiscreteValue yourself.
   // They are only created automatically inside their Domains.
 
@@ -262,7 +261,7 @@ object TutorialVariables extends App {
   val m1 = new DenseMasses1(5) // A vector of length 5
   m1 := Array(.5, .5, .5, .5, .5)
   println("m1 sum is " + m1.sum)
-  assertEquals(2.5, m1.sum, 0.01)
+  assertDoubleEquals(2.5, m1.sum, 0.01)
 
   /*&
    * Proportions inherits from Masses
@@ -276,7 +275,7 @@ object TutorialVariables extends App {
   dp.masses(2) += 2
   println("dp masses are " + dp.masses)
   println("dp sum is " + dp.sum)
-  assertEquals(dp.sum, 1.0, 0.001)
+  assertDoubleEquals(dp.sum, 1.0, 0.001)
   println("dp proportions are " + dp)
 
   // All Variables that hold Tensor values inherit from TensorVar.
