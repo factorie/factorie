@@ -16,13 +16,14 @@ import org.bson.BSONObject
 import scala.collection.JavaConversions._
 import com.mongodb._
 import org.bson.types.BasicBSONList
-import cc.factorie.util.Cubbie
+import cc.factorie.util.{ArrayIntSeq, DoubleSeq, IntSeq, Cubbie}
 import collection.{Map => GenericMap, mutable, JavaConversions}
 import scala.collection.mutable.ArrayBuffer
 import scala._
 import scala.Predef._
 import scala.Some
 import scala.language.implicitConversions
+import java.nio.{ByteBuffer, IntBuffer}
 
 
 /**
@@ -420,6 +421,26 @@ object MongoCubbieConverter {
           dbMap.put(key.asInstanceOf[String], mongoValue)
         }
         dbMap
+      case is:IntSeq =>
+        val byteBuf = ByteBuffer.wrap(new Array[Byte](is.size * 4))
+        var idx = 0
+        while(idx < is.size) {
+          byteBuf putInt is(idx)
+          idx += 1
+        }
+        val dbSeq = new BasicDBObject(2)
+        dbSeq.put("seq_type", "int")
+        dbSeq.put("seq_data", byteBuf.array())
+      case ds:DoubleSeq =>
+        val byteBuf = ByteBuffer.wrap(new Array[Byte](ds.size * 8))
+        var idx = 0
+        while(idx < ds.size) {
+          byteBuf putDouble ds(idx)
+          idx += 1
+        }
+        val dbSeq = new BasicDBObject(2)
+        dbSeq.put("seq_type", "double")
+        dbSeq.put("seq_data", byteBuf.array())
       case l: Seq[_] =>
         val dbList = new BasicDBList
         for (element <- l) dbList.add(toMongo(element).asInstanceOf[AnyRef])
@@ -430,6 +451,28 @@ object MongoCubbieConverter {
 
   def toCubbie(any: Any): Any = {
     any match {
+      case dbSeq: DBObject if dbSeq.containsField("seq_type") && dbSeq.containsField("seq_data") =>
+        val byteBuf = ByteBuffer.wrap(dbSeq.get("seq_data").asInstanceOf[Array[Byte]])
+        dbSeq.get("seq_type") match {
+          case "int" =>
+            val intBuf = byteBuf.asIntBuffer()
+            val intArr = new Array[Int](intBuf.capacity())
+            var idx = 0
+            while(idx < intArr.size) {
+              intArr(idx) = intBuf.get()
+              idx += 1
+            }
+            new ArrayIntSeq(intArr)
+          case "double" =>
+            val doubleBuf = byteBuf.asDoubleBuffer()
+            val doubleArr = new Array[Double](doubleBuf.capacity())
+            var idx = 0
+            while(idx < doubleArr.size) {
+              doubleArr(idx) = doubleBuf.get()
+              idx += 1
+            }
+            DoubleSeq(doubleArr)
+        }
       case dbList: BasicBSONList =>
         val list = new ArrayBuffer[Any]
         for (element <- dbList) list += toCubbie(element)

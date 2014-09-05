@@ -16,6 +16,7 @@ package cc.factorie.util
 import collection.mutable
 import util.parsing.json.JSON
 import cc.factorie.la.Tensor
+import java.nio.{DoubleBuffer, ByteBuffer}
 
 /**
  * A Cubbie provides typed access to an underlying Map data-structure. This map can come
@@ -456,6 +457,31 @@ class Cubbie {
   case class StringListSlot(name: String) extends PrimitiveListSlot[String]
 
   case class TensorListSlot(name: String) extends PrimitiveListSlot[Tensor]
+
+  /**
+   * A slot that contains either a [[cc.factorie.util.DoubleSeq]] or a
+   * [[cc.factorie.util.IntSeq]]. It is written to mongo in binary form for
+   * speed (because of mongo's poor handling of arrays).
+   * @tparam T
+   */
+  trait PrimitiveSeqSlot[T] extends Slot[T] {
+    /**
+     * Set the value for this slot.
+     * @param value value to set.
+     */
+    def :=(value: T) {
+      _map.update(name, value)
+    }
+
+    def value = _map(name) match {
+      case is:IntSeq => is.asInstanceOf[T]
+      case ds:DoubleSeq => ds.asInstanceOf[T]
+    }
+  }
+
+  case class IntSeqSlot(name:String) extends PrimitiveSeqSlot[IntSeq]
+  case class DoubleSeqSlot(name:String) extends PrimitiveSeqSlot[DoubleSeq]
+
   /**
    * A slot that contains a list of cubbies.
    * @param name the name of the slot.
