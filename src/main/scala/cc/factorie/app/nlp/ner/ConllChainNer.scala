@@ -226,6 +226,7 @@ object BasicConllNerTrainer extends cc.factorie.util.HyperparameterMain {
     val l1 = new CmdOption("l1", 0.02, "FLOAT", "L1 regularizer for AdaGradRDA training.")
     val l2 = new CmdOption("l2", 0.000001, "FLOAT", "L2 regularizer for AdaGradRDA training.")
     val learningRate = new CmdOption("learning-rate", 1.0, "FLOAT", "L2 regularizer for AdaGradRDA training.")
+    val outputFeatures = new CmdOption("output-features", false, "BOOL", "Output training token features to stdout, then exit.")
   }
   def evaluateParameters(args:Array[String]): Double = {
     object opts extends Opts
@@ -242,7 +243,15 @@ object BasicConllNerTrainer extends cc.factorie.util.HyperparameterMain {
       val testDocsFull =  load.LoadConll2003(BILOU=true).fromFilename(opts.test.value)
       val trainDocs = trainDocsFull.take((trainDocsFull.length*trainPortionToTake).floor.toInt)
       val testDocs = testDocsFull.take((testDocsFull.length*testPortionToTake).floor.toInt)
-
+      if (opts.outputFeatures.value) {
+        trainDocs.foreach(ner.addFeatures(_))
+        for (doc <- trainDocs) {
+          for (token <- doc.tokens)
+            println(s"${token.string}\t${token.nerTag.categoryValue}\t${token.attr[ner.FeaturesVariable].activeCategories.mkString(" ")}")
+          println()
+        }
+        System.exit(0)
+      }
 
       val ret = ner.train(trainDocs, testDocs, opts.l1.value, opts.l2.value, opts.learningRate.value)
       if (opts.saveModel.wasInvoked && opts.serialize.value) ner.serialize(opts.saveModel.value)
