@@ -12,8 +12,7 @@
    limitations under the License. */
 package cc.factorie.app.nlp.load
 
-import cc.factorie._
-import cc.factorie.variable.LabeledMutableCategoricalVar
+import cc.factorie.variable.MutableCategoricalVar
 import cc.factorie.app.nlp.Document
 import cc.factorie.app.nlp.Sentence
 import cc.factorie.app.nlp.Token
@@ -25,13 +24,17 @@ import cc.factorie.app.nlp.UnknownDocumentAnnotator
  *
  * On each line, there should be a whitespace-delimited list of the form:
  * word label1 label2 label3 ...
- * 
+ *
  * Sentences are separated by blank lines.
  * Returns all data in a single document.
+ *
+ * labelMaker is a function that takes all fields but the first in a line of the file,
+ * and returns a sequence of MutableCategoricalVars corresponding to the tags that
+ * any subset of those fields represent
  */
 
 object LoadOWPL {
-  def fromFilename(file: String, labelMaker: (Token, Seq[String]) => LabeledMutableCategoricalVar[String], limitSentenceCount: Int = -1): Seq[Document] = {
+  def fromFilename(file: String, labelMaker: (Token, Seq[String]) => Seq[MutableCategoricalVar[String]], separator: String = "\\s+", limitSentenceCount: Int = -1): Seq[Document] = {
     val doc = new Document
     doc.annotators(classOf[Token]) = UnknownDocumentAnnotator.getClass // register that we have token boundaries
     doc.annotators(classOf[Sentence]) = UnknownDocumentAnnotator.getClass // register that we have sentence boundaries
@@ -45,10 +48,10 @@ object LoadOWPL {
           return Seq(doc)
       }
       else {
-        val fields = line.split("\\s+")
+        val fields = line.split(separator)
         val word = fields(0)
         val token = new Token(sentence, word)
-        token.attr += labelMaker(token, fields)
+        labelMaker(token, fields.drop(1)).foreach(token.attr += _)
         doc.appendString(" ")
       }
     }

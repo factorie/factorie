@@ -218,13 +218,11 @@ class GrowableSparseBinaryTensor1(val sizeProxy:Iterable[Any]) extends SparseBin
 class SparseTensor1(dim1:Int) extends SparseIndexedTensor1(dim1)
 class GrowableSparseTensor1(sizeProxy:Iterable[Any]) extends GrowableSparseIndexedTensor1(sizeProxy)
 
-/** A Tensor1 that may contain mostly zeros, with a few arbitrary non-zeros, represented compactly in memory,
-    implemented as a HashMap from Int indices to Double values.
-    @author Andrew McCallum */
-class SparseHashTensor1(val dim1:Int) extends Tensor1 with SparseDoubleSeq {
+trait SparseHashTensorLike extends Tensor with SparseDoubleSeq {
+  self =>
   def isDense = false
-  var default = 0.0
-  private val h = new scala.collection.mutable.HashMap[Int,Double] { override def default(index:Int) = SparseHashTensor1.this.default }
+  var default:Double = 0.0
+  private val h = new scala.collection.mutable.HashMap[Int,Double] { override def default(index:Int) = self.default }
   def apply(index:Int) = h(index)
   override def update(index:Int, value:Double) = {
     assert(index < length, "index %d should be less than length %d".format(index, length))
@@ -238,7 +236,11 @@ class SparseHashTensor1(val dim1:Int) extends Tensor1 with SparseDoubleSeq {
   override def foreachActiveElement(f: (Int,Double)=>Unit): Unit = h.foreach(t => f(t._1, t._2))
   override def +=(index:Int, incr:Double): Unit = {
     assert(index < length, "index %d should be less than length %d".format(index, length))
-    h(index) = h(index) + incr
+    val newCt =  h(index) + incr
+    if (newCt == 0.0)
+      h.remove(index)
+    else
+      h(index) = newCt
   }
   override def zero(): Unit = h.clear()
   override def dot(v:DoubleSeq): Double = v match {
@@ -246,10 +248,10 @@ class SparseHashTensor1(val dim1:Int) extends Tensor1 with SparseDoubleSeq {
     case v:TensorTimesScalar => v dot this
     case v:SingletonBinaryTensor1 => v dot this
     case v:SingletonTensor1 => v dot this
-    case sv:SparseHashTensor1 => {
+    case sv:SparseHashTensorLike => {
       var result = 0.0
-      if (v.size > this.size) h.iterator.foreach({case(index,value) => result += sv(index) * value})
-      else sv.h.iterator.foreach({case(index,value) => result += h(index) * value})
+      if (v.size > this.size) activeElements.foreach({case(index,value) => result += sv(index) * value})
+      else sv.activeElements.foreach({case(index,value) => result += h(index) * value})
       result
     }
     case dv:DoubleSeq => {
@@ -263,7 +265,17 @@ class SparseHashTensor1(val dim1:Int) extends Tensor1 with SparseDoubleSeq {
     default += s
     h.keys.foreach(index => +=(index, s)) //h.update(index, h(index) + s))
   }
-  //override def toString = getClass.getName + "(" + "len=" + length + " (" + h.mkString("[", ", ", "]") + "))"
+}
+
+/** A Tensor1 that may contain mostly zeros, with a few arbitrary non-zeros, represented compactly in memory,
+    implemented as a HashMap from Int indices to Double values.
+    @author Andrew McCallum */
+class SparseHashTensor1(val dim1:Int) extends SparseHashTensorLike with Tensor1
+
+/** Growable Version of SparseHashTensor
+    @author Dirk Weissenborn */
+class GrowableSparseHashTensor1(val sizeProxy:Iterable[Any]) extends SparseHashTensorLike with Tensor1 {
+  def dim1 = sizeProxy.size
 }
 
 trait Tensor1ElementIterator extends DoubleSeqIterator with Iterator[Tensor1ElementIterator] {

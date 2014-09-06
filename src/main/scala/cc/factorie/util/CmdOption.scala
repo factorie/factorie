@@ -18,7 +18,7 @@ import scala.reflect.Manifest
 import scala.collection.mutable.{HashMap,HashSet,ArrayBuffer}
 import cc.factorie._
 
-/** Concrete version is implemented as an inner class of @see CmdOptions. 
+/** Concrete version is implemented as an inner class of @see CmdOptions.
     @author Andrew McCallum */
 trait CmdOption[T] {
   def name: String
@@ -50,7 +50,7 @@ trait CmdOption[T] {
 }
 
 
-/** A simple command-line option parsing tool. 
+/** A simple command-line option parsing tool.
     Example usage:
     <code>
     def main(args:Array[String]): Unit = {
@@ -116,7 +116,7 @@ class CmdOptions {
         if (strict && args(index).startsWith("-")) error("Unrecognized option "+args(index))
         _remaining += args(index)
         index += 1
-      } 
+      }
     }
     opts.values.find(o => o.required && o.invokedCount == 0) match {
       case Some(o) => error("Required CmdOption --"+o.name+" was not provided.")
@@ -131,22 +131,21 @@ class CmdOptions {
     def apply(name:String, helpMsg:String): CmdOption[Any] =
       new CmdOption[Any](name, helpMsg)
   }*/
-  class CmdOption[T](val name:String, val helpMsg:String)(implicit m:Manifest[T]) extends cc.factorie.util.CmdOption[T] {
-    // TODO Add "required" constructor argument when we have Scala 2.8
-    def this(name:String, defaultValue:T, valueName:String, helpMsg:String)(implicit m:Manifest[T]) = { 
-      this(name, helpMsg)
+  class CmdOption[T](val name:String, val helpMsg:String, val required:Boolean = false)(implicit m:Manifest[T]) extends cc.factorie.util.CmdOption[T] {
+    def this(name:String, defaultValue:T, valueName:String, helpMsg:String, required:Boolean = false)(implicit m:Manifest[T]) = {
+      this(name, helpMsg, required)
       this.valueName = valueName
       value = defaultValue
       this.defaultValue = defaultValue
     }
-    /*def this(name:String, defaultValue:T, helpMsg:String)(implicit m:Manifest[T]) = { 
+    /*def this(name:String, defaultValue:T, helpMsg:String)(implicit m:Manifest[T]) = {
       this(name, defaultValue, { val fields = m.runtimeClass.getName.split("[^A-Za-z]+"); if (fields.length > 1) fields.last else fields.head }, helpMsg)
     }*/
-    def this(name:String, shortName:Char, defaultValue:T, valueName:String, helpMsg:String)(implicit m:Manifest[T]) = { 
-      this(name, defaultValue, valueName, helpMsg)
+    def this(name:String, shortName:Char, defaultValue:T, valueName:String, helpMsg:String, required:Boolean = false)(implicit m:Manifest[T]) = {
+      this(name, defaultValue, valueName, helpMsg, required)
       this.shortName = shortName
     }
-    /*def this(name:String, shortName:Char, defaultValue:T, helpMsg:String)(implicit m:Manifest[T]) = { 
+    /*def this(name:String, shortName:Char, defaultValue:T, helpMsg:String)(implicit m:Manifest[T]) = {
       this(name, defaultValue, helpMsg)
       this.shortName = shortName
     }*/
@@ -159,11 +158,10 @@ class CmdOptions {
     var defaultValue: T = _
     var value: T = _
     var invokedCount = 0
-    def required = false
     def setValue(v: T) { value = v }
     def hasValue = valueClass != noClass
     def noClass = classOf[Any] // This is the value of m.runtimeClass if no type is specified for T in CmdOption[T].
-    /** Attempt to match and process command-line option at position 'index' in 'args'.  
+    /** Attempt to match and process command-line option at position 'index' in 'args'.
         Return the index of the next position to be processed. */
     def parse(args:Seq[String], index:Int): Int = {
       if (valueClass == noClass && args(index) == "--"+name || args(index) == "-"+shortName) {
@@ -193,8 +191,8 @@ class CmdOptions {
     }
     /** Called after this CmdOption has been matched and value has been parsed. */
     def invoke(): Unit = {}
-    /** After we have found a match, request that argument(s) to command-line option be parsed. 
-        Return the index position that should be processed next. 
+    /** After we have found a match, request that argument(s) to command-line option be parsed.
+        Return the index position that should be processed next.
         This method allows one option to possibly consume multiple args, (in contrast with parseValue(String).) */
     protected def parseValue(args:Seq[String], index:Int): Int = {
       //println("CmdOption    "+valueManifest)

@@ -47,10 +47,10 @@ class AdaGradRDA(val delta: Double = 0.1, val rate: Double = 0.1, val l1: Double
     for (key <- weights.keys) {
       key.value match {
         case t: AdaGradRDATensor => println("Warning: creating two AdaGradRDA optimizers on the same tensors. Reusing old one...")
-        case t: Tensor1 => weights(key) = new AdaGradRDATensor1(t, delta, rate, l1 / numExamples, l2 / numExamples)
-        case t: Tensor2 => weights(key) = new AdaGradRDATensor2(t, delta, rate, l1 / numExamples, l2 / numExamples)
-        case t: Tensor3 => weights(key) = new AdaGradRDATensor3(t, delta, rate, l1 / numExamples, l2 / numExamples)
-        case t: Tensor4 => weights(key) = new AdaGradRDATensor4(t, delta, rate, l1 / numExamples, l2 / numExamples)
+        case t: Tensor1 => weights(key) = new AdaGradRDATensor1(t, rate, delta, l1 / numExamples, l2 / numExamples)
+        case t: Tensor2 => weights(key) = new AdaGradRDATensor2(t, rate, delta, l1 / numExamples, l2 / numExamples)
+        case t: Tensor3 => weights(key) = new AdaGradRDATensor3(t, rate, delta, l1 / numExamples, l2 / numExamples)
+        case t: Tensor4 => weights(key) = new AdaGradRDATensor4(t, rate, delta, l1 / numExamples, l2 / numExamples)
       }
     }
     initialized = true

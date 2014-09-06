@@ -248,7 +248,7 @@ abstract class CorefSystem[CoreferenceStructure] extends DocumentAnnotator with 
     }
     if(outputString == "") outputString = "_"
     else if(outputString.endsWith("|")) outputString = outputString.substring(0,outputString.length-1)
-    "%15s %15s".format(token.attr[PennPosTag].categoryValue, outputString)
+    "%15s".format(outputString)
   }
 
   def process(document: Document) = {

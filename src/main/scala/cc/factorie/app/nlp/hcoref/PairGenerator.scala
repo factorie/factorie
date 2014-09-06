@@ -10,17 +10,27 @@
    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
    See the License for the specific language governing permissions and
    limitations under the License. */
-package cc.factorie.util
+package cc.factorie.app.nlp.hcoref
 
-import scala.collection.mutable
-import scala.collection.JavaConverters._
+/**
+ * @author John Sullivan
+ */
+trait PairGenerator[Vars <: NodeVariables[Vars]] {
+  def nextContext:(Node[Vars], Node[Vars])
+  def iterations:Int
+  def mentions:Iterable[Node[Vars]]
 
-// Java hash mutable hashmaps are significantly faster than the Scala ones, for no good reason
-// Replace this with AnyRefMap when we switch to Scala 2.11 -luke
-object JavaHashMap {
-  def apply[K, V](): mutable.Map[K, V] = new java.util.HashMap[K, V]().asScala
-}
+  def contexts:Iterable[(Node[Vars], Node[Vars])] = new Iterator[(Node[Vars], Node[Vars])] {
 
-object JavaHashSet {
-  def apply[K](): mutable.Set[K] = new java.util.HashSet[K]().asScala
+    var index = 0
+
+    def hasNext: Boolean = index < iterations
+
+    def next(): (Node[Vars], Node[Vars]) = if(hasNext) {
+      index += 1
+      nextContext
+    } else {
+      throw new NoSuchElementException("Max iterations exceeded %d" format iterations)
+    }
+  }.toStream
 }

@@ -229,7 +229,7 @@ class TopTokenFrequencies(val headWords: DefaultHashMap[String,Int],
                           val followContext: DefaultHashMap[String,Int] = null,
                           val shapes: DefaultHashMap[String,Int] = null,
                           val wordForm: DefaultHashMap[String,Int] = null, default: Int = 20) {
-  def this(nonPronouns: Seq[Mention],typesOfCounts: Seq[String], default:Int = 20) = this(
+  def this(nonPronouns: Seq[Mention],typesOfCounts: Seq[String], default:Int) = this(
     if(typesOfCounts.contains("Head")) TokenFreqs.countWordTypes(nonPronouns,(t) => t.phrase.headToken.string.toLowerCase,default) else null,
     if(typesOfCounts.contains("First")) TokenFreqs.countWordTypes(nonPronouns,(t) => t.phrase.tokens(0).string.toLowerCase,default)else null,
     if(typesOfCounts.contains("Last")) TokenFreqs.countWordTypes(nonPronouns,(t) => t.phrase.last.string.toLowerCase,default)else null,

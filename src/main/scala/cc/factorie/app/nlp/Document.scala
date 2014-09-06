@@ -12,7 +12,6 @@
    limitations under the License. */
 
 package cc.factorie.app.nlp
-import cc.factorie._
 import scala.collection.mutable.ArrayBuffer
 import scala.collection.mutable
 import cc.factorie.util.{Cubbie, Attr}
@@ -181,7 +180,7 @@ class Document extends DocumentSubstring with Attr with UniqueId {
   /** Return the WithinDocCoref solution for this Document.  If not already present create it. */
   def getCoref: WithinDocCoref = this.attr.getOrElseUpdate[WithinDocCoref](new WithinDocCoref(this))
   /** Return the gold-standard WithinDocCoref.target solution for this Document.  If not already present create it. */
-  def getTargetCoref: WithinDocCoref = { val coref = this.coref; if (coref.target eq null) coref.target = new WithinDocCoref(this); coref.target }
+  def getTargetCoref: WithinDocCoref = { val coref = this.getCoref; if (coref.target eq null) coref.target = new WithinDocCoref(this); coref.target }
   
   /** Return a String containing the Token strings in the document, formatted with one-word-per-line 
       and various tab-separated attributes appended on each line, generated as specified by the argument. */

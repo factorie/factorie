@@ -14,8 +14,8 @@ package cc.factorie.app.nlp.lexicon
 import cc.factorie.app.nlp.lemma._
 import cc.factorie.app.strings._
 
-object NumberWords extends WordLexicon("NumberWords", nonWhitespaceClassesSegmenter, LowercaseLemmatizer) {
-  this ++= 
+object NumberWords extends PhraseLexicon("NumberWords", nonWhitespaceClassesSegmenter, LowercaseLemmatizer) {
+  this ++=
 """zero
 one
 two
@@ -28,6 +28,8 @@ eight
 nine
 ten
 tens
+dozen
+dozens
 eleven
 twelve
 thirteen
@@ -67,7 +69,7 @@ multibillion
 }
 
 
-object Determiner extends WordLexicon("Determiner", nonWhitespaceClassesSegmenter, LowercaseLemmatizer) {
+object Determiner extends PhraseLexicon("Determiner", nonWhitespaceClassesSegmenter, LowercaseLemmatizer) {
   this ++= 
 """the
 a
@@ -162,7 +164,7 @@ yourself
 yourselves"""    
 }
 
-object PersonPronoun extends WordLexicon("PersonPronoun", nonWhitespaceClassesSegmenter, LowercaseLemmatizer) {
+object PersonPronoun extends PhraseLexicon("PersonPronoun", nonWhitespaceClassesSegmenter, LowercaseLemmatizer) {
   this ++=
 """anybody
 anyone
@@ -202,7 +204,7 @@ yourself
 yourselves"""    
 }
 
-object PosessiveDeterminer extends WordLexicon("PosessiveDeterminer", nonWhitespaceClassesSegmenter, LowercaseLemmatizer) {
+object PosessiveDeterminer extends PhraseLexicon("PosessiveDeterminer", nonWhitespaceClassesSegmenter, LowercaseLemmatizer) {
   this ++=
 """my
 your
@@ -213,7 +215,7 @@ their"""
 }
 
 /** A non-exhaustive list of common English prepositions. */
-object Preposition extends WordLexicon("Preposition", nonWhitespaceClassesSegmenter, LowercaseLemmatizer) {
+object Preposition extends PhraseLexicon("Preposition", nonWhitespaceClassesSegmenter, LowercaseLemmatizer) {
   this ++=
 """about
 above

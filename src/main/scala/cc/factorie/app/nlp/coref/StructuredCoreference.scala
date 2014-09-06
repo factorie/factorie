@@ -61,7 +61,7 @@ class StructuredCoref extends CorefSystem[MentionGraph]{
 
   def preprocessCorpus(trainDocs:Seq[Document]) = {
     val nonPronouns = trainDocs.flatMap(_.targetCoref.mentions.filterNot(m => m.phrase.isPronoun))
-    model.CorefTokenFrequencies.counter = new TopTokenFrequencies(nonPronouns,Vector("Head","First","Last","Prec","Follow","Shape","WordForm"))
+    model.CorefTokenFrequencies.counter = new TopTokenFrequencies(nonPronouns,Vector("Head","First","Last","Prec","Follow","Shape","WordForm"),20)
   }
 
   def getCorefStructure(coref:WithinDocCoref) = new MentionGraph(model,coref,options,train=true)

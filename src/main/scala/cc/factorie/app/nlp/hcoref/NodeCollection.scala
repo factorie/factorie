@@ -92,7 +92,7 @@ trait DBNodeCollection[Vars <: NodeVariables[Vars], N <: Node[Vars] with Persist
 
 abstract class MongoNodeCollection[Vars <: NodeVariables[Vars], N <: Node[Vars] with Persistence,
 NC<:NodeCubbie[Vars, N]](val names:Seq[String], mongoDB:DB)(implicit ct: ClassTag[Vars]) extends DBNodeCollection[Vars, N, NC]{
-  val numBags = ct.runtimeClass.getDeclaredFields.count(_.getType.getName.endsWith("BagOfWordsVariable"))
+  val numBags = ct.runtimeClass.getDeclaredFields.count(_.getType.getName.endsWith("BagOfWordsVariable")) -1
   assert(names.size == numBags+1, "Insufficient collection names : "+numBags+1+"<"+names.size)
   protected val colls = names.map(mongoDB.getCollection)
   val nodeCubbieColl = new MongoCubbieCollection[NC](colls(0),() => newNodeCubbie,(a:NC) => Seq(Seq(a.parentRef))) with LazyCubbieConverter[NC]

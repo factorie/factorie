@@ -12,9 +12,7 @@
    limitations under the License. */
 
 package cc.factorie.app.nlp.ner
-import cc.factorie._
 import cc.factorie.app.nlp._
-import cc.factorie.util.Cubbie
 import cc.factorie.variable._
 
 // A "Tag" is a categorical label associated with a token.
@@ -310,3 +308,81 @@ class LabeledBilouOntonotesNerTag(token:Token, initialCategory:String) extends B
 
 // TODO Remove this. -akm
 class OntonotesEntityMentionSpan
+
+
+object GermevalNerDomain extends CategoricalDomain[String] {
+  this ++= Vector(
+   "O",
+   "OTH", "OTHpart", "OTHderiv",
+   "ORG", "ORGpart", "ORGderiv",
+   "LOC", "LOCpart", "LOCderiv",
+   "PER", "PERpart", "PERderiv"
+  )
+  freeze()
+}
+class GermevalNerTag(token:Token, initialCategory:String) extends NerTag(token, initialCategory) { def domain = GermevalNerDomain }
+class LabeledGermevalNerTag(token:Token, initialCategory:String) extends GermevalNerTag(token, initialCategory) with CategoricalLabeling[String]
+
+class GermevalNerSpanLabel(span:TokenSpan, initialCategory:String) extends NerSpanLabel(span, initialCategory) { def domain = GermevalNerDomain }
+class GermevalNerSpan(section:Section, start:Int, length:Int, category:String) extends NerSpan(section, start, length) { val label = new GermevalNerSpanLabel(this, category) }
+class GermevalNerSpanBuffer extends TokenSpanBuffer[GermevalNerSpan]
+
+
+object BioGermevalNerDomain extends CategoricalDomain[String] {
+  this ++= Vector(
+      "O",
+      "B-OTH", "I-OTH", 
+      "B-OTHpart", "I-OTHpart", 
+      "B-OTHderiv", "I-OTHderiv", 
+      "B-ORG", "I-ORG", 
+      "B-ORGpart", "I-ORGpart", 
+      "B-ORGderiv", "I-ORGderiv", 
+      "B-LOC", "I-LOC", 
+      "B-LOCpart", "I-LOCpart", 
+      "B-LOCderiv", "I-LOCderiv", 
+      "B-PER", "I-PER",
+      "B-PERpart", "I-PERpart", 
+      "B-PERderiv", "I-PERderiv"
+  )
+  freeze()
+}
+
+// tags for both levels of NER annotation
+class Lvl1BioGermevalNerTag(token:Token, initialCategory:String) extends NerTag(token, initialCategory) { def domain = BioGermevalNerDomain }
+class LabeledLvl1BioGermevalNerTag(token:Token, initialCategory:String) extends Lvl1BioGermevalNerTag(token, initialCategory) with CategoricalLabeling[String]
+class Lvl2BioGermevalNerTag(token:Token, initialCategory:String) extends NerTag(token, initialCategory) { def domain = BioGermevalNerDomain }
+class LabeledLvl2BioGermevalNerTag(token:Token, initialCategory:String) extends Lvl2BioGermevalNerTag(token, initialCategory) with CategoricalLabeling[String]
+
+object BilouGermevalNerDomain extends CategoricalDomain[String] {
+  this ++= Vector(
+      "O",
+      "B-OTH", "I-OTH", "L-OTH", "U-OTH",
+      "B-OTHpart", "I-OTHpart", "L-OTHpart", "U-OTHpart",
+      "B-OTHderiv", "I-OTHderiv", "L-OTHderiv", "U-OTHderiv",
+      "B-ORG", "I-ORG", "L-ORG", "U-ORG",
+      "B-ORGpart", "I-ORGpart", "L-ORGpart", "U-ORGpart",
+      "B-ORGderiv", "I-ORGderiv", "L-ORGderiv", "U-ORGderiv",
+      "B-LOC", "I-LOC", "L-LOC", "U-LOC",
+      "B-LOCpart", "I-LOCpart", "L-LOCpart", "U-LOCpart",
+      "B-LOCderiv", "I-LOCderiv", "L-LOCderiv", "U-LOCderiv",
+      "B-PER", "I-PER", "L-PER", "U-PER",
+      "B-PERpart", "I-PERpart", "L-PERpart", "U-PERpart",
+      "B-PERderiv", "I-PERderiv", "L-PERderiv", "U-PERderiv"
+  )
+  freeze()
+  def lvl1SpanList(section:Section): GermevalNerSpanBuffer = {
+    val boundaries = bilouBoundaries(section.tokens.map(_.attr[Lvl1BilouGermevalNerTag].categoryValue))
+    new GermevalNerSpanBuffer ++= boundaries.map(b => new GermevalNerSpan(section, b._1, b._2, b._3))
+  } 
+  def lvl2SpanList(section:Section): GermevalNerSpanBuffer = {
+    val boundaries = bilouBoundaries(section.tokens.map(_.attr[Lvl2BilouGermevalNerTag].categoryValue))
+    new GermevalNerSpanBuffer ++= boundaries.map(b => new GermevalNerSpan(section, b._1, b._2, b._3))
+  } 
+}
+
+// tags for both levels of NER annotation
+class Lvl1BilouGermevalNerTag(token:Token, initialCategory:String) extends NerTag(token, initialCategory) { def domain = BilouGermevalNerDomain }
+class LabeledLvl1BilouGermevalNerTag(token:Token, initialCategory:String) extends Lvl1BilouGermevalNerTag(token, initialCategory) with CategoricalLabeling[String]
+class Lvl2BilouGermevalNerTag(token:Token, initialCategory:String) extends NerTag(token, initialCategory) { def domain = BilouGermevalNerDomain }
+class LabeledLvl2BilouGermevalNerTag(token:Token, initialCategory:String) extends Lvl2BilouGermevalNerTag(token, initialCategory) with CategoricalLabeling[String]
+
