@@ -4,6 +4,7 @@ import org.scalatest.FlatSpec
 import org.scalatest.matchers.ClassicMatchers
 import cc.factorie.db.mongo.{MongoCubbieCollection, MongoCubbie}
 import com.mongodb.MongoClient
+import cc.factorie.db.mongo.MongoCubbieConverter
 
 /**
  * @author John Sullivan
@@ -35,4 +36,15 @@ class TestIntAndDoubleSeqCubbie extends FlatSpec with ClassicMatchers {
     c.intSeq := i
     assert(c.intSeq.value.asArray.zip(a).forall{case (x, y) => x == y})
   }
+  
+  "IntSeq conversion" should "work" in {
+    class MyCubbie extends Cubbie { val i = IntSeqSlot("test") }
+    val a = new ArrayIntSeq(Array(1,2,3))
+    val c = new MyCubbie 
+    c.i := a
+    val dbo = MongoCubbieConverter.eagerDBO(c)
+    val c2 = MongoCubbieConverter.eagerCubbie(dbo, () => new MyCubbie)
+    assert(c2.i.value.asSeq == c.i.value.asSeq)
+  }
+  
 }

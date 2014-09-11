@@ -114,6 +114,9 @@ trait DoubleSeq {
   
   /** Return the values as an Array[Double].  Not guaranteed to be a copy; in fact if it is possible to return a pointer to an internal array, it will simply return this. */  
   def asArray: Array[Double] = toArray // Can be overridden for further efficiency
+  /** Return the values as an Array[Double] whose length may be longer than this.length. */
+  def _rawArray: Array[Double] = asArray  // Overridden in subclasses for efficiency.  Careful: _rawArray.length may not equal length.  
+  
   /** With uncopied contents */
   def asSeq: Seq[Double] = new IndexedSeq[Double] {
     def length = DoubleSeq.this.length
@@ -394,11 +397,14 @@ final class ArrayDoubleSeq(override val asArray:Array[Double]) extends MutableDo
   def update(i:Int, v:Double): Unit = asArray(i) = v
   def zero(): Unit = java.util.Arrays.fill(asArray, 0.0)
   def +=(i:Int, v:Double): Unit = asArray(i) += v
+  override def _rawArray: Array[Double] = asArray
+
 }
 
 final class TruncatedArrayDoubleSeq(val array:Array[Double], val length:Int) extends DenseDoubleSeq {
   def apply(i:Int): Double = array(i)
   override def toArray = { val a = new Array[Double](length); System.arraycopy(array, 0, a, 0, length); a }
+  override def _rawArray: Array[Double] = array
 }
 
 final class SubArrayDoubleSeq(val array:Array[Double], val start:Int, val length:Int) extends DenseDoubleSeq {

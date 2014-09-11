@@ -202,6 +202,7 @@ class IntArrayBuffer extends ProtectedIntArrayBuffer with MutableIntSeq {
   def update(index:Int, value:Int): Unit = _update(index, value)
   def length: Int = _length
   def toArray = _toArray
+  override def _array: Array[Int] = super._array // Careful.  _array.length may not equal length
   def +=(i:Int): Unit = _append(i)
   def ++=(is:Array[Int]): Unit = _appendAll(is)
   def ++=(is:Seq[Int]): Unit = _appendAll(is)
@@ -214,6 +215,7 @@ class SortedIntArrayBuffer extends ProtectedIntArrayBuffer with IntSeq {
   def length: Int = _length
   def setCapacity(c:Int) = _setCapacity(c)
   def toArray = _toArray
+  override def _array: Array[Int] = super._array // Careful.  _array.length may not equal length
   def +=(i:Int): Unit = _insertSorted(i)
   def -=(i:Int): Unit = { val index = _indexForInsertSorted(i); if (index >= 0) _remove(index) else throw new Error("Int value not found: "+i)}
   def ++=(is:Array[Int]): Unit = { _ensureCapacity(_length + is.length); var j = 0; while (j < is.length) { _insertSorted(is(j)); j += 1} }
@@ -226,6 +228,7 @@ class SortedIntSetBuffer extends ProtectedIntArrayBuffer with IntSeq {
   def length: Int = _length
   def setCapacity(c:Int) = _setCapacity(c)
   def toArray = _toArray
+  override def _array: Array[Int] = super._array // Careful.  _array.length may not equal length
   def +=(i:Int): Unit = _insertSortedNoDuplicates(i)
   def -=(i:Int): Unit = { val index = _indexForInsertSorted(i); if (index >= 0) _remove(index) else throw new Error("Int value not found: "+i)}
   def ++=(is:Array[Int]): Unit = { _ensureCapacity(_length + is.length); var j = 0; while (j < is.length) { _insertSortedNoDuplicates(is(j)); j += 1} }

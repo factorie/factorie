@@ -380,10 +380,7 @@ class Cubbie {
    */
   trait PrimitiveSlot[T] extends Slot[T] {
     def value: T = _map(name).asInstanceOf[T]
-
-    def :=(value: T) {
-      _map.update(name, value)
-    }
+    def :=(value: T): Unit = _map.update(name, value)
   }
 
   case class IntSlot(name: String) extends PrimitiveSlot[Int] {
@@ -411,7 +408,12 @@ class Cubbie {
   case class DateSlot(name: String) extends PrimitiveSlot[java.util.Date]
   // TODO We need other primitive types supported in BSON
 
+  // Note: This is not supported by cc.factorie.db.mongo.MongoCubbieCollection
   case class TensorSlot(name: String) extends PrimitiveSlot[Tensor]
+
+  // These are specially handled in cc.factorie.db.mongo.MongoCubbieCollection
+  case class IntSeqSlot(name:String) extends PrimitiveSlot[IntSeq]
+  case class DoubleSeqSlot(name:String) extends PrimitiveSlot[DoubleSeq]
 
 
   /** This allows any type to be stored in a slot.  But note that BSON and JSON only support the above restricted set of types.
@@ -458,29 +460,6 @@ class Cubbie {
 
   case class TensorListSlot(name: String) extends PrimitiveListSlot[Tensor]
 
-  /**
-   * A slot that contains either a [[cc.factorie.util.DoubleSeq]] or a
-   * [[cc.factorie.util.IntSeq]]. It is written to mongo in binary form for
-   * speed (because of mongo's poor handling of arrays).
-   * @tparam T
-   */
-  trait PrimitiveSeqSlot[T] extends Slot[T] {
-    /**
-     * Set the value for this slot.
-     * @param value value to set.
-     */
-    def :=(value: T) {
-      _map.update(name, value)
-    }
-
-    def value = _map(name) match {
-      case is:IntSeq => is.asInstanceOf[T]
-      case ds:DoubleSeq => ds.asInstanceOf[T]
-    }
-  }
-
-  case class IntSeqSlot(name:String) extends PrimitiveSeqSlot[IntSeq]
-  case class DoubleSeqSlot(name:String) extends PrimitiveSeqSlot[DoubleSeq]
 
   /**
    * A slot that contains a list of cubbies.
@@ -605,12 +584,6 @@ class Cubbie {
 
 }
 
-object JSonTest {
-  def main(args: Array[String]) {
-    val json = JSON.parseFull("")
-
-  }
-}
 
 // Also make a version of this that caches objects as they come out of MongoDB
 @deprecated("Will be removed.")
