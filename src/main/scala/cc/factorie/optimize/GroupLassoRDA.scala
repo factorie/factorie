@@ -17,13 +17,14 @@ import cc.factorie.util.{DenseDoubleSeq, DoubleSeq, RangeIntSeq}
 import cc.factorie.model.{Weights, WeightsMap, WeightsSet}
 
 /**
- * Implements the Regularized Dual Averaging algorithm of Xiao with support for
- * group lasso, specifically l2-norm group regularization, as derived for dual averaging-based
- * methods in Yang et al., Online Learning for Group Lasso.
+ * Implements the Regularized Dual Averaging algorithm of Xiao with support for Group Lasso,
+ * specifically l2-norm group regularization, as derived for dual averaging-based methods in
+ * Yang et al., Online Learning for Group Lasso.
  *
- * This does not support l1-regularization (a.k.a. Sparse Group Lasso) because the updates can't be efficiently
- * calculated in the stochastic sparse gradient setting. It also does not yet support l2(-squared)-regularization since this
- * seems a bit redundant with the l2-norm-based group regularization.
+ * This does not support l1-regularization (a.k.a. Sparse Group Lasso) because the updates can't
+ * be efficiently calculated in the stochastic sparse gradient setting. It also does not yet
+ * support l2(-squared)-regularization since this seems a bit redundant with the l2-norm-based
+ * group regularization.
  *
  * @param rate The base learning rate
  * @param groupl2Weights Strength of regularization for each group
@@ -129,7 +130,7 @@ class GroupLassoRDA(val rate: Double = 0.1, val groupl2Weights: Weights => Doubl
     }
     def copy: Tensor = sys.error("Method copy not defined on class " + getClass.getName)
     def blankCopy: Tensor = sys.error("Method blankCopy not defined on class " + getClass.getName)
-    def +=(i: Int, v: Double): Unit = sys.error("You should add tensors all at once to the RDATensor")
+    def +=(i: Int, v: Double): Unit = sys.error("You should add tensors all at once to the GroupLassoRDATensor")
     def zero(): Unit = {
       for (i <- 0 until length) gradients(i) = 0
       cachedGradientsTwoNormSquared = 0.0
