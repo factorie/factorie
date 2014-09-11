@@ -45,19 +45,16 @@ object DocumentStore {
         sentenceOffsets += sentence.length
       }
       this.sentences := sentenceOffsets
-      return this
-      
-      
       // Part-of-speech tags
       this.pos := new ArrayIntSeq(section.tokens.map(_.posTag.intValue).toArray)
-      // Parse
-      val parseIndices = new IntArrayBuffer(section.tokens.length * 2)
-      for (sentence <- section) {
-        val parse = sentence.parse
-        parseIndices ++= parse.parents
-        parseIndices ++= parse.labels.map(_.intValue)
-      }
-      this.parse := parseIndices
+//      // Parse
+//      val parseIndices = new IntArrayBuffer(section.tokens.length * 2)
+//      for (sentence <- section) {
+//        val parse = sentence.parse
+//        parseIndices ++= parse.parents
+//        parseIndices ++= parse.labels.map(_.intValue)
+//      }
+//      this.parse := parseIndices
       this
     }
     def fetch: Document = {
@@ -80,24 +77,21 @@ object DocumentStore {
         new Sentence(section, sentenceOffsets(i), sentenceOffsets(i+1))
         i += 2
       }
-      return document
-      
-      
       // Part-of-speech tags
       val posIndices = pos.value; i = 0
       for (token <- section.tokens) {
         token.attr += new PennPosTag(token, posIndices(i))
         i += 1
       }
-      // Parse
-      val parseIndices = parse.value
-      i = 0
-      for (sentence <- section.sentences) {
-        val parents = parseIndices.slice(i, i+sentence.length).toSeq; i += sentence.length
-        val labels = parseIndices.slice(i, i+sentence.length).toSeq.map(ParseTreeLabelDomain.category(_)); i += sentence.length
-        val parse = new ParseTree(sentence, parents, labels)
-      }
-      assert(i == parseIndices.length)
+//      // Parse
+//      val parseIndices = parse.value
+//      i = 0
+//      for (sentence <- section.sentences) {
+//        val parents = parseIndices.slice(i, i+sentence.length).toSeq; i += sentence.length
+//        val labels = parseIndices.slice(i, i+sentence.length).toSeq.map(ParseTreeLabelDomain.category(_)); i += sentence.length
+//        val parse = new ParseTree(sentence, parents, labels)
+//      }
+//      assert(i == parseIndices.length)
       document
     }
   }
