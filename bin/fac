@@ -18,8 +18,8 @@ if [ -e $factorienlpdir ] ; then
   cp=$cp:$factorienlpdir/src/main/resources:$factorienlpdir/target/classes
 fi 
 
-factoriejar=$factoriedir/target/factorie-1.0-SNAPSHOT-jar-with-dependencies.jar
-factorienlpjar=$factoriedir/target/factorie-1.0-SNAPSHOT-nlp-jar-with-dependencies.jar
+factoriejar=$factoriedir/target/factorie-1.1-SNAPSHOT-jar-with-dependencies.jar
+factorienlpjar=$factoriedir/target/factorie-1.1-SNAPSHOT-nlp-jar-with-dependencies.jar
 
 if [ -e $factorienlpjar ] ; then
   cp=$cp:$factorienlpjar
@@ -31,11 +31,7 @@ else
 fi
 
 # This makes -Xmx value command-line changeable
-<<<<<<< HEAD
-MEMORY=4g
-=======
 MEMORY=6g
->>>>>>> efb44d1030f0d24b33e05d1a45376d991d58ea09
 
 JAVA_COMMAND="java -Xmx$MEMORY -ea -Djava.awt.headless=true -Dfile.encoding=UTF-8 -server -classpath $cp"
 
