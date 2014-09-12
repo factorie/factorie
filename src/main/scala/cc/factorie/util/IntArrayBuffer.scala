@@ -21,10 +21,12 @@ trait ProtectedIntArrayBuffer {
   private var _arr = new Array[Int](_initialCapacity)
   private var _size = 0
   private var _lastIndex: Int = 0
+  /** Reallocate the array to be exactly 'cap' or _initialCapacity, whichever is bigger. */
   @inline final protected def _setCapacity(cap:Int): Unit = {
     if (_arr.length != cap) {
       require(cap >= _size && cap >= 0)
-      val newArray = new Array[Int](cap)
+      val newCapacity = if (cap < _initialCapacity) _initialCapacity else cap
+      val newArray = new Array[Int](newCapacity)
       if (_size > 0) arraycopy(_arr, 0, newArray, 0, _size)
       _arr = newArray
     }
@@ -32,9 +34,11 @@ trait ProtectedIntArrayBuffer {
   protected def _capacityGrowthFactor: Double = 1.5
   @inline final protected def _ensureCapacity(cap:Int): Unit = 
     if (cap > _arr.length) _setCapacity(math.max(cap, (_arr.length * _capacityGrowthFactor).toInt))
-  protected def _considerShrinkingCapacity(): Unit = if (_size > 0 && _arr.length > _size * 2) _setCapacity(_size)
+  /** If _size is sufficiently smaller than the array length so that substantial space would be saved, then
+      reallocate the array length to be max(_size,_initialCapacity), and return true.  Otherwise return false. */
+  protected def _considerShrinkingCapacity(): Boolean = if (_size > _initialCapacity && _arr.length > _size * 2) { _setCapacity(_size); true } else false
   protected def _trimCapacity(): Unit = _setCapacity(_size) // What if _size == 0?
-  protected def _reduceToSize(newSize:Int): Unit = { _size = newSize; _considerShrinkingCapacity }
+  protected def _reduceToSize(newSize:Int): Unit = { _size = newSize; if (!_considerShrinkingCapacity) { var i = _arr.length-1; while (i >= _size) { _arr(i) = 0; i -= 1 } } }
   @inline final protected def _length = _size
   @inline final protected def _apply(index:Int): Int = _arr(index)
   protected def _foreach[U](f:Int=>U): Unit = { var i = 0; while (i < _size) { f(_arr(i)); i += 1 } }
@@ -208,6 +212,7 @@ class IntArrayBuffer extends ProtectedIntArrayBuffer with MutableIntSeq {
   def ++=(is:Seq[Int]): Unit = _appendAll(is)
   def +=:(i:Int): Unit = _prepend(i)
   def insert(index:Int, elt:Int): Unit = _insert(index, elt)
+  override def _rawArray = _array
 }
 
 class SortedIntArrayBuffer extends ProtectedIntArrayBuffer with IntSeq {
@@ -220,6 +225,7 @@ class SortedIntArrayBuffer extends ProtectedIntArrayBuffer with IntSeq {
   def -=(i:Int): Unit = { val index = _indexForInsertSorted(i); if (index >= 0) _remove(index) else throw new Error("Int value not found: "+i)}
   def ++=(is:Array[Int]): Unit = { _ensureCapacity(_length + is.length); var j = 0; while (j < is.length) { _insertSorted(is(j)); j += 1} }
   def ++=(is:Seq[Int]): Unit = { _ensureCapacity(_length + is.length); is.foreach(_insertSorted(_)) }
+  override def _rawArray = _array
 }
 
 /** Like SortedIntArrayBuffer, but with no duplicate entries. */
@@ -233,5 +239,6 @@ class SortedIntSetBuffer extends ProtectedIntArrayBuffer with IntSeq {
   def -=(i:Int): Unit = { val index = _indexForInsertSorted(i); if (index >= 0) _remove(index) else throw new Error("Int value not found: "+i)}
   def ++=(is:Array[Int]): Unit = { _ensureCapacity(_length + is.length); var j = 0; while (j < is.length) { _insertSortedNoDuplicates(is(j)); j += 1} }
   def ++=(is:Seq[Int]): Unit = { _ensureCapacity(_length + is.length); is.foreach(_insertSortedNoDuplicates(_)) }
+  override def _rawArray = _array
 }
 
