@@ -43,6 +43,8 @@ trait DenseTensor extends Tensor with TensorWithMutableDefaultValue with DenseDo
     case ds:DenseTensor => System.arraycopy(ds.__values, 0, __values, 0, length)
     case ds:DoubleSeq => super.:=(ds)
   }
+  def fill(f: ()=>Double): this.type = { var i = 0; val len = length; while (i < len) { __values(i) = f(); i += 1 }; this }
+  @deprecated("Use fill() instead.")
   def initializeRandomly(mean: Double = 0.0, variance: Double = 1.0)(implicit rng: scala.util.Random): Unit = { (0 until length).foreach(i => _values(i) = rng.nextGaussian()*variance + mean ) }
   def forallActiveElements(f:(Int,Double)=>Boolean): Boolean = forallElements(f)
   override def :=(a:Array[Double]): Unit = { require(a.length == length, "Expected length="+length+" but got "+a.length); System.arraycopy(a, 0, _values, 0, a.length) }
@@ -107,7 +109,7 @@ trait DenseTensor extends Tensor with TensorWithMutableDefaultValue with DenseDo
     case t:DenseTensor => {
       val myValues = __values
       val otherValues = t.__values
-      val len = length; var i = 0
+      val len = t.length; var i = 0
       while (i < len) { myValues(i) += f * otherValues(i); i += 1 }
     }
     case t:UniformTensor => {
@@ -149,5 +151,16 @@ trait DenseTensor extends Tensor with TensorWithMutableDefaultValue with DenseDo
     sum
   }
 
+  def euclideanDistance(t:DenseTensor): Double = {
+    var d = 0.0
+    val len = length; var i = 0; while (i < len) {
+      val diff = __values(i) - t.__values(i)
+      d += diff * diff
+      i += 1
+    }
+    math.sqrt(d)
+  }
+  
+  
 }
 

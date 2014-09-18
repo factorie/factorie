@@ -16,7 +16,7 @@ package cc.factorie.util
 /** A trait for objects that can provide type-matched substitutions of one object for another.
     @author Andrew McCallum */
 trait Substitutions {
-  /** Given an object, return a substite of the same time. 
+  /** Given an object, return a substitute of the same type. 
       The returned value may be the original argument itself.
       It should never be null. */
   def sub[B](a:B): B

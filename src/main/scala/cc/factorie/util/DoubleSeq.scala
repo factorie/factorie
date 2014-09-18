@@ -34,6 +34,7 @@ trait DoubleSeq {
   def forallElements(f:(Int,Double)=>Boolean): Boolean = { val l = length; var i = 0; while (i < l) { if (!f(i, apply(i))) return false; i += 1 }; true }
   def forall(f:Double=>Boolean): Boolean = { val l = length; var i = 0; while (i < l) { if (!f(apply(i))) { println("DoubleSeq.forall "+apply(i)); return false }; i += 1 }; true }
   def map(f:(Double)=>Double): DoubleSeq = { val l = length; val a = new Array[Double](l); var i = 0; while (i < l) { a(i) = f(apply(i)); i += 1 }; new ArrayDoubleSeq(a) }
+  def filter(f:(Double)=>Boolean): DoubleSeq = { val l = length; val r = new DoubleArrayBuffer; var i = 0; while (i < l) { val a = apply(i); if (f(a)) r += a; i += 1 }; r }
   def contains(d:Double): Boolean
   def oneNorm: Double
   def twoNormSquared: Double
@@ -308,7 +309,10 @@ trait MutableDoubleSeq extends IncrementableDoubleSeq {
   def +=(i:Int, incr:Double): Unit // = update(i, apply(i)+incr)
   def zero(): Unit // = this := 0.0 //{ var i = 0; while (i < length) { update(i, 0.0); i += 1 }}
   // Concrete methods, efficient for dense representations
-  def substitute(oldValue:Double, newValue:Double): Unit = { var i = 0; while (i < length) { if (apply(i) == oldValue) update(i, newValue); i += 1 } }
+  /** Change all occurrences of oldValue to newValue. */
+  def substitute(oldValue:Double, newValue:Double): this.type = { var i = 0; while (i < length) { if (apply(i) == oldValue) update(i, newValue); i += 1 }; this }
+  /** Like map, but it changes in place. */
+  def substitute(f:(Double)=>Double): this.type = { var i = 0; while (i < length) { update(i, f(apply(i))); i += 1 }; this }
   def :=(d:Double): Unit = { val l = length; var i = 0; while (i < l) { update(i, d); i += 1 }}
   def :=(ds:DoubleSeq): Unit = ds match {
     case ds:SparseDoubleSeq => { zero(); /* Use defaultValue instead? */ ds.foreachActiveElement((i,v) => update(i, v)) }
@@ -324,6 +328,7 @@ trait MutableDoubleSeq extends IncrementableDoubleSeq {
   def /=(ds:DoubleSeq): Unit = { val l = length; require(ds.length == l); var i = 0; while (i < l) { /=(i, ds(i)); i += 1 }}
   def abs(): Unit = { val l = length; var i = 0; while (i < l) { val d = apply(i); if (d < 0.0) update(i, math.abs(d)); i += 1 }}
   def normalize(): Double = { val n = oneNorm; /=(n); n }
+  def project(maxNorm:Double): Double = { val n = twoNorm; if (n > maxNorm) /=(n/maxNorm); n }
   def oneNormalize(): Double = normalize()
   def twoNormalize(): Double = { val n = twoNorm; /=(n); n }
   def twoSquaredNormalize(): Double = { val n = twoNormSquared; /=(n); n }
