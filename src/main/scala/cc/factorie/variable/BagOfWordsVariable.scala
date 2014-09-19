@@ -118,8 +118,8 @@ class BagOfWordsVariable(initialWords: Iterable[String] = Nil, initialMap: Map[S
   final def -=(x: BagOfWords): Unit = remove(x)(null)
   final def ++=(xs: Iterable[String]): Unit = xs.foreach(add(_)(null))
   final def --=(xs: Iterable[String]): Unit = xs.foreach(remove(_)(null))
-  final def ++=(xs: HashMap[String, Double]): Unit = for ((k, v) <- xs) add(k, v)(null)
-  final def --=(xs: HashMap[String, Double]): Unit = for ((k, v) <- xs) remove(k, v)(null)
+  final def ++=(xs: Map[String, Double]): Unit = for ((k, v) <- xs) add(k, v)(null)
+  final def --=(xs: Map[String, Double]): Unit = for ((k, v) <- xs) remove(k, v)(null)
 
   def ++(that:BagOfWordsVariable)(implicit d:DiffList):BagOfWordsVariable = {
     val n = new BagOfWordsVariable()
