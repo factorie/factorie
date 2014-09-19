@@ -8,7 +8,7 @@ import cc.factorie._
   * @author John Sullivan
  */
 trait Canopy {
-  def canopies:Seq[String]
+  def canopies:Iterable[String]
 }
 
 trait SingularCanopy extends Canopy {
