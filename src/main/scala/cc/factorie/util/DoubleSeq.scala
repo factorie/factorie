@@ -165,8 +165,8 @@ trait DenseDoubleSeq extends DoubleSeq {
     (max1, max2)
   }
   def max2: (Double, Double) = {
-    val l = length; var i = 0
-    var max1 = Double.NegativeInfinity; var max2 = Double.NegativeInfinity
+    val l = length; var i = 1
+    var max1 = apply(0); var max2 = apply(1)
     while (i < l) {
       if (max1 < apply(i)) { max2 = max1; max1 = apply(i) }
       else if (max2 < apply(i)) max2 = apply(i)
