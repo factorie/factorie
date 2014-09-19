@@ -47,7 +47,7 @@ trait AbstractMention extends Node {
     @author Andrew McCallum */
 trait AbstractEntity extends Node {
   def children: Iterable[Node]  // Immediate children
-  def childIds: Iterable[String] = ???
+  def childIds: Iterable[String] = children.map(_.uniqueId)
   def mentions: Iterable[AbstractMention] // Leaves of tree
 }
 
