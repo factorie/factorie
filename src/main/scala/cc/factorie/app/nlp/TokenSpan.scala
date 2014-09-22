@@ -15,6 +15,7 @@ package cc.factorie.app.nlp
 import cc.factorie._
 import cc.factorie.util.{Cubbie, Attr}
 import cc.factorie.variable._
+import scala.collection.mutable
 
 /** A sub-sequence of Tokens within a Section (which is in turn part of a Document). */
 class TokenSpan(theSection:Section, initialStart:Int, initialLength:Int) extends SpanVariable[Section,Token](theSection, initialStart, initialLength) with Attr {
@@ -64,6 +65,29 @@ class TokenSpan(theSection:Section, initialStart:Int, initialLength:Int) extends
    * Returns the character offsets of this TokenSpan into the raw text of its original document.
    */
   def characterOffsets:(Int, Int) = this.apply(0).stringStart -> this.apply(length).stringEnd
+
+  /**
+   * Returns a sequence of tokens that contains @param size tokens before and after the tokenspan.
+   */
+  def contextWindow(size:Int):Seq[Token] = {
+    var idx = 0
+    var window = mutable.ArrayBuffer[Token]()
+    var t = Option(this.head)
+    while(idx < size && t.isDefined) {
+      t = t.flatMap(_.getPrev)
+      window ++= t
+      idx += 1
+    }
+    window = window.reverse // because we want things to be in their proper order, but do we want it this much?
+    idx = 0
+    t = Option(this.last)
+    while(idx < size && t.isDefined) {
+      t = t.flatMap(_.getNext)
+      window ++= t
+      idx += 1
+    }
+    window
+  }
 }
 trait TokenSpanCollection[S<:TokenSpan] extends SpanVarCollection[S, Section, Token]
 
@@ -77,7 +101,7 @@ class TokenSpanBuffer[S<:TokenSpan] extends SpanVarBuffer[S, Section, Token] wit
 object TokenSpan {
 
   //TODO this doesn't seem to be used anywhere, can it be deleted? -KS
-  //TODO If this is used, it could be incorporated into the TriePhraseLexcion 
+  //TODO If this is used, it could be incorporated into the TriePhraseLexcion
   //     using the AhoCorasick findMention method - craigacp
   def fromLexicon(lexicon:cc.factorie.app.nlp.lexicon.PhraseLexicon, document:Document): Int = {
     var spanCount = 0
