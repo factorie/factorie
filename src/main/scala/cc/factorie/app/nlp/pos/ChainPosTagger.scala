@@ -189,7 +189,10 @@ class ChainPosTrainer[A<:PosTag](tagConstructor:(Token)=>A, loadingMethod:(Strin
     acc
   }
 }
-object ChainPosTrainer extends ChainPosTrainer((t:Token) => new PennPosTag(t, 0), load.LoadOntonotes5.fromFile)
+object ChainPosTrainer extends ChainPosTrainer(
+  (t:Token) => new PennPosTag(t, 0),
+  (dirName: String) => load.LoadOntonotes5.fromFile(dirName)
+)
 object CtbChainPosTrainer extends ChainPosTrainer(
   (t:Token) => new CtbPosTag(t, 0), 
   (dirName: String) => {
