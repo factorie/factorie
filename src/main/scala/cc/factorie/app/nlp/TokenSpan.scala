@@ -77,25 +77,26 @@ class TokenSpan(theSection:Section, initialStart:Int, initialLength:Int) extends
   } else if(this.section.head.stringStart < other.section.head.stringStart) {
     -1
   } else {
-    if(this.sentence.start > other.sentence.start) {
+    if (this.sentence.start > other.sentence.start) {
       1
-    } else if(this.sentence.start < other.sentence.start) {
+    } else if (this.sentence.start < other.sentence.start) {
       -1
     } else {
-      if(this.start > other.start) {
+      if (this.start > other.start) {
         1
-      } else if(this.start < other.start) {
+      } else if (this.start < other.start) {
         -1
       } else {
-        if(this.end < other.end) {
+        if (this.end < other.end) {
           1
-        } else if(this.end > other.end) {
+        } else if (this.end > other.end) {
           -1
         } else {
           0
         }
       }
     }
+  }
 
   /**
    * Returns a sequence of tokens that contains @param size tokens before and after the tokenspan.
