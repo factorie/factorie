@@ -48,12 +48,13 @@ object Example {
         k.value(i) += epsilon
         example.accumulateValueAndGradient(value2, null)
         k.value(i) -= epsilon
-        val grad = value2.value - value.value
+        val grad = (value2.value - value.value) / epsilon
         val computedGrad = g(k)(i)
+        //if (verbose && !(grad == computedGrad)) println(s"Example.testGradient grad=$computedGrad diff=$grad")
         val m = math.max(math.abs(grad), math.abs(computedGrad))
         if (math.abs(computedGrad - grad) > lipschitz*m) {
           correct = false
-          if (verbose) System.err.println(s"Error in gradient for key $k coordinate $i, expected $computedGrad obtained $grad")
+          if (verbose) System.err.println(s"Error in gradient for key ${k.value} coordinate $i, expected $computedGrad obtained $grad")
           if (returnOnFirstError) return correct
         }
       }
@@ -73,7 +74,7 @@ object Example {
         k.value(i) += epsilon
         example.accumulateValueAndGradient(value2, null)
         k.value(i) -= epsilon
-        val grad = value2.value - value.value
+        val grad = (value2.value - value.value) / epsilon
         val computedGrad = g(k)(i)
         val m = math.max(math.abs(grad), math.abs(computedGrad))
         if (math.abs(computedGrad - grad) > lipschitz*m) {

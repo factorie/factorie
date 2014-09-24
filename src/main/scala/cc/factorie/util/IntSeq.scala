@@ -35,9 +35,12 @@ trait IntSeq {
   def forall(f:Int=>Boolean): Boolean = { val len = length; var i = 0; while (i < len) { if (!f(apply(i))) return false; i += 1 }; true }
   def foldLeft[B<:AnyRef](z:B)(f:(B,Int)=>B): B = { var acc = z; this.foreach(el => acc = f(acc, el)); acc }
   def indexOf(d:Int): Int = { val len = length; var i = 0; while (i < len) { if (d == apply(i)) return i; i += 1 }; -1 }
+  def slice(from:Int, until:Int): IntSeq = { require(until <= length); val a = new Array[Int](until-from); Array.copy(_rawArray, from, a, 0, until-from); new ArrayIntSeq(a) }
   def max: Int = { val len = length; var m = Int.MinValue; var i = 0; while (i < len) { if (!(m >= apply(i))) m = apply(i); i += 1 }; m }
   def min: Int = { val len = length; var m = Int.MaxValue; var i = 0; while (i < len) { if (!(m <= apply(i))) m = apply(i); i += 1 }; m }
   def asArray: Array[Int] = toArray // To be overridden for efficiency in some subclasses
+  /** Return the values as an Array[Int] whose length may be longer than this.length. */
+  def _rawArray: Array[Int] = toArray  // Careful.  _rawArray.length may not equal length
   def asSeq: IndexedSeq[Int] = new IndexedSeq[Int] {
     final def length = IntSeq.this.length
     final def apply(i:Int): Int = IntSeq.this.apply(i)
@@ -92,13 +95,13 @@ final class SubArrayIntSeq(val array:Array[Int], val start:Int, val length:Int) 
 
 /** A sequence of (activeDomain) indices for a possibly sparse outer product of (the activeDomains of) WeightsMap. */
 final class Outer2IntSeq(val dim1:Int, val dim2:Int, val intSeq1:IntSeq, val intSeq2:IntSeq) extends IntSeq {
-  private val _array = new Array[Int](intSeq1.length * intSeq2.length)
-  def toArray = { val a = new Array[Int](length); System.arraycopy(_array, 0, a, 0, _array.length); a }
-  override def asArray = _array
-  private def _init() = { var k = 0; for (i <- 0 until intSeq1.length; j <- 0 until intSeq2.length) { _array(k) = i*dim2 + j; k += 1 } }
+  override val _rawArray = new Array[Int](intSeq1.length * intSeq2.length)
+  def toArray = { val a = new Array[Int](length); System.arraycopy(_rawArray, 0, a, 0, _rawArray.length); a }
+  override def asArray = _rawArray
+  private def _init() = { var k = 0; for (i <- 0 until intSeq1.length; j <- 0 until intSeq2.length) { _rawArray(k) = i*dim2 + j; k += 1 } }
   _init
-  def length = _array.length
-  def apply(i:Int): Int = _array(i)
+  def length = _rawArray.length
+  def apply(i:Int): Int = _rawArray(i)
 }
 
 /** Note that this will cause the Int to be boxed and unboxed. */

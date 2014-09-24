@@ -33,14 +33,19 @@ object EmbeddingDistance {
     load(inputFile)
     play()
   }
+  
+  def run(opts:EmbeddingOpts): Unit = {
+    load(opts.explore.value, opts.encoding.value)
+    play()
+  }
 
   def nearestNeighbours(inputFile: String, numNeighbours: Int = 30): Unit = {
     top = numNeighbours
     load(inputFile)
     play()
   }
-  def load(embeddingsFile: String): Unit = {
-    var lineItr = Source.fromFile(embeddingsFile).getLines
+  def load(embeddingsFile: String, encoding:String = "UTF8"): Unit = {
+    var lineItr = Source.fromFile(embeddingsFile, encoding).getLines
     // first line is (# words, dimension)
     val details = lineItr.next.stripLineEnd.split(' ').map(_.toInt)
     V = if (threshold > 0 && details(0) > threshold) threshold else details(0)

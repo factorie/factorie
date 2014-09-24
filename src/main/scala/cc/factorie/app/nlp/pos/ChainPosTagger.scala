@@ -18,21 +18,20 @@ import cc.factorie.app.chain.Observations._
 import java.io._
 import cc.factorie.util.{HyperparameterMain, ClasspathURL, BinarySerializer}
 import cc.factorie.optimize.Trainer
-import cc.factorie.variable.{HammingObjective, BinaryFeatureVectorVariable, CategoricalVectorDomain}
+import cc.factorie.variable.{HammingObjective, BinaryFeatureVectorVariable, CategoricalVectorDomain, CategoricalVariable, LabeledVar, LabeledMutableDiscreteVar}
+import scala.reflect.ClassTag
 
-/**
- * User: apassos
- * Date: 7/15/13
- * Time: 2:55 PM
+/** A linear-chain CRF part-of-speech tagger, doing inference by Viterbi.
+    @author Alexandre Passos, Andrew McCallum
  */
-class  ChainPosTagger extends DocumentAnnotator {
-  def this(url:java.net.URL) = { this(); deserialize(url.openConnection().getInputStream) }
+class  ChainPosTagger[A<:PosTag](tagConstructor:(Token)=>A)(implicit ct:ClassTag[A]) extends DocumentAnnotator {
+  def this(tagConstructor:(Token)=>A, url:java.net.URL)(implicit ct:ClassTag[A]) = { this(tagConstructor); deserialize(url.openConnection().getInputStream) }
   def process(document: Document) = {
     document.sentences.foreach(s => {
       if (s.nonEmpty) {
-        s.tokens.foreach(t => if (!t.attr.contains[PennPosTag]) t.attr += new PennPosTag(t, "NN"))
+        s.tokens.foreach(t => if (!t.attr.contains[A]) t.attr += tagConstructor(t))
         initPOSFeatures(s)
-        model.maximize(s.tokens.map(_.posTag))(null)
+        model.maximize(s.tokens.map(_.attr[A]))(null)
       }
     })
     document
@@ -40,7 +39,7 @@ class  ChainPosTagger extends DocumentAnnotator {
 
   def prereqAttrs = Seq(classOf[Token], classOf[Sentence])
   def postAttrs = Seq(classOf[PennPosTag])
-  def tokenAnnotationString(token: Token) = { val label = token.attr[PennPosTag]; if (label ne null) label.categoryValue else "(null)" }
+  def tokenAnnotationString(token: Token) = { val label = token.attr[A with LabeledVar]; if (label ne null) label.categoryValue else "(null)" }
 
   def serialize(stream: OutputStream) {
     import cc.factorie.util.CubbieConversions._
@@ -63,15 +62,15 @@ class  ChainPosTagger extends DocumentAnnotator {
     PosFeaturesDomain.freeze()
     testSentences.foreach(initPOSFeatures)
     def evaluate() {
-      (trainSentences ++ testSentences).foreach(s => model.maximize(s.tokens.map(_.attr[LabeledPennPosTag]))(null))
-      println("Train accuracy: "+ HammingObjective.accuracy(trainSentences.flatMap(s => s.tokens.map(_.attr[LabeledPennPosTag]))))
-      println("Test accuracy: "+ HammingObjective.accuracy(testSentences.flatMap(s => s.tokens.map(_.attr[LabeledPennPosTag]))))
+      (trainSentences ++ testSentences).foreach(s => model.maximize(s.tokens.map(_.attr[A with LabeledVar]))(null))
+      println("Train accuracy: "+ HammingObjective.accuracy(trainSentences.flatMap(s => s.tokens.map(_.attr[A with LabeledVar]))))
+      println("Test accuracy: "+ HammingObjective.accuracy(testSentences.flatMap(s => s.tokens.map(_.attr[A with LabeledVar]))))
     }
     val examples =
     if(useHingeLoss)
-      trainSentences.map(sentence => new model.ChainStructuredSVMExample(sentence.tokens.map(_.attr[LabeledPennPosTag]))).toSeq
+      trainSentences.map(sentence => new model.ChainStructuredSVMExample(sentence.tokens.map(_.attr[A with LabeledMutableDiscreteVar]))).toSeq
     else
-      trainSentences.map(sentence => new model.ChainLikelihoodExample(sentence.tokens.map(_.attr[LabeledPennPosTag])))
+      trainSentences.map(sentence => new model.ChainLikelihoodExample(sentence.tokens.map(_.attr[A with LabeledMutableDiscreteVar])))
     //val optimizer = new cc.factorie.optimize.AdaGrad(rate=lrate)
     val optimizer = new cc.factorie.optimize.AdaGradRDA(rate=lrate, l1=l1Factor/examples.length, l2=l2Factor/examples.length)
     Trainer.onlineTrain(model.parameters, examples, maxIterations=numIterations, optimizer=optimizer, evaluate=evaluate, useParallelTrainer = false)
@@ -81,12 +80,12 @@ class  ChainPosTagger extends DocumentAnnotator {
   object PosFeaturesDomain extends CategoricalVectorDomain[String]
   class PosFeatures(val token:Token) extends BinaryFeatureVectorVariable[String] { def domain = PosFeaturesDomain; override def skipNonCategories = true }
 
-
-  val model = new ChainModel[PennPosTag, PosFeatures, Token](PennPosDomain,
+  val posDomain = tagConstructor(null).domain
+  val model = new ChainModel[A, PosFeatures, Token](posDomain,
     PosFeaturesDomain,
     l => l.token.attr[PosFeatures],
     l => l.token,
-    t => t.attr[PennPosTag]){
+    t => t.attr[A]){
     useObsMarkov = false
   }
 
@@ -120,14 +119,14 @@ class  ChainPosTagger extends DocumentAnnotator {
   }
 }
 
-class WSJChainPosTagger(url:java.net.URL) extends ChainPosTagger(url)
+class WSJChainPosTagger(url:java.net.URL) extends ChainPosTagger((t:Token) => new PennPosTag(t, 0), url)
 object WSJChainPosTagger extends WSJChainPosTagger(ClasspathURL[WSJChainPosTagger](".factorie"))
 
-class OntonotesChainPosTagger(url:java.net.URL) extends ChainPosTagger(url)
+class OntonotesChainPosTagger(url:java.net.URL) extends ChainPosTagger((t:Token) => new PennPosTag(t, 0), url)
 object OntonotesChainPosTagger extends OntonotesChainPosTagger(ClasspathURL[OntonotesChainPosTagger](".factorie"))
 
 
-object ChainPosTrainer extends HyperparameterMain {
+class ChainPosTrainer[A<:PosTag](tagConstructor:(Token)=>A)(implicit ct:ClassTag[A]) extends HyperparameterMain {
   def evaluateParameters(args: Array[String]): Double = {
     implicit val random = new scala.util.Random(0)
     val opts = new ForwardPosOptions
@@ -135,7 +134,7 @@ object ChainPosTrainer extends HyperparameterMain {
     assert(opts.trainFile.wasInvoked)
     // Expects three command-line arguments: a train file, a test file, and a place to save the model in
     // the train and test files are supposed to be in OWPL format
-    val pos = new ChainPosTagger
+    val pos = new ChainPosTagger(tagConstructor)
 
     val trainDocs = load.LoadOntonotes5.fromFilename(opts.trainFile.value)
     val testDocs =  load.LoadOntonotes5.fromFilename(opts.testFile.value)
@@ -156,7 +155,7 @@ object ChainPosTrainer extends HyperparameterMain {
               opts.rate.value, opts.delta.value, opts.cutoff.value, opts.updateExamples.value, opts.useHingeLoss.value, l1Factor=opts.l1.value, l2Factor=opts.l2.value)
     if (opts.saveModel.value) {
       pos.serialize(new FileOutputStream(new File(opts.modelFile.value)))
-      val pos2 = new ChainPosTagger
+      val pos2 = new ChainPosTagger(tagConstructor)
       pos2.deserialize(new FileInputStream(new java.io.File(opts.modelFile.value)))
     }
     val acc = HammingObjective.accuracy(testDocs.flatMap(d => d.sentences.flatMap(s => s.tokens.map(_.attr[LabeledPennPosTag]))))
@@ -165,6 +164,7 @@ object ChainPosTrainer extends HyperparameterMain {
     acc
   }
 }
+object ChainPosTrainer extends ChainPosTrainer((t:Token) => new PennPosTag(t, 0))
 
 object ChainPosOptimizer {
   def main(args: Array[String]) {

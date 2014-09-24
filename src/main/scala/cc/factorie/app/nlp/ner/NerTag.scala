@@ -12,6 +12,7 @@
    limitations under the License. */
 
 package cc.factorie.app.nlp.ner
+
 import cc.factorie.app.nlp._
 import cc.factorie.variable._
 
@@ -21,9 +22,13 @@ import cc.factorie.variable._
      More specific subclasses have a domain, such as BilouConllNerDomain.
      @author Andrew McCallum */
 abstract class NerTag(val token:Token, initialCategory:String) extends CategoricalVariable(initialCategory) {
-  /** Return "PER" instead of "I-PER". */
-  def shortCategoryValue: String = if (categoryValue.length > 1 && categoryValue(1) == '-') categoryValue.substring(2) else categoryValue
-}
+   /** Return "PER" instead of "I-PER". */
+   def baseCategoryValue: String = if (categoryValue.length > 1 && categoryValue(1) == '-') categoryValue.substring(2) else categoryValue
+
+   @deprecated("Use baseCategoryValue instead. This will be removed in the next release.")
+   def shortCategoryValue: String = baseCategoryValue
+ }
+
 
 /** A categorical variable holding the named entity type of a TokenSpan.
     More specific subclasses have a domain, such as ConllNerDomain.

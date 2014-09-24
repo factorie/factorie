@@ -16,13 +16,14 @@ import org.bson.BSONObject
 import scala.collection.JavaConversions._
 import com.mongodb._
 import org.bson.types.BasicBSONList
-import cc.factorie.util.Cubbie
+import cc.factorie.util.{DoubleSeq, IntSeq, Cubbie, ArrayIntSeq, ArrayDoubleSeq}
 import collection.{Map => GenericMap, mutable, JavaConversions}
 import scala.collection.mutable.ArrayBuffer
 import scala._
 import scala.Predef._
 import scala.Some
 import scala.language.implicitConversions
+import java.nio.{ByteBuffer, IntBuffer}
 
 
 /**
@@ -389,11 +390,43 @@ trait LazyCubbieConverter[C <: Cubbie] extends MongoCubbieConverter[C] {
 }
 
 
+
 /**
  * Helper methods to convert cubbies into mongo objects and vice versa.
  */
 object MongoCubbieConverter {
+  
+  // Values 0x80 through 0xff are available for user-defined types.  See BSON spec: http://bsonspec.org/spec.html
+  val intSeqMongoType: Byte = 0xf0.asInstanceOf[Byte]
+  val doubleSeqMongoType: Byte = 0xf1.asInstanceOf[Byte]
 
+  // Methods and classes for converting Mongo binary byte arry to IntSeq and vice versa
+  def intSeqToByteArray(is:IntSeq): Array[Byte] = {
+    val len = is.length; val byteBuf = ByteBuffer.allocate(len * 4); val intBuf = byteBuf.asIntBuffer 
+    intBuf.put(is._rawArray, 0, len); byteBuf.array
+  }
+  def byteArrayToIntSeq(ba:Array[Byte]): ArrayIntSeq = {
+    val byteBuf = ByteBuffer.wrap(ba); val len = ba.length / 4; val intBuf = byteBuf.asIntBuffer
+    // TODO Note this still double-allocates memory :-(  Is there no way to convert a byte array to a double array *in place*??
+    val intArray = new Array[Int](len); intBuf.get(intArray); new ArrayIntSeq(intArray) 
+    //assert(intBuf.hasArray); new ArrayIntSeq(intBuf.array) // Doesn't work because this intBuf doesn't have a backing array
+  }
+  class IntSeqBinary(is: IntSeq) extends org.bson.types.Binary(intSeqMongoType, intSeqToByteArray(is))
+  
+  // Methods and classes for converting Mongo binary byte arry to DoubleSeq and vice versa
+  def doubleSeqToByteArray(ds:DoubleSeq): Array[Byte] = {
+    val len = ds.length; val byteBuf = ByteBuffer.allocate(len * 8); val intBuf = byteBuf.asDoubleBuffer 
+    intBuf.put(ds._rawArray, 0, len); byteBuf.array
+  }
+  def byteArrayToDoubleSeq(ba:Array[Byte]): ArrayDoubleSeq = {
+    val byteBuf = ByteBuffer.wrap(ba); val len = ba.length / 8; val doubleBuf = byteBuf.asDoubleBuffer
+    // TODO Note this still double-allocates memory :-(  Is there no way to convert a byte array to a double array *in place*??
+    val doubleArray = new Array[Double](len); doubleBuf.get(doubleArray); new ArrayDoubleSeq(doubleArray) 
+    //assert(doubleBuf.hasArray); new ArrayDoubleSeq(doubleBuf.array) // Doesn't work because this doubleBuf doesn't have a backing array
+  }
+  class DoubleSeqBinary(ds: DoubleSeq) extends org.bson.types.Binary(doubleSeqMongoType, doubleSeqToByteArray(ds))
+
+  
   def eagerDBO(cubbie: Cubbie): DBObject = {
     toMongo(cubbie._map).asInstanceOf[DBObject]
   }
@@ -420,6 +453,8 @@ object MongoCubbieConverter {
           dbMap.put(key.asInstanceOf[String], mongoValue)
         }
         dbMap
+      case is:IntSeq => new IntSeqBinary(is)
+      case ds:DoubleSeq => new DoubleSeqBinary(ds)
       case l: Seq[_] =>
         val dbList = new BasicDBList
         for (element <- l) dbList.add(toMongo(element).asInstanceOf[AnyRef])
@@ -430,8 +465,12 @@ object MongoCubbieConverter {
 
   def toCubbie(any: Any): Any = {
     any match {
+      case binary: org.bson.types.Binary => binary.getType match {
+        case `intSeqMongoType` => byteArrayToIntSeq(binary.getData)
+        case `doubleSeqMongoType` => byteArrayToDoubleSeq(binary.getData)
+      }
       case dbList: BasicBSONList =>
-        val list = new ArrayBuffer[Any]
+        val list = new ArrayBuffer[Any](dbList.length)
         for (element <- dbList) list += toCubbie(element)
         list
       case dbo: DBObject =>
@@ -444,6 +483,10 @@ object MongoCubbieConverter {
 
   def toLazyCubbie(any: Any): Any = {
     any match {
+      case binary: org.bson.types.Binary => binary.getType match { // TODO Note this is not lazy
+        case `intSeqMongoType` => byteArrayToIntSeq(binary.getData)
+        case `doubleSeqMongoType` => byteArrayToDoubleSeq(binary.getData)
+      }
       case dbList: BasicBSONList => new BasicBSONBSeq(dbList)
       case dbo: BSONObject => new BSONMap(dbo)
       case _ => any

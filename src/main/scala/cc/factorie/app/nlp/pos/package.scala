@@ -12,6 +12,10 @@
    limitations under the License. */
 package cc.factorie.app.nlp
 
+import cc.factorie.variable.MutableCategoricalVar
+
 package object pos {
-  //lazy val POS1 = ForwardPOSTagger
+  def pennPosLabelMaker(tok: Token, labels: Seq[String]): Seq[MutableCategoricalVar[String]] = {
+    Seq(new LabeledPennPosTag(tok, if(labels(0) == "XX") "PUNC" else labels(0)))
+  }
 }

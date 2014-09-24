@@ -57,6 +57,7 @@ trait Tensor1 extends Tensor {
   // TODO: * could be either dot or outer.  Resolve 1xN vs Nx1 status of Tensor1
   // I think it should mean * since that is consistent with matrix-vector being "*" -luke
   // def *(t: Tensor1): Double = this dot t
+  //... or it could be Hadamard product
   def *(t: Tensor2): Tensor1 = t.leftMultiply(this)
   @inline final def length: Int = dim1
   override def copy: Tensor1 = throw new Error("Method copy not defined on class "+getClass.getName)
@@ -93,6 +94,16 @@ class DenseTensor1(val dim1:Int) extends DenseTensorLike1 {
   def this(dim1:Int, fillValue:Double) = { this(dim1); java.util.Arrays.fill(_values, fillValue) }
   override def copy: DenseTensor1 = { val c = new DenseTensor1(dim1); System.arraycopy(_values, 0, c._values, 0, length); c }
   override def blankCopy: DenseTensor1 = new DenseTensor1(dim1)
+  // TODO I added it, but I'm not sure we should we have this method, or whether we should implement it in the Tensor trait.
+  // See also comments about "def *" in Tensor1 above.  -akm
+  /** Return the Hadamard product */ 
+  def *(t:DenseTensor1): DenseTensor1 = {
+    val result = this.copy // TODO We should arrange to get rid of this cast.
+    val a = result.asArray
+    val b = t.asArray
+    val len = length; var i = 0; while (i < len) { a(i) *= b(i); i += 1 }
+    result
+  }
 }
 // TODO Consider something like the following for Scala 2.10:
 // implicit class DenseTensor1(override val asArray:Array[Double]) extends DenseTensorLike1 {

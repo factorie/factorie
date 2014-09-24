@@ -38,6 +38,8 @@ object ParseTree {
   val rootIndex = -1
   val noIndex = -2
 }
+
+// TODO This initialization is really inefficient.  Fix it. -akm
 class ParseTree(val sentence:Sentence, theTargetParents:Seq[Int], theTargetLabels:Seq[String]) {
   def this(sentence:Sentence) = this(sentence, Array.fill[Int](sentence.length)(ParseTree.noIndex), Array.tabulate(sentence.length)(i => ParseTreeLabelDomain.defaultCategory)) // Note: this puts in dummy target data which may be confusing
   val _labels = theTargetLabels.map(s => new ParseTreeLabel(this, s)).toArray

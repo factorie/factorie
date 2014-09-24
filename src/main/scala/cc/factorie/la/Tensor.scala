@@ -60,6 +60,7 @@ trait Tensor extends MutableDoubleSeq with Serializable {
   def -(that:Tensor): Tensor = { val t = this.copy; t -= that; t }
   
   def normalized: Tensor = { val t = copy; t.normalize(); t } // TODO Make this return Proportions, then fix BP
+  def projected(maxNorm:Double): Tensor = { val t = copy; t.project(maxNorm); t }
   def expNormalized: Tensor = { val t = copy; t.expNormalize(); t } // TODO Make this return Proportions, then fix BP
   def isUniform = false
   def stringPrefix = getClass.getName // "Tensor"

@@ -252,6 +252,7 @@ abstract class CorefSystem[CoreferenceStructure] extends DocumentAnnotator with 
   }
 
   def process(document: Document) = {
+    document.annotators += classOf[WithinDocCoref] -> this.getClass
     if(document.getCoref.mentions.isEmpty)
       annotateMentions(document)
     infer(document.getCoref)
