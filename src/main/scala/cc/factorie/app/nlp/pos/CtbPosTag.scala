@@ -53,7 +53,9 @@ object CtbPosDomain extends CategoricalDomain[String] {
 }
 
 class CtbPosTag(token: Token, initialIndex: Int) extends PosTag(token, initialIndex) {
-  def this(token: Token, initialCategory: String) = this(token, CtbPosDomain.index(initialCategory))
+  def this(token: Token, initialCategory: String) = {
+    this(token, CtbPosDomain.index(initialCategory.split('-')(0)))
+  }
   final def domain = CtbPosDomain
   def isNoun = domain.isNoun(categoryValue)
   def isProperNoun = domain.isProperNoun(categoryValue)

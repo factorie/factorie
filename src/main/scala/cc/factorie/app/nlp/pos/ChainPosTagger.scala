@@ -24,7 +24,7 @@ import scala.reflect.ClassTag
 /** A linear-chain CRF part-of-speech tagger, doing inference by Viterbi.
     @author Alexandre Passos, Andrew McCallum
  */
-class  ChainPosTagger[A<:PosTag](tagConstructor:(Token)=>A)(implicit ct:ClassTag[A]) extends DocumentAnnotator {
+class ChainPosTagger[A<:PosTag](tagConstructor:(Token)=>A)(implicit ct:ClassTag[A]) extends DocumentAnnotator {
   def this(tagConstructor:(Token)=>A, url:java.net.URL)(implicit ct:ClassTag[A]) = { this(tagConstructor); deserialize(url.openConnection().getInputStream) }
   def process(document: Document) = {
     document.sentences.foreach(s => {
@@ -38,7 +38,7 @@ class  ChainPosTagger[A<:PosTag](tagConstructor:(Token)=>A)(implicit ct:ClassTag
   }
 
   def prereqAttrs = Seq(classOf[Token], classOf[Sentence])
-  def postAttrs = Seq(classOf[PennPosTag])
+  def postAttrs = Seq(ct.runtimeClass)
   def tokenAnnotationString(token: Token) = { val label = token.attr[A with LabeledVar]; if (label ne null) label.categoryValue else "(null)" }
 
   def serialize(stream: OutputStream) {
@@ -89,6 +89,14 @@ class  ChainPosTagger[A<:PosTag](tagConstructor:(Token)=>A)(implicit ct:ClassTag
     useObsMarkov = false
   }
 
+  def initPOSFeatures(sentence: Sentence): Unit
+}
+
+class WSJChainPosTagger extends ChainPosTagger((t:Token) => new PennPosTag(t, 0)) {
+  def this(url: java.net.URL) = {
+    this()  
+    deserialize(url.openConnection().getInputStream)
+  }
 
   def initPOSFeatures(sentence: Sentence): Unit = {
     import cc.factorie.app.strings.simplifyDigits
@@ -118,16 +126,51 @@ class  ChainPosTagger[A<:PosTag](tagConstructor:(Token)=>A)(implicit ct:ClassTag
     addNeighboringFeatureConjunctions(sentence.tokens, (t: Token) => t.attr[PosFeatures], "W=[^@]*$", List(-2), List(-1), List(1), List(-2,-1), List(-1,0))
   }
 }
-
-class WSJChainPosTagger(url:java.net.URL) extends ChainPosTagger((t:Token) => new PennPosTag(t, 0), url)
 object WSJChainPosTagger extends WSJChainPosTagger(ClasspathURL[WSJChainPosTagger](".factorie"))
 
-class OntonotesChainPosTagger(url:java.net.URL) extends ChainPosTagger((t:Token) => new PennPosTag(t, 0), url)
+class OntonotesChainPosTagger extends ChainPosTagger((t:Token) => new PennPosTag(t, 0)) {
+  def this(url: java.net.URL) = {
+    this()  
+    deserialize(url.openConnection().getInputStream)
+  }
+
+  def initPOSFeatures(sentence: Sentence): Unit = {
+    import cc.factorie.app.strings.simplifyDigits
+    for (token <- sentence.tokens) {
+      if(token.attr[PosFeatures] ne null)
+        token.attr.remove[PosFeatures]
+
+      val features = token.attr += new PosFeatures(token)
+      val rawWord = token.string
+      val word = simplifyDigits(rawWord).toLowerCase
+      features += "W="+word
+      features += "STEM=" + cc.factorie.app.strings.porterStem(word)
+      features += "SHAPE2=" + cc.factorie.app.strings.stringShape(rawWord, 2)
+      features += "SHAPE3=" + cc.factorie.app.strings.stringShape(rawWord, 3)
+      // pre/suf of length 1..9
+      //for (i <- 1 to 9) {
+      val i = 3
+      features += "SUFFIX" + i + "=" + word.takeRight(i)
+      features += "PREFIX" + i + "=" + word.take(i)
+      //}
+      if (token.isCapitalized) features += "CAPITALIZED"
+      if (token.string.matches("[A-Z]")) features += "CONTAINS_CAPITAL"
+      if (token.string.matches("-")) features += "CONTAINS_DASH"
+      if (token.containsDigit) features += "NUMERIC"
+      if (token.isPunctuation) features += "PUNCTUATION"
+    }
+    addNeighboringFeatureConjunctions(sentence.tokens, (t: Token) => t.attr[PosFeatures], "W=[^@]*$", List(-2), List(-1), List(1), List(-2,-1), List(-1,0))
+  }
+}
 object OntonotesChainPosTagger extends OntonotesChainPosTagger(ClasspathURL[OntonotesChainPosTagger](".factorie"))
 
-class CtbChainPosTagger(url:java.net.URL) extends ChainPosTagger((t:Token) => new CtbPosTag(t, 0), url) {
+class CtbChainPosTagger extends ChainPosTagger((t:Token) => new CtbPosTag(t, 0)) {
+  def this(url: java.net.URL) = {
+    this()  
+    deserialize(url.openConnection().getInputStream)
+  }
 
-  override def initPOSFeatures(sentence: Sentence): Unit = {
+  def initPOSFeatures(sentence: Sentence): Unit = {
     import cc.factorie.app.chineseStrings._
 
     for (token <- sentence.tokens) {
@@ -151,18 +194,18 @@ class CtbChainPosTagger(url:java.net.URL) extends ChainPosTagger((t:Token) => ne
 }
 object CtbChainPosTagger extends CtbChainPosTagger(ClasspathURL[CtbChainPosTagger](".factorie"))
 
-class ChainPosTrainer[A<:PosTag](tagConstructor:(Token)=>A, loadingMethod:(String)=>Seq[Document])(implicit ct:ClassTag[A]) extends HyperparameterMain {
+class ChainPosTrainer[A<:PosTag](tagConstructor: (t:Token) => A, loadingMethod:(String)=>Seq[Document])(implicit ct:ClassTag[A]) extends HyperparameterMain {
   def evaluateParameters(args: Array[String]): Double = {
     implicit val random = new scala.util.Random(0)
     val opts = new ForwardPosOptions
     opts.parse(args)
-    assert(opts.trainFile.wasInvoked)
+    assert(opts.trainDir.wasInvoked)
     // Expects three command-line arguments: a train file, a test file, and a place to save the model in
     // the train and test files are supposed to be in OWPL format
-    val pos = new ChainPosTagger(tagConstructor)
+    val pos = taggerConstructor()
 
-    val trainDocs = loadingMethod(opts.trainFile.value)
-    val testDocs =  loadingMethod(opts.testFile.value)
+    val trainDocs = loadingMethod(opts.trainDir.value)
+    val testDocs =  loadingMethod(opts.testDir.value)
 
     //for (d <- trainDocs) println("POS3.train 1 trainDoc.length="+d.length)
     println("Read %d training tokens.".format(trainDocs.map(_.tokenCount).sum))
@@ -180,21 +223,21 @@ class ChainPosTrainer[A<:PosTag](tagConstructor:(Token)=>A, loadingMethod:(Strin
               opts.rate.value, opts.delta.value, opts.cutoff.value, opts.updateExamples.value, opts.useHingeLoss.value, l1Factor=opts.l1.value, l2Factor=opts.l2.value)
     if (opts.saveModel.value) {
       pos.serialize(new FileOutputStream(new File(opts.modelFile.value)))
-      val pos2 = new ChainPosTagger(tagConstructor)
+      val pos2 = taggerConstructor()
       pos2.deserialize(new FileInputStream(new java.io.File(opts.modelFile.value)))
     }
-    val acc = HammingObjective.accuracy(testDocs.flatMap(d => d.sentences.flatMap(s => s.tokens.map(_.attr[LabeledPennPosTag]))))
+    val acc = HammingObjective.accuracy(testDocs.flatMap(d => d.sentences.flatMap(s => s.tokens.map(_.attr[A with LabeledVar]))))
     if(opts.targetAccuracy.wasInvoked) cc.factorie.assertMinimalAccuracy(acc,opts.targetAccuracy.value.toDouble)
 
     acc
   }
 }
-object ChainPosTrainer extends ChainPosTrainer(
-  (t:Token) => new PennPosTag(t, 0),
-  (dirName: String) => load.LoadOntonotes5.fromFile(dirName)
+object OntonotesChainPosTrainer extends ChainPosTrainer(
+  () => new OntonotesChainPosTagger,
+  (dirName: String) => load.LoadOntonotes5.fromFilename(dirName)
 )
 object CtbChainPosTrainer extends ChainPosTrainer(
-  (t:Token) => new CtbPosTag(t, 0), 
+  () => new CtbChainPosTagger,
   (dirName: String) => {
     val directory = new File(dirName)
 
@@ -205,7 +248,7 @@ object CtbChainPosTrainer extends ChainPosTrainer(
        line <- scala.io.Source.fromFile(file, "utf-8").getLines
        if line(0) != '<'
        sentence = new Sentence(document)
-       wordLabelPair <- line.split(' ').map(_.split('_'))
+       wordLabelPair <- line.split(' ').map( pair => pair.split('_') )
        token = new Token(sentence, wordLabelPair(0))
        labeledTag = token.attr += new LabeledCtbPosTag(token, wordLabelPair(1))
      } yield document
@@ -213,74 +256,18 @@ object CtbChainPosTrainer extends ChainPosTrainer(
   }
 )
 
-/*
-class CtbChainPosTrainer[A<:PosTag](tagConstructor:(Token)=>A)(implicit ct:ClassTag[A]) extends HyperparameterMain {
-  def evaluateParameters(args: Array[String]): Double = {
-    implicit val random = new scala.util.Random(0)
-    val opts = new ForwardPosOptions
-    opts.parse(args)
-    assert(opts.trainFile.wasInvoked)
-
-    val pos = new ChainPosTagger(tagConstructor)
-
-    val trainDocs = getDocs(opts.trainFile.value)
-    val testDocs = getDocs(opts.testFile.value)
-
-    println("Read %d training tokens.".format(trainDocs.map(_.tokenCount).sum))
-    println("Read %d testing tokens.".format(testDocs.map(_.tokenCount).sum))
-
-    val trainPortionToTake = if(opts.trainPortion.wasInvoked) opts.trainPortion.value.toDouble  else 1.0
-    val testPortionToTake =  if(opts.testPortion.wasInvoked) opts.testPortion.value.toDouble  else 1.0
-    val trainSentencesFull = trainDocs.flatMap(_.sentences)
-    val trainSentences = trainSentencesFull.take((trainPortionToTake*trainSentencesFull.length).floor.toInt)
-    val testSentencesFull = testDocs.flatMap(_.sentences)
-    val testSentences = testSentencesFull.take((testPortionToTake*testSentencesFull.length).floor.toInt)
-
-
-    pos.train(trainSentences, testSentences,
-      opts.rate.value, opts.delta.value, opts.cutoff.value, opts.updateExamples.value, opts.useHingeLoss.value, l1Factor=opts.l1.value, l2Factor=opts.l2.value)
-    if (opts.saveModel.value) {
-      pos.serialize(new FileOutputStream(new File(opts.modelFile.value)))
-      val pos2 = new ChainPosTagger(tagConstructor)
-      pos2.deserialize(new FileInputStream(new java.io.File(opts.modelFile.value)))
-    }
-    val acc = HammingObjective.accuracy(testDocs.flatMap(d => d.sentences.flatMap(s => s.tokens.map(_.attr[LabeledPennPosTag]))))
-    if(opts.targetAccuracy.wasInvoked) cc.factorie.assertMinimalAccuracy(acc,opts.targetAccuracy.value.toDouble)
-
-    acc
-  }
-
-  def getDocs(dirName: String): Seq[Document] = {
-    val directory = new File(dirName)
-
-    (for{
-       file <- directory.listFiles
-       if file.isFile
-       document = new Document
-       line <- scala.io.Source.fromFile(file, "utf-8").getLines
-       if line(0) != '<'
-       sentence = new Sentence(document)
-       wordLabelPair <- line.split(' ').map(_.split('_'))
-       token = new Token(sentence, wordLabelPair(0))
-       labeledTag = token.attr += new LabeledCtbPosTag(token, wordLabelPair(1))
-     } yield document
-    ).toSeq
-  }
-}
-object CtbChainPosTrainer extends CtbChainPosTrainer((t: Token)=> new CtbPosTag(t, 0))
-*/
-
 object ChainPosOptimizer {
   def main(args: Array[String]) {
     val opts = new ForwardPosOptions
-    opts.parse(args)
+    val trainerName = args(0)
+    opts.parse(args.slice(1, opts.size))
     opts.saveModel.setValue(false)
     val l1 = cc.factorie.util.HyperParameter(opts.l1, new cc.factorie.util.LogUniformDoubleSampler(1e-10, 1e2))
     val l2 = cc.factorie.util.HyperParameter(opts.l2, new cc.factorie.util.LogUniformDoubleSampler(1e-10, 1e2))
     val rate = cc.factorie.util.HyperParameter(opts.rate, new cc.factorie.util.LogUniformDoubleSampler(1e-4, 1e4))
     val delta = cc.factorie.util.HyperParameter(opts.delta, new cc.factorie.util.LogUniformDoubleSampler(1e-4, 1e4))
     val cutoff = cc.factorie.util.HyperParameter(opts.cutoff, new cc.factorie.util.SampleFromSeq(List(0,1,2,3)))
-    val qs = new cc.factorie.util.QSubExecutor(60, "cc.factorie.app.nlp.pos.ChainPosTrainer")
+    val qs = new cc.factorie.util.QSubExecutor(60, trainerName)
     val optimizer = new cc.factorie.util.HyperParameterSearcher(opts, Seq(l1, l2, rate, delta, cutoff), qs.execute, 200, 180, 60)
     val result = optimizer.optimize()
     println("Got results: " + result.mkString(" "))
