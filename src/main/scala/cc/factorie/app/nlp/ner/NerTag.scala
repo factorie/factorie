@@ -12,9 +12,7 @@
    limitations under the License. */
 
 package cc.factorie.app.nlp.ner
-import cc.factorie._
 import cc.factorie.app.nlp._
-import cc.factorie.util.Cubbie
 import cc.factorie.variable._
 
 // A "Tag" is a categorical label associated with a token.

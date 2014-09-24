@@ -17,23 +17,131 @@ import cc.factorie.model._
 import cc.factorie.variable._
 import scala.reflect.ClassTag
 import cc.factorie.la.{Tensor, Tensor1}
-import scala.Some
 import cc.factorie.Parameters
 
 /**
  * @author John Sullivan
  */
-trait DebuggableTemplate {
-  protected var _debug: Boolean = false
-  def debugOn() = _debug = true
-  def debugOff() = _debug = false
-  def name: String
-  def debug(score: Double): String = score + " (" + name + ")"
+class EntitySizePrior[Vars <: NodeVariables[Vars]](val weight:Double=0.1, val exponent:Double=1.2, val saturation:Double=128)
+  extends TupleTemplateWithStatistics3[Node[Vars]#Exists,Node[Vars]#IsRoot,Node[Vars]#MentionCount]{
+
+  def unroll1(exists: Node[Vars]#Exists) = Factor(exists, exists.node.isRootVar, exists.node.mentionCountVar)
+  def unroll2(isRoot: Node[Vars]#IsRoot) = Factor(isRoot.node.existsVar, isRoot, isRoot.node.mentionCountVar)
+  def unroll3(mentionCount: Node[Vars]#MentionCount) = Factor(mentionCount.node.existsVar, mentionCount.node.isRootVar, mentionCount)
+
+  def score(exists: Node[Vars]#Exists#Value, isRoot: Node[Vars]#IsRoot#Value, mentionCount: Node[Vars]#MentionCount#Value) = if(exists.booleanValue && isRoot.booleanValue) {
+    math.min(saturation, math.pow(mentionCount, exponent)) * weight
+  } else {
+    0.0
+  }
+}
+
+class SingleBagTemplate[Vars <: NodeVariables[Vars]](initialWeight:Double, getBag:(Vars => BagOfWordsVariable), getScore:(BagOfWordsVariable => Double), val name:String)(implicit ct:ClassTag[Vars], params:Parameters)
+extends Template2[Node[Vars]#Exists, Vars]
+with DotFamily2[Node[Vars]#Exists, Vars]
+with DebuggableTemplate {
+
+  def unroll1(v: Node[Vars]#Exists) = Factor(v, v.node.variables)
+  def unroll2(v: Vars) = Factor(v.node.existsVar, v)
+  
+  override def statistics(exists: Node[Vars]#Exists#Value, vars:Vars) = if(exists.booleanValue) {
+    val score = getScore(getBag(vars))
+    report(score, t(0))
+    Tensor1(score)
+  } else {
+    report(0.0, t(0))
+    Tensor1(0.0)
+  }
+
+  private val t = Tensor1(initialWeight)
+  val _weights = params.Weights(t)
+  
+  def weights: Weights = _weights
+
 
 }
 
+class BagOfWordsEntropy[Vars <: NodeVariables[Vars]](initialWeight:Double, getBag:(Vars => BagOfWordsVariable), bagName:String = "")(implicit ct:ClassTag[Vars], params:Parameters)
+  extends SingleBagTemplate[Vars](initialWeight, getBag, {b =>
+    val bag = b.value
+    var entropy = 0.0
+    var n = 0.0
+    val l1Norm = bag.l1Norm
+    bag.asHashMap.foreach{ case(k,v) =>
+      entropy -= (v/l1Norm)*math.log(v/l1Norm)
+      n+=1.0
+    }
+    if(n>1)entropy /= scala.math.log(n) //normalized entropy in [0,1]
+    -entropy
+  }, "BagOfWordsEntropy: %s".format(bagName))
 
-abstract class ChildParentTemplate[Vars <: NodeVariables[Vars]](initWeights:Tensor1)(implicit v1:ClassTag[Vars], params:Parameters)
+class RootNodeBagTemplate[Vars <: NodeVariables[Vars]](initialWeight:Double, getBag:(Vars => BagOfWordsVariable), getScore:(BagOfWordsVariable => Double), val name:String)(implicit ct:ClassTag[Vars], params:Parameters)
+  extends Template3[Node[Vars]#Exists,Node[Vars]#IsRoot,Vars]
+  with DotFamily3[Node[Vars]#Exists,Node[Vars]#IsRoot,Vars]
+  with DebuggableTemplate {
+
+  def unroll1(exists: Node[Vars]#Exists) = Factor(exists, exists.node.isRootVar, exists.node.variables)
+  def unroll2(isRoot: Node[Vars]#IsRoot) = Factor(isRoot.node.existsVar, isRoot, isRoot.node.variables)
+  def unroll3(vars: Vars) = Factor(vars.node.existsVar, vars.node.isRootVar, vars)
+
+
+  override def statistics(exists: Node[Vars]#Exists#Value, isRoot: Node[Vars]#IsRoot#Value, vars: Vars) = if(exists.booleanValue && isRoot.booleanValue) {
+    val score = getScore(getBag(vars))
+    report(score, t(0))
+    Tensor1(score)
+  } else {
+    report(0.0, t(0))
+    Tensor1(0.0)
+  }
+
+  private val t = Tensor1(initialWeight)
+  val _weights = params.Weights(t)
+
+  def weights: Weights = _weights
+
+}
+
+class BagOfWordsSizePrior[Vars <: NodeVariables[Vars]](initialWeight:Double, getBag:(Vars => BagOfWordsVariable), bagName:String = "")(implicit ct:ClassTag[Vars], params:Parameters)
+  extends RootNodeBagTemplate[Vars](initialWeight, getBag, {bag => if (bag.size > 0) - bag.size.toDouble / bag.value.l1Norm else 0.0}, "BagOfWordsSizePrior: %s".format(bagName))
+
+class EmptyBagPenalty[Vars <: NodeVariables[Vars]](initialWeight:Double, getBag:(Vars => BagOfWordsVariable), bagName:String = "")(implicit ct:ClassTag[Vars], params:Parameters)
+  extends RootNodeBagTemplate[Vars](initialWeight, getBag, {bag => if (bag.size == 0) -1.0 else 0.0}, "EmptyBagPenalty: %s".format(bagName))
+
+class EntityNameTemplate[Vars <: NodeVariables[Vars]](val firstLetterWeight:Double=4.0, val fullNameWeight:Double=4.0,val weight:Double=64,val saturation:Double=128.0, val penaltyOnNoName:Double=2.0, getBag:(Vars => BagOfWordsVariable), bagName:String = "")(implicit ct:ClassTag[Vars], params:Parameters)
+  extends TupleTemplateWithStatistics3[Node[Vars]#Exists,Node[Vars]#IsRoot,Vars]
+  with DebuggableTemplate {
+
+  val name = "EntityNameTemplate: %s".format(bagName)
+
+  def unroll1(exists: Node[Vars]#Exists) = Factor(exists, exists.node.isRootVar, exists.node.variables)
+  def unroll2(isRoot: Node[Vars]#IsRoot) = Factor(isRoot.node.existsVar, isRoot, isRoot.node.variables)
+  def unroll3(vars: Vars) = Factor(vars.node.existsVar, vars.node.isRootVar, vars)
+
+
+  override def score(exists: Node[Vars]#Exists#Value, isRoot: Node[Vars]#IsRoot#Value, vars: Vars) = {
+    var score = 0.0
+    var firstLetterMismatches = 0
+    var nameMismatches = 0
+    val bag = getBag(vars)
+    bag.value.asHashMap.keySet.pairs.foreach { case(tokI, tokJ) =>
+      if(tokI.charAt(0) != tokJ.charAt(0)) {
+        firstLetterMismatches += 1
+      }
+      if(tokI.length > 1 && tokJ.length > 1) {
+        nameMismatches += tokI editDistance tokJ
+      }
+    }
+    score -= math.min(saturation, firstLetterMismatches * firstLetterWeight)
+    score -= math.min(saturation, nameMismatches * fullNameWeight)
+    if(bag.size == 0 && isRoot.booleanValue) {
+      score -= penaltyOnNoName
+    }
+    report(score, weight)
+    score * weight
+  }
+}
+
+abstract class ChildParentTemplate[Vars <: NodeVariables[Vars]](val initWeights:Tensor1)(implicit v1:ClassTag[Vars], params:Parameters)
   extends Template3[ArrowVariable[Node[Vars], Node[Vars]], Vars, Vars]
   with DotFamily3[ArrowVariable[Node[Vars], Node[Vars]], Vars, Vars]{
   override def unroll1(v: ArrowVariable[Node[Vars], Node[Vars]]) = Option(v.dst) match { // If the parent-child relationship exists, we generate factors for it
@@ -48,121 +156,77 @@ abstract class ChildParentTemplate[Vars <: NodeVariables[Vars]](initWeights:Tens
   def weights: Weights = _weights
 }
 
-class BagOfWordsTensorEntropy[Vars <:NodeVariables[Vars], T <: TensorVar](initialWeight:Double, getBag:(Vars => T))(implicit ct:ClassTag[Vars], params:Parameters)
-  extends Template2[Node[Vars]#Exists, Vars]
-  with DotFamily2[Node[Vars]#Exists, Vars]
-  with DebuggableTemplate {
-
-
-  def name: String = "BagOfWordsEntropy"
-
-  val _weights = params.Weights(Tensor1(initialWeight))
-  def weights: Weights = _weights
-
-  def unroll1(v: Node[Vars]#Exists) = Factor(v, v.node.variables)
-
-  def unroll2(v: Vars) = Factor(v.node.existsVar, v)
-
-  override def statistics(exists: Node[Vars]#Exists#Value, vars: Vars#Value) = {
-    val bag = getBag(vars).value
-    var entropy = 0.0
-    var n = 0.0
-    if(exists.booleanValue /*&& isEntity.booleanValue*/){
-      val l1Norm = bag.oneNorm
-      bag.foreachActiveElement{ case(k,v) =>
-        entropy -= (v/l1Norm)*math.log(v/l1Norm)
-        n+=1.0
-      }
-    }
-    if(n>1)entropy /= scala.math.log(n) //normalized entropy in [0,1]
-    if(entropy.isNaN) {
-      println("Warning entropy is NaN!")
-      println("n=:" + n)
-      println("active size: %d\tone norm: %.4f\t".format(bag.activeDomainSize, bag.oneNorm))
-      bag.foreachActiveElement{ case (index, value) =>
-        println("index:%d\tvalue:%.4f\t(value/oneNorm):%.4f\tlog(value/oneNorm:%.4f".format(index, value, value/bag.oneNorm, math.log(value/bag.oneNorm)))
-      }
-    }
-    entropy = -entropy
-    if(_debug)println("  "+debug(entropy*initialWeight))
-    Tensor1(entropy)
-  }
-}
-
-class BagOfWordsEntropy[Vars <:NodeVariables[Vars]](initialWeight:Double, getBag:(Vars => BagOfWordsVariable))(implicit ct:ClassTag[Vars], params:Parameters)
-  extends Template2[Node[Vars]#Exists, Vars]
-  with DotFamily2[Node[Vars]#Exists, Vars]
-  with DebuggableTemplate {
-
-
-  def name: String = "BagOfWordsEntropy"
-
-  val _weights = params.Weights(Tensor1(initialWeight))
-  def weights: Weights = _weights
-
-  def unroll1(v: Node[Vars]#Exists) = Factor(v, v.node.variables)
-
-  def unroll2(v: Vars) = Factor(v.node.existsVar, v)
-
-  override def statistics(exists: Node[Vars]#Exists#Value, vars: Vars#Value) = {
-    val bag = getBag(vars).value
-    var entropy = 0.0
-    var n = 0.0
-    if(exists.booleanValue /*&& isEntity.booleanValue*/){
-      val l1Norm = bag.l1Norm
-      bag.asHashMap.foreach{ case(k,v) =>
-        entropy -= (v/l1Norm)*math.log(v/l1Norm)
-        n+=1.0
-      }
-    }
-    if(n>1)entropy /= scala.math.log(n) //normalized entropy in [0,1]
-    if(entropy.isNaN) {
-      println("Warning entropy is NaN!")
-      println("n=:" + n)
-      println("active size: %d\tone norm: %.4f\t".format(bag.size, bag.l1Norm))
-      bag.asHashMap.foreach{ case (index, value) =>
-        println("index:%s\tvalue:%.4f\t(value/oneNorm):%.4f\tlog(value/oneNorm:%.4f".format(index, value, value/bag.l1Norm, math.log(value/bag.l1Norm)))
-      }
-    }
-    entropy = -entropy
-    if(_debug)println("  "+debug(entropy))
-    Tensor1(entropy)
-  }
-}
-
-abstract class BagOfWordsTemplate[Vars <: NodeVariables[Vars]](initialWeights: Tensor1)(implicit v1: ClassTag[Vars], params: Parameters)
-  extends Template1[Vars]
-  with DotFamily1[Vars] {
-  override def unroll1(v: Vars) = Option(v) match {
-    case Some(v) => Factor(v)
-    case None => Nil
-  }
-
-  val _weights: Weights = params.Weights(initialWeights)
-
-  def weights: Weights = _weights
-}
-
-abstract class StructuralTemplate[A <: Var](initialWeights: Tensor1)(implicit v1: ClassTag[A], params: Parameters)
-  extends Template1[A]
-  with DotFamily1[A] {
-
-  val _weights: Weights = params.Weights(initialWeights)
-
-  def weights: Weights = _weights
-}
-
-class ChildParentCosineDistance[Vars <: NodeVariables[Vars]](weight:Double, shift: Double, getBag:(Vars => BagOfWordsVariable))(implicit c:ClassTag[Vars], p:Parameters) extends ChildParentTemplate[Vars](Tensor1(weight)) with DebuggableTemplate {
-  override def name: String = "ChildParentCosineDistance: %s".format(getBag)
+class ChildParentCosineDistance[Vars <: NodeVariables[Vars]](weight:Double, shift: Double, getBag:(Vars => BagOfWordsVariable), bagName:String = "")(implicit c:ClassTag[Vars], p:Parameters) extends ChildParentTemplate[Vars](Tensor1(weight)) with DebuggableTemplate {
+  val name: String = "ChildParentCosineDistance: %s".format(bagName)
 
   override def statistics(v1: (Node[Vars], Node[Vars]), child: Vars, parent: Vars): Tensor = {
     val childBag = getBag(child)
     val parentBag = getBag(parent)
     val v = childBag.value.cosineSimilarity(parentBag.value, childBag.value) + shift
 
-    if(_debug) {
-      println(debug(v*weight))
-    }
+    report(v, initWeights(0))
     Tensor1(v)
+  }
+}
+
+/**
+ * This feature serves to ensure that certain merges are forbidden. Specifically no two nodes that share the same value
+ * in the [[BagOfWordsVariable]] should be permitted to merge. Together with [[IdentityFactor]] it can create uniquely
+ * identifying features.
+ */
+class ExclusiveConstraintFactor[Vars <: NodeVariables[Vars]](getBag:(Vars => BagOfWordsVariable), bagName:String = "")(implicit ct:ClassTag[Vars])
+  extends TupleTemplateWithStatistics3[ArrowVariable[Node[Vars], Node[Vars]], Vars, Vars]
+  with DebuggableTemplate {
+  val name = "ExclusiveConstraintFactor: %s".format(bagName)
+
+  override def unroll1(v: ArrowVariable[Node[Vars], Node[Vars]]) = Option(v.dst) match { // If the parent-child relationship exists, we generate factors for it
+    case Some(dest) => Factor(v, v.src.variables, dest.variables)
+    case None => Nil
+  }
+  def unroll2(v: Vars) = Nil
+  def unroll3(v: Vars) = Nil
+
+  def score(v1: (Node[Vars], Node[Vars]), child: Vars, parent: Vars) = {
+    val childBag = getBag(child)
+    val parentBag = getBag(parent)
+    var result = 0.0
+    if((childBag.value.asHashMap.keySet & parentBag.--(childBag)(null).value.asHashMap.keySet).nonEmpty) {
+      result = -999999.0
+    } else {
+      result = 0.0
+    }
+    report(result, 1.0)
+    result
+  }
+}
+
+/**
+ * This feature serves to account for special information that may uniquely identify an entity. If a merge is proposed
+ * between two nodes that share a value in getBag they will be merged. This feature does not ensure that the value in
+ * getBag is unique, [[ExclusiveConstraintFactor]] manages that separately.
+ */
+class IdentityFactor[Vars <: NodeVariables[Vars]](getBag:(Vars => BagOfWordsVariable), bagName:String = "")(implicit ct:ClassTag[Vars])
+  extends TupleTemplateWithStatistics3[ArrowVariable[Node[Vars], Node[Vars]], Vars, Vars]
+  with DebuggableTemplate {
+  val name = "IdentityFactor: %s".format(bagName)
+
+  override def unroll1(v: ArrowVariable[Node[Vars], Node[Vars]]) = Option(v.dst) match { // If the parent-child relationship exists, we generate factors for it
+    case Some(dest) => Factor(v, v.src.variables, dest.variables)
+    case None => Nil
+  }
+  def unroll2(v: Vars) = Nil
+  def unroll3(v: Vars) = Nil
+
+  def score(v1: (Node[Vars], Node[Vars]), child: Vars, parent: Vars) = {
+    val childBag = getBag(child)
+    val parentBag = getBag(parent)
+    var result = 0.0
+    if(childBag.value.asHashMap.exists{case (id, _) => parentBag.value.asHashMap.contains(id)}) {
+      result = 999999.0
+    } else {
+      result = 0.0
+    }
+    report(result, 1.0)
+    result
   }
 }

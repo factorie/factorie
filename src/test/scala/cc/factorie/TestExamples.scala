@@ -62,7 +62,7 @@ class TestExamples {
     cc.factorie.tutorial.DocumentClassifier1.main(Array(dummyDir1, dummyDir2))
   }
 
-  val posFile = dummyFileWithContents("POS", "\nNN WORD=Hello\nNN WORD=World\n")
+  val posFile = dummyFileWithContents("POS", "\nHello NN\nWorld NN\n")
 
   @Test def testForwardBackwardPOS() {
     cc.factorie.tutorial.ForwardBackwardPOS.main(Array("--train", posFile, "--dev", posFile, "--test", posFile))

@@ -16,6 +16,7 @@ package cc.factorie.util
 import scala.util.Random
 import scala.util.Sorting
 import scala.reflect.ClassTag
+import scala.annotation.tailrec
 
 private class SplitIterator[A](t:Traversable[A], pred:(A => Boolean)) extends Iterator[Traversable[A]] {
   var _first:Traversable[A] = null
@@ -46,6 +47,19 @@ private class SplitIterator[A](t:Traversable[A], pred:(A => Boolean)) extends It
 final class TraversableExtras[A](val t: Traversable[A]) extends AnyVal {
 
   def split(pred:(A => Boolean)):Iterator[Traversable[A]] = new SplitIterator[A](t, pred)
+
+
+
+
+
+  def pairs:List[(A, A)] = {
+    @tailrec
+    def pairsHelper(build:List[(A, A)], xs:List[A]):List[(A, A)] = xs match {
+      case x :: rest => pairsHelper(build ::: rest.map(x -> _), rest)
+      case Nil => build
+    }
+    pairsHelper(List.empty[(A, A)], t.toList)
+  }
 
   def indexSafe(i: Int): Option[A] = if (i < t.size && i >= 0) Some(t.toSeq(i)) else None
 

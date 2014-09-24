@@ -251,8 +251,6 @@ trait NodeVariables[Self <: NodeVariables[Self]] extends SelfVariable[Self] {
 
   def getVariables: Seq[Var]
   def size:Int = getVariables.size
-
-  def nameString:String
 }
 
 trait Persistence {
@@ -284,16 +282,14 @@ trait NodeSource {
 }
 
 trait NodeCubbie[Vars <: NodeVariables[Vars], N  <: Node[Vars]] extends Cubbie {
-//  type NVC <: Cubbie
+
   val parentRef = RefSlot("parentRef", () => newNodeCubbie)
   val isMention = BooleanSlot("isMention")
   val wikiUrl = StringSlot("wurl")
   val canopies = StringListSlot("canopies")
   val moveable = BooleanSlot("mv")
   val source = StringSlot("src")
-//  protected var _nodeVarsCubbie: Option[NVC] = None
 
-//  def nodeVarsCubbie = _nodeVarsCubbie
 
   def newNode(v: Vars, id:String)    = new Node(v,id)(null) { protected val loadedFromDb = true }
   def newMention(v: Vars, id:String) = new Mention(v,id)(null) { protected val loadedFromDb = true }
@@ -302,10 +298,8 @@ trait NodeCubbie[Vars <: NodeVariables[Vars], N  <: Node[Vars]] extends Cubbie {
 
   def fetch(v: Vars) = if(isMention.value) newMention(v, this.id.toString) else newNode(v, this.id.toString)
 
-//  def storeVars(v: Vars): NVC
-
   def store(node: N) = {
-//    _nodeVarsCubbie = Some(storeVars(node.variables))
+
     node.parent match{
       case Some(n) => parentRef := n
       case None    =>
