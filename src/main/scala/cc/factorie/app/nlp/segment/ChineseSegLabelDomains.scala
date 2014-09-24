@@ -112,36 +112,4 @@ trait SegmentedCorpusLabeling {
   def isLast(i: Int, line: String): Boolean = 
     (i == (line.size - 1) || isWhiteSpace(line(i+1)) && !isWhiteSpace(line(i)))
 
-  def isEndOfSentence(character: Char): Boolean = {
-
-    List( 0x002C,
-          0x3002,
-          0xFE50,
-          0xFE52,
-          0xFE54,
-          0xFE56,
-          0xFE57,
-          0xFF01,
-          0xFF0C,
-          0xFF1B,
-          0xFF1F,
-          0xFF61
-    ).exists(
-      punct => character == punct
-    )
-  }
-
-  def isWhiteSpace(character: Char): Boolean = {
-
-    List( (0x0000, 0x0020), 
-          (0x0085, 0x0085), 
-          (0x2000, 0x200F),
-          (0x2028, 0x202F),
-          (0x205F, 0x206F),
-          (0x3000, 0x3000)
-    ).exists( 
-      range => character >= range._1 && character <= range._2
-    )
-  }
-
 }

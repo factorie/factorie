@@ -125,6 +125,31 @@ object WSJChainPosTagger extends WSJChainPosTagger(ClasspathURL[WSJChainPosTagge
 class OntonotesChainPosTagger(url:java.net.URL) extends ChainPosTagger((t:Token) => new PennPosTag(t, 0), url)
 object OntonotesChainPosTagger extends OntonotesChainPosTagger(ClasspathURL[OntonotesChainPosTagger](".factorie"))
 
+class CtbChainPosTagger(url:java.net.URL) extends ChainPosTagger((t:Token) => new CtbPosTag(t, 0), url) {
+
+  override def initPOSFeatures(sentence: Sentence): Unit = {
+    import cc.factorie.app.chineseStrings._
+
+    for (token <- sentence.tokens) {
+      if(token.attr[PosFeatures] ne null)
+        token.attr.remove[PosFeatures]
+
+      val features = token.attr += new PosFeatures(token)
+      val rawWord = token.string
+
+      features += "W="+word
+      features += "SUFFIX=" + word.takeRight(1)
+      features += "PREFIX=" + word.take(1)
+
+      if (hasPunctuation(rawWord)) features += "PUNCTUATION"
+      if (hasNumeric(rawWord)) features += "NUMERIC"
+      if (hasChineseNumeric(rawWord)) features += "CHINESE_NUMERIC"
+      if (hasAlpha(rawWord)) features += "ALPHA"
+    }
+    addNeighboringFeatureConjunctions(sentence.tokens, (t: Token) => t.attr[PosFeatures], "W=[^@]*$", List(-2), List(-1), List(1), List(-2,-1), List(-1,0))
+  }
+}
+object CtbChainPosTagger extends CtbChainPosTagger(ClasspathURL[CtbChainPosTagger](".factorie"))
 
 class ChainPosTrainer[A<:PosTag](tagConstructor:(Token)=>A)(implicit ct:ClassTag[A]) extends HyperparameterMain {
   def evaluateParameters(args: Array[String]): Double = {
@@ -165,6 +190,60 @@ class ChainPosTrainer[A<:PosTag](tagConstructor:(Token)=>A)(implicit ct:ClassTag
   }
 }
 object ChainPosTrainer extends ChainPosTrainer((t:Token) => new PennPosTag(t, 0))
+
+class CtbChainPosTrainer[A<:PosTag](tagConstructor:(Token)=>A)(implicit ct:ClassTag[A]) extends HyperparameterMain {
+  def evaluateParameters(args: Array[String]): Double = {
+    val opts = new ForwardPosOptions
+    opts.parse(args)
+    assert(opts.trainFile.wasInvoked)
+
+    val pos = new ChainPosTagger(tagConstructor)
+
+    val trainDocs = getDocs(opts.trainFile.value)
+    val testDocs = getDocs(opts.testFile.value)
+
+    println("Read %d training tokens.".format(trainDocs.map(_.tokenCount).sum))
+    println("Read %d testing tokens.".format(testDocs.map(_.tokenCount).sum))
+
+    val trainPortionToTake = if(opts.trainPortion.wasInvoked) opts.trainPortion.value.toDouble  else 1.0
+    val testPortionToTake =  if(opts.testPortion.wasInvoked) opts.testPortion.value.toDouble  else 1.0
+    val trainSentencesFull = trainDocs.flatMap(_.sentences)
+    val trainSentences = trainSentencesFull.take((trainPortionToTake*trainSentencesFull.length).floor.toInt)
+    val testSentencesFull = testDocs.flatMap(_.sentences)
+    val testSentences = testSentencesFull.take((testPortionToTake*testSentencesFull.length).floor.toInt)
+
+
+    pos.train(trainSentences, testSentences,
+      opts.rate.value, opts.delta.value, opts.cutoff.value, opts.updateExamples.value, opts.useHingeLoss.value, l1Factor=opts.l1.value, l2Factor=opts.l2.value)
+    if (opts.saveModel.value) {
+      pos.serialize(new FileOutputStream(new File(opts.modelFile.value)))
+      val pos2 = new ChainPosTagger(tagConstructor)
+      pos2.deserialize(new FileInputStream(new java.io.File(opts.modelFile.value)))
+    }
+    val acc = HammingObjective.accuracy(testDocs.flatMap(d => d.sentences.flatMap(s => s.tokens.map(_.attr[LabeledPennPosTag]))))
+    if(opts.targetAccuracy.wasInvoked) cc.factorie.assertMinimalAccuracy(acc,opts.targetAccuracy.value.toDouble)
+
+    acc
+  }
+
+  def getDocs(dirName: String): Seq[Document] = {
+    val directory = new File(dirName)
+
+    (for{
+       fileName <- directory.listFiles
+       file = new File(fileName)
+       if file.isFile
+       document = new Document
+       line <- scala.io.Source.fromFile(file, "utf-8").getLines
+       if line(0) != '<'
+       sentence = new Sentence(document)
+       wordLabelPair <- line.split(' ').map(_.split('_'))
+       token = new Token(sentence, wordLabelPair(0))
+       labeledTag = token.attr += new LabeledCtbPosTag(token, wordLabelPair(1))
+     } yield document
+    ).toSeq
+  }
+}
 
 object ChainPosOptimizer {
   def main(args: Array[String]) {
