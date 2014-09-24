@@ -13,12 +13,15 @@
 package cc.factorie.app.nlp.hcoref
 
 import cc.factorie.infer.Proposal
+import akka.event.LoggingAdapter
 
 /**
  * @author John Sullivan
  */
 trait DebugCoref[Vars <: NodeVariables[Vars]]{
   this: CorefSampler[Vars] with PairGenerator[Vars] with MoveGenerator[Vars]=>
+
+  val log:LoggingAdapter
 
   var printEvery:Int = 10000
 
@@ -60,10 +63,10 @@ trait DebugCoref[Vars <: NodeVariables[Vars]]{
       val maxMentions = rootMentions.max
       val minMentions = rootMentions.min
       val aveMentions = rootMentions.sum.toDouble / rootMentions.size
-      println(f"After $totalProps%d proposals $percentAccepted%.2f%% ($percentAcceptedThisRound%.2f%% this round) accepted in $elapsedFromBegin%.3f secs ($totalPropsPerSec%.2f proposals/sec). This round of $printEvery%d took $elapsedSecs%.3f secs ($propsPerSec%.2f proposals/sec)")
-      println(f"\t max depth: $maxDepth min depth: $minDepth ave depth: $aveDepth%.2f")
-      println(f"\t max children: $maxChildren min children: $minChildren ave children: $aveChildren%.2f")
-      println(f"\t max mentions: $maxMentions min mentions: $minMentions ave mentions: $aveMentions%.2f")
+      log.info(f"After $totalProps%d proposals $percentAccepted%.2f%% ($percentAcceptedThisRound%.2f%% this round) accepted in $elapsedFromBegin%.3f secs ($totalPropsPerSec%.2f proposals/sec). This round of $printEvery%d took $elapsedSecs%.3f secs ($propsPerSec%.2f proposals/sec)")
+      log.info(f"\t max depth: $maxDepth min depth: $minDepth ave depth: $aveDepth%.2f")
+      log.info(f"\t max children: $maxChildren min children: $minChildren ave children: $aveChildren%.2f")
+      log.info(f"\t max mentions: $maxMentions min mentions: $minMentions ave mentions: $aveMentions%.2f")
       //println("%d non mention samples".format(multiSamples))
       startTime = stopTime
       acceptedThisRound = 0.0

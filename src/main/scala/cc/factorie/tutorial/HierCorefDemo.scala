@@ -120,6 +120,7 @@ object HierCorefDemo {
       with NoSplitMoveGenerator[WikiCorefVars]
       with DebugCoref[WikiCorefVars] {
       def autoStopThreshold = 10000
+      val log = null
 
       def newInstance(implicit d: DiffList): Node[WikiCorefVars] = new Node[WikiCorefVars](new WikiCorefVars/*, nextId*/) {
         def canopyIds: Set[String] = Set.empty[String]
