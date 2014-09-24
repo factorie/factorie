@@ -504,7 +504,7 @@ class StackedChainNer[L<:NerTag](labelDomain: CategoricalDomain[String],
     ChainNer2FeaturesDomain.freeze()
     //println(trainDocuments(3).tokens.map(token => token.nerTag.target.categoryValue + " "+token.string+" "+token.attr[ChainNer2Features].toString).mkString("\n"))
     //println("Example Test Token features")
-    //println(testDocuments(1).tokens.map(token => token.nerTag.shortCategoryValue+" "+token.string+" "+token.attr[ChainNer2Features].toString).mkString("\n"))
+    //println(testDocuments(1).tokens.map(token => token.nerTag.baseCategoryValue+" "+token.string+" "+token.attr[ChainNer2Features].toString).mkString("\n"))
     (trainLabels ++ testLabels).foreach(_.setRandomly)
     val vars2 = for(td <- trainDocuments; sentence <- td.sentences if sentence.length > 1) yield sentence.tokens.map(_.attr[L with LabeledMutableDiscreteVar])
 
