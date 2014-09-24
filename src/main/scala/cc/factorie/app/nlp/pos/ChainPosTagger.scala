@@ -151,7 +151,7 @@ class CtbChainPosTagger(url:java.net.URL) extends ChainPosTagger((t:Token) => ne
 }
 object CtbChainPosTagger extends CtbChainPosTagger(ClasspathURL[CtbChainPosTagger](".factorie"))
 
-class ChainPosTrainer[A<:PosTag](tagConstructor:(Token)=>A)(implicit ct:ClassTag[A]) extends HyperparameterMain {
+class ChainPosTrainer[A<:PosTag](tagConstructor:(Token)=>A, loadingMethod:(String)=>Seq[Document])(implicit ct:ClassTag[A]) extends HyperparameterMain {
   def evaluateParameters(args: Array[String]): Double = {
     implicit val random = new scala.util.Random(0)
     val opts = new ForwardPosOptions
@@ -161,8 +161,8 @@ class ChainPosTrainer[A<:PosTag](tagConstructor:(Token)=>A)(implicit ct:ClassTag
     // the train and test files are supposed to be in OWPL format
     val pos = new ChainPosTagger(tagConstructor)
 
-    val trainDocs = load.LoadOntonotes5.fromFilename(opts.trainFile.value)
-    val testDocs =  load.LoadOntonotes5.fromFilename(opts.testFile.value)
+    val trainDocs = loadingMethod(opts.trainFile.value)
+    val testDocs =  loadingMethod(opts.testFile.value)
 
     //for (d <- trainDocs) println("POS3.train 1 trainDoc.length="+d.length)
     println("Read %d training tokens.".format(trainDocs.map(_.tokenCount).sum))
@@ -189,8 +189,28 @@ class ChainPosTrainer[A<:PosTag](tagConstructor:(Token)=>A)(implicit ct:ClassTag
     acc
   }
 }
-object ChainPosTrainer extends ChainPosTrainer((t:Token) => new PennPosTag(t, 0))
+object ChainPosTrainer extends ChainPosTrainer((t:Token) => new PennPosTag(t, 0), load.LoadOntonotes5.fromFile)
+object CtbChainPosTrainer extends ChainPosTrainer(
+  (t:Token) => new CtbPosTag(t, 0), 
+  (dirName: String) => {
+    val directory = new File(dirName)
 
+    (for{
+       file <- directory.listFiles
+       if file.isFile
+       document = new Document
+       line <- scala.io.Source.fromFile(file, "utf-8").getLines
+       if line(0) != '<'
+       sentence = new Sentence(document)
+       wordLabelPair <- line.split(' ').map(_.split('_'))
+       token = new Token(sentence, wordLabelPair(0))
+       labeledTag = token.attr += new LabeledCtbPosTag(token, wordLabelPair(1))
+     } yield document
+    ).toSeq
+  }
+)
+
+/*
 class CtbChainPosTrainer[A<:PosTag](tagConstructor:(Token)=>A)(implicit ct:ClassTag[A]) extends HyperparameterMain {
   def evaluateParameters(args: Array[String]): Double = {
     implicit val random = new scala.util.Random(0)
@@ -226,7 +246,6 @@ class CtbChainPosTrainer[A<:PosTag](tagConstructor:(Token)=>A)(implicit ct:Class
 
     acc
   }
-  object CtbChainPosTrainer extends CtbChainPosTrainer((t: Token)=> new CtbPosTag(t, 0))
 
   def getDocs(dirName: String): Seq[Document] = {
     val directory = new File(dirName)
@@ -245,6 +264,8 @@ class CtbChainPosTrainer[A<:PosTag](tagConstructor:(Token)=>A)(implicit ct:Class
     ).toSeq
   }
 }
+object CtbChainPosTrainer extends CtbChainPosTrainer((t: Token)=> new CtbPosTag(t, 0))
+*/
 
 object ChainPosOptimizer {
   def main(args: Array[String]) {
