@@ -95,21 +95,23 @@ object NLP {
       val out = new PrintStream(socket.getOutputStream, false, encoding)
       val in = scala.io.Source.fromInputStream(new DataInputStream(socket.getInputStream), encoding)
       assert(in ne null)
-      var document = load.LoadPlainText.fromString(in.mkString).head
-      document = pipeline.process(document)
-      //logStream.println("Processed %d tokens in %f seconds.".format(document.length, (System.currentTimeMillis - time) / 1000.0))
-      logStream.println("Processed %d tokens.".format(document.tokenCount))
-      out.println(document.owplString(annotators.map(p => p.tokenAnnotationString(_))))
-      val mentions = document.attr[MentionList]
-      if (mentions ne null) {
-        out.println("Mentions:")
-        for (mention <- mentions) {
-          out.print(mention.phrase)
-          for (annotator <- annotators) { val s = annotator.mentionAnnotationString(mention); if (s.length > 0) { out.print('\t'); out.print(s) } }
-          out.println()
+      for (line <- in.getLines()) {
+        var document = load.LoadPlainText.fromString(line).head
+        document = pipeline.process(document)
+        //logStream.println("Processed %d tokens in %f seconds.".format(document.length, (System.currentTimeMillis - time) / 1000.0))
+        logStream.println("Processed %d tokens.".format(document.tokenCount))
+        out.println(document.owplString(annotators.map(p => p.tokenAnnotationString(_))))
+        val mentions = document.attr[MentionList]
+        if (mentions ne null) {
+          out.println("Mentions:")
+          for (mention <- mentions) {
+            out.print(mention.phrase)
+            for (annotator <- annotators) { val s = annotator.mentionAnnotationString(mention); if (s.length > 0) { out.print('\t'); out.print(s) } }
+            out.println()
+          }
         }
+        for (annotator <- annotators) out.print(annotator.documentAnnotationString(document))
       }
-      for (annotator <- annotators) out.print(annotator.documentAnnotationString(document))
       out.close()
       in.close()
       socket.close()
