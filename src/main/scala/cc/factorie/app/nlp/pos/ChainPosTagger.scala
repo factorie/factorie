@@ -137,9 +137,9 @@ class CtbChainPosTagger(url:java.net.URL) extends ChainPosTagger((t:Token) => ne
       val features = token.attr += new PosFeatures(token)
       val rawWord = token.string
 
-      features += "W="+word
-      features += "SUFFIX=" + word.takeRight(1)
-      features += "PREFIX=" + word.take(1)
+      features += "W="+rawWord
+      features += "SUFFIX=" + rawWord.takeRight(1)
+      features += "PREFIX=" + rawWord.take(1)
 
       if (hasPunctuation(rawWord)) features += "PUNCTUATION"
       if (hasNumeric(rawWord)) features += "NUMERIC"
@@ -193,6 +193,7 @@ object ChainPosTrainer extends ChainPosTrainer((t:Token) => new PennPosTag(t, 0)
 
 class CtbChainPosTrainer[A<:PosTag](tagConstructor:(Token)=>A)(implicit ct:ClassTag[A]) extends HyperparameterMain {
   def evaluateParameters(args: Array[String]): Double = {
+    implicit val random = new scala.util.Random(0)
     val opts = new ForwardPosOptions
     opts.parse(args)
     assert(opts.trainFile.wasInvoked)
@@ -230,8 +231,7 @@ class CtbChainPosTrainer[A<:PosTag](tagConstructor:(Token)=>A)(implicit ct:Class
     val directory = new File(dirName)
 
     (for{
-       fileName <- directory.listFiles
-       file = new File(fileName)
+       file <- directory.listFiles
        if file.isFile
        document = new Document
        line <- scala.io.Source.fromFile(file, "utf-8").getLines

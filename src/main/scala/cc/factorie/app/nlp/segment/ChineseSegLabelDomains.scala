@@ -17,6 +17,7 @@ import scala.collection.mutable.ArrayBuffer
 import cc.factorie._
 import cc.factorie.app.nlp._
 import cc.factorie.variable._
+import cc.factorie.app.chineseStrings._
 
 abstract class SegmentationLabelDomain
   extends CategoricalDomain[String]
@@ -65,7 +66,7 @@ trait SegmentedCorpusLabeling {
     val labeledCorpus =
       fileLines.map( 
         line => (0 until line.size).filter( 
-          i => !isWhiteSpace(line(i)) 
+          i => !isWhiteSpace(line(i))
         ).map( 
           i => getLabeledCharacter(i, line) 
         ).toIndexedSeq
