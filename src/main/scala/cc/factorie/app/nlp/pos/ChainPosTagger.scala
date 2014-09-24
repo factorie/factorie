@@ -226,6 +226,7 @@ class CtbChainPosTrainer[A<:PosTag](tagConstructor:(Token)=>A)(implicit ct:Class
 
     acc
   }
+  object CtbChainPosTrainer extends CtbChainPosTrainer((t: Token)=> new CtbPosTag(t, 0))
 
   def getDocs(dirName: String): Seq[Document] = {
     val directory = new File(dirName)
