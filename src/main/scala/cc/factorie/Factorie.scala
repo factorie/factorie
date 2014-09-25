@@ -105,4 +105,4 @@ object Factorie {
   type MHSampler[T] = infer.MHSampler[T]
   val InferByGibbsSampling = infer.InferByGibbsSampling
   val MaximizeByIteratedConditionalModes = infer.MaximizeByIteratedConditionalModes
-}
+} 
