@@ -19,10 +19,16 @@ To accomplish the same with sbt, type
 $ ./sbt compile
 ```
 
-You might need additional memory for sbt, if so type
+You might need additional memory. If so, for sbt type
 
 ```
-export SBT_OPTS=-Xmx1g
+export SBT_OPTS="$SBT_OPTS -Xmx1g"
+```
+
+and for Maven type:
+
+```
+export MAVEN_OPTS="$MAVEN_OPTS -Xmx1g -XX:MaxPermSize=128m"
 ```
 
 To create a self-contained .jar, that contains FACTORIE plus all its dependencies, including the Scala runtime, type 
