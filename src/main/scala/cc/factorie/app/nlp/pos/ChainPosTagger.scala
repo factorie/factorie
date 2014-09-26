@@ -24,7 +24,7 @@ import scala.reflect.ClassTag
 /** A linear-chain CRF part-of-speech tagger, doing inference by Viterbi.
     @author Alexandre Passos, Andrew McCallum
  */
-class ChainPosTagger[A<:PosTag](val tagConstructor:(Token)=>A)(implicit ct:ClassTag[A]) extends DocumentAnnotator {
+abstract class ChainPosTagger[A<:PosTag](val tagConstructor:(Token)=>A)(implicit ct:ClassTag[A]) extends DocumentAnnotator {
   def this(tagConstructor:(Token)=>A, url:java.net.URL)(implicit ct:ClassTag[A]) = { this(tagConstructor); deserialize(url.openConnection().getInputStream) }
   def process(document: Document) = {
     document.sentences.foreach(s => {
