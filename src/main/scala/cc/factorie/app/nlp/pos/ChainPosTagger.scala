@@ -246,7 +246,7 @@ object CtbChainPosTrainer extends ChainPosTrainer[CtbPosTag, CtbChainPosTagger](
        if file.isFile
        document = new Document
        line <- scala.io.Source.fromFile(file, "utf-8").getLines
-       if line(0) != '<'
+       if line.size > 0 && line(0) != '<'
        sentence = new Sentence(document)
        wordLabelPair <- line.split(' ').map( pair => pair.split('_') )
        token = new Token(sentence, wordLabelPair(0))

@@ -21,6 +21,7 @@ object CtbPosDomain extends CategoricalDomain[String] {
     "CD",
     "OD",
     "M",
+    "X",
     "AD",
     "P",
     "CC",
@@ -54,7 +55,15 @@ object CtbPosDomain extends CategoricalDomain[String] {
 
 class CtbPosTag(token: Token, initialIndex: Int) extends PosTag(token, initialIndex) {
   def this(token: Token, initialCategory: String) = {
-    this(token, CtbPosDomain.index(initialCategory.split('-')(0)))
+    this(token, {
+      val filteredCategory = initialCategory.split('-')(0)
+      val initialIndex = CtbPosDomain.index(filteredCategory)
+
+      if(initialIndex < 0)
+        println(initialCategory)
+
+      initialIndex
+    })
   }
   final def domain = CtbPosDomain
   def isNoun = domain.isNoun(categoryValue)
