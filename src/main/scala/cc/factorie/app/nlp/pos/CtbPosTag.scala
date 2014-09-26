@@ -42,7 +42,8 @@ object CtbPosDomain extends CategoricalDomain[String] {
     "FW",
     "LB",
     "SB",
-    "BA"
+    "BA",
+    "URL"
   )
   freeze()
 
