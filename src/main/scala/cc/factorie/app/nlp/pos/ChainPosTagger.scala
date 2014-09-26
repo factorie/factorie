@@ -232,11 +232,11 @@ class ChainPosTrainer[A<:PosTag, B<:ChainPosTagger[A]](taggerConstructor: () => 
     acc
   }
 }
-object OntonotesChainPosTrainer extends ChainPosTrainer(
+object OntonotesChainPosTrainer extends ChainPosTrainer[PennPosTag, OntonotesChainPosTagger](
   () => new OntonotesChainPosTagger(),
   (dirName: String) => load.LoadOntonotes5.fromFilename(dirName)
 )
-object CtbChainPosTrainer extends ChainPosTrainer(
+object CtbChainPosTrainer extends ChainPosTrainer[CtbPosTag, CtbChainPosTagger](
   () => new CtbChainPosTagger(),
   (dirName: String) => {
     val directory = new File(dirName)
