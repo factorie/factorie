@@ -24,7 +24,7 @@ import scala.reflect.ClassTag
 /** A linear-chain CRF part-of-speech tagger, doing inference by Viterbi.
     @author Alexandre Passos, Andrew McCallum
  */
-class ChainPosTagger[A<:PosTag](tagConstructor:(Token)=>A)(implicit ct:ClassTag[A]) extends DocumentAnnotator {
+class ChainPosTagger[A<:PosTag](val tagConstructor:(Token)=>A)(implicit ct:ClassTag[A]) extends DocumentAnnotator {
   def this(tagConstructor:(Token)=>A, url:java.net.URL)(implicit ct:ClassTag[A]) = { this(tagConstructor); deserialize(url.openConnection().getInputStream) }
   def process(document: Document) = {
     document.sentences.foreach(s => {
@@ -194,7 +194,7 @@ class CtbChainPosTagger extends ChainPosTagger((t:Token) => new CtbPosTag(t, 0))
 }
 object CtbChainPosTagger extends CtbChainPosTagger(ClasspathURL[CtbChainPosTagger](".factorie"))
 
-class ChainPosTrainer[A<:PosTag](tagConstructor: (Token) => A, loadingMethod:(String) => Seq[Document])(implicit ct:ClassTag[A]) extends HyperparameterMain {
+class ChainPosTrainer[A<:ChainPosTagger](taggerConstructor: () => A, loadingMethod:(String) => Seq[Document])(implicit ct:ClassTag[A]) extends HyperparameterMain {
   def evaluateParameters(args: Array[String]): Double = {
     implicit val random = new scala.util.Random(0)
     val opts = new ForwardPosOptions
@@ -233,11 +233,11 @@ class ChainPosTrainer[A<:PosTag](tagConstructor: (Token) => A, loadingMethod:(St
   }
 }
 object OntonotesChainPosTrainer extends ChainPosTrainer(
-  () => new OntonotesChainPosTagger,
+  () => new OntonotesChainPosTagger(),
   (dirName: String) => load.LoadOntonotes5.fromFilename(dirName)
 )
 object CtbChainPosTrainer extends ChainPosTrainer(
-  () => new CtbChainPosTagger,
+  () => new CtbChainPosTagger(),
   (dirName: String) => {
     val directory = new File(dirName)
 
