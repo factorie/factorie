@@ -194,7 +194,7 @@ class CtbChainPosTagger extends ChainPosTagger((t:Token) => new CtbPosTag(t, 0))
 }
 object CtbChainPosTagger extends CtbChainPosTagger(ClasspathURL[CtbChainPosTagger](".factorie"))
 
-class ChainPosTrainer[A<:PosTag, B<:ChainPosTagger](taggerConstructor: () => B, loadingMethod:(String) => Seq[Document])(implicit ct:ClassTag[A]) extends HyperparameterMain {
+class ChainPosTrainer[A<:PosTag, B<:ChainPosTagger[A]](taggerConstructor: () => B, loadingMethod:(String) => Seq[Document])(implicit ct:ClassTag[A]) extends HyperparameterMain {
   def evaluateParameters(args: Array[String]): Double = {
     implicit val random = new scala.util.Random(0)
     val opts = new ForwardPosOptions
