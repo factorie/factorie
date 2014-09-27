@@ -213,18 +213,27 @@ class ChainPosTrainer[A<:PosTag, B<:ChainPosTagger[A]](taggerConstructor: () => 
 
     val trainPortionToTake = if(opts.trainPortion.wasInvoked) opts.trainPortion.value.toDouble  else 1.0
     val testPortionToTake =  if(opts.testPortion.wasInvoked) opts.testPortion.value.toDouble  else 1.0
+    println("Flatmapping Training Sentences")
     val trainSentencesFull = trainDocs.flatMap(_.sentences)
     val trainSentences = trainSentencesFull.take((trainPortionToTake*trainSentencesFull.length).floor.toInt)
+    println("Finished Flatmapping Training Sentences")
+    println("Flatmapping Testing Sentences")
     val testSentencesFull = testDocs.flatMap(_.sentences)
     val testSentences = testSentencesFull.take((testPortionToTake*testSentencesFull.length).floor.toInt)
+    println("Finished Flatmapping Testing Sentences")
 
-
+    println("Training")
     pos.train(trainSentences, testSentences,
               opts.rate.value, opts.delta.value, opts.cutoff.value, opts.updateExamples.value, opts.useHingeLoss.value, l1Factor=opts.l1.value, l2Factor=opts.l2.value)
+    println("Finished Training")
     if (opts.saveModel.value) {
+      println("Serializing Model")
       pos.serialize(new FileOutputStream(new File(opts.modelFile.value)))
+      println("Finished Serializing Model")
       val pos2 = taggerConstructor()
+      println("Deserializing Model")
       pos2.deserialize(new FileInputStream(new java.io.File(opts.modelFile.value)))
+      println("Finished Deserializing Model")
     }
     val acc = HammingObjective.accuracy(testDocs.flatMap(d => d.sentences.flatMap(s => s.tokens.map(_.attr[A with LabeledVar]))))
     if(opts.targetAccuracy.wasInvoked) cc.factorie.assertMinimalAccuracy(acc,opts.targetAccuracy.value.toDouble)
