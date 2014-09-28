@@ -58,11 +58,16 @@ abstract class ChainPosTagger[A<:PosTag](val tagConstructor:(Token)=>A)(implicit
 
   def train(trainSentences:Seq[Sentence], testSentences:Seq[Sentence], lrate:Double = 0.1, decay:Double = 0.01, cutoff:Int = 2, doBootstrap:Boolean = true, useHingeLoss:Boolean = false, numIterations: Int = 5, l1Factor:Double = 0.000001, l2Factor:Double = 0.000001)(implicit random: scala.util.Random) {
     // TODO Accomplish this TokenNormalization instead by calling POS3.preProcess
+    println("Initializing POS features for training sentences")
     trainSentences.foreach(initPOSFeatures)
+    println("Finished initializing POS features for training sentences")
     PosFeaturesDomain.freeze()
+    println("Initializing POS features for testing sentences")
     testSentences.foreach(initPOSFeatures)
+    println("Finished initializing POS features for testing sentences")
     def evaluate() {
-      (trainSentences ++ testSentences).foreach(s => model.maximize(s.tokens.map(_.attr[A with LabeledVar]))(null))
+      println("Evaluating")
+      (trainSentences ++ testSentences).foreach(s => {println("Maximizing"); model.maximize(s.tokens.map(_.attr[A with LabeledVar]))(null)} )
       println("Train accuracy: "+ HammingObjective.accuracy(trainSentences.flatMap(s => s.tokens.map(_.attr[A with LabeledVar]))))
       println("Test accuracy: "+ HammingObjective.accuracy(testSentences.flatMap(s => s.tokens.map(_.attr[A with LabeledVar]))))
     }
@@ -266,8 +271,8 @@ object CtbChainPosTrainer extends ChainPosTrainer[CtbPosTag, CtbChainPosTagger](
          if line.size > 0 && line(0) != '<'
          sentence = new Sentence(document)
          (word, label) <- line.split(' ').map( pair => {val (word, label) = pair.splitAt(pair.lastIndexOf('_')); (word, label.slice(1,label.size))} )
-         token = {val thang = new Token(sentence, word); print(thang.sentence.tokensString(" ")); thang}
-         labeledTag = {val tag = token.attr += new LabeledCtbPosTag(token, label); println(tag.token.string + "\t" + tag.categoryValue); tag}
+         token = new Token(sentence, word)
+         labeledTag = token.attr += new LabeledCtbPosTag(token, label)
        } yield document
       ).toSeq
 
