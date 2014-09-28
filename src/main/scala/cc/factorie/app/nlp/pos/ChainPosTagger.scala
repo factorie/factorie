@@ -223,8 +223,15 @@ class ChainPosTrainer[A<:PosTag, B<:ChainPosTagger[A]](taggerConstructor: () => 
     println("Finished Flatmapping Testing Sentences")
 
     println("Training")
-    pos.train(trainSentences, testSentences,
-              opts.rate.value, opts.delta.value, opts.cutoff.value, opts.updateExamples.value, opts.useHingeLoss.value, l1Factor=opts.l1.value, l2Factor=opts.l2.value)
+    pos.train(trainSentences,
+              testSentences)/*,
+              opts.rate.value,
+              opts.delta.value,
+              opts.cutoff.value,
+              opts.updateExamples.value,
+              opts.useHingeLoss.value,
+              l1Factor=opts.l1.value,
+              l2Factor=opts.l2.value)*/
     println("Finished Training")
     if (opts.saveModel.value) {
       println("Serializing Model")
@@ -250,18 +257,23 @@ object CtbChainPosTrainer extends ChainPosTrainer[CtbPosTag, CtbChainPosTagger](
   (dirName: String) => {
     val directory = new File(dirName)
 
-    (for{
-       file <- directory.listFiles
-       if file.isFile
-       document = new Document
-       line <- scala.io.Source.fromFile(file, "utf-8").getLines
-       if line.size > 0 && line(0) != '<'
-       sentence = new Sentence(document)
-       (word, label) <- line.split(' ').map( pair => {val (word, label) = pair.splitAt(pair.lastIndexOf('_')); (word, label.slice(1,label.size))} )
-       token = new Token(sentence, word)
-       labeledTag = token.attr += new LabeledCtbPosTag(token, label)
-     } yield document
-    ).toSeq
+    val documents =
+      (for{
+         file <- directory.listFiles
+         if file.isFile
+         document = new Document
+         line <- scala.io.Source.fromFile(file, "utf-8").getLines
+         if line.size > 0 && line(0) != '<'
+         sentence = new Sentence(document)
+         (word, label) <- line.split(' ').map( pair => {val (word, label) = pair.splitAt(pair.lastIndexOf('_')); (word, label.slice(1,label.size))} )
+         token = {val thang = new Token(sentence, word); print(thang.sentence.tokensString(" ")); thang}
+         labeledTag = {val tag = token.attr += new LabeledCtbPosTag(token, label); println(tag.token.string + "\t" + tag.categoryValue); tag}
+       } yield document
+      ).toSeq
+
+    println(documents.size)
+
+    documents
   }
 )
 
