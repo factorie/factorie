@@ -189,10 +189,10 @@ class CtbChainPosTagger extends ChainPosTagger((t:Token) => new CtbPosTag(t, 0))
       features += "SUFFIX=" + rawWord.takeRight(1)
       features += "PREFIX=" + rawWord.take(1)
 
-      if (hasPunctuation(rawWord)) features += "PUNCTUATION"
-      if (hasNumeric(rawWord)) features += "NUMERIC"
-      if (hasChineseNumeric(rawWord)) features += "CHINESE_NUMERIC"
-      if (hasAlpha(rawWord)) features += "ALPHA"
+      //if (hasPunctuation(rawWord)) features += "PUNCTUATION"
+      //if (hasNumeric(rawWord)) features += "NUMERIC"
+      //if (hasChineseNumeric(rawWord)) features += "CHINESE_NUMERIC"
+      //if (hasAlpha(rawWord)) features += "ALPHA"
     }
     addNeighboringFeatureConjunctions(sentence.tokens, (t: Token) => t.attr[PosFeatures], "W=[^@]*$", List(-2), List(-1), List(1), List(-2,-1), List(-1,0))
   }
