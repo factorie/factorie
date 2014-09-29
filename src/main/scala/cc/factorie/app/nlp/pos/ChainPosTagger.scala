@@ -178,9 +178,9 @@ class CtbChainPosTagger extends ChainPosTagger((t:Token) => new CtbPosTag(t, 0))
   def initPOSFeatures(sentence: Sentence): Unit = {
     import cc.factorie.app.chineseStrings._
 
-    println("Initializing POS features FOR SENTENCE")
+    println("Initializing POS features FOR SENTENCE of " + sentence.tokens.size + " tokens.")
     for (token <- sentence.tokens) {
-      println("\tFOR TOKEN")
+      println("\tFOR TOKEN:\t" + token.string)
       if(token.attr[PosFeatures] ne null)
         token.attr.remove[PosFeatures]
 
@@ -189,17 +189,18 @@ class CtbChainPosTagger extends ChainPosTagger((t:Token) => new CtbPosTag(t, 0))
       val rawWord = token.string
 
       features += "W="+rawWord
-      println("RAW WORD ADDED")
+      println("\tRAW WORD ADDED")
       features += "SUFFIX=" + rawWord.takeRight(1)
-      println("SUFFIX ADDED")
+      println("\tSUFFIX ADDED")
       features += "PREFIX=" + rawWord.take(1)
-      println("PREFIX ADDED")
+      println("\tPREFIX ADDED")
 
       //if (hasPunctuation(rawWord)) features += "PUNCTUATION"
       //if (hasNumeric(rawWord)) features += "NUMERIC"
       //if (hasChineseNumeric(rawWord)) features += "CHINESE_NUMERIC"
       //if (hasAlpha(rawWord)) features += "ALPHA"
     }
+    println(sentence.tokens.size)
     addNeighboringFeatureConjunctions(sentence.tokens, (t: Token) => t.attr[PosFeatures], "W=[^@]*$", List(-2), List(-1), List(1), List(-2,-1), List(-1,0))
     println("POS features initialized")
   }
