@@ -194,6 +194,7 @@ class CtbChainPosTagger extends ChainPosTagger((t:Token) => new CtbPosTag(t, 0))
       if (hasNumeric(rawWord)) features += "NUMERIC"
       if (hasChineseNumeric(rawWord)) features += "CHINESE_NUMERIC"
       if (hasAlpha(rawWord)) features += "ALPHA"
+      println("\t\t" + features)
     }
     addNeighboringFeatureConjunctions(sentence.tokens, (t: Token) => t.attr[PosFeatures], "W=[^@]*$", List(-2), List(-1), List(1), List(-2,-1), List(-1,0))
   }

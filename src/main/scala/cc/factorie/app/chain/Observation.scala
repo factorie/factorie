@@ -126,6 +126,7 @@ object Observations {
             )
               .mkString("_&_")
           )
+        println("\t\t\t" + thisTokenNewFeatures)
       }
       // TODO "f+o" is doing string concatenation, consider something faster
       i += 1
