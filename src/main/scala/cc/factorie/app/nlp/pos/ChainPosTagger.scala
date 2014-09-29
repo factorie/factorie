@@ -187,14 +187,12 @@ class CtbChainPosTagger extends ChainPosTagger((t:Token) => new CtbPosTag(t, 0))
       val rawWord = token.string
 
       features += "W="+rawWord
-      features += "SUFFIX=" + rawWord.takeRight(1)
-      features += "PREFIX=" + rawWord.take(1)
 
       if (hasPunctuation(rawWord)) features += "PUNCTUATION"
       if (hasNumeric(rawWord)) features += "NUMERIC"
       if (hasChineseNumeric(rawWord)) features += "CHINESE_NUMERIC"
       if (hasAlpha(rawWord)) features += "ALPHA"
-      println("\t\t" + features)
+      //println("\t\t" + features)
     }
     addNeighboringFeatureConjunctions(sentence.tokens, (t: Token) => t.attr[PosFeatures], "W=[^@]*$", List(-2), List(-1), List(1), List(-2,-1), List(-1,0))
   }
