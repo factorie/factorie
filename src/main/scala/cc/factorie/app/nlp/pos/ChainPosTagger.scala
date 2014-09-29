@@ -178,16 +178,22 @@ class CtbChainPosTagger extends ChainPosTagger((t:Token) => new CtbPosTag(t, 0))
   def initPOSFeatures(sentence: Sentence): Unit = {
     import cc.factorie.app.chineseStrings._
 
+    println("Initializing POS features FOR SENTENCE")
     for (token <- sentence.tokens) {
+      println("\tFOR TOKEN")
       if(token.attr[PosFeatures] ne null)
         token.attr.remove[PosFeatures]
 
       val features = token.attr += new PosFeatures(token)
+      println("Features object instantiated")
       val rawWord = token.string
 
       features += "W="+rawWord
+      println("RAW WORD ADDED")
       features += "SUFFIX=" + rawWord.takeRight(1)
+      println("SUFFIX ADDED")
       features += "PREFIX=" + rawWord.take(1)
+      println("PREFIX ADDED")
 
       //if (hasPunctuation(rawWord)) features += "PUNCTUATION"
       //if (hasNumeric(rawWord)) features += "NUMERIC"
