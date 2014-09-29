@@ -33,6 +33,7 @@ object DocEntityVars {
     e.mentions.foreach { mention =>
       contextBag ++= mention.phrase.contextWindow(5).groupBy(_.lemmaString).mapValues(_.size.toDouble)
       //nameBag += mention.phrase.string
+      //todo filter nominal mentions
       nameBag ++= mention.phrase.tokens.map(_.string)
       Option(mention.phrase.gender) match {
         case Some(gender) => genderBag += gender.categoryValue
