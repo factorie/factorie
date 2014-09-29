@@ -194,9 +194,7 @@ class CtbChainPosTagger extends ChainPosTagger((t:Token) => new CtbPosTag(t, 0))
       //if (hasChineseNumeric(rawWord)) features += "CHINESE_NUMERIC"
       //if (hasAlpha(rawWord)) features += "ALPHA"
     }
-    println(sentence.tokens.size)
     addNeighboringFeatureConjunctions(sentence.tokens, (t: Token) => t.attr[PosFeatures], "W=[^@]*$", List(-2), List(-1), List(1), List(-2,-1), List(-1,0))
-    println("POS features initialized")
   }
 }
 object CtbChainPosTagger extends CtbChainPosTagger(ClasspathURL[CtbChainPosTagger](".factorie"))
@@ -276,9 +274,7 @@ object CtbChainPosTrainer extends ChainPosTrainer[CtbPosTag, CtbChainPosTagger](
          token = new Token(sentence, word)
          labeledTag = token.attr += new LabeledCtbPosTag(token, label)
        } yield document
-      ).toSeq
-
-    println(documents.size)
+      ).toIndexedSeq
 
     documents
   }
