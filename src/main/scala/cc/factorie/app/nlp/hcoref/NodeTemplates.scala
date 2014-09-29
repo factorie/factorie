@@ -67,11 +67,14 @@ class BagOfWordsEntropy[Vars <: NodeVariables[Vars]](initialWeight:Double, getBa
     var entropy = 0.0
     var n = 0.0
     val l1Norm = bag.l1Norm
+
     bag.asHashMap.foreach{ case(k,v) =>
-      entropy -= (v/l1Norm)*math.log(v/l1Norm)
+      val vNormAbs = math.abs(v/l1Norm)
+      entropy -= (vNormAbs)*math.log(vNormAbs)
       n+=1.0
     }
     if(n>1)entropy /= scala.math.log(n) //normalized entropy in [0,1]
+    if((-entropy).isNaN) 0.0 else -entropy
     -entropy
   }, "BagOfWordsEntropy: %s".format(bagName))
 
