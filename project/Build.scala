@@ -39,10 +39,10 @@ object Build extends sbt.Build {
       libraryDependencies ++= Seq(
         Compile.mongodb,
         Compile.akka,
-        Compile.jregex,
         Compile.colt,
         Compile.compiler,
         Compile.junit,
+        Compile.acompress,
         Test.scalatest
       )
     ).
@@ -73,10 +73,10 @@ object Dependencies {
   object Compile {
     val mongodb  = "org.mongodb" % "mongo-java-driver" % "2.11.1"
     val akka = "com.typesafe.akka" % "akka-actor_2.10" % "2.1.4"
-    val jregex = "net.sourceforge.jregex" % "jregex" % "1.2_01"
     val colt = "org.jblas" % "jblas" % "1.2.3"
     val compiler = "org.scala-lang" % "scala-compiler" % "2.10.4"
     val junit = "junit" % "junit" % "4.10"
+    val acompress = "org.apache.commons" % "commons-compress" % "1.8"
   }
 
   object Test {
