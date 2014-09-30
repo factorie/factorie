@@ -194,7 +194,7 @@ class CtbChainPosTagger extends ChainPosTagger((t:Token) => new CtbPosTag(t, 0))
       if (hasAlpha(rawWord)) features += "ALPHA"
       //println("\t\t" + features)
     }
-    addNeighboringFeatureConjunctions(sentence.tokens, (t: Token) => t.attr[PosFeatures], "W=[^@]*$", List(-2), List(-1), List(1), List(-2,-1), List(-1,0))
+    //addNeighboringFeatureConjunctions(sentence.tokens, (t: Token) => t.attr[PosFeatures], "W=[^@]*$", List(-2), List(-1), List(1), List(-2,-1), List(-1,0))
   }
 }
 object CtbChainPosTagger extends CtbChainPosTagger(ClasspathURL[CtbChainPosTagger](".factorie"))
