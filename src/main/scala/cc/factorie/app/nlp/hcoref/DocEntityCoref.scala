@@ -1,13 +1,19 @@
 package cc.factorie.app.nlp.hcoref
 
 import cc.factorie.app.nlp.Document
-import cc.factorie.app.nlp.coref.WithinDocCoref
+import cc.factorie.app.nlp.coref.{CrossDocEntity, CrossDocMention, WithinDocCoref}
 import cc.factorie.variable.DiffList
+import scala.util.Random
 
 /**
  * @author John Sullivan
  */
-object DocEntityCoref {
+abstract class DocEntityCoref {
+  _settings =>
+  def autoStopThreshold:Int
+  def estimateIterations(mentionCount:Int):Int
+  def model:DocEntityCorefModel
+  implicit val random:Random
 
   class DocEntityCorefModel(namesWeights:Double, namesShift:Double, nameEntropy:Double, contextsWeight:Double, contextsShift:Double, genderWeight:Double, genderShift:Double, mentionWeight:Double, mentionShift:Double, numberWeight:Double, numberShift:Double) extends CorefModel[DocEntityVars] {
     this += new ChildParentCosineDistance(namesWeights, namesShift, {v:DocEntityVars => v.names})
@@ -18,36 +24,36 @@ object DocEntityCoref {
     this += new BagOfWordsEntropy(nameEntropy, {v:DocEntityVars => v.names})
   }
 
-  def processDocs(docs:Iterable[Document]) {
+  def process(docs:Iterable[Document]):Iterable[CrossDocEntity] = {
     assert(docs.forall(_.hasAnnotation(classOf[WithinDocCoref])))
 
     // by mentions here we mean cross-doc mentions that correspond to within-doc entities
     val mentions = docs.flatMap { doc =>
-      doc.coref.entities.map{ entity =>
-        //todo is this unique across docs?
-        new Mention[DocEntityVars](DocEntityVars.fromWithinDocEntity(entity), entity.uniqueId)
+      doc.coref.entities.map{ winDocEntity =>
+        new Mention[DocEntityVars](DocEntityVars.fromWithinDocEntity(winDocEntity), java.util.UUID.randomUUID.toString, winDocEntity.uniqueId)(null)
       }
     }
 
-
-    val model = new DocEntityCorefModel()
-
-    val sampler = new CorefSampler[DocEntityVars](model, mentions, 200000)
-      with AutoStoppingSampler[DocEntityVars]
-      with CanopyPairGenerator[DocEntityVars]
-      with NoSplitMoveGenerator[DocEntityVars]
-      with DebugCoref[DocEntityVars] {
-      def newInstance(implicit d: DiffList) = new Node[DocEntityVars](new DocEntityVars())
-
-      val autoStopThreshold = 10000
-    }
+    val sampler = getSampler(mentions)
 
     sampler.infer
+
+    mentions.map(_.root).toSeq
   }
+
+
+  def getSampler(mentions:Iterable[Node[DocEntityVars]]):CorefSampler[DocEntityVars] = new CorefSampler[DocEntityVars](_settings.model, mentions, _settings.estimateIterations(mentions.size))
+    with AutoStoppingSampler[DocEntityVars]
+    with CanopyPairGenerator[DocEntityVars]
+    with NoSplitMoveGenerator[DocEntityVars]
+    with DebugCoref[DocEntityVars] {
+    def newInstance(implicit d: DiffList) = new Node[DocEntityVars](new DocEntityVars())
+
+    val autoStopThreshold = _settings.autoStopThreshold
+  }
+
 }
 
-// todo settable variables like iterations, auto stop
 // todo code for model training
 // todo train model on tac entity linking
 // todo serialize and deserialize models
-// todo finish DocEntVars impl

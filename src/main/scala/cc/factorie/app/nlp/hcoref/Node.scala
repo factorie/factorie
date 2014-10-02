@@ -17,6 +17,7 @@ import scala.collection.mutable
 import cc.factorie.variable._
 import cc.factorie.Cubbie
 import cc.factorie.util.Hooks1
+import cc.factorie.app.nlp.coref.{WithinDocEntity, CrossDocEntity, CrossDocMention}
 
 /**
  * @author harshal, Jack Sullivan
@@ -34,12 +35,16 @@ import cc.factorie.util.Hooks1
   * represent attributes on the nodes; after a move, the nodes may propogate their
   * attributes to their parents after being moved (user specified)
   */
-class Node[Vars <: NodeVariables[Vars]](val variables:Vars, val id: String)(implicit d: DiffList) {
+class Node[Vars <: NodeVariables[Vars]](val variables:Vars, val uniqueId: String)(implicit d: DiffList) extends CrossDocEntity {
+
+
+  def mentions = leaves
+
+  type ParentType = Node[Vars]
 
   def this(variables:Vars)(implicit d:DiffList) = this(variables, java.util.UUID.randomUUID.toString)(d)
 
   variables.node = this
-  private type RuntimeType = this.type
 
   class UnrepresentedChildren(initVal:Int=0) extends IntegerVariable(0) {
     val node = Node.this
@@ -91,11 +96,12 @@ class Node[Vars <: NodeVariables[Vars]](val variables:Vars, val id: String)(impl
     }.flatten
   }
 
-  final def parent:Option[Node[Vars]] = Option(parentRef.dst)
+  def parent = getParent.getOrElse(null.asInstanceOf[Node[Vars]])
+  final def getParent:Option[Node[Vars]] = Option(parentRef.dst)
   def leaves:Iterable[Mention[Vars]] = mentionsVar.value
 
   @tailrec
-  final def root:Node[Vars] = parent match {
+  final def root:Node[Vars] = getParent match {
     case Some(p) => p.root
     case None => this
   }
@@ -106,7 +112,7 @@ class Node[Vars <: NodeVariables[Vars]](val variables:Vars, val id: String)(impl
     } else if(numGenerationsBack > this.depth -1) {
       throw new IllegalArgumentException("Cannot go back deeper than depth (%d) received: %d".format(this.depth -1, numGenerationsBack))
     } else {
-      this.parent.get.ancestor(numGenerationsBack -1)
+      this.getParent.get.ancestor(numGenerationsBack -1)
     }
   }
 
@@ -114,7 +120,7 @@ class Node[Vars <: NodeVariables[Vars]](val variables:Vars, val id: String)(impl
   final def lineage:Iterable[Node[Vars]] = {
     def lineageHelper(pOpt:Option[Node[Vars]], parents:List[Node[Vars]]):List[Node[Vars]] = {
       pOpt match {
-        case Some(p) => lineageHelper(p.parent, p :: parents)
+        case Some(p) => lineageHelper(p.getParent, p :: parents)
         case None => parents
       }
     }
@@ -127,11 +133,11 @@ class Node[Vars <: NodeVariables[Vars]](val variables:Vars, val id: String)(impl
     @tailrec
     def helper(pOpt:Option[Node[Vars]], cDepth:Int):Int = {
       pOpt match {
-        case Some(p) => helper(p.parent, cDepth + 1)
+        case Some(p) => helper(p.getParent, cDepth + 1)
         case None => cDepth
       }
     }
-    helper(parent,1)
+    helper(getParent,1)
   }
 
   def markForDeletion {
@@ -142,7 +148,7 @@ class Node[Vars <: NodeVariables[Vars]](val variables:Vars, val id: String)(impl
   val deleteHooks = new Hooks1[Node[Vars]]
 
   @tailrec
-  private def propagateAddition(addedVariables:Vars)(implicit d:DiffList):Unit = this.parent match {
+  private def propagateAddition(addedVariables:Vars)(implicit d:DiffList):Unit = this.getParent match {
     case Some(p) => {
       p.variables ++= addedVariables
       p.propagateAddition(addedVariables)(d)
@@ -151,7 +157,7 @@ class Node[Vars <: NodeVariables[Vars]](val variables:Vars, val id: String)(impl
   }
 
   @tailrec
-  private def propagateRemoval(removedVariables:Vars)(implicit d:DiffList):Unit = this.parent match {
+  private def propagateRemoval(removedVariables:Vars)(implicit d:DiffList):Unit = this.getParent match {
     case Some(p) => {
       p.variables --= removedVariables
       p.propagateRemoval(removedVariables)(d)
@@ -160,7 +166,7 @@ class Node[Vars <: NodeVariables[Vars]](val variables:Vars, val id: String)(impl
   }
 
   final def alterParent(newParent:Option[Node[Vars]])(implicit d :DiffList) {
-    val oldParent = this.parent
+    val oldParent = this.getParent
     oldParent match {
       case Some(oParent) => {
         propagateRemoval(this.variables)(d)
@@ -194,7 +200,7 @@ class Node[Vars <: NodeVariables[Vars]](val variables:Vars, val id: String)(impl
       oldParent.get.alterParent(None)(d)
     }
     if(oldParent.isDefined && oldParent.get.children.size == 1) {
-      oldParent.get.children.head.alterParent(oldParent.get.parent)(d)
+      oldParent.get.children.head.alterParent(oldParent.get.getParent)(d)
     }
   }
 }
@@ -204,7 +210,7 @@ object Node {
   protected def propagateRemoveMentions[Vars <: NodeVariables[Vars]](mentionVar: Node[Vars]#Mentions#Value, parentRef:Option[Node[Vars]])(implicit d:DiffList):Unit = parentRef match {
     case Some(p) => {
       p.mentionsVar.removeAll(mentionVar)(d)
-      propagateRemoveMentions(mentionVar,p.parent)(d)
+      propagateRemoveMentions(mentionVar,p.getParent)(d)
     }
     case None => Unit
   }
@@ -213,7 +219,7 @@ object Node {
   protected def propagateAddMentions[Vars <: NodeVariables[Vars]](mentionVar: Node[Vars]#Mentions#Value, parentRef:Option[Node[Vars]])(implicit d:DiffList):Unit = parentRef match {
     case Some(p) => {
       p.mentionsVar.addAll(mentionVar)(d)
-      propagateAddMentions(mentionVar,p.parent)(d)
+      propagateAddMentions(mentionVar,p.getParent)(d)
     }
     case None => Unit
   }
@@ -221,14 +227,17 @@ object Node {
   protected def propagateUpdateMentionCount[Vars <: NodeVariables[Vars]](update: Int, parentRef:Option[Node[Vars]])(implicit d:DiffList):Unit = parentRef match {
     case Some(p) => {
       p.mentionCountVar.set(p.mentionCountVar.value + update)(d)
-      propagateUpdateMentionCount(update,p.parent)(d)
+      propagateUpdateMentionCount(update,p.getParent)(d)
     }
     case None => Unit
   }
 }
 
 
-class Mention[Vars <: NodeVariables[Vars]](v:Vars, id: String)(implicit d:DiffList) extends Node[Vars](v, id)(d) {
+class Mention[Vars <: NodeVariables[Vars]](v:Vars, id: String, val withinDocEntityId:String = null)(implicit d:DiffList) extends Node[Vars](v, id)(d) with CrossDocMention {
+
+  def entity = root
+  def string = this.toString
 
   def this(variables:Vars)(implicit d:DiffList) = this(variables, java.util.UUID.randomUUID.toString)(d)
   override final val size = 1
@@ -300,7 +309,7 @@ trait NodeCubbie[Vars <: NodeVariables[Vars], N  <: Node[Vars]] extends Cubbie {
 
   def store(node: N) = {
 
-    node.parent match{
+    node.getParent match{
       case Some(n) => parentRef := n
       case None    =>
     }

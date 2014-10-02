@@ -13,13 +13,26 @@ class DocEntityVars(val names:BagOfWordsVariable, val context:BagOfWordsVariable
 
   def this() = this(new BagOfWordsVariable(), new BagOfWordsVariable(), new BagOfWordsVariable(), new BagOfWordsVariable(), new BagOfWordsVariable())
 
-  def --=(other: DocEntityVars)(implicit d: DiffList) = ???
+  def --=(other: DocEntityVars)(implicit d: DiffList) = {
+    this.names.remove(other.names.value)(d)
+    this.context.remove(other.context.value)(d)
+    this.gender.remove(other.gender.value)(d)
+    this.mention.remove(other.mention.value)(d)
+    this.number.remove(other.number.value)(d)
+  }
 
-  def ++=(other: DocEntityVars)(implicit d: DiffList) = ???
 
-  def --(other: DocEntityVars)(implicit d: DiffList) = ???
+  def ++=(other: DocEntityVars)(implicit d: DiffList) = {
+    this.names.add(other.names.value)(d)
+    this.context.add(other.context.value)(d)
+    this.gender.add(other.gender.value)(d)
+    this.mention.add(other.mention.value)(d)
+    this.number.add(other.number.value)(d)
+  }
 
-  def ++(other: DocEntityVars)(implicit d: DiffList) = ???
+  def --(other: DocEntityVars)(implicit d: DiffList) = new DocEntityVars(this.names -- other.names, this.context -- other.context, this.gender -- other.gender, this.mention -- other.mention, this.number -- other.number)
+
+  def ++(other: DocEntityVars)(implicit d: DiffList) = new DocEntityVars(this.names ++ other.names, this.context ++ other.context, this.gender ++ other.gender, this.mention ++ other.mention, this.number ++ other.number)
 }
 
 object DocEntityVars {

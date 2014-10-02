@@ -13,7 +13,11 @@
 package cc.factorie.app.nlp.hcoref
 
 import cc.factorie.infer.Proposal
-import akka.event.LoggingAdapter
+
+class Logger(val log:(String => Unit))
+object Logger {
+  val default = new Logger({s:String => println(s)})
+}
 
 /**
  * @author John Sullivan
@@ -21,7 +25,7 @@ import akka.event.LoggingAdapter
 trait DebugCoref[Vars <: NodeVariables[Vars]]{
   this: CorefSampler[Vars] with PairGenerator[Vars] with MoveGenerator[Vars]=>
 
-  val log:LoggingAdapter
+  var log:Logger = Logger.default
 
   var printEvery:Int = 10000
 
@@ -63,10 +67,10 @@ trait DebugCoref[Vars <: NodeVariables[Vars]]{
       val maxMentions = rootMentions.max
       val minMentions = rootMentions.min
       val aveMentions = rootMentions.sum.toDouble / rootMentions.size
-      log.info(f"After $totalProps%d proposals $percentAccepted%.2f%% ($percentAcceptedThisRound%.2f%% this round) accepted in $elapsedFromBegin%.3f secs ($totalPropsPerSec%.2f proposals/sec). This round of $printEvery%d took $elapsedSecs%.3f secs ($propsPerSec%.2f proposals/sec)")
-      log.info(f"\t max depth: $maxDepth min depth: $minDepth ave depth: $aveDepth%.2f")
-      log.info(f"\t max children: $maxChildren min children: $minChildren ave children: $aveChildren%.2f")
-      log.info(f"\t max mentions: $maxMentions min mentions: $minMentions ave mentions: $aveMentions%.2f")
+      log.log(f"After $totalProps%d proposals $percentAccepted%.2f%% ($percentAcceptedThisRound%.2f%% this round) accepted in $elapsedFromBegin%.3f secs ($totalPropsPerSec%.2f proposals/sec). This round of $printEvery%d took $elapsedSecs%.3f secs ($propsPerSec%.2f proposals/sec)")
+      log.log(f"\t max depth: $maxDepth min depth: $minDepth ave depth: $aveDepth%.2f")
+      log.log(f"\t max children: $maxChildren min children: $minChildren ave children: $aveChildren%.2f")
+      log.log(f"\t max mentions: $maxMentions min mentions: $minMentions ave mentions: $aveMentions%.2f")
       //println("%d non mention samples".format(multiSamples))
       startTime = stopTime
       acceptedThisRound = 0.0

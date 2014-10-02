@@ -64,10 +64,10 @@ trait DBNodeCollection[Vars <: NodeVariables[Vars], N <: Node[Vars] with Persist
     nodeCubbieColl ++= created.map(cubbify)
     for(node <- others){
       if(node.wasDeleted){
-        nodeCubbieColl.remove(_.idIs(node.id))
+        nodeCubbieColl.remove(_.idIs(node.uniqueId))
       }
       else {
-        nodeCubbieColl.updateDelta(_id2cubbie(node.id),cubbify(node))
+        nodeCubbieColl.updateDelta(_id2cubbie(node.uniqueId),cubbify(node))
       }
     }
   }
@@ -75,7 +75,7 @@ trait DBNodeCollection[Vars <: NodeVariables[Vars], N <: Node[Vars] with Persist
   def assembleNodes(toAssemble:Seq[N], node2ParentId: Map[N, String], id2Node:Map[String, N]) {
 
     def assembleHelper(n:N) {
-      if(!n.parent.isDefined && node2ParentId.isDefinedAt(n)) {
+      if(!n.getParent.isDefined && node2ParentId.isDefinedAt(n)) {
         val parent = id2Node(node2ParentId(n))
         n.alterParent(Some(parent))(null)
         assembleHelper(parent)
@@ -107,7 +107,7 @@ NC<:NodeCubbie[Vars, N]](val names:Seq[String], mongoDB:DB)(implicit ct: ClassTa
     for(v <- n.variables.getVariables){
       v match {
         case bow:BagOfWordsVariable =>
-          varsCubbieColls(index) ++= cubbifyBOW(n.id, bow)
+          varsCubbieColls(index) ++= cubbifyBOW(n.uniqueId, bow)
           index+=1
         case _ => println("can't cubbify this type")
       }

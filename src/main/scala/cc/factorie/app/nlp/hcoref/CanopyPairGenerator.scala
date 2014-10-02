@@ -52,7 +52,7 @@ trait CanopyPairGenerator[Vars <: NodeVariables[Vars] with Canopy] extends PairG
 
   def addEntity(e:Node[Vars]):Unit ={
     entities += e
-    entMap.put(e.id.toString, e)
+    entMap.put(e.uniqueId.toString, e)
     for(cname <- e.variables.canopies){
       canopies.getOrElse(cname,{val a = new mutable.ArrayBuffer[Node[Vars]];canopies(cname)=a;a}) += e
     }

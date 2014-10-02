@@ -19,13 +19,13 @@ import cc.factorie.util.BasicEvaluatableClustering
  */
 package object hcoref {
   implicit class NodeListUtils[Vars <: NodeVariables[Vars]](val nodes:Iterable[Node[Vars]]) {
-    private val mentionToRoot = nodes.filter(_.isMention).map(m => m.id -> m.root.id)
+    private val mentionToRoot = nodes.filter(_.isMention).map(m => m.uniqueId -> m.root.uniqueId)
     def predictedClustering = new BasicEvaluatableClustering(mentionToRoot)
   }
 
   implicit class NodeListGrountTruthUtils[Vars <: NodeVariables[Vars] with GroundTruth](val nodes:Iterable[Node[Vars]]) {
     //this logic is ugly, but should always be correct for mentions
-    private val mentionToTruth = nodes.filter(_.isMention).map(m => m.id -> m.variables.truth.iterator.next()._1)
+    private val mentionToTruth = nodes.filter(_.isMention).map(m => m.uniqueId -> m.variables.truth.iterator.next()._1)
     def trueClustering = new BasicEvaluatableClustering(mentionToTruth)
   }
 }
