@@ -194,7 +194,7 @@ class CtbChainPosTagger extends ChainPosTagger((t:Token) => new CtbPosTag(t, 0))
       if (hasAlpha(rawWord)) features += "ALPHA"
       //println("\t\t" + features)
     }
-    //addNeighboringFeatureConjunctions(sentence.tokens, (t: Token) => t.attr[PosFeatures], "W=[^@]*$", List(-2), List(-1), List(1), List(-2,-1), List(-1,0))
+    addNeighboringFeatureConjunctions(sentence.tokens, (t: Token) => t.attr[PosFeatures], "W=[^@]*$", List(-2), List(-1), List(1), List(-2,-1), List(-1,0))
   }
 }
 object CtbChainPosTagger extends CtbChainPosTagger(ClasspathURL[CtbChainPosTagger](".factorie"))
@@ -210,7 +210,9 @@ class ChainPosTrainer[A<:PosTag, B<:ChainPosTagger[A]](taggerConstructor: () => 
     val pos = taggerConstructor()
 
     val trainDocs = loadingMethod(opts.trainDir.value)
+    println("NUM TRAIN DOCS:" + trainDocs.size)
     val testDocs =  loadingMethod(opts.testDir.value)
+    println("NUM TEST DOCS:" + testDocs.size)
 
     //for (d <- trainDocs) println("POS3.train 1 trainDoc.length="+d.length)
     println("Read %d training tokens.".format(trainDocs.map(_.tokenCount).sum))
@@ -229,14 +231,14 @@ class ChainPosTrainer[A<:PosTag, B<:ChainPosTagger[A]](taggerConstructor: () => 
 
     println("Training")
     pos.train(trainSentences,
-              testSentences)/*,
+              testSentences,
               opts.rate.value,
               opts.delta.value,
               opts.cutoff.value,
               opts.updateExamples.value,
               opts.useHingeLoss.value,
               l1Factor=opts.l1.value,
-              l2Factor=opts.l2.value)*/
+              l2Factor=opts.l2.value)
     println("Finished Training")
     if (opts.saveModel.value) {
       println("Serializing Model")
@@ -274,7 +276,40 @@ object CtbChainPosTrainer extends ChainPosTrainer[CtbPosTag, CtbChainPosTagger](
          token = new Token(sentence, word)
          labeledTag = token.attr += new LabeledCtbPosTag(token, label)
        } yield document
-      ).toIndexedSeq
+      ).toIndexedSeq.distinct
+
+      /*
+      val documents = directory.listFiles
+      .filter(
+        file => file.isFile
+      ).map{
+        file =>
+
+          val document = new Document
+          val sentences = scala.io.Source.fromFile(file, "utf-8").getLines
+          .filter(
+            line => line.size > 0 && line(0) != '<'
+          ).map{
+            line =>
+
+              val sentence = new Sentence(document)
+              val tokens = line.split(' ').map{
+                wordAndTag =>
+
+                  val (word, label) = wordAndTag.splitAt(wordAndTag.lastIndexOf('_'))
+                  val trimmedLabel = label.slice(1, label.size)
+                  val token = new Token(sentence, word)
+                  val labeledTag = token.attr += new LabeledCtbPosTag(token, trimmedLabel)
+
+                  (token, labeledTag)
+              }
+              println(sentence.tokens.size)
+              sentence
+          }
+          println(document.tokenCount)
+          document
+      }.toIndexedSeq
+      */
 
     documents
   }
