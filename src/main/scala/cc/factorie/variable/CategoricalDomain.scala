@@ -58,7 +58,7 @@ class CategoricalDomain[C] extends DiscreteDomain(0) with IndexedSeq[Categorical
   type Value <: variable.CategoricalValue[C]
   def this(values:Iterable[C]) = { this(); values.foreach(value(_)); freeze() }
 
-  private val __indices: mutable.Map[C, Value] = JavaHashMap[C, Value]()
+  private val __indices: java.util.HashMap[C,Value] = new java.util.HashMap[C,Value]//mutable.Map[C, Value] = JavaHashMap[C, Value]()
   def _indices = __indices
   private val lock = new util.RWLock
   /** If positive, throw error if size tries to grow larger than it.  Use for growable multi-dim Factor weightsSet;
@@ -74,22 +74,25 @@ class CategoricalDomain[C] extends DiscreteDomain(0) with IndexedSeq[Categorical
       This method is thread-safe so that multiple threads may read and index data simultaneously. */
   def value(category: C): Value = {
     if (category == null) throw new Error("Null is not a valid category.")
-    if (_frozen)_indices.getOrElse(category, null.asInstanceOf[Value])
+    if (_frozen){
+      if(_indices.containsKey(category))
+        _indices.get(category)
+      else
+        null.asInstanceOf[Value]
+    }
     else {
       lock.withReadLock {
         var thisIndex = null.asInstanceOf[Value]
-        val indexOpt = _indices.get(category)
-        if (indexOpt.isDefined)
-          thisIndex = indexOpt.get
+        if(_indices.containsKey(category))
+          thisIndex = _indices.get(category)
         else { // double-tap locking necessary to ensure only one thread adds to _indices
           lock.readUnlock()
           lock.writeLock()
           try {
-            val indexOpt = _indices.get(category)
-            if (indexOpt.isDefined)
-              thisIndex = indexOpt.get
+            if(_indices.containsKey(category))
+              thisIndex = _indices.get(category)
             else {
-              val m = _elements.size
+              val m = _elements.length
               if (maxSize > 0 && m >= maxSize) {
                 if (growPastMaxSize)
                   throw new Error("Index size exceeded maxSize")
@@ -101,7 +104,7 @@ class CategoricalDomain[C] extends DiscreteDomain(0) with IndexedSeq[Categorical
               }
               val e: Value = newCategoricalValue(m, category).asInstanceOf[Value]
               _elements += e
-              _indices(category) = e
+              _indices.put(category, e)
               thisIndex = e
             }
           } finally {
@@ -146,7 +149,9 @@ class CategoricalDomain[C] extends DiscreteDomain(0) with IndexedSeq[Categorical
     i
   }
   /** Like index, but throw an exception if the category is not already there. */
-  def getIndex(category:C): Int = lock.withReadLock({ _indices.getOrElse(category, throw new Error("Category not present; use index() to cause the creation of a new value.")).intValue})
+  def getIndex(category:C): Int = lock.withReadLock({
+    (if(_indices.containsKey(category)) _indices.get(category) else throw new Error("Category not present; use index() to cause the creation of a new value.")).intValue
+  })
   override def freeze(): Unit = {
     _frozen = true
   }
