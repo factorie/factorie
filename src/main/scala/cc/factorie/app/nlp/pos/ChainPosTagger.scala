@@ -16,6 +16,7 @@ import cc.factorie.app.nlp._
 import cc.factorie.app.chain.ChainModel
 import cc.factorie.app.chain.Observations._
 import java.io._
+import java.util.{HashMap, HashSet}
 import cc.factorie.util.{HyperparameterMain, ClasspathURL, BinarySerializer}
 import cc.factorie.optimize.Trainer
 import cc.factorie.variable.{HammingObjective, BinaryFeatureVectorVariable, CategoricalVectorDomain, CategoricalVariable, LabeledVar, LabeledMutableDiscreteVar}
@@ -56,7 +57,16 @@ abstract class ChainPosTagger[A<:PosTag](val tagConstructor:(Token)=>A)(implicit
     dstream.close()
   }
 
-  def train(trainSentences:Seq[Sentence], testSentences:Seq[Sentence], lrate:Double = 0.1, decay:Double = 0.01, cutoff:Int = 2, doBootstrap:Boolean = true, useHingeLoss:Boolean = false, numIterations: Int = 5, l1Factor:Double = 0.000001, l2Factor:Double = 0.000001)(implicit random: scala.util.Random) {
+  def train(trainSentences:Seq[Sentence],
+            testSentences:Seq[Sentence],
+            lrate:Double = 0.1,
+            decay:Double = 0.01,
+            cutoff:Int = 2,
+            doBootstrap:Boolean = true,
+            useHingeLoss:Boolean = false,
+            numIterations: Int = 5,
+            l1Factor:Double = 0.000001,
+            l2Factor:Double = 0.000001)(implicit random: scala.util.Random) {
     // TODO Accomplish this TokenNormalization instead by calling POS3.preProcess
     println("Initializing POS features for training sentences")
     trainSentences.foreach(initPOSFeatures)
@@ -67,7 +77,7 @@ abstract class ChainPosTagger[A<:PosTag](val tagConstructor:(Token)=>A)(implicit
     println("Finished initializing POS features for testing sentences")
     def evaluate() {
       println("Evaluating")
-      (trainSentences ++ testSentences).foreach(s => {println("Maximizing"); model.maximize(s.tokens.map(_.attr[A with LabeledVar]))(null)} )
+      (trainSentences ++ testSentences).foreach(s => model.maximize(s.tokens.map(_.attr[A with LabeledVar]))(null) )
       println("Train accuracy: "+ HammingObjective.accuracy(trainSentences.flatMap(s => s.tokens.map(_.attr[A with LabeledVar]))))
       println("Test accuracy: "+ HammingObjective.accuracy(testSentences.flatMap(s => s.tokens.map(_.attr[A with LabeledVar]))))
     }
@@ -78,6 +88,7 @@ abstract class ChainPosTagger[A<:PosTag](val tagConstructor:(Token)=>A)(implicit
       trainSentences.map(sentence => new model.ChainLikelihoodExample(sentence.tokens.map(_.attr[A with LabeledMutableDiscreteVar])))
     //val optimizer = new cc.factorie.optimize.AdaGrad(rate=lrate)
     val optimizer = new cc.factorie.optimize.AdaGradRDA(rate=lrate, l1=l1Factor/examples.length, l2=l2Factor/examples.length)
+    println("Running Parameter Optimization")
     Trainer.onlineTrain(model.parameters, examples, maxIterations=numIterations, optimizer=optimizer, evaluate=evaluate, useParallelTrainer = false)
   }
 
@@ -170,9 +181,27 @@ class OntonotesChainPosTagger extends ChainPosTagger((t:Token) => new PennPosTag
 object OntonotesChainPosTagger extends OntonotesChainPosTagger(ClasspathURL[OntonotesChainPosTagger](".factorie"))
 
 class CtbChainPosTagger extends ChainPosTagger((t:Token) => new CtbPosTag(t, 0)) {
+
+  private var prefixMap = new HashMap[Char, HashSet[String]]
+  private var suffixMap = new HashMap[Char, HashSet[String]]
+
   def this(url: java.net.URL) = {
     this()  
     deserialize(url.openConnection().getInputStream)
+  }
+
+  override def train(trainSentences:Seq[Sentence],
+                     testSentences:Seq[Sentence],
+                     lrate:Double = 0.1,
+                     decay:Double = 0.01,
+                     cutoff:Int = 2,
+                     doBootstrap:Boolean = true,
+                     useHingeLoss:Boolean = false,
+                     numIterations: Int = 5,
+                     l1Factor:Double = 0.000001,
+                     l2Factor:Double = 0.000001)(implicit random: scala.util.Random): Unit = {
+    initPrefixAndSuffixMaps(trainSentences.flatMap(_.tokens))
+    super.train(trainSentences, testSentences, lrate, decay, cutoff, doBootstrap, useHingeLoss, numIterations, l1Factor, l2Factor)
   }
 
   def initPOSFeatures(sentence: Sentence): Unit = {
@@ -183,18 +212,130 @@ class CtbChainPosTagger extends ChainPosTagger((t:Token) => new CtbPosTag(t, 0))
         token.attr.remove[PosFeatures]
 
       val features = token.attr += new PosFeatures(token)
-
       val rawWord = token.string
+      val prefix = rawWord(0)
+      val suffix = rawWord(rawWord.size - 1)
 
       features += "W="+rawWord
+
+      val i = 3
+
+      features += "SUFFIX" + i + "=" + rawWord.takeRight(i)
+      features += "PREFIX" + i + "=" + rawWord.take(i)
+
+      if(prefixMap.containsKey(prefix)) {
+        val prefixLabelSet = prefixMap.get(prefix)
+        val prefixCTBMorph = posDomain.categories.map{
+          category =>
+
+            val hasCategory = {
+              if(prefixLabelSet.contains(category))
+                "TRUE"
+              else
+                "FALSE"
+            }
+
+            "PRE" + category + hasCategory
+        }
+
+        features ++= prefixCTBMorph
+      }
+
+      if(suffixMap.containsKey(suffix)) {
+        val suffixLabelSet = suffixMap.get(suffix)
+        val suffixCTBMorph = posDomain.categories.map{
+          category =>
+
+            val hasCategory = {
+              if(suffixLabelSet.contains(category))
+                "TRUE"
+              else
+                "FALSE"
+            }
+
+            "SUF" + category + hasCategory
+        }
+
+        features ++= suffixCTBMorph
+      }
 
       if (hasPunctuation(rawWord)) features += "PUNCTUATION"
       if (hasNumeric(rawWord)) features += "NUMERIC"
       if (hasChineseNumeric(rawWord)) features += "CHINESE_NUMERIC"
       if (hasAlpha(rawWord)) features += "ALPHA"
-      //println("\t\t" + features)
     }
-    addNeighboringFeatureConjunctions(sentence.tokens, (t: Token) => t.attr[PosFeatures], "W=[^@]*$", List(-2), List(-1), List(1), List(-2,-1), List(-1,0))
+
+    addNeighboringFeatureConjunctions(sentence.tokens,
+                                      (t: Token) => t.attr[PosFeatures],
+                                      "W=[^@]*$",
+                                      List(-2),
+                                      List(-1),
+                                      List(1),
+                                      List(-2,-1),
+                                      List(-1,0))
+  }
+
+  def initPrefixAndSuffixMaps(tokens: Seq[Token]): Unit = {
+    prefixMap.clear()
+    suffixMap.clear()
+
+    tokens.map(
+      token => (token.string, token.attr[LabeledCtbPosTag].categoryValue)
+    ).foreach{
+      case (word, label) =>
+
+        val prefix = word(0)
+        val suffix = word(word.size - 1)
+
+        val prefixLabelSet = prefixMap.get(prefix)
+
+        if(prefixLabelSet != null) {
+          if(!prefixLabelSet.contains(label)) {
+            prefixLabelSet.add(label)
+          }
+        } else {
+          val labelSet = new HashSet[String]
+
+          labelSet.add(label)
+          prefixMap.put(prefix, labelSet)
+        }
+
+        val suffixLabelSet = suffixMap.get(suffix)
+
+        if(suffixLabelSet != null) {
+          if(!suffixLabelSet.contains(label)) {
+            suffixLabelSet.add(label)
+          }
+        } else {
+          val labelSet = new HashSet[String]
+
+          labelSet.add(label)
+          suffixMap.put(suffix, labelSet)
+        }
+    }
+  }
+
+  override def serialize(stream: OutputStream) {
+    import cc.factorie.util.CubbieConversions._
+    val dstream = new DataOutputStream(new BufferedOutputStream(stream))
+    val out = new ObjectOutputStream(dstream)
+    out.writeObject(prefixMap)
+    out.writeObject(suffixMap)
+    BinarySerializer.serialize(PosFeaturesDomain.dimensionDomain, dstream)
+    BinarySerializer.serialize(model, dstream)
+    dstream.close()
+    out.close()
+  }
+  override def deserialize(stream: InputStream) {
+    import cc.factorie.util.CubbieConversions._
+    val dstream = new DataInputStream(new BufferedInputStream(stream))
+    val in = new ObjectInputStream(dstream)
+    prefixMap = in.readObject().asInstanceOf[HashMap[Char, HashSet[String]]]
+    suffixMap = in.readObject().asInstanceOf[HashMap[Char, HashSet[String]]]
+    BinarySerializer.deserialize(PosFeaturesDomain.dimensionDomain, dstream)
+    BinarySerializer.deserialize(model, dstream)
+    dstream.close()
+    in.close()
   }
 }
 object CtbChainPosTagger extends CtbChainPosTagger(ClasspathURL[CtbChainPosTagger](".factorie"))
@@ -277,39 +418,6 @@ object CtbChainPosTrainer extends ChainPosTrainer[CtbPosTag, CtbChainPosTagger](
          labeledTag = token.attr += new LabeledCtbPosTag(token, label)
        } yield document
       ).toIndexedSeq.distinct
-
-      /*
-      val documents = directory.listFiles
-      .filter(
-        file => file.isFile
-      ).map{
-        file =>
-
-          val document = new Document
-          val sentences = scala.io.Source.fromFile(file, "utf-8").getLines
-          .filter(
-            line => line.size > 0 && line(0) != '<'
-          ).map{
-            line =>
-
-              val sentence = new Sentence(document)
-              val tokens = line.split(' ').map{
-                wordAndTag =>
-
-                  val (word, label) = wordAndTag.splitAt(wordAndTag.lastIndexOf('_'))
-                  val trimmedLabel = label.slice(1, label.size)
-                  val token = new Token(sentence, word)
-                  val labeledTag = token.attr += new LabeledCtbPosTag(token, trimmedLabel)
-
-                  (token, labeledTag)
-              }
-              println(sentence.tokens.size)
-              sentence
-          }
-          println(document.tokenCount)
-          document
-      }.toIndexedSeq
-      */
 
     documents
   }
