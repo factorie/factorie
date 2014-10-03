@@ -23,7 +23,7 @@ trait NoSplitMoveGenerator[Vars <: NodeVariables[Vars]] extends MoveGenerator[Va
           } else {
             moves += new MergeLeft[Vars](e2, e1)
           }
-          e1 = e1.parent.getOrElse(null.asInstanceOf[Node[Vars]])
+          e1 = e1.getParent.getOrElse(null.asInstanceOf[Node[Vars]])
         }
       }
     }
