@@ -14,6 +14,7 @@ package cc.factorie.app.nlp.coref
 
 import cc.factorie.app.nlp._
 import cc.factorie.app.nlp.phrase._
+import cc.factorie.app.nlp.pos.PennPosDomain
 import cc.factorie.util.{Attr,UniqueId,ImmutableArrayIndexedSeq,EvaluatableClustering}
 import cc.factorie.variable._
 import scala.collection.mutable.ArrayBuffer
@@ -88,7 +89,7 @@ abstract class WithinDocEntity(val document:Document) extends AbstractEntity {
   private val _mentions = new scala.collection.mutable.LinkedHashSet[Mention]
   def parent: WithinDocEntity = null
   def mentions:scala.collection.Set[Mention] = _mentions
-  def isSingleton:Boolean = _mentions.size == 1 //TODO Is this okay to do? or is there a better way
+  def isSingleton:Boolean = _mentions.size == 1
   def isEmpty:Boolean = _mentions.isEmpty
   def children: Iterable[Mention] = _mentions
   def getFirstMention: Mention = if(isEmpty) null else if(isSingleton) _mentions.head else mentions.toSeq.sortBy(m => m.phrase.start).head
@@ -106,8 +107,22 @@ abstract class WithinDocEntity(val document:Document) extends AbstractEntity {
     _mentions -= mention
     mention._setEntity(null)
   }
-  var canonicalName: String = null // TODO Is this necessary?
-  var canonicalMention: Mention = null // TODO Is this necessary?
+
+  /** Return the canonical mention for the entity cluster.  If the canonical mention is not already set it computes, sets, and returns the canonical mention */
+  def getCanonicalMention: Mention = {
+    if (canonicalMention eq null) {
+      val canonicalOption = _mentions.filter{m =>
+        (m.phrase.attr[NounPhraseType].value == NounPhraseTypeDomain.value("NOM") ||
+        m.phrase.attr[NounPhraseType].value == NounPhraseTypeDomain.value("NAM")) &&
+        m.phrase.last.posTag.intValue != PennPosDomain.posIndex
+      }.toSeq.sortBy(m => (m.phrase.start, m.phrase.length)).headOption
+      canonicalMention = canonicalOption.getOrElse(children.headOption.orNull)
+      canonicalName = canonicalMention.string
+    }
+    canonicalMention
+  }
+  var canonicalName: String = null
+  var canonicalMention: Mention = null
   // If number, gender and entity type are needed, put a CategoricalVariable subclass in the Attr
 }
 
