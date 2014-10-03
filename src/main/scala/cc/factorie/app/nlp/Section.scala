@@ -74,6 +74,13 @@ trait Section extends Chain[Section,Token] with DocumentSubstring with Attr {
     if (s.start+s.length > this.length + 1) throw new Error("Trying to add a Sentence beyond the end of the Section. Adding at " + (s.start + s.length) + " instead of " + (this.length + 1))
     _sentences += s; s
   }
+
+  /** Gives the best tokenSpan for a given set of string offsets into the document. */
+  def offsetSnapToTokens(offStart:Int, offEnd:Int):Option[TokenSpan] =
+    tokens.dropWhile(_.stringEnd <= offStart).takeWhile(_.stringStart <= offEnd) match {
+      case toks if toks.size != 0 => Some(new TokenSpan(toks))
+      case _ => None
+    }
   
 }
 

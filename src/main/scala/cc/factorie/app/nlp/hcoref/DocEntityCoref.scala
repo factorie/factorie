@@ -15,14 +15,6 @@ abstract class DocEntityCoref {
   def model:DocEntityCorefModel
   implicit val random:Random
 
-  class DocEntityCorefModel(namesWeights:Double, namesShift:Double, nameEntropy:Double, contextsWeight:Double, contextsShift:Double, genderWeight:Double, genderShift:Double, mentionWeight:Double, mentionShift:Double, numberWeight:Double, numberShift:Double) extends CorefModel[DocEntityVars] {
-    this += new ChildParentCosineDistance(namesWeights, namesShift, {v:DocEntityVars => v.names})
-    this += new ChildParentCosineDistance(contextsWeight, contextsShift, {v:DocEntityVars => v.context})
-    this += new ChildParentCosineDistance(genderWeight, genderShift, {v:DocEntityVars => v.gender})
-    this += new ChildParentCosineDistance(mentionWeight, mentionShift, {v:DocEntityVars => v.mention})
-    this += new ChildParentCosineDistance(numberWeight, numberShift, {v:DocEntityVars => v.number})
-    this += new BagOfWordsEntropy(nameEntropy, {v:DocEntityVars => v.names})
-  }
 
   def process(docs:Iterable[Document]):Iterable[CrossDocEntity] = {
     assert(docs.forall(_.hasAnnotation(classOf[WithinDocCoref])))
@@ -52,6 +44,15 @@ abstract class DocEntityCoref {
     val autoStopThreshold = _settings.autoStopThreshold
   }
 
+}
+
+class DocEntityCorefModel(namesWeights:Double, namesShift:Double, nameEntropy:Double, contextsWeight:Double, contextsShift:Double, genderWeight:Double, genderShift:Double, mentionWeight:Double, mentionShift:Double, numberWeight:Double, numberShift:Double) extends CorefModel[DocEntityVars] {
+  this += new ChildParentCosineDistance(namesWeights, namesShift, {v:DocEntityVars => v.names})
+  this += new ChildParentCosineDistance(contextsWeight, contextsShift, {v:DocEntityVars => v.context})
+  this += new ChildParentCosineDistance(genderWeight, genderShift, {v:DocEntityVars => v.gender})
+  this += new ChildParentCosineDistance(mentionWeight, mentionShift, {v:DocEntityVars => v.mention})
+  this += new ChildParentCosineDistance(numberWeight, numberShift, {v:DocEntityVars => v.number})
+  this += new BagOfWordsEntropy(nameEntropy, {v:DocEntityVars => v.names})
 }
 
 // todo code for model training

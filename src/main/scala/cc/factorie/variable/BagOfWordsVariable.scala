@@ -36,9 +36,7 @@ class BagOfWords(initialWords: Iterable[String] = null, initialBag: Map[String, 
   if (initialBag != null) for ((k, v) <- initialBag) this +=(k, v)
   def l2Norm = scala.math.sqrt(_l2Norm)
   def l1Norm = _l1Norm
-  def asHashMap: HashMap[String, Double] = {
-    val result = new HashMap[String, Double]; result ++= _bag; result
-  }
+  def asHashMap = _bag
   override def toString = _bag.toString()
   def apply(s: String): Double = _bag.getOrElse(s, 0.0)
   def contains(s: String): Boolean = _bag.contains(s)

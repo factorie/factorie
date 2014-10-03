@@ -210,6 +210,11 @@ class Document extends DocumentSubstring with Attr with UniqueId {
     case annotator:DocumentAnnotator => owplString(Seq(annotator.tokenAnnotationString(_)))
   }
 
+  /** Return the Section that contains the pair of string offsets into the document. */
+  def getSectionByOffsets(strStart:Int, strEnd:Int):Option[Section] =
+    this.sections.map(sec => (sec.stringStart, sec.stringEnd, sec)).sortBy(_._1)
+      .find{case(start, end, _) => start <= strStart && end >= strEnd}.map(_._3)
+
 }
 
 /** Used as an attribute on Document to hold the document's name. */
@@ -262,5 +267,3 @@ trait DateAttrCubbieSlot extends AttrCubbieSlots {
   //fetchHooks += ((a:Attr) => a.attr += date.value)
   fetchHooks += { case a:Attr => a.attr += date.value }
 }
-
-

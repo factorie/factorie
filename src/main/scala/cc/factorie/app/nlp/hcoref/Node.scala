@@ -234,7 +234,7 @@ object Node {
 }
 
 
-class Mention[Vars <: NodeVariables[Vars]](v:Vars, id: String, val withinDocEntityId:String = null)(implicit d:DiffList) extends Node[Vars](v, id)(d) with CrossDocMention {
+class Mention[Vars <: NodeVariables[Vars]](v:Vars, id: String, var withinDocEntityId:String = null)(implicit d:DiffList) extends Node[Vars](v, id)(d) with CrossDocMention {
 
   def entity = root
   def string = this.toString
