@@ -1,8 +1,6 @@
 package cc.factorie.app.nlp
 
-import org.scalatest.FlatSpec
-import org.scalatest.matchers.Matchers
-import cc.factorie.app.nlp.segment.{DeterministicSentenceSegmenter, DeterministicTokenizer}
+import org.scalatest.{Matchers, FlatSpec}
 import cc.factorie.app.nlp.pos.{PennPosTag, PennPosDomain}
 
 /** Test serialization of Document to BSON.

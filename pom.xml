@@ -25,8 +25,8 @@ limitations under the License.
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <scala.version>2.10.4</scala.version>
-        <scalatest.version>1.9.1</scalatest.version>
+        <scala.version>2.11.2</scala.version>
+        <scalatest.version>2.2.2</scalatest.version>
         <junit.version>4.10</junit.version>
     </properties>
 
@@ -81,8 +81,8 @@ limitations under the License.
         </dependency>
         <dependency>
             <groupId>com.typesafe.akka</groupId>
-            <artifactId>akka-actor_2.10</artifactId>
-            <version>2.1.4</version>
+            <artifactId>akka-actor_2.11</artifactId>
+            <version>2.3.6</version>
         </dependency>
         <dependency>
             <groupId>org.scala-lang</groupId>
@@ -109,7 +109,7 @@ limitations under the License.
         </dependency>
         <dependency>
             <groupId>org.scalatest</groupId>
-            <artifactId>scalatest_2.10</artifactId>
+            <artifactId>scalatest_2.11</artifactId>
             <version>${scalatest.version}</version>
             <scope>test</scope>
         </dependency>
@@ -194,7 +194,7 @@ limitations under the License.
             <plugin>
                 <groupId>net.alchim31.maven</groupId>
                 <artifactId>scala-maven-plugin</artifactId>
-                <version>3.1.0</version>
+                <version>3.2.0</version>
                 <executions>
                     <execution>
                         <goals>

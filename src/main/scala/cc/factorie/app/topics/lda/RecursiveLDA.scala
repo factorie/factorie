@@ -74,7 +74,7 @@ object RecursiveLDA {
       val maxNumDocs =    new CmdOption("max-num-docs", Int.MaxValue, "N", "The maximum number of documents to read.")
       val printTopics =   new CmdOption("print-topics", 20, "N", "Just before exiting print top N words for each topic.")
       val printPhrases =  new CmdOption("print-topics-phrases", 20, "N", "Just before exiting print top N phrases for each topic.")
-      val verboseOpt =    new CmdOption("verbose", "Turn on verbose output") { override def invoke = verbose = true }
+      val verboseOpt =    new CmdOption("verbose", "Turn on verbose output", false) { override def invoke = verbose = true }
       // TODO Add stopwords option
     }
     opts.parse(args)

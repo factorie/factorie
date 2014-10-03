@@ -1,15 +1,13 @@
 package cc.factorie.util
 
-import org.scalatest.FlatSpec
-import org.scalatest.matchers.ClassicMatchers
+import org.scalatest.{Matchers, FlatSpec}
 import cc.factorie.db.mongo.{MongoCubbieCollection, MongoCubbie}
-import com.mongodb.MongoClient
 import cc.factorie.db.mongo.MongoCubbieConverter
 
 /**
  * @author John Sullivan
  */
-class TestIntAndDoubleSeqCubbie extends FlatSpec with ClassicMatchers {
+class TestIntAndDoubleSeqCubbie extends FlatSpec with Matchers {
 
   def doubleSeqFixture = new {
     class DoubleSeqCubbie extends Cubbie {

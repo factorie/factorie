@@ -131,8 +131,8 @@ class CmdOptions {
     def apply(name:String, helpMsg:String): CmdOption[Any] =
       new CmdOption[Any](name, helpMsg)
   }*/
-  class CmdOption[T](val name:String, val helpMsg:String, val required:Boolean = false)(implicit m:Manifest[T]) extends cc.factorie.util.CmdOption[T] {
-    def this(name:String, defaultValue:T, valueName:String, helpMsg:String, required:Boolean = false)(implicit m:Manifest[T]) = {
+  class CmdOption[T](val name:String, val helpMsg:String, var required:Boolean)(implicit m:Manifest[T]) extends cc.factorie.util.CmdOption[T] {
+    def this(name:String, defaultValue:T, valueName:String, helpMsg:String, required:Boolean )(implicit m:Manifest[T]) = {
       this(name, helpMsg, required)
       this.valueName = valueName
       value = defaultValue
@@ -141,10 +141,12 @@ class CmdOptions {
     /*def this(name:String, defaultValue:T, helpMsg:String)(implicit m:Manifest[T]) = {
       this(name, defaultValue, { val fields = m.runtimeClass.getName.split("[^A-Za-z]+"); if (fields.length > 1) fields.last else fields.head }, helpMsg)
     }*/
-    def this(name:String, shortName:Char, defaultValue:T, valueName:String, helpMsg:String, required:Boolean = false)(implicit m:Manifest[T]) = {
+    def this(name:String, shortName:Char, defaultValue:T, valueName:String, helpMsg:String, required:Boolean )(implicit m:Manifest[T]) = {
       this(name, defaultValue, valueName, helpMsg, required)
       this.shortName = shortName
     }
+    def this(name:String, shortName:Char, defaultValue:T, valueName:String, helpMsg:String)(implicit m:Manifest[T]) = this(name, shortName, defaultValue, valueName, helpMsg, false)
+    def this(name:String, defaultValue:T, valueName:String, helpMsg:String)(implicit m:Manifest[T]) = this(name, defaultValue, valueName, helpMsg, false)
     /*def this(name:String, shortName:Char, defaultValue:T, helpMsg:String)(implicit m:Manifest[T]) = {
       this(name, defaultValue, helpMsg)
       this.shortName = shortName

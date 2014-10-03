@@ -1,12 +1,11 @@
 package cc.factorie.app.nlp
 
-import org.scalatest.FlatSpec
-import org.scalatest.matchers.ClassicMatchers
+import org.scalatest.{Matchers, FlatSpec}
 
 /**
  * @author John Sullivan
  */
-class TokenSpanTests extends FlatSpec with ClassicMatchers {
+class TokenSpanTests extends FlatSpec with Matchers {
 
   def fixture = new {
     val doc = new Document()
