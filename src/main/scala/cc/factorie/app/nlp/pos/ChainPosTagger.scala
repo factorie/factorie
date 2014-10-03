@@ -237,7 +237,7 @@ class CtbChainPosTagger extends ChainPosTagger((t:Token) => new CtbPosTag(t, 0))
 
             "PRE" + category + hasCategory
         }
-
+        println(prefixCTBMorph.mkString(" "))
         features ++= prefixCTBMorph
       }
 
@@ -255,7 +255,7 @@ class CtbChainPosTagger extends ChainPosTagger((t:Token) => new CtbPosTag(t, 0))
 
             "SUF" + category + hasCategory
         }
-
+        println(suffixCTBMorph.mkString(" "))
         features ++= suffixCTBMorph
       }
 
@@ -313,6 +313,9 @@ class CtbChainPosTagger extends ChainPosTagger((t:Token) => new CtbPosTag(t, 0))
           suffixMap.put(suffix, labelSet)
         }
     }
+
+    println("PREFIX MAP SIZE: " + prefixMap.size())
+    println("SUFFIX MAP SIZE: " + suffixMap.size())
   }
 
   override def serialize(stream: OutputStream) {
