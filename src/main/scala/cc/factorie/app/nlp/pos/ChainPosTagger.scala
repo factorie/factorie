@@ -235,9 +235,9 @@ class CtbChainPosTagger extends ChainPosTagger((t:Token) => new CtbPosTag(t, 0))
                 "FALSE"
             }
 
-            "PRE" + category + hasCategory
+            "PRE_" + category + "_" + hasCategory
         }
-        println(prefixCTBMorph.mkString(" "))
+
         features ++= prefixCTBMorph
       }
 
@@ -253,9 +253,9 @@ class CtbChainPosTagger extends ChainPosTagger((t:Token) => new CtbPosTag(t, 0))
                 "FALSE"
             }
 
-            "SUF" + category + hasCategory
+            "SUF_" + category + "_" + hasCategory
         }
-        println(suffixCTBMorph.mkString(" "))
+
         features ++= suffixCTBMorph
       }
 
