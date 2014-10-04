@@ -218,10 +218,11 @@ class CtbChainPosTagger extends ChainPosTagger((t:Token) => new CtbPosTag(t, 0))
 
       features += "W="+rawWord
 
-      val i = 3
-
-      features += "SUFFIX" + i + "=" + rawWord.takeRight(i)
-      features += "PREFIX" + i + "=" + rawWord.take(i)
+      (0 to 4).foreach {
+        i =>
+          features += "SUFFIX" + i + "=" + rawWord.takeRight(i)
+          features += "PREFIX" + i + "=" + rawWord.take(i)
+      }
 
       if(prefixMap.containsKey(prefix)) {
         val prefixLabelSet = prefixMap.get(prefix)
@@ -258,11 +259,12 @@ class CtbChainPosTagger extends ChainPosTagger((t:Token) => new CtbPosTag(t, 0))
 
         features ++= suffixCTBMorph
       }
-
+/*
       if (hasPunctuation(rawWord)) features += "PUNCTUATION"
       if (hasNumeric(rawWord)) features += "NUMERIC"
       if (hasChineseNumeric(rawWord)) features += "CHINESE_NUMERIC"
       if (hasAlpha(rawWord)) features += "ALPHA"
+*/
     }
 
     addNeighboringFeatureConjunctions(sentence.tokens,
