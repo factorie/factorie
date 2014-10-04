@@ -259,9 +259,10 @@ class CtbChainPosTagger extends ChainPosTagger((t:Token) => new CtbPosTag(t, 0))
 
         features ++= suffixCTBMorph
       }
-/*
+
       if (hasPunctuation(rawWord)) features += "PUNCTUATION"
-      if (hasNumeric(rawWord)) features += "NUMERIC"
+/*
+      if (hasNumeric(rawWord) || hasChineseNumeric(rawWord)) features += "NUMERIC"
       if (hasChineseNumeric(rawWord)) features += "CHINESE_NUMERIC"
       if (hasAlpha(rawWord)) features += "ALPHA"
 */
