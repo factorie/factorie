@@ -91,7 +91,8 @@ abstract class WithinDocEntity(val document:Document) extends AbstractEntity {
   def isSingleton:Boolean = _mentions.size == 1 //TODO Is this okay to do? or is there a better way
   def isEmpty:Boolean = _mentions.isEmpty
   def children: Iterable[Mention] = _mentions
-  def getFirstMention: Mention = if(isEmpty) null else if(isSingleton) _mentions.head else mentions.toSeq.sortBy(m => m.phrase.start).head
+  // TODO Rename this to remove the "get".
+  def getFirstMention: Mention = if(isEmpty) null else if(isSingleton) _mentions.head else mentions.minBy(m => m.phrase.start)
   def +=(mention:Mention): Unit = {
     assert(mention.phrase.document eq document)
     //assert(!_mentions.contains(mention)) // No reason to do this; might catch a bug.
@@ -114,7 +115,7 @@ abstract class WithinDocEntity(val document:Document) extends AbstractEntity {
 
 
 /** Container for a within-document coreference solution, typically stored as an attr of the Document.
-    Some may contain imperfect an inferred coref solution; others may store a gold-standard target coref solution.
+    Some may contain an imperfect inferred coref solution; others may store a gold-standard target coref solution.
     Concrete instances of Mention and WithinDocEntity are created here.
     @author Andrew McCallum
     */
@@ -128,13 +129,16 @@ class WithinDocCoref(val document:Document) extends EvaluatableClustering[Within
   private val _entities = new scala.collection.mutable.LinkedHashMap[String,WithinDocEntity]
   /** A mapping from entity key (i.e. an Int identifying the true entity) to the entity.uniqueId */
   private lazy val _entityKeyToId = new scala.collection.mutable.HashMap[Int,String]
-  private var _entityCount = 0 // The number of WithinDocEntities ever created here
+  private var _entityCount = 0 // The number of WithinDocEntities ever created here.  This number never goes down.
   /** A string that will be used as a prefix on the uniqueIds of the Mentions and WithinDocEntities created here. */
   def uniqueId: String = document.uniqueId // TODO Perhaps this should be something more safely unique if we save more than one WithinDocCoref objects per Document? -akm 
+  def uniqueIdEntitySuffix(entityIndex:Int): String = "//WithinDocEntity" + entityIndex
+  def uniqueIdMentionSuffix(phraseStart:Int, phraseLength:Int): String = "//Mention(" + phraseStart + "," + phraseLength + ")"
   /** Concrete implementation of WithinDocEntity that automatically stores itself in WithinDocCoref.entities. */
   protected class WithinDocEntity1(val uniqueId:String) extends WithinDocEntity(document) {
-    def this() = this(WithinDocCoref.this.uniqueId + "//WithinDocEntity" + _entityCount) // TODO Is this what we want? -akm
+    def this() = this(WithinDocCoref.this.uniqueId + uniqueIdEntitySuffix(_entityCount)) // TODO Is this what we want? -akm
     _entityCount += 1
+    assert(!_entities.contains(uniqueId))
     _entities(uniqueId) = this
     def coref: WithinDocCoref = WithinDocCoref.this
   }
@@ -145,7 +149,7 @@ class WithinDocCoref(val document:Document) extends EvaluatableClustering[Within
     def this(phrase:Phrase) = this(phrase, null.asInstanceOf[WithinDocEntity]) // Typically used for new inference // TODO Should this be null, or a newly created blank Entity; See LoadConll2011 also.
     assert(entity == null || entity.asInstanceOf[WithinDocEntity1].coref == WithinDocCoref.this)
     _spanToMention(phrase.value) = this
-    val uniqueId = WithinDocCoref.this.uniqueId + "//Mention(" + phrase.start + "," + phrase.length + ")" // TODO Is this what we want? -akm
+    val uniqueId = WithinDocCoref.this.uniqueId + uniqueIdMentionSuffix(phrase.start, phrase.length) // TODO Is this what we want? -akm
     if (entity ne null) entity += this
     def coref: WithinDocCoref = WithinDocCoref.this
   }
@@ -180,7 +184,7 @@ class WithinDocCoref(val document:Document) extends EvaluatableClustering[Within
   def newEntity(): WithinDocEntity = new WithinDocEntity1()
   /** Return the entity associated with the given uniqueId, or create a new entity if not found already among 'entities'. */
   def entityFromUniqueId(id:String): WithinDocEntity = _entities.getOrElse(id, new WithinDocEntity1(id))
-  /** Return the entity associated with the given key, or create a new entity if not found alread among 'entities'. */
+  /** Return the entity associated with the given key, or create a new entity if not found already among 'entities'. */
   def entityFromKey(key:Int): WithinDocEntity = { 
     val id = _entityKeyToId.getOrElse(key,null)
     val result = if (id eq null) new WithinDocEntity1 else _entities(id)

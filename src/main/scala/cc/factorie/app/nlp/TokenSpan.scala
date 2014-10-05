@@ -123,30 +123,30 @@ trait TokenSpanWithPhraseCubbie extends TokenSpanCubbie {
   }
 }
 
-trait TokenSpanWithDocRefCubbie[DC<:DocumentCubbie[_,_,_]] extends TokenSpanCubbie {
-  def newDocumentCubbie: DC
-  val doc = RefSlot("doc", ()=>newDocumentCubbie)
-  override def finishStoreTokenSpan(ts:TokenSpan): Unit = {
-    super.finishStoreTokenSpan(ts)
-    doc := ts.document.name
-  }
-  def fetchTokenSpan(/* implicit cr:CubbieRefs */): TokenSpan = {
-    throw new Error("Not yet implemented")
-    val ts = new TokenSpan(null, start.value, length.value)
-    finishFetchTokenSpan(ts)
-    ts
-  }
-}
-
-trait TokenSpanNerLabelCubbieSlot extends TokenSpanCubbie {
-  def newTokenSpanNerLabel(ts:TokenSpan, s:String): cc.factorie.app.nlp.ner.NerSpanLabel
-  val ner = StringSlot("ner")
-  override def finishStoreTokenSpan(ts:TokenSpan): Unit = {
-    super.finishStoreTokenSpan(ts)
-    ner := ts.attr[cc.factorie.app.nlp.ner.NerSpanLabel].categoryValue
-  }
-  override def finishFetchTokenSpan(ts:TokenSpan): Unit = {
-    super.finishFetchTokenSpan(ts)
-    ts.attr += newTokenSpanNerLabel(ts, ner.value)
-  }
-}
+//trait TokenSpanWithDocRefCubbie[DC<:DocumentCubbie[_,_,_]] extends TokenSpanCubbie {
+//  def newDocumentCubbie: DC
+//  val doc = RefSlot("doc", ()=>newDocumentCubbie)
+//  override def finishStoreTokenSpan(ts:TokenSpan): Unit = {
+//    super.finishStoreTokenSpan(ts)
+//    doc := ts.document.name
+//  }
+//  def fetchTokenSpan(/* implicit cr:CubbieRefs */): TokenSpan = {
+//    throw new Error("Not yet implemented")
+//    val ts = new TokenSpan(null, start.value, length.value)
+//    finishFetchTokenSpan(ts)
+//    ts
+//  }
+//}
+//
+//trait TokenSpanNerLabelCubbieSlot extends TokenSpanCubbie {
+//  def newTokenSpanNerLabel(ts:TokenSpan, s:String): cc.factorie.app.nlp.ner.NerSpanLabel
+//  val ner = StringSlot("ner")
+//  override def finishStoreTokenSpan(ts:TokenSpan): Unit = {
+//    super.finishStoreTokenSpan(ts)
+//    ner := ts.attr[cc.factorie.app.nlp.ner.NerSpanLabel].categoryValue
+//  }
+//  override def finishFetchTokenSpan(ts:TokenSpan): Unit = {
+//    super.finishFetchTokenSpan(ts)
+//    ts.attr += newTokenSpanNerLabel(ts, ner.value)
+//  }
+//}
