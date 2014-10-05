@@ -8,6 +8,9 @@ import cc.factorie.app.strings.Stopwords
 import org.apache.commons.compress.compressors.CompressorStreamFactory
 import scala.xml.pull._
 import scala.collection.mutable.ArrayBuffer
+import javax.xml.stream._
+import javax.xml.stream.events._
+import javax.xml.stream.util._
 
 class VocabularyOptions extends cc.factorie.util.CmdOptions {
   val minCount = new CmdOption("min-count", 200, "INT", "Words with count smaller than this will be discarded.  Default is 200.")
@@ -81,10 +84,18 @@ object Vocabulary {
           }
         }
       }
-      // bz2 compress wikipedia XML
       case name if name.startsWith("enwiki") && name.endsWith(".xml.bz2") => {
-        val input = new CompressorStreamFactory().createCompressorInputStream(new BufferedInputStream(new FileInputStream(file)))
-        val xml = new XMLEventReader(Source.fromInputStream(input))
+        val docIterator = cc.factorie.app.nlp.load.LoadWikipediaPlainText.fromCompressedFile(file, opts.maxWikiPages.value)
+        new Iterator[String] {
+          def hasNext: Boolean = docIterator.hasNext
+          def next(): String = { wikipediaArticleCount += 1; val doc = docIterator.next; println(doc.name); doc.string }
+        }
+      }
+      // bz2 compress wikipedia XML
+      case name if name.startsWith("deprecated enwiki") && name.endsWith(".xml.bz2") => {
+        val input = new CompressorStreamFactory().createCompressorInputStream(CompressorStreamFactory.BZIP2, new FileInputStream(file))
+        val xml = new scala.xml.pull.XMLEventReader(Source.fromInputStream(input))
+        //val xml = XMLInputFactory.newInstance().createXMLEventReader(new InputStreamReader(input))
         val cleaningRegex = List(
             "\\{\\{[^\\}]*\\}\\}", // Remove everything {{inside}}
             "\\{\\|[^\\}]*\\|\\}", // Remove everything {|inside|}
@@ -96,7 +107,7 @@ object Vocabulary {
         new Iterator[String] {
           def hasNext: Boolean = {
             val result = xml.hasNext && wikipediaArticleCount < opts.maxWikiPages.value // Artificially stopping early
-            //if (!result) { xml.stop(); input.close(); println(getClass.getName+": fileToStringIterator closing.") }
+            if (!result) { /*xml.close();*/ xml.stop(); input.close(); println(getClass.getName+": fileToStringIterator closing.") }
             result
           }
           def next(): String = {
