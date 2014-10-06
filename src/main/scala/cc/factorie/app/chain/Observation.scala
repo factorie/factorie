@@ -101,7 +101,6 @@ object Observations {
     addNeighboringFeatureConjunctions(observations, vf, null.asInstanceOf[String], offsetConjunctions:_*)
   /** Add new features created as conjunctions of existing features, with the given offsets, but only add features matching regex pattern. */
   def addNeighboringFeatureConjunctions[A<:Observation[A]](observations:IndexedSeq[A], vf:A=>CategoricalVectorVar[String], regex:String, offsetConjunctions:Seq[Int]*): Unit = {
-    //println(observations.toString())
     val size = observations.size
     if (size == 0) return
     val seqStart = observations.head.position
@@ -111,10 +110,8 @@ object Observations {
     var i = 0
     while (i < size) {
       val token = observations(i)
-      //println("\t" + token.toString())
       val thisTokenNewFeatures = newFeatures(i)
       for (offsets <- offsetConjunctions) {
-        //println("\t\t" + offsets)
         thisTokenNewFeatures ++= appendConjunctions(token, seqStart, seqEnd, vf, regex, null, offsets)
           .map(
             list => list
@@ -126,7 +123,6 @@ object Observations {
             )
               .mkString("_&_")
           )
-        //println("\t\t\t" + thisTokenNewFeatures)
       }
       // TODO "f+o" is doing string concatenation, consider something faster
       i += 1
