@@ -115,29 +115,30 @@ class RefMentionConverter(val pipeline:DocumentAnnotationPipeline) {
   def toDocEntNode(ref:ReferenceMention):Option[Mention[DocEntityVars]] = {
     val doc = pipeline.process(ref.doc.get)
 
-    val (s, e) = ref.offsets match {
-      case Some((_s, _e)) => _s -> _e
+    val offsetOpt = ref.offsets match {
       case None =>
-        val m = ref.name.r.findFirstMatchIn(doc.string)
-        m.get.start -> m.get.end
+        ref.name.r.findFirstMatchIn(doc.string).map(m => m.start -> m.end)
+      case otw => otw
     }
-    doc.getSectionByOffsets(s, e).flatMap(_.offsetSnapToTokens(s, e)) match {
-      case Some(refSpan) =>
-        implicit val d:DiffList = null
-        val xMent = new Mention[DocEntityVars](new DocEntityVars())
-        xMent.variables.names ++= refSpan.map{t:Token => t.lemmaString}.toCountBag
-        xMent.variables.context ++= refSpan.contextWindow(10).map(_.lemmaString).toCountBag
+    offsetOpt.flatMap{ case (s, e) =>
+      doc.getSectionByOffsets(s, e).flatMap(_.offsetSnapToTokens(s, e)) match {
+        case Some(refSpan) =>
+          implicit val d:DiffList = null
+          val xMent = new Mention[DocEntityVars](new DocEntityVars())
+          xMent.variables.names ++= refSpan.map{t:Token => t.lemmaString}.toCountBag
+          xMent.variables.context ++= refSpan.contextWindow(10).map(_.lemmaString).toCountBag
 
-        Option(doc.coref).flatMap{_.findOverlapping(refSpan)} match {
-          case Some(ment) =>
-            xMent.variables.++=(DocEntityVars.fromWithinDocEntity(ment.entity))(null)
-            xMent.withinDocEntityId = ment.entity.uniqueId
-          case None => println("Could not find coref or align mention: " + ref)
-        }
-        Some(xMent)
-      case None =>
-        println("WARNING: Failed to find tokens for reference mention: " + ref)
-        None
+          Option(doc.coref).flatMap{_.findOverlapping(refSpan)} match {
+            case Some(ment) =>
+              xMent.variables.++=(DocEntityVars.fromWithinDocEntity(ment.entity))(null)
+              xMent.withinDocEntityId = ment.entity.uniqueId
+            case None => println("Could not find coref or align mention: " + ref)
+          }
+          Some(xMent)
+        case None =>
+          println("WARNING: Failed to find tokens for reference mention: " + ref)
+          None
+      }
     }
   }
 }

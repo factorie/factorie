@@ -60,7 +60,7 @@ object HeadTokenOffset {
     // If there is a parse, then traverse up the tree until just before we exit the Span
     val parse = sentence.parse
     if (parse ne null) {
-      var headSentenceIndex = span.end-1 - sentence.start
+      var headSentenceIndex = math.min(span.end, sentence.end)-1 - sentence.start
       var parentSentenceIndex = parse.parentIndex(headSentenceIndex)
       while (span.contains(parentSentenceIndex + sentence.start)) {
         headSentenceIndex = parentSentenceIndex
