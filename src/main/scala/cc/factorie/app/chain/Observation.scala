@@ -111,19 +111,9 @@ object Observations {
     while (i < size) {
       val token = observations(i)
       val thisTokenNewFeatures = newFeatures(i)
-      for (offsets <- offsetConjunctions) {
-        thisTokenNewFeatures ++= appendConjunctions(token, seqStart, seqEnd, vf, regex, null, offsets)
-          .map(
-            list => list
-              .sortBy(
-            { case (f, o) => o + f}
-            )
-              .map(
-            { case (f, o) => if (o == 0) f else f + "@" + o}
-            )
-              .mkString("_&_")
-          )
-      }
+      for (offsets <- offsetConjunctions)
+        thisTokenNewFeatures ++= appendConjunctions(token, seqStart, seqEnd, vf, regex, null, offsets).map(list => list.sortBy({case(f,o)=>o+f}).map({case(f,o)=> if (o == 0) f else f+"@"+o}).mkString("_&_"))
+      
       // TODO "f+o" is doing string concatenation, consider something faster
       i += 1
     }
