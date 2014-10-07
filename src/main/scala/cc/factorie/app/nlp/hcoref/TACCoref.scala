@@ -10,6 +10,7 @@ import cc.factorie.app.nlp.ner.NoEmbeddingsConllStackedChainNer
 import cc.factorie.app.nlp.coref.ParseForwardCoref
 import cc.factorie.app.nlp.parse.OntonotesTransitionBasedParser
 import scala.util.Random
+import cc.factorie.app.nlp.segment.{DeterministicSentenceSegmenter, DeterministicTokenizer}
 
 /**
  * @author John Sullivan
@@ -33,6 +34,8 @@ object TACCoref {
 
 
     val pipelineElements = Seq(
+      DeterministicTokenizer,
+      DeterministicSentenceSegmenter,
       OntonotesForwardPosTagger,
       NoEmbeddingsConllStackedChainNer,
       OntonotesTransitionBasedParser,
