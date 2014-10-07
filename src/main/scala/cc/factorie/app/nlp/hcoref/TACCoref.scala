@@ -112,7 +112,12 @@ class RefMentionConverter(val pipeline:DocumentAnnotationPipeline) {
   def toDocEntNode(ref:ReferenceMention):Option[Mention[DocEntityVars]] = {
     val doc = pipeline.process(ref.doc.get)
 
-    val (s, e) = ref.offsets.get
+    val (s, e) = ref.offsets match {
+      case Some((_s, _e)) => _s -> _e
+      case None =>
+        val m = ref.name.r.findFirstMatchIn(doc.string)
+        m.get.start -> m.get.end
+    }
     doc.getSectionByOffsets(s, e).flatMap(_.offsetSnapToTokens(s, e)) match {
       case Some(refSpan) =>
         implicit val d:DiffList = null
