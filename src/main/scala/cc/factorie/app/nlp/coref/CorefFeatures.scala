@@ -30,6 +30,7 @@ class MentionCharacteristics(val mention: Mention) {
   lazy val isPossessive = CorefFeatures.posSet.contains(mention.phrase.headToken.posTag.categoryValue)
 
   lazy val hasSpeakWord = mention.phrase.exists(s => lexicon.iesl.Say.contains(s.string))
+  lazy val hasSpeakWordContext = prev.exists(w => lexicon.iesl.Say.containsWord(w)) || follow.exists(w => lexicon.iesl.Say.containsWord(w))
   lazy val wnLemma = WordNet.lemma(mention.phrase.headToken.string, "n")
   lazy val wnSynsets = WordNet.synsets(wnLemma).toSet
   lazy val wnHypernyms = WordNet.hypernyms(wnLemma)
@@ -62,6 +63,9 @@ class MentionCharacteristics(val mention: Mention) {
   lazy val numberIndex = mention.phrase.attr[Number].intValue
   lazy val nounPhraseTypeIndex = mention.phrase.attr[NounPhraseType].intValue
   lazy val headPos = mention.phrase.headToken.posTag.categoryValue
+  lazy val inParens = mention.phrase.sentence.tokens.exists(t => t.posTag.categoryValue == "LRB" && t.positionInSection < mention.phrase.start)
+  lazy val prev = Vector(TokenFreqs.getTokenStringAtOffset(mention.phrase(0),-1), TokenFreqs.getTokenStringAtOffset(mention.phrase(0),-2))
+  lazy val follow = Vector(TokenFreqs.getTokenStringAtOffset(mention.phrase.last,1), TokenFreqs.getTokenStringAtOffset(mention.phrase.last,2))
 
   lazy val acronym: Set[String] = {
     if (mention.phrase.length == 1)
