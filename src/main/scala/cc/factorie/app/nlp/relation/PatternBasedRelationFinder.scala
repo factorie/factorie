@@ -47,7 +47,8 @@ class PatternBasedRelationFinder(predictors:Seq[PatternRelationPredictor]) exten
   }
 }
 
-object PatternBasedRelationFinder extends PatternBasedRelationFinder(PatternRelationPredictor.predictorsFromStreams(getClass.getResourceAsStream("/cc/factorie/app/nlp/relation/patterns.tuned"), getClass.getResourceAsStream("/cc/factorie/app/nlp/relation/argtypes_ontonotes")))
+object OntoNotesPatternBasedRelationFinder extends PatternBasedRelationFinder(PatternRelationPredictor.predictorsFromStreams(getClass.getResourceAsStream("/cc/factorie/app/nlp/relation/patterns.tuned"), getClass.getResourceAsStream("/cc/factorie/app/nlp/relation/argtypes_ontonotes")))
+object ConllPatternBasedRelationFinder extends PatternBasedRelationFinder(PatternRelationPredictor.predictorsFromStreams(getClass.getResourceAsStream("/cc/factorie/app/nlp/relation/patterns.tuned"), getClass.getResourceAsStream("/cc/factorie/app/nlp/relation/argtypes_conll")))
 
 
 case class PatternRelationPredictor(relation : String, patternConfidences : Map[String, Double], qTypes : Set[String],
