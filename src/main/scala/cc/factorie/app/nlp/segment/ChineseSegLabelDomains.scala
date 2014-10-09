@@ -17,6 +17,7 @@ import scala.collection.mutable.ArrayBuffer
 import cc.factorie._
 import cc.factorie.app.nlp._
 import cc.factorie.variable._
+import cc.factorie.app.chineseStrings._
 
 abstract class SegmentationLabelDomain
   extends CategoricalDomain[String]
@@ -65,7 +66,7 @@ trait SegmentedCorpusLabeling {
     val labeledCorpus =
       fileLines.map( 
         line => (0 until line.size).filter( 
-          i => !isWhiteSpace(line(i)) 
+          i => !isWhiteSpace(line(i))
         ).map( 
           i => getLabeledCharacter(i, line) 
         ).toIndexedSeq
@@ -111,37 +112,5 @@ trait SegmentedCorpusLabeling {
   //Checks if a character in a training set is last in a word
   def isLast(i: Int, line: String): Boolean = 
     (i == (line.size - 1) || isWhiteSpace(line(i+1)) && !isWhiteSpace(line(i)))
-
-  def isEndOfSentence(character: Char): Boolean = {
-
-    List( 0x002C,
-          0x3002,
-          0xFE50,
-          0xFE52,
-          0xFE54,
-          0xFE56,
-          0xFE57,
-          0xFF01,
-          0xFF0C,
-          0xFF1B,
-          0xFF1F,
-          0xFF61
-    ).exists(
-      punct => character == punct
-    )
-  }
-
-  def isWhiteSpace(character: Char): Boolean = {
-
-    List( (0x0000, 0x0020), 
-          (0x0085, 0x0085), 
-          (0x2000, 0x200F),
-          (0x2028, 0x202F),
-          (0x205F, 0x206F),
-          (0x3000, 0x3000)
-    ).exists( 
-      range => character >= range._1 && character <= range._2
-    )
-  }
 
 }

@@ -19,6 +19,7 @@ import scala.collection.mutable
 
 /** A sub-sequence of Tokens within a Section (which is in turn part of a Document). */
 class TokenSpan(theSection:Section, initialStart:Int, initialLength:Int) extends SpanVariable[Section,Token](theSection, initialStart, initialLength) with Attr {
+  def this(tokens:Seq[Token]) = this(tokens.head.section, tokens.head.positionInSection, tokens.size)
   /** The Document Section of which this TokenSpan is a subsequence. */
   final def section = chain  // Just a convenient alias
   /** The Document to which this TokenSpan belongs. */

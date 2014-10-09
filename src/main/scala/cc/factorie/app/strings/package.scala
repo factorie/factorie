@@ -106,3 +106,121 @@ package object strings {
   def porterStem(s:String): String = PorterStemmer(s)
   
 }
+
+package object chineseStrings {
+
+  def isEndOfSentence(character: Char): Boolean = {
+
+    List(
+      0x002C,
+      0x3002,
+      0xFE50,
+      0xFE52,
+      0xFE54,
+      0xFE56,
+      0xFE57,
+      0xFF01,
+      0xFF0C,
+      0xFF1B,
+      0xFF1F,
+      0xFF61
+    ).exists(
+        punct => character == punct
+    )
+  }
+
+  def isWhiteSpace(character: Char): Boolean = {
+
+    List(
+      (0x0000, 0x0020),
+      (0x0085, 0x0085),
+      (0x2000, 0x200F),
+      (0x2028, 0x202F),
+      (0x205F, 0x206F),
+      (0x3000, 0x3000)
+    ).exists(
+        range => character >= range._1 && character <= range._2
+    )
+  }
+
+  def isPunctuation(character: Char): Boolean = {
+    List(
+      (0x0021, 0x002F),
+      (0x003A, 0x0040),
+      (0x005B, 0x0060),
+      (0x007B, 0x007E),
+      (0x2000, 0x206F),
+      (0x2E00, 0x2E42),
+      (0x3000, 0x303F),
+      (0xFE10, 0xFE19),
+      (0xFE30, 0xFE42),
+      (0xFE50, 0xFE6F),
+      (0xFF01, 0xFF0F),
+      (0xFF1A, 0xFF20),
+      (0xFF3B, 0xFF40),
+      (0xFF5B, 0xFF65)
+    ).exists(
+      range => character >= range._1 && character <= range._2
+    )
+  }
+
+  def hasPunctuation(word: String): Boolean = {
+    word.exists( character => isPunctuation(character) )
+  }
+
+  def isNumeric(character: Char): Boolean = {
+    List(
+      (0x0030, 0x0039),
+      (0xFF10, 0xFF19)
+    ).exists(
+      range => character >= range._1 && character <= range._2
+    )
+  }
+
+  def hasNumeric(word: String): Boolean = {
+    word.exists( character => isNumeric(character) )
+  }
+
+  def isChineseNumeric(character: Char): Boolean = {
+    List(
+      (0x4E00, 0x4E00),
+      (0x4E8C, 0x4E8C),
+      (0x4E09, 0x4E09),
+      (0x56DB, 0x56DB),
+      (0x4E94, 0x4E94),
+      (0x561D, 0x561D),
+      (0x4E03, 0x4E03),
+      (0x516B, 0x516B),
+      (0x4E5D, 0x4E5D),
+      (0x5341, 0x5341),
+      (0x767E, 0x767E),
+      (0x5343, 0x5343),
+      (0x4E07, 0x4E07),
+      (0x842C, 0x842C),
+      (0x5104, 0x5104),
+      (0x4EBF, 0x4EBF),
+      (0x5146, 0x5146)
+    ).exists(
+      range => character >= range._1 && character <= range._2
+    )
+  }
+
+  def hasChineseNumeric(word: String): Boolean = {
+    word.exists( character => isChineseNumeric(character) )
+  }
+
+  def isAlpha(character: Char): Boolean = {
+    List(
+      (0x0041, 0x005A),
+      (0x0061, 0x007A),
+      (0xFF21, 0xFF3A),
+      (0xFF41, 0xFF5A)
+    ).exists(
+      range => character >= range._1 && character <= range._2
+    )
+  }
+
+  def hasAlpha(word: String): Boolean = {
+    word.exists( character => isAlpha(character) )
+  }
+}

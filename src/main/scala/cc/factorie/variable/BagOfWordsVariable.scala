@@ -36,9 +36,7 @@ class BagOfWords(initialWords: Iterable[String] = null, initialBag: Map[String, 
   if (initialBag != null) for ((k, v) <- initialBag) this +=(k, v)
   def l2Norm = scala.math.sqrt(_l2Norm)
   def l1Norm = _l1Norm
-  def asHashMap: HashMap[String, Double] = {
-    val result = new HashMap[String, Double]; result ++= _bag; result
-  }
+  def asHashMap = _bag
   override def toString = _bag.toString()
   def apply(s: String): Double = _bag.getOrElse(s, 0.0)
   def contains(s: String): Boolean = _bag.contains(s)
@@ -118,8 +116,8 @@ class BagOfWordsVariable(initialWords: Iterable[String] = Nil, initialMap: Map[S
   final def -=(x: BagOfWords): Unit = remove(x)(null)
   final def ++=(xs: Iterable[String]): Unit = xs.foreach(add(_)(null))
   final def --=(xs: Iterable[String]): Unit = xs.foreach(remove(_)(null))
-  final def ++=(xs: HashMap[String, Double]): Unit = for ((k, v) <- xs) add(k, v)(null)
-  final def --=(xs: HashMap[String, Double]): Unit = for ((k, v) <- xs) remove(k, v)(null)
+  final def ++=(xs: Map[String, Double]): Unit = for ((k, v) <- xs) add(k, v)(null)
+  final def --=(xs: Map[String, Double]): Unit = for ((k, v) <- xs) remove(k, v)(null)
 
   def ++(that:BagOfWordsVariable)(implicit d:DiffList):BagOfWordsVariable = {
     val n = new BagOfWordsVariable()

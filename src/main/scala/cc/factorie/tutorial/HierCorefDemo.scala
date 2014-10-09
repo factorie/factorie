@@ -153,7 +153,7 @@ object HierCorefDemo {
 
     sampler.infer
 
-    mentions.filter{  e => e.isMention && e.parent.isDefined}.map{m => m.id -> m.root.id}
+    mentions.filter{  e => e.isMention && e.getParent.isDefined}.map{m => m.uniqueId -> m.root.uniqueId}
   }
 
   def doCoreference(mentions:Iterable[Node[WikiCorefVars]], iterations:Int, model:WikiCorefModel):Iterable[(Node[WikiCorefVars], Node[WikiCorefVars])] = {
@@ -166,7 +166,7 @@ object HierCorefDemo {
     }
 
     sampler.infer
-    mentions.filter{  e => e.isMention && e.parent.isDefined}.map{m => m -> m.root}
+    mentions.filter{  e => e.isMention && e.getParent.isDefined}.map{m => m -> m.root}
   }
 
 
