@@ -34,6 +34,6 @@ class RelationMentionsSet extends SetVariable[RelationMention]
 
 class RelationMention(val arg1: Mention, val arg2: Mention, var isArg1First:Boolean=true) extends ArrowVariable(arg1, arg2) with Attr {
   val _relations = mutable.ArrayBuffer[TACRelation]()
-  this.attr += _relations
+  this.attr += TACRelationList(_relations)
   def relations = this.attr[TACRelationList]
 }

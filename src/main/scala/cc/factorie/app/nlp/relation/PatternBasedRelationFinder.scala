@@ -41,7 +41,7 @@ class PatternBasedRelationFinder(predictors:Seq[PatternRelationPredictor]) exten
     }
 
     val relSet = new RelationMentionsSet()
-    relSet.addAll(relationMentions.filter(_.relations.value.nonEmpty))(null)
+    relSet.addAll(relationMentions.filter(_._relations.value.nonEmpty))(null)
     doc.attr += relSet
     doc
   }
