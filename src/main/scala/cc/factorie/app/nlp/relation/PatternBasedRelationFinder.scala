@@ -79,7 +79,7 @@ object PatternRelationPredictor {
   def predictorsFromStreams(patternStream:InputStream, typeFileStream:InputStream):Seq[PatternRelationPredictor] = {
 
     val relToPats = Source.fromInputStream(patternStream, "UTF8").getLines.map(_.stripLineEnd.split(" ", 3)).
-      map(fields => fields(1) -> (fields(2), fields(0).toDouble)).toList.groupBy(_._1).map { case (k,v) => (k,v.map(_._2).toSet)}
+      map(fields => fields(1) -> (fields(2), fields(0).toDouble)).toList.groupBy(_._1).map { case (k,v) => (k,v.map(_._2).toMap)}
 
     // reads types from a white-space & comma-separted file of the form:
     // relation arg1type,arg1type... arg2type,arg2type
@@ -87,6 +87,6 @@ object PatternRelationPredictor {
     val relToTypes = Source.fromInputStream(typeFileStream, "UTF8").getLines.map(_.stripLineEnd.split(" ", 3)).
       map(fields => fields(0) -> (fields(1).split(',').toSet, fields(2).split(',').toSet)).toList
     for ((rel, (arg1types, arg2types)) <- relToTypes) yield
-      new PatternRelationPredictor(rel, relToPats.getOrElse(rel, Set()), arg1types, arg2types)
+      new PatternRelationPredictor(rel, relToPats.getOrElse(rel, Map.empty[String, Double]), arg1types, arg2types)
   }
 }
