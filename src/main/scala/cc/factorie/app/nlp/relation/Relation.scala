@@ -29,13 +29,18 @@ object Relation {
     println("processed pipeline")
     val relMentions = doc.attr[RelationMentionsSet].value
 
+    println("Detected Mentions: ")
+    doc.coref.mentions.foreach { mention =>
+      println(mention.phrase.string + " with type " + mention.phrase.head.nerTag.baseCategoryValue + " in sentence " + mention.phrase.sentence.string)
+    }
+
     println("writing mentions")
     relMentions.foreach { rm =>
       rm.relations.value.foreach { relation =>
         if(rm.isArg1First) {
-          println(rm.arg1.string + " " + relation.value + " " + rm.arg2.string)
+          println(rm.arg1.string + " " + relation.value + " " + rm.arg2.string + " %.4f ".format(relation.confidence) + relation.provenance)
         } else {
-          println(rm.arg2.string + " " + relation.value + " " + rm.arg1.string)
+          println(rm.arg2.string + " " + relation.value + " " + rm.arg1.string + " %.4f ".format(relation.confidence) + relation.provenance)
         }
       }
     }
