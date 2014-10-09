@@ -32,7 +32,7 @@ object Build extends sbt.Build {
     configs(NoNLP, WithNLP).
     settings(
       organization := "cc.factorie",
-      version := "1.0-SNAPSHOT",
+      version := "1.1-SNAPSHOT",
       scalaVersion := "2.10.4",
       scalacOptions := Seq("-deprecation", "-unchecked", "-encoding", "utf8"),
       resolvers ++= Dependencies.resolutionRepos,
@@ -85,6 +85,6 @@ object Dependencies {
 
   object Resources {
     // This may be brittle, but intransitive() avoids creating a circular dependency.
-    val nlpresources = "cc.factorie.app.nlp" % "factorie-nlp-resources" % "0.0.2" % "with-nlp-resources" intransitive()
+    val nlpresources = "cc.factorie.app.nlp" % "all-models" % "1.0.0" % "with-nlp-resources" intransitive()
   }
 }
