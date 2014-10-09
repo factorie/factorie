@@ -6,24 +6,32 @@ import cc.factorie.app.nlp.pos.OntonotesForwardPosTagger
 import cc.factorie.app.nlp.ner.NoEmbeddingsConllStackedChainNer
 import cc.factorie.app.nlp.parse.OntonotesTransitionBasedParser
 import cc.factorie.app.nlp.coref.ParseForwardCoref
+import java.io.FileInputStream
 
 /**
  * @author John Sullivan
  */
 object Relation {
-  val pipelineElements = Seq(
-    OntonotesForwardPosTagger,
-    NoEmbeddingsConllStackedChainNer,
-    OntonotesTransitionBasedParser,
-    ParseForwardCoref,
-    PatternBasedRelationFinder
-  )
 
-  val pipeline = DocumentAnnotatorPipeline(DocumentAnnotatorPipeline.defaultDocumentAnnotationMap.toMap, Nil, pipelineElements.flatMap(_.postAttrs))
   def main(args:Array[String]) {
 
     val doc = new Document(Source.fromFile(args(0)).getLines().mkString("\n")).setName(args(0).split("""/""").last)
 
+    val relFinder = if(args.length >= 3) {
+      new PatternBasedRelationFinder(PatternRelationPredictor.predictorsFromStreams(new FileInputStream(args(1)), new FileInputStream(args(2))))
+    } else {
+      ConllPatternBasedRelationFinder
+    }
+
+    val pipelineElements = Seq(
+      OntonotesForwardPosTagger,
+      NoEmbeddingsConllStackedChainNer,
+      OntonotesTransitionBasedParser,
+      ParseForwardCoref,
+      relFinder 
+    )
+    val annoMap = DocumentAnnotatorPipeline.defaultDocumentAnnotationMap.toMap ++ Seq(classOf[RelationMentionsSet] -> (() => relFinder))
+    val pipeline = DocumentAnnotatorPipeline(annoMap, Nil, pipelineElements.flatMap(_.postAttrs))
     println("loaded document")
     pipeline process doc
     println("processed pipeline")
