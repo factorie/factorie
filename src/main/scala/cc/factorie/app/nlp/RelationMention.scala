@@ -3,6 +3,7 @@ package cc.factorie.app.nlp
 import cc.factorie.variable._
 import cc.factorie.app.nlp.coref._
 import cc.factorie.util.Attr
+import scala.collection.mutable
 
 object RelationArgFeaturesDomain extends CategoricalDomain[String]
 
@@ -24,11 +25,16 @@ class ArgFeatures(val arg: Mention, val first: Boolean) extends BinaryFeatureVec
   }
 }
 
+case class TACRelation(value:String)
+
+case class TACRelationList(value:Iterable[TACRelation])
+
+
 @deprecated("Marked for Possible Deletion")
 class RelationMentionsSet extends SetVariable[RelationMention]
 
-@deprecated("Marked for Possible Deletion")
-class RelationMention(val arg1: Mention, val arg2: Mention, val relationType: String, val relationSubType: Option[String]) extends ArrowVariable(arg1, arg2) with Attr {
-  val arg1Features = new ArgFeatures(arg1, true)
-  val arg2Features = new ArgFeatures(arg2, false)
+class RelationMention(val arg1: Mention, val arg2: Mention, var isArg1First:Boolean=true) extends ArrowVariable(arg1, arg2) with Attr {
+  val _relations = mutable.ArrayBuffer[TACRelation]()
+  this.attr += _relations
+  def relations = this.attr[TACRelationList]
 }
