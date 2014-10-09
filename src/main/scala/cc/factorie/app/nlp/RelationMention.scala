@@ -30,7 +30,6 @@ case class TACRelation(value:String)
 case class TACRelationList(value:Iterable[TACRelation])
 
 
-@deprecated("Marked for Possible Deletion")
 class RelationMentionsSet extends SetVariable[RelationMention]
 
 class RelationMention(val arg1: Mention, val arg2: Mention, var isArg1First:Boolean=true) extends ArrowVariable(arg1, arg2) with Attr {
