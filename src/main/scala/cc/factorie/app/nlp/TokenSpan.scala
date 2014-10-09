@@ -65,7 +65,7 @@ class TokenSpan(theSection:Section, initialStart:Int, initialLength:Int) extends
   /**
    * Returns the character offsets of this TokenSpan into the raw text of its original document.
    */
-  def characterOffsets:(Int, Int) = this.apply(0).stringStart -> this.apply(length).stringEnd
+  def characterOffsets:(Int, Int) = this.head.stringStart -> this.last.stringEnd
 
   /**
    * Returns a sequence of tokens that contains @param size tokens before and after the tokenspan.
