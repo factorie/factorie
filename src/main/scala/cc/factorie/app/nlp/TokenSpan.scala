@@ -18,7 +18,7 @@ import cc.factorie.variable._
 import scala.collection.mutable
 
 /** A sub-sequence of Tokens within a Section (which is in turn part of a Document). */
-class TokenSpan(theSection:Section, initialStart:Int, initialLength:Int) extends SpanVariable[Section,Token](theSection, initialStart, initialLength) with Attr {
+class TokenSpan(theSection:Section, initialStart:Int, initialLength:Int) extends SpanVariable[Section,Token](theSection, initialStart, initialLength) with Attr with Ordered[TokenSpan] {
   def this(tokens:Seq[Token]) = this(tokens.head.section, tokens.head.positionInSection, tokens.size)
   /** The Document Section of which this TokenSpan is a subsequence. */
   final def section = chain  // Just a convenient alias
@@ -88,6 +88,36 @@ class TokenSpan(theSection:Section, initialStart:Int, initialLength:Int) extends
       idx += 1
     }
     window
+  }
+
+
+  /**
+   * Implements ordering between two tokenspans, assumed to share the same document
+   */
+  def compare(other: TokenSpan): Int = if(this.section.head.stringStart > other.section.head.stringStart) {
+    1
+  } else if(this.section.head.stringStart < other.section.head.stringStart) {
+    -1
+  } else {
+    if (this.sentence.start > other.sentence.start) {
+      1
+    } else if (this.sentence.start < other.sentence.start) {
+      -1
+    } else {
+      if (this.start > other.start) {
+        1
+      } else if (this.start < other.start) {
+        -1
+      } else {
+        if (this.end < other.end) {
+          1
+        } else if (this.end > other.end) {
+          -1
+        } else {
+          0
+        }
+      }
+    }
   }
 }
 trait TokenSpanCollection[S<:TokenSpan] extends SpanVarCollection[S, Section, Token]
