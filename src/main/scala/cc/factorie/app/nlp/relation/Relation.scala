@@ -1,7 +1,7 @@
 package cc.factorie.app.nlp.relation
 
 import scala.io.Source
-import cc.factorie.app.nlp.{RelationMentionsSet, DocumentAnnotatorPipeline, Document}
+import cc.factorie.app.nlp.{DocumentAnnotatorPipeline, Document}
 import cc.factorie.app.nlp.pos.OntonotesForwardPosTagger
 import cc.factorie.app.nlp.ner.NoEmbeddingsConllStackedChainNer
 import cc.factorie.app.nlp.parse.OntonotesTransitionBasedParser

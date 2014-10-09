@@ -1,4 +1,4 @@
-package cc.factorie.app.nlp
+package cc.factorie.app.nlp.relation
 
 import cc.factorie.variable._
 import cc.factorie.app.nlp.coref._
@@ -25,7 +25,7 @@ class ArgFeatures(val arg: Mention, val first: Boolean) extends BinaryFeatureVec
   }
 }
 
-case class TACRelation(value:String)
+case class TACRelation(value:String, confidence:Double, provenance:String)
 
 case class TACRelationList(value:Iterable[TACRelation])
 

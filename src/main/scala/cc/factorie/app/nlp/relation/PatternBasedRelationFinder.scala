@@ -2,9 +2,6 @@ package cc.factorie.app.nlp.relation
 
 import cc.factorie.app.nlp._
 import cc.factorie.app.nlp.coref.{ParseForwardCoref, WithinDocCoref}
-import cc.factorie.app.nlp.pos.OntonotesForwardPosTagger
-import cc.factorie.app.nlp.ner.NoEmbeddingsConllStackedChainNer
-import cc.factorie.app.nlp.parse.OntonotesTransitionBasedParser
 import scala.io.Source
 import java.io.InputStream
 
@@ -38,8 +35,9 @@ class PatternBasedRelationFinder(predictors:Seq[PatternRelationPredictor]) exten
 
     for (rm <- relationMentions;
          predictor <- predictors;
-         if predictor.relationMatch(rm)) {
-      rm._relations.+=(TACRelation(predictor.relation))
+         matchLevel = predictor.relationMatch(rm);
+         if matchLevel > 0.0) {
+      rm._relations.+=(TACRelation(predictor.relation, matchLevel, rm.arg1.phrase.sentence.string))
     }
 
     val relSet = new RelationMentionsSet()
@@ -52,7 +50,7 @@ class PatternBasedRelationFinder(predictors:Seq[PatternRelationPredictor]) exten
 object PatternBasedRelationFinder extends PatternBasedRelationFinder(PatternRelationPredictor.predictorsFromStreams(getClass.getResourceAsStream("/cc/factorie/app/nlp/relation/patterns.tuned"), getClass.getResourceAsStream("/cc/factorie/app/nlp/relation/argtypes_ontonotes")))
 
 
-case class PatternRelationPredictor(relation : String, patterns : Set[String], qTypes : Set[String],
+case class PatternRelationPredictor(relation : String, patternConfidences : Map[String, Double], qTypes : Set[String],
                                            sTypes : Set[String]) {
 
   val ARG1 = "$ARG1"
@@ -60,7 +58,7 @@ case class PatternRelationPredictor(relation : String, patterns : Set[String], q
 
 
   /** The first boolean indicates if the relation holds in the forward direction (arg1 first) the second if it holds in the reverse */
-  def relationMatch(rm : RelationMention) : Boolean = {
+  def relationMatch(rm : RelationMention) : Double = {
     val arg1End = rm.arg1.phrase.last.positionInSentence
     val arg2Start = rm.arg2.phrase.head.positionInSentence
 
@@ -72,8 +70,8 @@ case class PatternRelationPredictor(relation : String, patterns : Set[String], q
 
     val arg1Type = rm.arg1.phrase.head.nerTag.baseCategoryValue
     val arg2Type = rm.arg2.phrase.head.nerTag.baseCategoryValue
-    val hasMatch = qTypes.contains(arg1Type) && sTypes.contains(arg2Type) && patterns.contains(pattern)
-    hasMatch
+    val hasMatch = qTypes.contains(arg1Type) && sTypes.contains(arg2Type) && patternConfidences.contains(pattern)
+    if(hasMatch) patternConfidences(pattern) else 0.0
   }
 }
 
@@ -81,7 +79,7 @@ object PatternRelationPredictor {
   def predictorsFromStreams(patternStream:InputStream, typeFileStream:InputStream):Seq[PatternRelationPredictor] = {
 
     val relToPats = Source.fromInputStream(patternStream, "UTF8").getLines.map(_.stripLineEnd.split(" ", 3)).
-      map(fields => fields(1) -> fields(2)).toList.groupBy(_._1).map { case (k,v) => (k,v.map(_._2).toSet)}
+      map(fields => fields(1) -> (fields(2), fields(0).toDouble)).toList.groupBy(_._1).map { case (k,v) => (k,v.map(_._2).toSet)}
 
     // reads types from a white-space & comma-separted file of the form:
     // relation arg1type,arg1type... arg2type,arg2type
