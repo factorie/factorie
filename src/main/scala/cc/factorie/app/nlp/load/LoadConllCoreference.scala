@@ -25,7 +25,7 @@ import scala.collection.mutable.{ArrayBuffer, Map}
  * autoDirOpt Option[String] (Optional) Directory path or file path to conll_auto data
  */
 
-object LoadConllTask {
+object LoadConllCoreference {
   def load(goldFilename: String, limitNumDocuments: Int, loadFromParse: Boolean, autoDirOpt:Option[String] = None): Seq[Document] = {
     val conllLoader = new Conll2011Iterator(goldFilename, loadFromParse, autoDirOpt.map {new File(_)})
     val docs = new ArrayBuffer[Document]()
