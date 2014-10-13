@@ -151,8 +151,8 @@ class UnionLexicon(val name: String, val members: PhraseLexicon*) extends Mutabl
  * Use the tag text methods in preference to the other methods, which are preserved for compatibility.
  * The other methods have the same semantics as the PhraseLexicon, which return true iff the whole string is in the lexicon.
  */
-class TriePhraseLexicon(val name: String, val tokenizer: StringSegmenter = cc.factorie.app.strings.nonWhitespaceSegmenter, val lemmatizer: Lemmatizer = LowercaseLemmatizer) extends MutableLexicon {
-  val trie = new AhoCorasick(" ")
+class TriePhraseLexicon(val name: String, val tokenizer: StringSegmenter = cc.factorie.app.strings.nonWhitespaceSegmenter, val lemmatizer: Lemmatizer = LowercaseLemmatizer, val sep: String = " ") extends MutableLexicon {
+  val trie = new AhoCorasick(sep)
   
   def +=(phrase:String): Unit = {
     val words: Seq[String] = tokenizer(phrase).toSeq
