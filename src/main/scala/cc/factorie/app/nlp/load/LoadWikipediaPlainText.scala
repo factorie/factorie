@@ -31,29 +31,12 @@ class LoadWikipediaPlainText {
   def fromCompressedFilename(filename:String, maxArticleCount:Int = Int.MaxValue): Iterator[Document] = {
     //require(filename.startsWith("enwiki") && filename.endsWith(".xml.bz2"))
     val inputStream = new CompressorStreamFactory().createCompressorInputStream(CompressorStreamFactory.BZIP2, new FileInputStream(filename))
-    return fromInputStream(inputStream)
-
-    val input = Source.fromInputStream(inputStream)
-    fromSource(input, maxArticleCount)
+    fromInputStream(inputStream)
   }
   /** This assumes that the file has format of enwiki-latest-pages-articles.xml.bz2. */
   def fromCompressedFile(file:File, maxArticleCount:Int = Int.MaxValue): Iterator[Document] = {
     val inputStream = new CompressorStreamFactory().createCompressorInputStream(CompressorStreamFactory.BZIP2, new FileInputStream(file))
-    return fromInputStream(inputStream)
-    
-    val br = new BufferedReader(new InputStreamReader(inputStream))
-    var line: String = null
-    var articleCount = 0
-    while ({ line = br.readLine(); line ne null}) {
-      if (line.contains("<text")) {
-        articleCount += 1
-        if (articleCount % 100 == 0) print("\rBufferedReader "+articleCount)
-      }
-    }
-    return null
-    
-    val input = Source.fromInputStream(inputStream)
-    fromSource(input, maxArticleCount)
+    fromInputStream(inputStream)
   }
   
   // An io.Source version of this just keeps growing until it runs out of memory, as if io.Source were keeping the entire contents in memory.
@@ -78,19 +61,10 @@ class LoadWikipediaPlainText {
         val nonBracket = "[^\\[\\]]*"
         val cleaningRegex = ("(?s)" + (List( // Make "." match also match newline
           "&lt;!--(?:.(?!--&gt;))+.--&gt;", // Remove comments
-          //"\\{\\|(?:.(?!\n\\|\\}))+.\n\\|\\}", // Remove everything {|inside|}
           "&lt;ref&gt;(?:.(?!&lt;/ref&gt;))*.&lt;/ref&gt;", // Remove everything inside <ref> and </ref>
           "&lt;math&gt;(?:.(?!&lt;/math&gt;))*.&lt;/math&gt;", // Remove everything inside <math> and </math>
           "&lt;code&gt;(?:.(?!&lt;/code&gt;))*.&lt;/code&gt;", // Remove everything inside <code> and </code>
           "&lt;gallery(?:.(?!&lt;/gallery&gt;))*.&lt;/gallery&gt;", // Remove everything inside <gallery blah> and </gallery>
-
-          // Temporarily comment out next line:
-          //s"\\[\\[[A-Za-z:]+:${nonBracket}(?:\\[\\[${nonBracket}\\]\\]${nonBracket})*\\]\\]", // Remove [[:wikisource:File:WilliamGodwin.jpg|left|thumb]]
-          
-          // Temporarily comment out next line:
-          //"(?<!\\[)\\[(?!\\[)[^\\]]*\\]", // Remove everything [inside] but not [[inside]]
-          
-          
           "&lt;(?:.(?!&gt;))*.&gt;", //Remove everything between &lt; and &gt;
           "&(?:[a-z]{2,6};)+", // Remove &quot; and solo &gt; (meaning > symbol) and &amp;nbsp; and all other similar patterns 
           "Category:",
@@ -104,10 +78,6 @@ class LoadWikipediaPlainText {
         var title: String = null
         var insideText = false
         var line: String = null
-        
-        
-        
-        
         
         while ({ line = bufferedReader.readLine(); (line ne null) && !docDone }) {
           //println(articleCount.toString+" Line>>> "+line)
@@ -126,7 +96,7 @@ class LoadWikipediaPlainText {
           }
         }
         if (line eq null) { input.close(); bufferedReaderDone = true }
-        sb = removeNestedBrackets2(sb)
+        sb = removeNestedBrackets(sb)
         val text = cleaningRegex.replaceAllIn(sb, " ")
         if (text.length == 0) return null
         articleCount += 1
@@ -138,7 +108,8 @@ class LoadWikipediaPlainText {
         nextDocument = getNextDocument
         result
       }
-      private def removeNestedBrackets2(s:StringBuffer): StringBuffer = {
+      
+      private def removeNestedBrackets(s:StringBuffer): StringBuffer = {
         val sb = new StringBuffer
         var sb2 = new StringBuffer
         var curlyOpenCount = 0
@@ -176,189 +147,15 @@ class LoadWikipediaPlainText {
         }
         sb
       }
-      private def removeNestedBrackets(s:StringBuffer): StringBuffer = {
-        val sb = new StringBuffer
-        var openCount = 0
-        var i = 0; val len = s.length
-        while (i < len) {
-          val c = s.codePointAt(i).toChar
-          if (c == '{') openCount += 1
-          else if (c == '}' && openCount > 0) openCount -= 1 // include (openCount > 0) because sometimes a }} will appear inside a comment.
-          else if (openCount == 0) sb append c
-          i += 1
-        }
-        sb
-      }
-      // No longer used...
-      private def xmlToPlainText(xmlString:String): String = {
-        //val xml = new scala.xml.pull.XMLEventReader(Source.fromString(xmlString))
-        val xml = scala.xml.XML.loadString(xmlString).iterator
-        var done = false
-        var insideText = false
-        var insideRef = false
-        var insideComment = false
-        val sb = new StringBuffer
-        var line: String = null
-        while (xml.hasNext && !done) {
-          xml.next() match {
-            case e => println(e)
-            //case EvElemStart(_, "text", _, _) => { insideText = true }
-            //case EvElemEnd(_, "text") => { insideText = false; done = true }
-            case Text(t) if insideText => {
-              if (t.startsWith("!--") && !t.endsWith("--")) insideComment = true
-              else if (t.endsWith("--")) insideComment = false
-              else if (t.startsWith("ref") && !t.endsWith("/")) insideRef = true
-              else if (t == "/ref") insideRef = false
-              else if (!insideRef && !insideComment && !t.startsWith("ref ") && !t.startsWith("#REDIRECT")) { sb append t; sb append ' ' }
-            }
-            case _ => // ignore all other tags
-          }
-        }
-        //cleaningRegex.replaceAllIn(sb.toString, " ")
-        sb.toString
-      }
+
     }
   }
 
-  
-  def fromSource(input:io.Source, maxArticleCount:Int = Int.MaxValue): Iterator[Document] = {
-    new Iterator[Document] {
-      //private val wikiModel = new WikiModel("http://www.mywiki.com/wiki/${image}", "http://www.mywiki.com/wiki/${title}")
-      //private val wikiModel = new WikiModel("${image}", "${title}")
-      //private val plainConverter = new PlainTextConverter()
-      private val lines = input.getLines()
-      private var articleCount = 0
-      private var done = false
-      private var insidePage = false
-      private var insideText = false
-      private var nextDocument = getNextDocument
-      val cleaningRegex = List(
-          "\\{\\{[^\\}]*\\}\\}", // Remove everything {{inside}}
-          "\\{\\|[^\\}]*\\|\\}", // Remove everything {|inside|}
-          "(?<!\\[)\\[(?!\\[)[^\\]]*\\]", // Remove everything [inside] but not [[inside]]
-          "\\[\\[(?:File|Image):[^\\]]+\\|", // Remove [[File:WilliamGodwin.jpg|left|thumb|[
-          "wikt:|nbsp;|ndash;|br/",
-          "Category:"
-          ).mkString("|").r
-      assert(cleaningRegex ne null)
-
-      // Keep getting next document until we get a non-null one
-      private def getNextDocument: Document = {
-        var result = getNextDocument1
-        while (lines.hasNext && (result eq null))
-          result = getNextDocument
-        result
-      }
-      // Try to fetch one document, but if there is no text in this article, return null
-      private def getNextDocument1: Document = {
-        //val nonBracket = "(?:(?:.(?!\\[\\[|\\]\\]))*)"
-        val nonBracket = "[^\\[\\]]*"
-        //val pairedBracket = s"\\[\\[$nonBracket(?:\\[\\[$nonBracket\\]\\]$nonBracket)*\\]\\]"
-        val cleaningRegex = ("(?s)" + (List( // Make "." match also match newline
-          "&lt;!--(?:.(?!--&gt;))+.--&gt;", // Remove comments
-          "\\{\\|(?:.(?!\n\\|\\}))+.\n\\|\\}", // Remove everything {|inside|}
-          "&lt;math&gt;(?:.(?!&lt;/math&gt;))*.&lt;/math&gt;", // Remove everything inside <math> and </math>
-          "&lt;code&gt;(?:.(?!&lt;/code&gt;))*.&lt;/code&gt;", // Remove everything inside <code> and </code>
-          "&lt;gallery(?:.(?!&lt;/gallery&gt;))*.&lt;/gallery&gt;", // Remove everything inside <gallery blah> and </gallery>
-          ////"\\{\\{(?:.(?!\\{\\{|\\}\\}))+.\\{\\{(?:.(?!\\}\\}|\\{\\{))+.\\}\\}(?:.(?!\\}\\}|\\{\\{))*.?\\}\\}", // Remove everything {{inside}}, and handle a single nesting of {{ {{}} {{}} }}.  The use of .? also handles closing with }}}}
-          //"\\{\\{(?:(?:.(?!\\{\\{|\\}\\}))+.?\\{\\{(?:.(?!\\}\\}|\\{\\{))*.\\}\\})+(?:.(?!\\}\\}|\\{\\{))*.?\\}\\}", // Remove everything {{inside}}, and handle a single nesting of {{ {{}} {{}} }}.  The use of .? also handles closing with }}}}
-          //"\\{\\{(?:(?:.(?!\\{\\{|\\}\\}))+.?\\{\\{(?:.(?!\\}\\}|\\{\\{))*.\\}\\})+(?:.(?!\\}\\}|\\{\\{))*.?\\}\\}", // Remove everything {{inside}}, and handle a single nesting of {{ {{}} {{}} }}.  The use of .? also handles closing with }}}}
-          ////"\\{\\{(?:[^\\{]*\\{\\{[^\\}]*\\}\\}[^\\}]*)+\\}\\}", // Remove everything {{inside}}, and handle a single nesting of {{ {{}} {{}} }}
-          //"\\{\\{[^\\}]*\\}\\}", // Remove everything {{inside}}, but this messes up multiple nestings of {{}}
-          //s"\\[\\[(?:wikisource:)?(?:File|Image|Media):${nonBracket}.?(?:\\[\\[${nonBracket}.?\\]\\]${nonBracket}.?)*.?\\]\\]",
-          
-          s"\\[\\[[A-Za-z:]+:${nonBracket}(?:\\[\\[${nonBracket}\\]\\]${nonBracket})*\\]\\]", // Remove [[:wikisource:File:WilliamGodwin.jpg|left|thumb]]
-          // Temporarily comment out next line:
-          //s"\\[\\[[A-Za-z:]+:${nonBracket}.?(?:\\[\\[${nonBracket}.?\\]\\]${nonBracket}.?)*.?\\]\\]", // Remove [[:wikisource:File:WilliamGodwin.jpg|left|thumb]]
-          "(?<!\\[)\\[(?!\\[)[^\\]]*\\]", // Remove everything [inside] but not [[inside]]
-          ////"\\[\\[(?:File|Image):[^\\]]+\\]\\]", // Remove [[File:WilliamGodwin.jpg|left|thumb]]
-          ////"\\[\\[(?:File|Image):(?(?:.(?!\\[\\[|\\]\\])+(?:\\[\\[(?:.(?!\\[\\[|\\]\\](?:.(?!\\[\\[|\\]\\])+)*\\]\\])))\\]\\]", // Remove [[File:WilliamGodwin.jpg|left|thumb]]
-          "&lt;(?:.(?!&gt;))*.&gt;", //Remove everything between &lt; and &gt;
-          "&(?:[a-z]{2,6};)+", // Remove &quot; and solo &gt; (meaning > symbol) and &amp;nbsp; and all other similar patterns 
-          //"wikt:|nbsp;|ndash;|br/",
-          "Category:",
-          "#REDIRECT",
-          "^\\s+", // Remove leading whitespace
-          "\\s+$" // Remove trailing whitespace
-          ).mkString("|"))).r
-
-        var sb = new StringBuffer(2048)
-        var docDone = false
-        var title: String = null
-        var inText = false
-        while (lines.hasNext && !docDone) {
-          val line = lines.next
-          //println(articleCount.toString+" Line>>> "+line)
-          if (!insideText) {
-            val titleIndex = line.indexOf("<title>")
-            if (titleIndex >= 0) {
-              val titleEndIndex = line.indexOf("</title>")
-              title = line.substring(titleIndex+7, titleEndIndex)
-            } else if (line.contains("<text") && !line.contains("</text>")) {
-              insideText = true; sb append line.substring(line.lastIndexOf('>')+1)
-            }
-          } else {
-            if (line.contains("</text>")) { insideText = false; docDone = true; sb append line.substring(0, line.indexOf('<')) }
-            else { sb append line; sb append '\n' }
-          }
-        }
-        if (!lines.hasNext) input.close()
-        sb = removeNestedBrackets(sb)
-        val text = cleaningRegex.replaceAllIn(sb, " ")
-        if (text.length == 0) return null
-        articleCount += 1
-        new Document(text).setName(title)
-      }
-      def hasNext: Boolean = articleCount < maxArticleCount && (nextDocument ne null)
-      def next: Document = {
-        val result = nextDocument
-        nextDocument = getNextDocument
-        result
-      }
-      private def removeNestedBrackets(s:StringBuffer): StringBuffer = {
-        val sb = new StringBuffer
-        var openCount = 0
-        var i = 0; val len = s.length
-        while (i < len) {
-          val c = s.codePointAt(i).toChar
-          if (c == '{') openCount += 1
-          else if (c == '}' && openCount > 0) openCount -= 1 // include (openCount > 0) because sometimes a }} will appear inside a comment.
-          else if (openCount == 0) sb append c
-          i += 1
-        }
-        sb
-      }
-      // No longer used...
-      private def xmlToPlainText(xmlString:String): String = {
-        //val xml = new scala.xml.pull.XMLEventReader(Source.fromString(xmlString))
-        val xml = scala.xml.XML.loadString(xmlString).iterator
-        var done = false
-        var insideText = false
-        var insideRef = false
-        var insideComment = false
-        val sb = new StringBuffer
-        while (xml.hasNext && !done) {
-          xml.next() match {
-            case e => println(e)
-            //case EvElemStart(_, "text", _, _) => { insideText = true }
-            //case EvElemEnd(_, "text") => { insideText = false; done = true }
-            case Text(t) if insideText => {
-              if (t.startsWith("!--") && !t.endsWith("--")) insideComment = true
-              else if (t.endsWith("--")) insideComment = false
-              else if (t.startsWith("ref") && !t.endsWith("/")) insideRef = true
-              else if (t == "/ref") insideRef = false
-              else if (!insideRef && !insideComment && !t.startsWith("ref ") && !t.startsWith("#REDIRECT")) { sb append t; sb append ' ' }
-            }
-            case _ => // ignore all other tags
-          }
-        }
-        //cleaningRegex.replaceAllIn(sb.toString, " ")
-        sb.toString
-      }
-    }
-  }
 }
 
+/** A simple command-line runnable Wikipedia text extractor.
+    Usage:  LoadWikipediaPlainText 1000 enwiki-latest-pages-articles.xml.bz2
+     will print to stdout the first 1000 non-empty Wikipedia articles. */
 object LoadWikipediaPlainText extends LoadWikipediaPlainText {
   def main(args:Array[String]): Unit = {
     val docs = fromCompressedFilename(args(1), args(0).toInt)
