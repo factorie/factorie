@@ -15,7 +15,7 @@ class TestDocumentStore extends FlatSpec with Matchers {
     val doc1 = new Document("If it's your job to eat a frog, it's best to do it first thing in the morning. And If it's your job to eat two frogs, it's best to eat the biggest one first.")
     DocumentAnnotatorPipeline(segment.DeterministicTokenizer, segment.DeterministicSentenceSegmenter).process(doc1)
     for (token <- doc1.tokens) token.attr += new PennPosTag(token, token.positionInSentence % PennPosDomain.size)
-    for (sentence <- doc1.sentences) sentence.attr += new ParseTree(sentence, Range(0, sentence.length).toArray, Range(0, sentence.length).map(_ % 10).toArray)
+    for (sentence <- doc1.sentences) sentence.attr += new ParseTree(sentence, Range(0, sentence.length).toArray, Range(0, sentence.length).map(_ % ParseTreeLabelDomain.length).toArray)
     doc1.annotators(classOf[PennPosTag]) = this.getClass
     doc1.annotators(classOf[ParseTree]) = this.getClass
 

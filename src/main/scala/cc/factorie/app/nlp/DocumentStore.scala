@@ -107,7 +107,7 @@ class DocumentCubbie extends Cubbie {
       for (sentence <- section.sentences) {
         offsets += sentence.start - o
         offsets += sentence.length
-        o = sentence.start
+        o = sentence.start + sentence.length
       }
       this := offsets
       this
@@ -128,9 +128,9 @@ class DocumentCubbie extends Cubbie {
       assert(cap == offsets.length)
       o = 0
       while (i < cap) {
-        println(s"new Sentence(${offsets(i)} ${offsets(i+1)})")
+        println(s"new Sentence(${offsets(i)+o} ${offsets(i+1)})")
         val s = new Sentence(section, offsets(i) + o, offsets(i+1))
-        o = s.start
+        o = s.start + s.length
         i += 2
       }
       section.document.annotators(classOf[Token]) = this.getClass
@@ -162,7 +162,7 @@ class DocumentCubbie extends Cubbie {
   class SectionParseTreesSlot(name:String) extends IntSeqSlot(name) {
     def :=(section:Section): this.type = {
       val parseIndices = new IntArrayBuffer(section.tokens.length * 2)
-      for (sentence <- section) {
+      for (sentence <- section.sentences) {
         val parse = sentence.parse
         parseIndices ++= parse.parents
         parseIndices ++= parse.labels.map(_.intValue)
@@ -187,10 +187,12 @@ class DocumentCubbie extends Cubbie {
     def :=(section:Section): this.type = {
       val indices = new IntArrayBuffer(section.tokens.length * 3)
       for (token <- section.tokens) indices += token.attr[PennPosTag].intValue
-      for (sentence <- section) {
+      for (sentence <- section.sentences) {
+        val l = indices.length
         val parse = sentence.parse
         indices ++= parse.parents
         indices ++= parse.labels.map(_.intValue)
+        assert(l+ 2*sentence.length == indices.length)
       }
       this := indices
       this
@@ -202,7 +204,11 @@ class DocumentCubbie extends Cubbie {
         i += 1
       }
       for (sentence <- section.sentences) {
-        val parse = new ParseTree(sentence, indices.slice(i, i+sentence.length).asArray, indices.slice(i+sentence.length, i+2*sentence.length).asArray)
+        val parents = indices.slice(i, i+sentence.length).asArray
+        val labels = indices.slice(i+sentence.length, i+2*sentence.length).asArray
+        //println(s"n=${parents.length} parents = ${parents.mkString(",")}\n labels = ${labels.mkString(",")}")
+        val parse = new ParseTree(sentence, parents, labels)
+        sentence.attr += parse
         i += 2*sentence.length
       }
       section.document.annotators(classOf[PennPosTag]) = this.getClass
@@ -338,8 +344,8 @@ object DocumentStore {
   def main(args:Array[String]): Unit = {
     val ds = new DocumentStore()
     ds.db.dropDatabase()
-    val f = new File("/Users/mccallum/research/data/text/plain/tweet1.txt"); ds += f
-    //for (file <- new File("/Users/mccallum/research/data/text/plain").listFiles) ds += file
+    //val f = new File("/Users/mccallum/research/data/text/plain/tweet1.txt"); ds += f
+    for (file <- new File("/Users/mccallum/research/data/text/plain").listFiles) ds += file
     ds.show()
   }
 
@@ -351,11 +357,12 @@ class DocumentStore(mongoDB:String = "DocumentDB") {
   val collection = db.getCollection("documents")
   val cubbieCollection = new MongoCubbieCollection[StandardDocumentCubbie](collection, () => new StandardDocumentCubbie)
 
-  //val annotator = DocumentAnnotatorPipeline(DeterministicTokenizer, DeterministicSentenceSegmenter, OntonotesForwardPosTagger, WSJTransitionBasedParser)
-  val annotator = DocumentAnnotatorPipeline(DeterministicTokenizer, DeterministicSentenceSegmenter)
+  val annotator = DocumentAnnotatorPipeline(DeterministicTokenizer, DeterministicSentenceSegmenter, OntonotesForwardPosTagger, WSJTransitionBasedParser)
+  //val annotator = DocumentAnnotatorPipeline(DeterministicTokenizer, DeterministicSentenceSegmenter)
   def +=(doc:Document): Unit = {
     annotator.process(doc)
-    println(s"Adding doc tokens=${doc.tokenCount}")
+    //println(s"Adding doc tokens=${doc.tokenCount}")
+    println("Input document:"); println(doc.owplString(annotator))
     cubbieCollection += new StandardDocumentCubbie(doc)
   }
   def ++=(docs:Iterable[Document]): Unit = {
