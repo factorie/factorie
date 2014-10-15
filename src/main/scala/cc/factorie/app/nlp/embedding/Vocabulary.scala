@@ -11,6 +11,8 @@ import scala.collection.mutable.ArrayBuffer
 import javax.xml.stream._
 import javax.xml.stream.events._
 import javax.xml.stream.util._
+import java.text.NumberFormat
+import java.util.Locale
 
 class VocabularyOptions extends cc.factorie.util.CmdOptions {
   val minCount = new CmdOption("min-count", 200, "INT", "Words with count smaller than this will be discarded.  Default is 200.")
@@ -30,13 +32,21 @@ object Vocabulary {
     // Set up a String map to gather counts
     val domain = new CategoricalDomain[String]
     domain.gatherCounts = true
+    val printInterval = 100
+    var printAtCount = printInterval
+    var wordCount = 0
     // From all files, segment contents into words, and count them
     files.foreach(file => {
       println("Vocabulary reading "+file.getName())
       for (line <- fileToStringIterator(file)) {
-        if (wikipediaArticleCount % 100 == 0) print("\r"+wikipediaArticleCount)
+        if (wikipediaArticleCount >= printAtCount) {
+          print("\r"+NumberFormat.getNumberInstance(Locale.US).format(wikipediaArticleCount)+" articles, "+NumberFormat.getNumberInstance(Locale.US).format(wordCount)+" tokens")
+          //print(s"\r$wikipediaArticleCount articles\t$wordCount words") ; 
+          printAtCount += printInterval
+        }
         for (word <- stringToWords(line)) {
           //println("Vocabulary read word "+word)
+          wordCount += 1
           domain.index(word)
         }
       }
@@ -88,7 +98,7 @@ object Vocabulary {
         val docIterator = cc.factorie.app.nlp.load.LoadWikipediaPlainText.fromCompressedFile(file, opts.maxWikiPages.value)
         new Iterator[String] {
           def hasNext: Boolean = docIterator.hasNext
-          def next(): String = { wikipediaArticleCount += 1; val doc = docIterator.next; println(doc.name); doc.string }
+          def next(): String = { wikipediaArticleCount += 1; val doc = docIterator.next; /*println(doc.name);*/ doc.string }
         }
       }
       // bz2 compress wikipedia XML
@@ -121,9 +131,9 @@ object Vocabulary {
               xml.next() match {
                 //case e => println(e)
                 case EvElemStart(_, "page", _, _) => { insidePage = true }
-                case EvElemEnd(_, "page") => { insidePage = false; done = true; wikipediaArticleCount += 1 }
+                case EvElemEnd(_, "page") => { insidePage = false; done = true }
                 case EvElemStart(_, "text", _, _) => { insideText = true }
-                case EvElemEnd(_, "text") => { insideText = false; done = true; wikipediaArticleCount += 1 }
+                case EvElemEnd(_, "text") => { insideText = false; done = true }
                 case EvText(t) if insideText => {
                   if (t.startsWith("!--") && !t.endsWith("--")) insideComment = true
                   else if (t.endsWith("--")) insideComment = false
@@ -136,6 +146,7 @@ object Vocabulary {
             }
             var s = cleaningRegex.replaceAllIn(sb.toString, " ")
             //println("Vocabulary.fileToStringIterator "+s)
+            s = s.trim; if (s.length > 0) { wikipediaArticleCount += 1; return s } else { /*println(s"Skipping at $wikipediaArticleCount");*/ return next() }
             s
           }
         }
