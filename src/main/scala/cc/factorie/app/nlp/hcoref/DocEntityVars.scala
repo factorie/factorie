@@ -6,12 +6,13 @@ import cc.factorie.app.nlp.coref.WithinDocEntity
 /**
  * @author John Sullivan
  */
-class DocEntityVars(val names:BagOfWordsVariable, val context:BagOfWordsVariable, val gender:BagOfWordsVariable, val mention:BagOfWordsVariable, val number:BagOfWordsVariable) extends NodeVariables[DocEntityVars] with Canopy {
+class DocEntityVars(val names:BagOfWordsVariable, val context:BagOfWordsVariable, val gender:BagOfWordsVariable, val mention:BagOfWordsVariable, val number:BagOfWordsVariable, val truth:BagOfWordsVariable) extends NodeVariables[DocEntityVars] with Canopy with GroundTruth {
   val getVariables = Seq(names, context, gender, mention, number)
 
   def canopies = names.value.asHashMap.keySet
 
-  def this() = this(new BagOfWordsVariable(), new BagOfWordsVariable(), new BagOfWordsVariable(), new BagOfWordsVariable(), new BagOfWordsVariable())
+  def this() = this(new BagOfWordsVariable(), new BagOfWordsVariable(), new BagOfWordsVariable(), new BagOfWordsVariable(), new BagOfWordsVariable(), new BagOfWordsVariable())
+  def this(names:BagOfWordsVariable, context:BagOfWordsVariable, gender:BagOfWordsVariable, mention:BagOfWordsVariable, number:BagOfWordsVariable) = this(names, context, gender, mention, number, new BagOfWordsVariable())
 
   def --=(other: DocEntityVars)(implicit d: DiffList) = {
     this.names.remove(other.names.value)(d)
@@ -19,6 +20,7 @@ class DocEntityVars(val names:BagOfWordsVariable, val context:BagOfWordsVariable
     this.gender.remove(other.gender.value)(d)
     this.mention.remove(other.mention.value)(d)
     this.number.remove(other.number.value)(d)
+    this.truth.remove(other.truth.value)(d)
   }
 
 
@@ -28,11 +30,12 @@ class DocEntityVars(val names:BagOfWordsVariable, val context:BagOfWordsVariable
     this.gender.add(other.gender.value)(d)
     this.mention.add(other.mention.value)(d)
     this.number.add(other.number.value)(d)
+    this.truth.add(other.truth.value)(d)
   }
 
-  def --(other: DocEntityVars)(implicit d: DiffList) = new DocEntityVars(this.names -- other.names, this.context -- other.context, this.gender -- other.gender, this.mention -- other.mention, this.number -- other.number)
+  def --(other: DocEntityVars)(implicit d: DiffList) = new DocEntityVars(this.names -- other.names, this.context -- other.context, this.gender -- other.gender, this.mention -- other.mention, this.number -- other.number, this.truth -- other.truth)
 
-  def ++(other: DocEntityVars)(implicit d: DiffList) = new DocEntityVars(this.names ++ other.names, this.context ++ other.context, this.gender ++ other.gender, this.mention ++ other.mention, this.number ++ other.number)
+  def ++(other: DocEntityVars)(implicit d: DiffList) = new DocEntityVars(this.names ++ other.names, this.context ++ other.context, this.gender ++ other.gender, this.mention ++ other.mention, this.number ++ other.number, this.truth ++ other.truth)
 }
 
 object DocEntityVars {

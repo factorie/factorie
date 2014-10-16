@@ -124,9 +124,10 @@ class RefMentionConverter(val pipeline:DocumentAnnotationPipeline) {
       doc.getSectionByOffsets(s, e).flatMap(_.offsetSnapToTokens(s, e)) match {
         case Some(refSpan) =>
           implicit val d:DiffList = null
-          val xMent = new Mention[DocEntityVars](new DocEntityVars())
+          val xMent = new Mention[DocEntityVars](new DocEntityVars(), ref.id)
           xMent.variables.names ++= refSpan.map{t:Token => t.lemmaString}.toCountBag
           xMent.variables.context ++= refSpan.contextWindow(10).map(_.lemmaString).toCountBag
+          xMent.variables.truth += ref.entId
 
           Option(doc.coref).flatMap{_.findOverlapping(refSpan)} match {
             case Some(ment) =>
