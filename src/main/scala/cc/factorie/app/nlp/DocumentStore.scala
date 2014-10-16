@@ -128,7 +128,7 @@ class DocumentCubbie extends Cubbie {
       assert(cap == offsets.length)
       o = 0
       while (i < cap) {
-        println(s"new Sentence(${offsets(i)+o} ${offsets(i+1)})")
+        //println(s"new Sentence(${offsets(i)+o} ${offsets(i+1)})")
         val s = new Sentence(section, offsets(i) + o, offsets(i+1))
         o = s.start + s.length
         i += 2
@@ -228,7 +228,7 @@ class DocumentCubbie extends Cubbie {
       val corefIndices = new IntArrayBuffer(mentions.length * 5)
       //val sectionMap = if (document.sectionCount == 1) new scala.collection.mutable.LinkedHashMap() ++= document.sections.zipWithIndex
       val entityMap = new scala.collection.mutable.LinkedHashMap() ++= coref.entities.zipWithIndex
-      for (entity <- coref.entities) require(entity.uniqueId == document.name)
+      for (entity <- coref.entities) require(entity.uniqueId.startsWith(document.name))
       for (mention <- mentions) {
         corefIndices += mention.phrase.section.indexInDocument
         corefIndices += mention.phrase.start 
@@ -357,7 +357,8 @@ class DocumentStore(mongoDB:String = "DocumentDB") {
   val collection = db.getCollection("documents")
   val cubbieCollection = new MongoCubbieCollection[StandardDocumentCubbie](collection, () => new StandardDocumentCubbie)
 
-  val annotator = DocumentAnnotatorPipeline(DeterministicTokenizer, DeterministicSentenceSegmenter, OntonotesForwardPosTagger, WSJTransitionBasedParser)
+  val annotator = DocumentAnnotatorPipeline(DeterministicTokenizer, DeterministicSentenceSegmenter, OntonotesForwardPosTagger, WSJTransitionBasedParser, ParseForwardCoref)
+  //val annotator = DocumentAnnotatorPipeline(DeterministicTokenizer, DeterministicSentenceSegmenter, OntonotesForwardPosTagger, WSJTransitionBasedParser)
   //val annotator = DocumentAnnotatorPipeline(DeterministicTokenizer, DeterministicSentenceSegmenter)
   def +=(doc:Document): Unit = {
     annotator.process(doc)
@@ -391,6 +392,12 @@ class DocumentStore(mongoDB:String = "DocumentDB") {
     for (cubbie <- cubbieIterator) {
       val doc = cubbie.document
       println(doc.owplString(annotator))
+      for (entity <- doc.coref.entities) {
+        println(entity.uniqueId+":")
+        for (mention <- entity.mentions) {
+          println("  "+ mention.phrase.string+"\ttoken"+mention.phrase.head.position)
+        }
+      }
       println()
     }
     cubbieIterator.close()
