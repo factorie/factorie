@@ -41,7 +41,7 @@ class NounPhraseNumberLabeler[A<:AnyRef](documentAttrToPhrases:(A)=>Iterable[Phr
   val singularPronoun = Set("i", "me", "my", "mine", "myself", "he", "she", "it", "him", "her", "his", "hers", "its", "one", "ones", "oneself", "this", "that")
   val pluralPronoun = Set("we", "us", "our", "ours", "ourselves", "ourself", "they", "them", "their", "theirs", "themselves", "themself", "these", "those")
   val singularDeterminer = Set("a", "an", "this")
-  val pluralDeterminer = Set("those", "these", "some")
+  val pluralDeterminer = Set("those", "these", "some", "both")
   def isProper(pos:String): Boolean = pos.startsWith("NNP")
   def isNoun(pos:String): Boolean = pos(0) == 'N'
   def isPossessive(pos:String): Boolean = pos == "POS"

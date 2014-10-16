@@ -44,14 +44,14 @@ object NPChunkMentionFinder extends NPChunkPhraseFinder[BILOUChunkTag]
 
 class NPChunkPhraseFinder[L<:ChunkTag](implicit m: Manifest[L]) extends DocumentAnnotator {
   def prereqAttrs = Seq(classOf[Token], classOf[Sentence], m.runtimeClass)
-  def postAttrs = Seq(classOf[PhraseList])
+  def postAttrs = Seq(classOf[NounPhraseList])
   override def tokenAnnotationString(token:Token): String = token.document.attr[PhraseList].filter(phrase => phrase.contains(token)) match { case phraseSeq:Seq[Phrase] if phraseSeq.length > 0 => phraseSeq.map(phrase => phrase.attr[NounPhraseType].categoryValue+":"+ phrase.attr[OntonotesPhraseEntityType].categoryValue +":" +phrase.indexOf(token)).mkString(","); case _ => "_" }
 
   val upperCase = "[A-Z]+".r
 
   def process(document: Document) = {
     val phrases = getChunkPhrases(document)
-    document.attr += new PhraseList(phrases.sortBy(phrase => (phrase.head.stringStart, phrase.length)))
+    document.attr += new NounPhraseList(phrases.sortBy(phrase => (phrase.head.stringStart, phrase.length)))
     document
   }
 

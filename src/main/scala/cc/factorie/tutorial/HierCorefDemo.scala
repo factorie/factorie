@@ -104,7 +104,7 @@ object HierCorefDemo {
     implicit val random = new scala.util.Random()
 
     val mongoConn = new MongoClient("localhost", 27017)
-    val mongoDb = mongoConn.getDB("wikicoref-ny")
+    val mongoDb = mongoConn.getDB("wikicoref-bos")
     val corefCollection = new HcorefCubbieCollection(Seq("mentions", "cbag", "nbag", "mbag"), mongoDb)
     val allMentions = corefCollection.loadAll.filterNot(_.variables.truth.size == 0).filterNot(_.source == "wp")
     println("Done loading")
@@ -120,6 +120,7 @@ object HierCorefDemo {
       with NoSplitMoveGenerator[WikiCorefVars]
       with DebugCoref[WikiCorefVars] {
       def autoStopThreshold = 10000
+      val logger = Logger.default
 
       def newInstance(implicit d: DiffList): Node[WikiCorefVars] = new Node[WikiCorefVars](new WikiCorefVars/*, nextId*/) {
         def canopyIds: Set[String] = Set.empty[String]
@@ -152,7 +153,7 @@ object HierCorefDemo {
 
     sampler.infer
 
-    mentions.filter{  e => e.isMention && e.parent.isDefined}.map{m => m.id -> m.root.id}
+    mentions.filter{  e => e.isMention && e.getParent.isDefined}.map{m => m.uniqueId -> m.root.uniqueId}
   }
 
   def doCoreference(mentions:Iterable[Node[WikiCorefVars]], iterations:Int, model:WikiCorefModel):Iterable[(Node[WikiCorefVars], Node[WikiCorefVars])] = {
@@ -160,11 +161,12 @@ object HierCorefDemo {
     implicit val random = new Random()
 
     val sampler = new HierarchicalCorefSampler[WikiCorefVars](model, mentions, iterations) with DebugCoref[WikiCorefVars] {
+      val logger = Logger.default
       override def newInstance(implicit d: DiffList): Node[WikiCorefVars] = new Node[WikiCorefVars](new WikiCorefVars)
     }
 
     sampler.infer
-    mentions.filter{  e => e.isMention && e.parent.isDefined}.map{m => m -> m.root}
+    mentions.filter{  e => e.isMention && e.getParent.isDefined}.map{m => m -> m.root}
   }
 
 

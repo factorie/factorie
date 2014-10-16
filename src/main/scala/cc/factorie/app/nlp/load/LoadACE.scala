@@ -75,7 +75,7 @@ object LoadACE {
   }
 
   def addMentionsFromApf(apf: NodeSeq, doc: Document): Unit = {
-    val coref = doc.getCoref
+    val coref = doc.getTargetCoref
     for (entity <- apf \\ "entity") {
       val entityKey = (entity \ "entity_attributes" \ "name" \ "charseq").text
       val e = coref.entityFromUniqueId(entityKey)
@@ -89,10 +89,12 @@ object LoadACE {
         try {
           // set head token to the rightmost token of the ACE head
           val tokIndRight = tokenIndexAtCharIndex(headCharIndex, doc)
-          val phrase = new Phrase(doc.asSection, start, length, tokIndRight)
+          val phrase = new Phrase(doc.asSection, start, length, tokIndRight-start)
           if (phrase.sentence == null) println("NULL mention: (%d, %d) -> %s".format(start, length, phrase.string))
 
-          coref.addMention(phrase,e).attr += new ACEMentionIdentifiers(mId = getAttr(mention, "ID"), mType = getAttr(mention, "TYPE"), ldcType = getAttr(mention, "LDCTYPE"), offsetStart = getAttr(mention \ "extent" \ "charseq", "START").toInt, offsetEnd = getAttr(mention \ "extent" \ "charseq", "END").toInt)
+          val newMention = coref.addMention(phrase)
+          e += newMention
+          newMention.attr += new ACEMentionIdentifiers(mId = getAttr(mention, "ID"), mType = getAttr(mention, "TYPE"), ldcType = getAttr(mention, "LDCTYPE"), offsetStart = getAttr(mention \ "extent" \ "charseq", "START").toInt, offsetEnd = getAttr(mention \ "extent" \ "charseq", "END").toInt)
 
          } catch {
           case e: Exception =>
@@ -108,7 +110,7 @@ object LoadACE {
   }
 
   private def lookupEntityMention(id: String, doc: Document): Mention =
-    doc.coref.mentions.find {
+    doc.targetCoref.mentions.find {
       m =>
         val a = m.attr[ACEMentionIdentifiers]
         a != null && a.mId == id
@@ -158,7 +160,7 @@ object LoadACE {
     val docs = fromDirectory(args(0))
     println("docs: " + docs.size)
     for (d <- docs)
-      d.coref.mentions.foreach(s => println(s))
+      d.getTargetCoref.mentions.foreach(s => println(s))
   }
 
 }

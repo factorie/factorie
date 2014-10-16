@@ -46,7 +46,7 @@ class GroupLassoRDA(val rate: Double = 0.1, val groupl2Weights: Weights => Doubl
       case t: Tensor4 => weights(key) = new GroupLassoRDATensor4(t, rate, groupl2Weights(key) / numExamples)
     }
     initialized = true
-  }
+  } 
 
   def finalizeWeights(weights: WeightsSet): Unit =
     for (key <- weights.keys) {

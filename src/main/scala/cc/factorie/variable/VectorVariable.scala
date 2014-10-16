@@ -24,7 +24,7 @@ trait VectorDomain extends Domain {
   def dimensionDomain: DiscreteDomain
   /** A convenience method to get the size of the dimensionDomain.
       This method is often used to determine the dimensions of parameter Weights Tensors to allocate. */
-  def dimensionSize: Int = dimensionDomain.size
+  def dimensionSize: Int = dimensionDomain.length
   def dimensionName(i:Int): String = i.toString
   def freeze(): Unit = dimensionDomain.freeze()
 }

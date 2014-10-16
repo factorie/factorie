@@ -82,6 +82,7 @@ object PennPosDomain extends CategoricalDomain[String] {
   val prpdIndex = index("PRP$")
   val wpIndex = index("WP")
   val wpdIndex = index("WP$")
+  val ccIndex = index("CC")
 
   def isNoun(pos:String): Boolean = pos(0) == 'N' 
   def isProperNoun(pos:String) = { pos == "NNP" || pos == "NNPS" }

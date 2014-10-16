@@ -12,8 +12,10 @@
    limitations under the License. */
 package cc.factorie.app.nlp.coref
 
+import cc.factorie._
 import cc.factorie.app.nlp._
 import cc.factorie.app.nlp.phrase._
+import cc.factorie.app.nlp.pos.PennPosDomain
 import cc.factorie.util.{Attr,UniqueId,ImmutableArrayIndexedSeq,EvaluatableClustering}
 import cc.factorie.variable._
 import scala.collection.mutable.ArrayBuffer
@@ -47,7 +49,7 @@ trait AbstractMention extends Node {
     @author Andrew McCallum */
 trait AbstractEntity extends Node {
   def children: Iterable[Node]  // Immediate children
-  def childIds: Iterable[String] = ???
+  def childIds: Iterable[String] = children.map(_.uniqueId)
   def mentions: Iterable[AbstractMention] // Leaves of tree
 }
 
@@ -88,7 +90,7 @@ abstract class WithinDocEntity(val document:Document) extends AbstractEntity {
   private val _mentions = new scala.collection.mutable.LinkedHashSet[Mention]
   def parent: WithinDocEntity = null
   def mentions:scala.collection.Set[Mention] = _mentions
-  def isSingleton:Boolean = _mentions.size == 1 //TODO Is this okay to do? or is there a better way
+  def isSingleton:Boolean = _mentions.size == 1
   def isEmpty:Boolean = _mentions.isEmpty
   def children: Iterable[Mention] = _mentions
   // TODO Rename this to remove the "get".
@@ -107,8 +109,22 @@ abstract class WithinDocEntity(val document:Document) extends AbstractEntity {
     _mentions -= mention
     mention._setEntity(null)
   }
-  var canonicalName: String = null // TODO Is this necessary?
-  var canonicalMention: Mention = null // TODO Is this necessary?
+
+  /** Return the canonical mention for the entity cluster.  If the canonical mention is not already set it computes, sets, and returns the canonical mention */
+  def getCanonicalMention: Mention = {
+    if (canonicalMention eq null) {
+      val canonicalOption = _mentions.filter{m =>
+        (m.phrase.attr[NounPhraseType].value == NounPhraseTypeDomain.value("NOM") ||
+        m.phrase.attr[NounPhraseType].value == NounPhraseTypeDomain.value("NAM")) &&
+        m.phrase.last.posTag.intValue != PennPosDomain.posIndex
+      }.toSeq.sortBy(m => (m.phrase.start, m.phrase.length)).headOption
+      canonicalMention = canonicalOption.getOrElse(children.headOption.orNull)
+      canonicalName = canonicalMention.string
+    }
+    canonicalMention
+  }
+  var canonicalName: String = null
+  var canonicalMention: Mention = null
   // If number, gender and entity type are needed, put a CategoricalVariable subclass in the Attr
 }
 
@@ -119,7 +135,7 @@ abstract class WithinDocEntity(val document:Document) extends AbstractEntity {
     Concrete instances of Mention and WithinDocEntity are created here.
     @author Andrew McCallum
     */
-class WithinDocCoref(val document:Document) extends EvaluatableClustering[WithinDocEntity,Phrase] {
+class WithinDocCoref(val document:Document) extends EvaluatableClustering[WithinDocEntity,Phrase#Value] {
   /** When we have labeled gold-standard truth for coref, it is stored here. */
   var target: WithinDocCoref = null // ...the alternative would have been to create different subclasses of WithinDocCoref so they could be stored separately in the Document.attr, but I chose this as cleaner. -akm
   /** A mapping from (the Phrase's span value) to Mention */
@@ -175,6 +191,12 @@ class WithinDocCoref(val document:Document) extends EvaluatableClustering[Within
     if (mention.entity ne null) mention.entity -= mention
     _spanToMention.remove(mention.phrase.value)
   }
+
+  /** Checks whether the given tokenspan overlaps with an existing mention, returns the overlapping mention if it does. */
+  def findOverlapping(tokenSpan:TokenSpan):Option[Mention] = tokenSpan match {
+    case ts if ts.document == this.document => mentions.find(_.phrase.characterOffsets overlapsWith ts.characterOffsets)
+    case _ => None
+  }
   
   /** Return all Mentions in this coreference solution. */
   def mentions: Seq[Mention] = _spanToMention.values.toVector
@@ -211,11 +233,11 @@ class WithinDocCoref(val document:Document) extends EvaluatableClustering[Within
   // These assure we ignore any singletons for conll scoring
   // TODO: Allow for ACE scoring where singletons are counted
   def clusterIds: Iterable[WithinDocEntity] = _entities.values.filterNot(_.isSingleton)
-  def pointIds: Iterable[Phrase] = _spanToMention.values.filterNot(m => m.entity == null || m.entity.isSingleton).map(_.phrase)
-  def pointIds(entityId:WithinDocEntity): Iterable[Phrase] = if(!entityId.isSingleton) entityId.mentions.map(_.phrase) else Seq()
+  def pointIds: Iterable[Phrase#Value] = _spanToMention.values.filterNot(m => m.entity == null || m.entity.isSingleton).map(_.phrase.value)
+  def pointIds(entityId:WithinDocEntity): Iterable[Phrase#Value] = if(!entityId.isSingleton) entityId.mentions.map(_.phrase.value) else Seq()
   def intersectionSize(entityId1:WithinDocEntity, entityId2:WithinDocEntity): Int = if(!entityId1.isSingleton && !entityId2.isSingleton) entityId1.mentions.map(_.phrase.value).intersect(entityId2.mentions.map(_.phrase.value)).size else 0
-  def clusterId(mentionId:Phrase): WithinDocEntity = {
-    val mention = _spanToMention.getOrElse(mentionId.value,null)
+  def clusterId(mentionId:Phrase#Value): WithinDocEntity = {
+    val mention = _spanToMention.getOrElse(mentionId,null)
     if(mention == null || mention.entity == null ||mention.entity.isSingleton) null
     else mention.entity
   }

@@ -29,10 +29,13 @@ abstract class CorefSampler[Vars <: NodeVariables[Vars]](override val model:Core
 
   val beforeInferHooks = new Hooks1[Unit]
   protected def beforeInferHook = beforeInferHooks()
+  val afterInferHooks = new Hooks1[Unit]
+  protected def afterInferHook = afterInferHooks()
 
   def infer {
     beforeInferHook
     contexts foreach process
+    afterInferHook
   }
 
 }
@@ -63,5 +66,6 @@ trait AutoStoppingSampler[Vars <: NodeVariables[Vars]] extends CorefSampler[Vars
       step += 1
     }
     println("Stopping automatically after %d steps".format(step))
+    afterInferHook
   }
 }

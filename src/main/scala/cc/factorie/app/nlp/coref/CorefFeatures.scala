@@ -30,6 +30,7 @@ class MentionCharacteristics(val mention: Mention) {
   lazy val isPossessive = CorefFeatures.posSet.contains(mention.phrase.headToken.posTag.categoryValue)
 
   lazy val hasSpeakWord = mention.phrase.exists(s => lexicon.iesl.Say.contains(s.string))
+  lazy val hasSpeakWordContext = prev.exists(w => lexicon.iesl.Say.containsWord(w)) || follow.exists(w => lexicon.iesl.Say.containsWord(w))
   lazy val wnLemma = WordNet.lemma(mention.phrase.headToken.string, "n")
   lazy val wnSynsets = WordNet.synsets(wnLemma).toSet
   lazy val wnHypernyms = WordNet.hypernyms(wnLemma)
@@ -62,6 +63,9 @@ class MentionCharacteristics(val mention: Mention) {
   lazy val numberIndex = mention.phrase.attr[Number].intValue
   lazy val nounPhraseTypeIndex = mention.phrase.attr[NounPhraseType].intValue
   lazy val headPos = mention.phrase.headToken.posTag.categoryValue
+  lazy val inParens = mention.phrase.sentence.tokens.exists(t => t.posTag.categoryValue == "LRB" && t.positionInSection < mention.phrase.start)
+  lazy val prev = Vector(TokenFreqs.getTokenStringAtOffset(mention.phrase(0),-1), TokenFreqs.getTokenStringAtOffset(mention.phrase(0),-2))
+  lazy val follow = Vector(TokenFreqs.getTokenStringAtOffset(mention.phrase.last,1), TokenFreqs.getTokenStringAtOffset(mention.phrase.last,2))
 
   lazy val acronym: Set[String] = {
     if (mention.phrase.length == 1)
@@ -213,7 +217,7 @@ object CorefFeatures {
   }
 
   val singDet = Set("a ", "an ", "this ")
-  val pluDet = Set("those ", "these ", "some ")
+  val pluDet = Set("those ", "these ", "some ", "both ")
 
   def numbersMatch(m1:Mention, m2:Mention): Ternary = {
     val n1 = m2.phrase.attr[Number].intValue
@@ -282,7 +286,7 @@ object PronounSets {
   val firstPerson = Set("i", "me", "myself", "mine", "my", "we", "us", "ourself", "ourselves", "ours", "our")
   val secondPerson = Set("you", "yourself", "yours", "your", "yourselves")
   val thirdPerson = Set("he", "him", "himself", "his", "she", "herself", "hers", "her", "it", "itself", "its", "one", "oneself", "one's", "they", "them", "themself", "themselves", "theirs", "their",  "'em")
-  val other = Set("who", "whom", "whose", "where", "when","which")
+  val other = Set("who", "whom", "whose", "where", "when", "which")
 
   val demonstrative = Set("this", "that", "these", "those")
 
@@ -291,11 +295,13 @@ object PronounSets {
   val male = Set("he", "him", "himself", "his")
   val female = Set("her", "hers", "herself", "she")
 
+  val reflexive = Set("herself", "himself", "itself", "themselves", "yourselves", "oneself", "yourself", "themself", "myself")
+
   val neuter = Set("it", "its", "itself", "this", "that", "anything", "something",  "everything", "nothing", "which", "what", "whatever", "whichever")
   val personal = Set("you", "your", "yours", "i", "me", "my", "mine", "we", "our", "ours", "us", "myself", "ourselves", "themselves", "themself", "ourself", "oneself", "who", "whom", "whose", "whoever", "whomever", "anyone", "anybody", "someone", "somebody", "everyone", "everybody", "nobody")
 
   val allPronouns = firstPerson ++ secondPerson ++ thirdPerson ++ other
-
+  val allPersonPronouns = allPronouns -- neuter
   val canonicalForms = new mutable.HashMap[String,String](){
     ("i", "i")
     ("i", "i")
