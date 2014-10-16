@@ -44,6 +44,13 @@ object ParseTree {
 class ParseTree(val sentence:Sentence, theTargetParents:Array[Int], theTargetLabels:Array[Int]) {
   def this(sentence:Sentence) = this(sentence, Array.fill[Int](sentence.length)(ParseTree.noIndex), Array.fill(sentence.length)(ParseTreeLabelDomain.defaultIndex)) // Note: this puts in dummy target data which may be confusing
   def this(sentence:Sentence, theTargetParents:Seq[Int], theTargetLabels:Seq[String]) = this(sentence, theTargetParents.toArray, theTargetLabels.map(c => ParseTreeLabelDomain.index(c)).toArray)
+  def check(parents:Array[Int]): Unit = {
+    val l = parents.length; var i = 0; while (i < l) {
+      require(parents(i) < l)
+      i += 1
+    }
+  }
+  check(theTargetParents)
   val _labels = theTargetLabels.map(s => new ParseTreeLabel(this, ParseTreeLabelDomain.category(s))).toArray
   val _parents = { val p = new Array[Int](theTargetParents.length); System.arraycopy(theTargetParents, 0, p, 0, p.length); p }
   val _targetParents = theTargetParents
