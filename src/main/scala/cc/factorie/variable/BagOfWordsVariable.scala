@@ -6,6 +6,9 @@ import scala.collection.mutable.{LinkedHashMap, HashMap}
  * @author John Sullivan
  */
 class BagOfWords(initialWords: Iterable[String] = null, initialBag: Map[String, Double] = null) {
+
+  def longest = _bag.keysIterator.toSeq.sortBy(_.length).lastOption.getOrElse("")
+
   var variable: BagOfWordsVariable = null
   protected var _l2Norm = 0.0
   protected var _l1Norm = 0.0
