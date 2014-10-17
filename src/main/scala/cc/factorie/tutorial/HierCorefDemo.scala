@@ -44,10 +44,11 @@ object HierCorefDemo {
     def getVariables: Seq[Var] = Seq(names, context, mentions)
   }
 
-  class WikiCorefModel(namesWeight:Double, namesShift: Double, contextWeight:Double, contextShift: Double, mentionsWeight:Double, mentionsShift: Double)  extends CorefModel[WikiCorefVars] {
+  class WikiCorefModel(namesWeight:Double, namesShift: Double, contextWeight:Double, contextShift: Double, mentionsWeight:Double, mentionsShift: Double, distanceWeight:Double, distanceShift:Double)  extends CorefModel[WikiCorefVars] {
     this += new ChildParentCosineDistance(namesWeight, namesShift, {w:WikiCorefVars => w.names}, "names") {this.debugOff()}
     this += new ChildParentCosineDistance(contextWeight, contextShift, {w:WikiCorefVars => w.context}, "context") {this.debugOff()}
     this += new ChildParentCosineDistance(mentionsWeight, mentionsShift, {w:WikiCorefVars => w.mentions}, "mentions") {this.debugOff()}
+    this += new ChildParentStringDistance(distanceWeight, distanceShift, {w:WikiCorefVars => w.names}, "names")
     this += new BagOfWordsEntropy(0.25, {w:WikiCorefVars => w.names})
   }
 
@@ -109,7 +110,7 @@ object HierCorefDemo {
     val allMentions = corefCollection.loadAll.filterNot(_.variables.truth.size == 0).filterNot(_.source == "wp")
     println("Done loading")
 
-    val model = new WikiCorefModel(2.0, -0.25, 2.0, -0.25, 2.0, -0.25)
+    val model = new WikiCorefModel(2.0, -0.25, 2.0, -0.25, 2.0, -0.25, 0.0, 0.0)
 
     val numSamples = 200000
     val time = System.currentTimeMillis()
@@ -144,7 +145,7 @@ object HierCorefDemo {
     implicit val random = new Random()
     val mentions = corefCollection.loadAll
 
-    val model = new WikiCorefModel(2.0, -0.25, 2.0, -0.25, 2.0, -0.25)
+    val model = new WikiCorefModel(2.0, -0.25, 2.0, -0.25, 2.0, -0.25, 0.0, 0.0)
     val numSamples = 20000
 
     val sampler = new HierarchicalCorefSampler[WikiCorefVars](model, mentions, numSamples) {
