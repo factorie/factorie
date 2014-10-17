@@ -30,7 +30,7 @@ case class TACRelation(value:String, confidence:Double, provenance:String)
 case class TACRelationList(value:Iterable[TACRelation])
 
 
-class RelationMentionsSet extends SetVariable[RelationMention]
+class RelationMentionSeq extends SeqVariable[RelationMention]
 
 class RelationMention(val arg1: Mention, val arg2: Mention, var isArg1First:Boolean=true) extends ArrowVariable(arg1, arg2) with Attr {
   val _relations = mutable.ArrayBuffer[TACRelation]()
