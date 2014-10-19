@@ -73,7 +73,7 @@ class LoadWikipediaPlainText {
           "\\s+$" // Remove trailing whitespace
           ).mkString("|"))).r
 
-        var sb = new StringBuffer(2048)
+        var sb = new StringBuffer(2048*16)
         var docDone = false
         var title: String = null
         var insideText = false
@@ -110,8 +110,8 @@ class LoadWikipediaPlainText {
       }
       
       private def removeNestedBrackets(s:StringBuffer): StringBuffer = {
-        val sb = new StringBuffer
-        var sb2 = new StringBuffer
+        val sb = new StringBuffer(s.length)
+        var sb2 = new StringBuffer(1024)
         var curlyOpenCount = 0
         var squareOpenCount = 0
         var i = 0; val len = s.length
@@ -137,7 +137,7 @@ class LoadWikipediaPlainText {
                 else sb.append(s2)
               }
               //if (!s2.contains(':')) sb append s2
-              sb2 = new StringBuffer
+              sb2 = new StringBuffer(1024)
             }
           } else if (curlyOpenCount == 0) {
             if (squareOpenCount == 0) sb append c
