@@ -13,6 +13,7 @@
 package cc.factorie.app.nlp.hcoref
 
 import cc.factorie._
+import cc.factorie.app.strings
 import cc.factorie.model._
 import cc.factorie.variable._
 import scala.reflect.ClassTag
@@ -233,3 +234,20 @@ class IdentityFactor[Vars <: NodeVariables[Vars]](getBag:(Vars => BagOfWordsVari
     result
   }
 }
+
+
+class ChildParentDistanceFactor[Vars <: NodeVariables[Vars]](weight:Double, shift:Double, getBag:(Vars => BagOfWordsVariable), distance:((BagOfWordsVariable, BagOfWordsVariable) => Double), metricName:String = "", elementName:String = "")(implicit ct:ClassTag[Vars], p:Parameters)
+  extends ChildParentTemplate[Vars](Tensor1(weight))
+  with DebuggableTemplate {
+
+  val name = "ChildParentDistance: %s-%s".format(metricName, elementName)
+
+  override def statistics(v1: (Node[Vars], Node[Vars]), child: Vars, parent: Vars) = {
+    val childBag = getBag(child)
+    val parentBag = getBag(parent).--(childBag)(null)
+    //println("child: %s parent: %s distance: %.4f".format(childBag, parentBag, distance(childBag, parentBag)))
+    Tensor1(distance(childBag, parentBag) + shift)
+  }
+}
+
+class ChildParentStringDistance[Vars <: NodeVariables[Vars]](weight:Double, shift:Double, getBag:(Vars => BagOfWordsVariable), elementName:String)(implicit ct:ClassTag[Vars], p:Parameters) extends ChildParentDistanceFactor[Vars](weight, shift, getBag, {(x:BagOfWordsVariable, y:BagOfWordsVariable) => strings.editDistance(x.value.longest,y.value.longest)}, "string edit distance", elementName)

@@ -13,7 +13,7 @@ class PatternBasedRelationFinder(predictors:Seq[PatternRelationPredictor]) exten
       If there is no per-token annotation, return null.  Used in Document.owplString. */
   def tokenAnnotationString(token: Token) = null
 
-  def postAttrs = Seq(classOf[RelationMentionsSet])
+  def postAttrs = Seq(classOf[RelationMentionSeq])
 
   def prereqAttrs = (Seq(classOf[WithinDocCoref]) ++ ParseForwardCoref.prereqAttrs).distinct
 
@@ -40,8 +40,8 @@ class PatternBasedRelationFinder(predictors:Seq[PatternRelationPredictor]) exten
       rm._relations.+=(TACRelation(predictor.relation, matchLevel, rm.arg1.phrase.sentence.string))
     }
 
-    val relSet = new RelationMentionsSet()
-    relSet.addAll(relationMentions.filter(_._relations.nonEmpty))(null)
+    val relSet = new RelationMentionSeq()
+    relSet.++=(relationMentions.filter(_._relations.nonEmpty))
     doc.attr += relSet
     doc
   }
