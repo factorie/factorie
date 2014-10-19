@@ -58,7 +58,7 @@ class CategoricalDomain[C] extends DiscreteDomain(0) with IndexedSeq[Categorical
   type Value <: variable.CategoricalValue[C]
   def this(values:Iterable[C]) = { this(); values.foreach(value(_)); freeze() }
 
-  private val __indices: java.util.HashMap[C,Value] = new java.util.HashMap[C,Value]//mutable.Map[C, Value] = JavaHashMap[C, Value]()
+  private val __indices: java.util.HashMap[C,Value] = new java.util.HashMap[C,Value]
   def _indices = __indices
   private val lock = new util.RWLock
   /** If positive, throw error if size tries to grow larger than it.  Use for growable multi-dim Factor weightsSet;
@@ -74,24 +74,17 @@ class CategoricalDomain[C] extends DiscreteDomain(0) with IndexedSeq[Categorical
       This method is thread-safe so that multiple threads may read and index data simultaneously. */
   def value(category: C): Value = {
     if (category == null) throw new Error("Null is not a valid category.")
-    if (_frozen){
-      if(_indices.containsKey(category))
-        _indices.get(category)
-      else
-        null.asInstanceOf[Value]
-    }
-    else {
+    if (_frozen) {
+      __indices.get(category)
+    } else {
       lock.withReadLock {
-        var thisIndex = null.asInstanceOf[Value]
-        if(_indices.containsKey(category))
-          thisIndex = _indices.get(category)
-        else { // double-tap locking necessary to ensure only one thread adds to _indices
+        var thisIndex = __indices.get(category)
+        if (thisIndex eq null) { // double-tap locking necessary to ensure only one thread adds to _indices
           lock.readUnlock()
           lock.writeLock()
           try {
-            if(_indices.containsKey(category))
-              thisIndex = _indices.get(category)
-            else {
+            thisIndex = __indices.get(category)
+            if (thisIndex eq null) {
               val m = _elements.length
               if (maxSize > 0 && m >= maxSize) {
                 if (growPastMaxSize)
@@ -102,9 +95,10 @@ class CategoricalDomain[C] extends DiscreteDomain(0) with IndexedSeq[Categorical
                   return null.asInstanceOf[Value]
                 }
               }
+              // TODO Consider calling "new String(category)" here to avoid substring memory leak: http://stackoverflow.com/questions/15612157/substring-method-in-string-class-causes-memory-leak 
               val e: Value = newCategoricalValue(m, category).asInstanceOf[Value]
               _elements += e
-              _indices.put(category, e)
+              __indices.put(category, e)
               thisIndex = e
             }
           } finally {
@@ -112,7 +106,6 @@ class CategoricalDomain[C] extends DiscreteDomain(0) with IndexedSeq[Categorical
             lock.readLock()
           }
         }
-        //_indices.getOrElse(category, null)
         thisIndex
       }
     }
