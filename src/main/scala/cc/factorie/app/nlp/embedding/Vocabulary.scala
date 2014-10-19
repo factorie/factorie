@@ -13,9 +13,11 @@ import javax.xml.stream.events._
 import javax.xml.stream.util._
 import java.text.NumberFormat
 import java.util.Locale
+import scala.util.Random
 
 class VocabularyOptions extends cc.factorie.util.CmdOptions {
   val minCount = new CmdOption("min-count", 200, "INT", "Words with count smaller than this will be discarded.  Default is 200.")
+  val skipProb = new CmdOption("skip-prob", 0.0, "DOUBLE", "The probabilty that each word string will be skipped in the indexing and counting.  Helps efficiently cull words occurring ~1 times.")
   val maxWikiPages = new CmdOption("max-wiki-pages", Int.MaxValue, "INT", "Read no more than this number of Wikipedia pages.  Default is unlimited.")
   val input = new CmdOption("input", List("enwiki-latest-pages-articles.xml.bz2"), "TXTFILE", "Text files from which to read training data.  Works with *.txt.gz and Wikipedia enwiki*.xmlgz2.")
 }
@@ -33,6 +35,8 @@ object Vocabulary {
     val domain = new CategoricalDomain[String]
     domain.gatherCounts = true
     val printInterval = 100
+    val random = new scala.util.Random(0)
+    val skipThreshold = 1.0 - opts.skipProb.value
     var printAtCount = printInterval
     var wordCount = 0
     // From all files, segment contents into words, and count them
@@ -40,14 +44,15 @@ object Vocabulary {
       println("Vocabulary reading "+file.getName())
       for (line <- fileToStringIterator(file)) {
         if (wikipediaArticleCount >= printAtCount) {
-          print("\r"+NumberFormat.getNumberInstance(Locale.US).format(wikipediaArticleCount)+" articles, "+NumberFormat.getNumberInstance(Locale.US).format(wordCount)+" tokens")
+          print("\r"+NumberFormat.getNumberInstance(Locale.US).format(wikipediaArticleCount)+" articles, "+NumberFormat.getNumberInstance(Locale.US).format(wordCount)+" tokens, "+NumberFormat.getNumberInstance(Locale.US).format(domain.size)+" vocabulary")
           //print(s"\r$wikipediaArticleCount articles\t$wordCount words") ; 
           printAtCount += printInterval
         }
         for (word <- stringToWords(line)) {
           //println("Vocabulary read word "+word)
           wordCount += 1
-          domain.index(word)
+          if (skipThreshold == 0.0 || random.nextDouble() < skipThreshold) // Randomly sample to avoid words appearing only ~1 times.
+            domain.index(new String(word)) // to avoid memory leak: http://stackoverflow.com/questions/15612157/substring-method-in-string-class-causes-memory-leak
         }
       }
     })
