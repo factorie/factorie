@@ -174,7 +174,7 @@ class CategoricalDomain[C] extends DiscreteDomain(0) with IndexedSeq[Categorical
   def count(i:Int): Int = _apply(i)
   def count(category:C): Int = _apply(indexOnly(category))
   def counts: cc.factorie.util.IntSeq = _takeAsIntSeq(length) // _toSeq.take(length)
-  def countsTotal: Int = _sum
+  def countsTotal: Long = { var result: Long = 0; _foreach(i => result += i); result }
   def incrementCount(i:Int): Unit = this synchronized { _increment(i, 1) }
   def incrementCount(category:C): Unit = incrementCount(indexOnly(category))
   private def someCountsGathered: Boolean = { var i = 0; while (i < _length) { if (_apply(i) > 0) return true; i += 1 }; false }

@@ -58,7 +58,7 @@ abstract class WordEmbedder(val opts:WindowWordEmbedderOptions) extends Paramete
   def discardProb(wordIndex: Int): Double = {
     var result = _discardProb(wordIndex)
     if (result != 0.0) return result
-    result = 1.0 - math.sqrt(0.0001/(domain.count(wordIndex).toDouble / domain.countsTotal))
+    result = 1.0 - math.sqrt(0.0001/(domain.count(wordIndex).toDouble / domain.countsTotal.toDouble))
     _discardProb(wordIndex) = result
     result
   }
