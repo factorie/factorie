@@ -288,10 +288,9 @@ class StackedChainNer[L<:NerTag](labelDomain: CategoricalDomain[String],
     lexicon.wikipedia.Business.tagText(tokenSequence,vf, "WIKI-BUSINESS")
     lexicon.wikipedia.Film.tagText(tokenSequence,vf, "WIKI-FILM")
 
-    // TODO Temporarily commented out. -akm
-    //lexicon.wikipedia.LocationAndRedirect.tagText(tokenSequence,vf, "WIKI-LOCATION-REDIRECT")
-    //lexicon.wikipedia.PersonAndRedirect.tagText(tokenSequence,vf, "WIKI-PERSON-REDIRECT")
-    //lexicon.wikipedia.OrganizationAndRedirect.tagText(tokenSequence,vf, "WIKI-ORG-REDIRECT")
+    lexicon.wikipedia.LocationAndRedirect.tagText(tokenSequence,vf, "WIKI-LOCATION-REDIRECT")
+    lexicon.wikipedia.PersonAndRedirect.tagText(tokenSequence,vf, "WIKI-PERSON-REDIRECT")
+    lexicon.wikipedia.OrganizationAndRedirect.tagText(tokenSequence,vf, "WIKI-ORG-REDIRECT")
 
     import cc.factorie.app.strings.simplifyDigits
     for (token <- document.tokens) {
