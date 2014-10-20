@@ -15,7 +15,7 @@ import cc.factorie.app.nlp.segment.{DeterministicSentenceSegmenter, Deterministi
 /**
  * @author John Sullivan
  */
-object TACCoref {
+object TACCorefWithFactorie {
   def main(args:Array[String]) {
     val tacRoot = args(0)
     val evalPath = args(1)
@@ -69,6 +69,23 @@ object TACCoref {
   }
 }
 
+object TACCoref {
+  def main(args:Array[String]) {
+    val tacRoot = args(0)
+    val evalPath = args(1)
+
+    val map = new Tac2009FlatDocumentMap(tacRoot)
+
+    val refMentions = ProcessQueries.loadQueries(evalPath + ".xml", evalPath + ".tab")
+
+    refMentions.foreach{ rMention =>
+      val doc = new Document(map.getDoc(rMention.docId).toIterator.mkString("\n")).setName(rMention.docId)
+      rMention.doc = Some(doc)
+      doc
+    }
+  }
+}
+
 /**
  * Takes a docId and returns the raw text of the corresponding document
  */
@@ -109,6 +126,39 @@ case class ReferenceMention(id:String, name:String, docId:String, offsets:Option
   var doc:Option[Document] = None
 }
 
+object RefMentionConverterNoPipeline {
+  def toDocEntNode(ref:ReferenceMention):Option[Mention[DocEntityVars]] = {
+    val doc = ref.doc.get
+    DeterministicTokenizer.process(doc)
+    DeterministicSentenceSegmenter.process(doc)
+
+    val offsetOpt = ref.offsets match {
+      case None =>
+        ref.name.r.findFirstMatchIn(doc.string).map(m => m.start -> m.end)
+      case otw => otw
+    }
+    offsetOpt.flatMap{ case (s, e) =>
+      doc.getSectionByOffsets(s, e).flatMap(_.offsetSnapToTokens(s, e)) match {
+        case Some(refSpan) =>
+          implicit val d:DiffList = null
+          val xMent = new Mention[DocEntityVars](new DocEntityVars())
+          xMent.variables.names ++= refSpan.map{t:Token => t.lemmaString}.toCountBag
+          xMent.variables.context ++= refSpan.contextWindow(10).map(_.lemmaString).toCountBag
+
+          Option(doc.coref).flatMap{_.findOverlapping(refSpan)} match {
+            case Some(ment) =>
+              xMent.variables.++=(DocEntityVars.fromWithinDocEntity(ment.entity))(null)
+              xMent.withinDocEntityId = ment.entity.uniqueId
+            case None => println("Could not find coref or align mention: " + ref)
+          }
+          Some(xMent)
+        case None =>
+          println("WARNING: Failed to find tokens for reference mention: " + ref)
+          None
+      }
+    }
+  }
+}
 
 class RefMentionConverter(val pipeline:DocumentAnnotationPipeline) {
 
