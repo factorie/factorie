@@ -147,6 +147,17 @@ class Node[Vars <: NodeVariables[Vars]](val variables:Vars, val uniqueId: String
 
   val deleteHooks = new Hooks1[Node[Vars]]
 
+
+  val loadedFromDb = false
+  protected val deletionRecord:mutable.HashSet[String] = null
+
+  protected def deleteHook[N <: Node[_]](node: N) {
+    if(node.loadedFromDb) {
+      deletionRecord add node.uniqueId
+    }
+  }
+  deleteHooks.append(deleteHook)
+
   @tailrec
   private def propagateAddition(addedVariables:Vars)(implicit d:DiffList):Unit = this.getParent match {
     case Some(p) => {
@@ -262,35 +273,10 @@ trait NodeVariables[Self <: NodeVariables[Self]] extends SelfVariable[Self] {
   def size:Int = getVariables.size
 }
 
-trait Persistence {
-  this: Node[_] with Persistence =>
-  protected val loadedFromDb: Boolean
+trait NodeCubbie[Vars <: NodeVariables[Vars]] extends Cubbie {
 
-  protected def deleteHook[N <: Node[_]](node: N) {
-    node match {
-      case n: N with Persistence if n.loadedFromDb =>
-        Persistence.deleted += n
-      case _ =>
-    }
-  }
-  deleteHooks.append(deleteHook)
-
-  def wasLoadedFromDb = loadedFromDb
-  def wasDeleted      = Persistence.deleted(this)
-}
-
-object Persistence {
-  private val deleted = new mutable.HashSet[Node[_]]()
-}
-
-trait NodeSource {
-  def source:String
-  def moveable:Boolean
-
-  def useable:Boolean = source != "wp" && moveable
-}
-
-trait NodeCubbie[Vars <: NodeVariables[Vars], N  <: Node[Vars]] extends Cubbie {
+  type N = Node[Vars]
+  val deletionSet:mutable.HashSet[String]
 
   val parentRef = RefSlot("parentRef", () => newNodeCubbie)
   val isMention = BooleanSlot("isMention")
@@ -300,10 +286,16 @@ trait NodeCubbie[Vars <: NodeVariables[Vars], N  <: Node[Vars]] extends Cubbie {
   val source = StringSlot("src")
 
 
-  def newNode(v: Vars, id:String)    = new Node(v,id)(null) { protected val loadedFromDb = true }
-  def newMention(v: Vars, id:String) = new Mention(v,id)(null) { protected val loadedFromDb = true }
+  def newNode(v: Vars, id:String)    = new Node(v,id)(null) {
+    override val loadedFromDb = true
+    override val deletionRecord = deletionSet
+  }
+  def newMention(v: Vars, id:String) = new Mention(v,id)(null) {
+    override val loadedFromDb = true
+    override val deletionRecord = deletionSet
+  }
 
-  def newNodeCubbie : NodeCubbie[Vars, N]
+  def newNodeCubbie : NodeCubbie[Vars]
 
   def fetch(v: Vars) = if(isMention.value) newMention(v, this.id.toString) else newNode(v, this.id.toString)
 

@@ -24,18 +24,18 @@ import cc.factorie.variable.{Var, BagOfWordsVariable}
  * User: escher
  * Date: 11/2/13
  */
-trait NodeCollection[Vars <: NodeVariables[Vars], N <: Node[Vars]] {
+trait NodeCollection[Vars <: NodeVariables[Vars]] {
+  type N = Node[Vars]
   def +=(n :N)                       :Unit
   def ++=(es:Iterable[N])            :Unit
   def drop()                         :Unit
   def store(nodesToStore:Iterable[N]):Unit
   def nextBatch(n:Int=10)            :Seq[N]
   def loadAll                        :Seq[N]
-  //  def loadByIds(ids:Seq[String])     :Seq[N]
 }
 
 class BOWCubbie extends Cubbie{
-  val nodeId = RefSlot[NodeCubbie[_,_]]("nid",()=>null.asInstanceOf[NodeCubbie[_,_]])  //todo understand how this null works
+  val nodeId = RefSlot[NodeCubbie[_]]("nid",()=>null.asInstanceOf[NodeCubbie[_]])  //todo understand how this null works
   val word   = StringSlot("w")
   val count  = DoubleSlot("c")
   def fetch = this.word -> this.count
@@ -47,10 +47,15 @@ class BOWCubbie extends Cubbie{
   }
 }
 
-trait DBNodeCollection[Vars <: NodeVariables[Vars], N <: Node[Vars] with Persistence, NC<:NodeCubbie[Vars, N]] extends NodeCollection[Vars, N]{
+trait DBNodeCollection[Vars <: NodeVariables[Vars]] extends NodeCollection[Vars]{
+  type NC = NodeCubbie[Vars]
   protected val _id2cubbie = mutable.HashMap[String,NC]()
   protected def newNodeCubbie :NC
-  protected def newNode(v:Vars, nc:NC) :N
+  protected def newNode(v:Vars, nc:NC) = if(nc.isMention.value) {
+    nc.newMention(v, nc.id.toString)
+  } else {
+    nc.newNode(v, nc.id.toString)
+  }
   protected def cubbify(n:N) = {val nc = newNodeCubbie; nc.store(n); nc}
   protected def nodeCubbieColl :MutableCubbieCollection[NC]
   def += (n:N){ insert(n) }
@@ -60,10 +65,10 @@ trait DBNodeCollection[Vars <: NodeVariables[Vars], N <: Node[Vars] with Persist
   def insert(ns:Iterable[N]) { nodeCubbieColl ++= ns.map(cubbify) }
   def drop:Unit
   def store(nodesToStore:Iterable[N]) {
-    val (created, others) = nodesToStore.partition(n => !n.wasDeleted && !n.wasLoadedFromDb)
+    val (created, others) = nodesToStore.partition(n => n.exists && !n.loadedFromDb)
     nodeCubbieColl ++= created.map(cubbify)
     for(node <- others){
-      if(node.wasDeleted){
+      if(!node.exists){
         nodeCubbieColl.remove(_.idIs(node.uniqueId))
       }
       else {
@@ -90,8 +95,7 @@ trait DBNodeCollection[Vars <: NodeVariables[Vars], N <: Node[Vars] with Persist
 
 }
 
-abstract class MongoNodeCollection[Vars <: NodeVariables[Vars], N <: Node[Vars] with Persistence,
-NC<:NodeCubbie[Vars, N]](val names:Seq[String], mongoDB:DB)(implicit ct: ClassTag[Vars]) extends DBNodeCollection[Vars, N, NC]{
+abstract class MongoNodeCollection[Vars <: NodeVariables[Vars]](val names:Seq[String], mongoDB:DB)(implicit ct: ClassTag[Vars]) extends DBNodeCollection[Vars]{
   val numBags = ct.runtimeClass.getDeclaredFields.count(_.getType.getName.endsWith("BagOfWordsVariable")) -1
   assert(names.size == numBags+1, "Insufficient collection names : "+numBags+1+"<"+names.size)
   protected val colls = names.map(mongoDB.getCollection)
@@ -173,7 +177,7 @@ NC<:NodeCubbie[Vars, N]](val names:Seq[String], mongoDB:DB)(implicit ct: ClassTa
   //    }
   //  }
 
-  protected def newBOWCubbie : BOWCubbie
+  protected def newBOWCubbie  = new BOWCubbie()
 
   protected def newNodeVars[V <: Var](truth: String, vars: V*) : Vars
 }
