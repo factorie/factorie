@@ -174,6 +174,18 @@ class ChildParentCosineDistance[Vars <: NodeVariables[Vars]](weight:Double, shif
   }
 }
 
+class ChildParentPersonNameTemplate[Vars <: NodeVariables[Vars]](weight:Double, shift:Double, getName:(Vars => PersonNameVariable), scoreNames:((PersonName, PersonName) => Double), varName:String = "")(implicit c:ClassTag[Vars], p:Parameters) extends ChildParentTemplate[Vars](Tensor1(weight)) with DebuggableTemplate {
+  def name = "ChildParentPersonName: %s".format(varName)
+
+  override def statistics(v1: (Node[Vars], Node[Vars]), child: Vars, parent: Vars) = {
+    val childName = getName(child)
+    val parentName = getName(parent)
+    val v = scoreNames(childName.value, parentName.--(childName)(null).value) // at this point the child bag has been added to the parent and needs to be remove for regular comparison
+    report(v, initWeights(0))
+    Tensor1(v)
+  }
+}
+
 /**
  * This feature serves to ensure that certain merges are forbidden. Specifically no two nodes that share the same value
  * in the [[BagOfWordsVariable]] should be permitted to merge. Together with [[IdentityFactor]] it can create uniquely
@@ -227,7 +239,7 @@ class IdentityFactor[Vars <: NodeVariables[Vars]](getBag:(Vars => BagOfWordsVari
     val parentBag = getBag(parent)
     var result = 0.0
     if(childBag.value.asHashMap.exists{case (id, _) => parentBag.value.asHashMap.contains(id)}) {
-      result = 999999.0
+      result = 9999999.0
     } else {
       result = 0.0
     }
