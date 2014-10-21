@@ -74,7 +74,7 @@ object HierCorefDemo {
   }
 
   class HcorefCubbieCollection(names: Seq[String], mongoDB: DB)
-    extends MongoNodeCollection[WikiCorefVars](names, mongoDB) {
+    extends MongoNodeCollection[WikiCorefVars](names, Seq.empty[String], mongoDB) {
 
     protected def newNodeVars[V <: Var](truth: String, vars: V*) = WikiCorefVars.fromNodeCubbieVars(truth, vars)
     protected def newNodeCubbie: HcorefNodeCubbie = new HcorefNodeCubbie
