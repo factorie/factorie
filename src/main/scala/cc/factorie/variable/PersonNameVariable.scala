@@ -35,7 +35,7 @@ class PersonName(
 class PersonNameVariable(firstNames:Iterable[String] = Iterable.empty[String], middleNames:Iterable[String] = Iterable.empty[String], lastNames:Iterable[String] = Iterable.empty[String], suffixes:Iterable[String] = Iterable.empty[String]) extends Var {
   type Value = PersonName
 
-  def value = new PersonName(new BagOfWords(firstNames), new BagOfWords(middleNames), new BagOfWords(lastNames), new BagOfWords(suffixes))
+  val value = new PersonName(new BagOfWords(firstNames), new BagOfWords(middleNames), new BagOfWords(lastNames), new BagOfWords(suffixes))
 
   def add(that:PersonName)(implicit d:DiffList) {
     if(d != null) d += new PersonNameVariableAddBagDiff(that)
