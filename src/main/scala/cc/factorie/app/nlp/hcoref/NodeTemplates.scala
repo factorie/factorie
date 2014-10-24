@@ -217,6 +217,22 @@ class ExclusiveConstraintFactor[Vars <: NodeVariables[Vars]](getBag:(Vars => Bag
   }
 }
 
+class MatchConstraint[Vars <: NodeVariables[Vars]](matchScore:Double, matchPenalty:Double, getBag:(Vars => BagOfWordsVariable), bagName:String = "")(implicit ct:ClassTag[Vars], p:Parameters)
+  extends ChildParentTemplate[Vars](Tensor1(matchScore, matchPenalty))
+  with DebuggableTemplate {
+  def name = "Matching Constraint on: %s".format(bagName)
+
+  override def statistics(v1: ArrowVariable[Node[Vars], Node[Vars]]#Value, child: Vars#Value, parent: Vars#Value) = {
+    val x = getBag(child)
+    val y = (getBag(parent) -- x)(null)
+    if(x.value.contains(y.value)) {
+      Tensor1(1,0)
+    } else {
+      Tensor1(0,1)
+    }
+  }
+}
+
 /**
  * This feature serves to account for special information that may uniquely identify an entity. If a merge is proposed
  * between two nodes that share a value in getBag they will be merged. This feature does not ensure that the value in
@@ -263,7 +279,7 @@ class ChildParentDistanceFactor[Vars <: NodeVariables[Vars]](weight:Double, shif
   }
 }
 
-class ChildParentStringDistance[Vars <: NodeVariables[Vars]](weight:Double, shift:Double, getBag:(Vars => BagOfWordsVariable), elementName:String)(implicit ct:ClassTag[Vars], p:Parameters) extends ChildParentDistanceFactor[Vars](weight, shift, getBag, {(x:BagOfWordsVariable, y:BagOfWordsVariable) => strings.editDistance(x.value.longest,y.value.longest)}, "string edit distance", elementName)
+class ChildParentStringDistance[Vars <: NodeVariables[Vars]](weight:Double, shift:Double, getBag:(Vars => BagOfWordsVariable), elementName:String="")(implicit ct:ClassTag[Vars], p:Parameters) extends ChildParentDistanceFactor[Vars](weight, shift, getBag, {(x:BagOfWordsVariable, y:BagOfWordsVariable) => 1 - ( strings.editDistance(x.value.longest,y.value.longest) / math.max(x.value.longest.length, y.value.longest.length))}, "string edit distance", elementName)
 
 class DenseCosineDistance[Vars <: NodeVariables[Vars]](weight:Double, shift:Double, getArray:(Vars => DenseDoubleBagVariable), val name:String="")(implicit ct:ClassTag[Vars], params:Parameters) extends ChildParentTemplate[Vars](Tensor1(weight)) with DebuggableTemplate {
   import VectorUtils._

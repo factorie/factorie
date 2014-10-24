@@ -80,6 +80,7 @@ class BagOfWords(initialWords: Iterable[String] = null, initialBag: Map[String, 
     for ((k, v) <- that.iterator) this +=(k, v)
   }
   def removeBag(that: BagOfWords) = for ((k, v) <- that.iterator) this -=(k, v)
+  def contains(other:BagOfWords) = this._bag.keySet.intersect(other._bag.keySet).size > 0
 }
 
 class BagOfWordsVariable(initialWords: Iterable[String] = Nil, initialMap: Map[String, Double] = null) extends Var with Iterable[(String, Double)] {
