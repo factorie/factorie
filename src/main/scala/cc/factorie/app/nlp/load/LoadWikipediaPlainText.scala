@@ -31,12 +31,12 @@ class LoadWikipediaPlainText {
   def fromCompressedFilename(filename:String, maxArticleCount:Int = Int.MaxValue): Iterator[Document] = {
     //require(filename.startsWith("enwiki") && filename.endsWith(".xml.bz2"))
     val inputStream = new CompressorStreamFactory().createCompressorInputStream(CompressorStreamFactory.BZIP2, new FileInputStream(filename))
-    fromInputStream(inputStream)
+    fromInputStream(inputStream, maxArticleCount)
   }
   /** This assumes that the file has format of enwiki-latest-pages-articles.xml.bz2. */
   def fromCompressedFile(file:File, maxArticleCount:Int = Int.MaxValue): Iterator[Document] = {
     val inputStream = new CompressorStreamFactory().createCompressorInputStream(CompressorStreamFactory.BZIP2, new FileInputStream(file))
-    fromInputStream(inputStream)
+    fromInputStream(inputStream, maxArticleCount)
   }
   
   // An io.Source version of this just keeps growing until it runs out of memory, as if io.Source were keeping the entire contents in memory.
