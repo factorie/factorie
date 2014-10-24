@@ -12,7 +12,7 @@ abstract class DocEntityCoref {
   _settings =>
   def autoStopThreshold:Int
   def estimateIterations(mentionCount:Int):Int
-  def model:DocEntityCorefModel
+  def model:CorefModel[DocEntityVars]
   implicit val random:Random
 
 
@@ -34,11 +34,12 @@ abstract class DocEntityCoref {
   }
 
 
-  def getSampler(mentions:Iterable[Node[DocEntityVars]]):CorefSampler[DocEntityVars] = new CorefSampler[DocEntityVars](_settings.model, mentions, _settings.estimateIterations(mentions.size))
+  def getSampler(mentions:Iterable[Node[DocEntityVars]]) = new CorefSampler[DocEntityVars](_settings.model, mentions, _settings.estimateIterations(mentions.size))
     with AutoStoppingSampler[DocEntityVars]
     with CanopyPairGenerator[DocEntityVars]
     with NoSplitMoveGenerator[DocEntityVars]
-    with DebugCoref[DocEntityVars] {
+    with DebugCoref[DocEntityVars]
+    with TrainingObjective[DocEntityVars] {
     def newInstance(implicit d: DiffList) = new Node[DocEntityVars](new DocEntityVars())
 
     val autoStopThreshold = _settings.autoStopThreshold
@@ -49,7 +50,7 @@ abstract class DocEntityCoref {
 class DocEntityCorefModel(namesWeights:Double, namesShift:Double, nameEntropy:Double, contextsWeight:Double, contextsShift:Double, genderWeight:Double, genderShift:Double, mentionWeight:Double, mentionShift:Double, numberWeight:Double, numberShift:Double) extends CorefModel[DocEntityVars] {
   this += new ChildParentCosineDistance(namesWeights, namesShift, {v:DocEntityVars => v.names})
   this += new ChildParentCosineDistance(contextsWeight, contextsShift, {v:DocEntityVars => v.context})
-  this += new ChildParentCosineDistance(genderWeight, genderShift, {v:DocEntityVars => v.gender})
+  this += new ChildParentCosineDistance(genderWeight, genderShift, {v:DocEntityVars => v.nerType})
   this += new ChildParentCosineDistance(mentionWeight, mentionShift, {v:DocEntityVars => v.mention})
   this += new ChildParentCosineDistance(numberWeight, numberShift, {v:DocEntityVars => v.number})
   this += new BagOfWordsEntropy(nameEntropy, {v:DocEntityVars => v.names})

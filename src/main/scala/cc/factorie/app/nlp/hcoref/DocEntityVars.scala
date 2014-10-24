@@ -6,8 +6,8 @@ import cc.factorie.app.nlp.coref.WithinDocEntity
 /**
  * @author John Sullivan
  */
-class DocEntityVars(val names:BagOfWordsVariable, val context:BagOfWordsVariable, val gender:BagOfWordsVariable, val mention:BagOfWordsVariable, val number:BagOfWordsVariable, val truth:BagOfWordsVariable) extends NodeVariables[DocEntityVars] with Canopy with GroundTruth {
-  val getVariables = Seq(names, context, gender, mention, number)
+class DocEntityVars(val names:BagOfWordsVariable, val context:BagOfWordsVariable, val nerType:BagOfWordsVariable, val mention:BagOfWordsVariable, val number:BagOfWordsVariable, val truth:BagOfWordsVariable) extends NodeVariables[DocEntityVars] with Canopy with GroundTruth {
+  val getVariables = Seq(names, context, nerType, mention, number)
 
   def canopies = names.value.asHashMap.keySet
 
@@ -17,7 +17,7 @@ class DocEntityVars(val names:BagOfWordsVariable, val context:BagOfWordsVariable
   def --=(other: DocEntityVars)(implicit d: DiffList) = {
     this.names.remove(other.names.value)(d)
     this.context.remove(other.context.value)(d)
-    this.gender.remove(other.gender.value)(d)
+    this.nerType.remove(other.nerType.value)(d)
     this.mention.remove(other.mention.value)(d)
     this.number.remove(other.number.value)(d)
     this.truth.remove(other.truth.value)(d)
@@ -27,22 +27,22 @@ class DocEntityVars(val names:BagOfWordsVariable, val context:BagOfWordsVariable
   def ++=(other: DocEntityVars)(implicit d: DiffList) = {
     this.names.add(other.names.value)(d)
     this.context.add(other.context.value)(d)
-    this.gender.add(other.gender.value)(d)
+    this.nerType.add(other.nerType.value)(d)
     this.mention.add(other.mention.value)(d)
     this.number.add(other.number.value)(d)
     this.truth.add(other.truth.value)(d)
   }
 
-  def --(other: DocEntityVars)(implicit d: DiffList) = new DocEntityVars(this.names -- other.names, this.context -- other.context, this.gender -- other.gender, this.mention -- other.mention, this.number -- other.number, this.truth -- other.truth)
+  def --(other: DocEntityVars)(implicit d: DiffList) = new DocEntityVars(this.names -- other.names, this.context -- other.context, this.nerType -- other.nerType, this.mention -- other.mention, this.number -- other.number, this.truth -- other.truth)
 
-  def ++(other: DocEntityVars)(implicit d: DiffList) = new DocEntityVars(this.names ++ other.names, this.context ++ other.context, this.gender ++ other.gender, this.mention ++ other.mention, this.number ++ other.number, this.truth ++ other.truth)
+  def ++(other: DocEntityVars)(implicit d: DiffList) = new DocEntityVars(this.names ++ other.names, this.context ++ other.context, this.nerType ++ other.nerType, this.mention ++ other.mention, this.number ++ other.number, this.truth ++ other.truth)
 }
 
 object DocEntityVars {
   def fromWithinDocEntity(e:WithinDocEntity):DocEntityVars = {
     val nameBag = new BagOfWordsVariable()
     val contextBag = new BagOfWordsVariable()
-    val genderBag = new BagOfWordsVariable()
+    val nerBag = new BagOfWordsVariable()
     val mentionBag = new BagOfWordsVariable()
     val numberBag = new BagOfWordsVariable()
 
@@ -51,8 +51,8 @@ object DocEntityVars {
       //nameBag += mention.phrase.string
       //todo filter nominal mentions
       nameBag ++= mention.phrase.tokens.map(_.string)
-      Option(mention.phrase.gender) match {
-        case Some(gender) => genderBag += gender.categoryValue
+      Option(mention.phrase.head.nerTag) match {
+        case Some(tag) => nerBag += tag.baseCategoryValue
         case None => ()
       }
       Option(mention.phrase.number) match {
@@ -64,7 +64,7 @@ object DocEntityVars {
     e.document.coref.entities.filterNot(_.uniqueId == e.uniqueId).foreach { entity =>
       mentionBag += entity.canonicalName
     }
-    new DocEntityVars(nameBag, contextBag, genderBag, mentionBag, numberBag)
+    new DocEntityVars(nameBag, contextBag, nerBag, mentionBag, numberBag)
   }
 }
 
