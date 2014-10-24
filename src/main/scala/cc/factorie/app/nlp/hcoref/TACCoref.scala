@@ -12,7 +12,7 @@ import cc.factorie.app.nlp.parse.OntonotesTransitionBasedParser
 import scala.util.Random
 import cc.factorie.app.nlp.segment.{DeterministicSentenceSegmenter, DeterministicTokenizer}
 import cc.factorie.app.nlp.phrase.Phrase
-import cc.factorie.variable.{CategoricalDomain, BagOfWordsVariable}
+import cc.factorie.variable.{DenseDoubleBagVariable, CategoricalDomain, BagOfWordsVariable}
 import java.util.zip.GZIPInputStream
 import cc.factorie.app.nlp.hcoref.ReferenceMention
 import scala.Some
@@ -84,6 +84,9 @@ object TACCoref {
   def main(args:Array[String]) {
     val tacRoot = args(0)
     val evalPath = args(1)
+    val embeddingFile = args(2)
+
+    val embeddings = EmbeddingSpace.fromFile(embeddingFile)
 
     val map = new Tac2009FlatDocumentMap(tacRoot)
 
@@ -107,13 +110,16 @@ object TACCoref {
         val mentionBag = new BagOfWordsVariable()
         val numberBag = new BagOfWordsVariable()
         val truth = new BagOfWordsVariable()
+        val contextVec = new DenseDoubleBagVariable(50)
+
 
         nameBag ++= tokenSpan.tokens.map(_.string)
         contextBag ++= tokenSpan.contextWindow(10).groupBy(_.string).mapValues(_.size.toDouble)
+        contextVec.set(embeddings.embedPhrase(contextBag.value.asHashMap.keySet.toSeq))(null)
         nerBag += rMention.entType
         truth += rMention.entId
 
-        new Mention[DocEntityVars](new DocEntityVars(nameBag, contextBag, nerBag, mentionBag, numberBag, truth), rMention.id)(null)
+        new Mention[DenseDocEntityVars](new DenseDocEntityVars(nameBag, contextBag, nerBag, contextVec, numberBag, truth), rMention.id)(null)
       }
     }
     println("done finding token spans and building mentions")
@@ -124,42 +130,44 @@ object TACCoref {
     println("Split into %d training and %d testing".format(train.size, test.size))
     implicit val rand = new Random()
 
-    class DocEntityModel(namesWeights:Double, namesShift:Double, nameEntropy:Double, contextsWeight:Double, contextsShift:Double, matchScore:Double, matchPenalty:Double) extends CorefModel[DocEntityVars] {
-      this += new ChildParentCosineDistance(namesWeights, namesShift, {v:DocEntityVars => v.names})
-      this += new ChildParentCosineDistance(contextsWeight, contextsShift, {v:DocEntityVars => v.context})
-      this += new MatchConstraint(matchScore, matchPenalty, {v:DocEntityVars => v.nerType})
-      //this += new ChildParentCosineDistance(nerWeight, nerShift, {v:DocEntityVars => v.nerType})
-      //this += new ChildParentStringDistance(distanceWeight, distanceShift, {v:DocEntityVars => v.names})
-      this += new BagOfWordsEntropy(nameEntropy, {v:DocEntityVars => v.names})
+    class DocEntityModel(namesWeights:Double, namesShift:Double, nameEntropy:Double, contextsWeight:Double, contextsShift:Double, matchScore:Double, matchPenalty:Double, denseContextWeight:Double, denseContextShift:Double) extends CorefModel[DenseDocEntityVars] {
+      this += new ChildParentCosineDistance(namesWeights, namesShift, {v:DenseDocEntityVars => v.names})
+      this += new ChildParentCosineDistance(contextsWeight, contextsShift, {v:DenseDocEntityVars => v.context})
+      this += new MatchConstraint(matchScore, matchPenalty, {v:DenseDocEntityVars => v.nerType})
+      this += new DenseCosineDistance(denseContextWeight, denseContextShift, {v:DenseDocEntityVars => v.contextVec})
+      //this += new ChildParentCosineDistance(nerWeight, nerShift, {v:DenseDocEntityVars => v.nerType})
+      //this += new ChildParentStringDistance(distanceWeight, distanceShift, {v:DenseDocEntityVars => v.names})
+      this += new BagOfWordsEntropy(nameEntropy, {v:DenseDocEntityVars => v.names})
     }
 
-    val trainCoref = new DocEntityCoref {implicit val random: Random = rand
 
-      def estimateIterations(mentionCount: Int) = mentionCount * 100
+    val model = new DocEntityModel(1.0, -0.25, 0.5, 1.0, -0.25, 1.0, -10.0, 1.0, -0.25)
 
-      val model = new DocEntityModel(1.0, -0.25, 0.5, 1.0, -0.25, 1.0, -10.0)
+    val trainer = new CorefSampler[DenseDocEntityVars](model, train, train.size * 100)
+      with AutoStoppingSampler[DenseDocEntityVars]
+      with CanopyPairGenerator[DenseDocEntityVars]
+      with NoSplitMoveGenerator[DenseDocEntityVars]
+      with DebugCoref[DenseDocEntityVars]
+      with TrainingObjective[DenseDocEntityVars] {
+      def newInstance(implicit d: DiffList) = new Node[DenseDocEntityVars](new DenseDocEntityVars())
 
       val autoStopThreshold = 10000
     }
-
-    val trainer = trainCoref.getSampler(train)
     trainer.train(100000)
 
     println(trainer.model.parameters.tensors)
 
-    val testCoref = new DocEntityCoref {implicit val random: Random = rand
+    val sampler = new CorefSampler[DenseDocEntityVars](model, test, test.size * 100)
+      with AutoStoppingSampler[DenseDocEntityVars]
+      with CanopyPairGenerator[DenseDocEntityVars]
+      with NoSplitMoveGenerator[DenseDocEntityVars]
+      with DebugCoref[DenseDocEntityVars]
+      with TrainingObjective[DenseDocEntityVars] {
+      def newInstance(implicit d: DiffList) = new Node[DenseDocEntityVars](new DenseDocEntityVars())
 
-      def estimateIterations(mentionCount: Int) = mentionCount * 100
-
-      def model = trainer.model
-
-      def autoStopThreshold = 10000
-
+      val autoStopThreshold = 10000
     }
 
-    val sampler = testCoref.getSampler(test)
-
-    //sampler.train(10000)
     sampler.infer
 
     println(EvaluatableClustering.evaluationString(test.predictedClustering, test.trueClustering))

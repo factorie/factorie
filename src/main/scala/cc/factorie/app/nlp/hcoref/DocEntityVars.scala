@@ -1,6 +1,6 @@
 package cc.factorie.app.nlp.hcoref
 
-import cc.factorie.variable.{BagOfWordsVariable, DiffList}
+import cc.factorie.variable.{DenseDoubleBagVariable, BagOfWordsVariable, DiffList}
 import cc.factorie.app.nlp.coref.WithinDocEntity
 
 /**
@@ -36,6 +36,39 @@ class DocEntityVars(val names:BagOfWordsVariable, val context:BagOfWordsVariable
   def --(other: DocEntityVars)(implicit d: DiffList) = new DocEntityVars(this.names -- other.names, this.context -- other.context, this.nerType -- other.nerType, this.mention -- other.mention, this.number -- other.number, this.truth -- other.truth)
 
   def ++(other: DocEntityVars)(implicit d: DiffList) = new DocEntityVars(this.names ++ other.names, this.context ++ other.context, this.nerType ++ other.nerType, this.mention ++ other.mention, this.number ++ other.number, this.truth ++ other.truth)
+}
+
+
+class DenseDocEntityVars(val names:BagOfWordsVariable, val context:BagOfWordsVariable, val nerType:BagOfWordsVariable, val contextVec:DenseDoubleBagVariable, val number:BagOfWordsVariable, val truth:BagOfWordsVariable) extends NodeVariables[DenseDocEntityVars] with Canopy with GroundTruth {
+  val getVariables = Seq(names, context, nerType, contextVec, number)
+
+  def canopies = names.value.asHashMap.keySet
+
+  def this() = this(new BagOfWordsVariable(), new BagOfWordsVariable(), new BagOfWordsVariable(), new DenseDoubleBagVariable(50), new BagOfWordsVariable(), new BagOfWordsVariable())
+  def this(names:BagOfWordsVariable, context:BagOfWordsVariable, nerType:BagOfWordsVariable, contextVec:DenseDoubleBagVariable, number:BagOfWordsVariable) = this(names, context, nerType, contextVec, number, new BagOfWordsVariable())
+
+  def --=(other: DenseDocEntityVars)(implicit d: DiffList) = {
+    this.names.remove(other.names.value)(d)
+    this.context.remove(other.context.value)(d)
+    this.nerType.remove(other.nerType.value)(d)
+    this.contextVec.remove(other.contextVec.value)(d)
+    this.number.remove(other.number.value)(d)
+    this.truth.remove(other.truth.value)(d)
+  }
+
+
+  def ++=(other: DenseDocEntityVars)(implicit d: DiffList) = {
+    this.names.add(other.names.value)(d)
+    this.context.add(other.context.value)(d)
+    this.nerType.add(other.nerType.value)(d)
+    this.contextVec.add(other.contextVec.value)(d)
+    this.number.add(other.number.value)(d)
+    this.truth.add(other.truth.value)(d)
+  }
+
+  def --(other: DenseDocEntityVars)(implicit d: DiffList) = new DenseDocEntityVars(this.names -- other.names, this.context -- other.context, this.nerType -- other.nerType, this.contextVec -- other.contextVec, this.number -- other.number, this.truth -- other.truth)
+
+  def ++(other: DenseDocEntityVars)(implicit d: DiffList) = new DenseDocEntityVars(this.names ++ other.names, this.context ++ other.context, this.nerType ++ other.nerType, this.contextVec ++ other.contextVec, this.number ++ other.number, this.truth ++ other.truth)
 }
 
 object DocEntityVars {
