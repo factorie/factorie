@@ -135,8 +135,6 @@ object TACCoref {
       this += new ChildParentCosineDistance(contextsWeight, contextsShift, {v:DenseDocEntityVars => v.context})
       this += new MatchConstraint(matchScore, matchPenalty, {v:DenseDocEntityVars => v.nerType})
       this += new DenseCosineDistance(denseContextWeight, denseContextShift, {v:DenseDocEntityVars => v.contextVec})
-      //this += new ChildParentCosineDistance(nerWeight, nerShift, {v:DenseDocEntityVars => v.nerType})
-      //this += new ChildParentStringDistance(distanceWeight, distanceShift, {v:DenseDocEntityVars => v.names})
       this += new BagOfWordsEntropy(nameEntropy, {v:DenseDocEntityVars => v.names})
     }
 
@@ -171,6 +169,14 @@ object TACCoref {
     sampler.infer
 
     println(EvaluatableClustering.evaluationString(test.predictedClustering, test.trueClustering))
+    val goldMap = test.map { mention =>
+      mention.variables.truth.value.asHashMap.keySet.head -> mention.uniqueId
+    }.groupBy(_._1).mapValues(_.map(_._2).toSet)
+
+    val predMap = test.map{m:Node[DenseDocEntityVars] => m.root}.toSet.map { entities:Node[DenseDocEntityVars] =>
+      entities.variables.truth.value.topWord -> entities.mentions.map(_.uniqueId).toSet
+    }.toMap
+    println(LinkingScorer.scoreString(predMap, goldMap))
   }
 }
 
