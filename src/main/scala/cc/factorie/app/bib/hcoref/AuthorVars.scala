@@ -54,7 +54,9 @@ class AuthorVars(val firstNames:BagOfWordsVariable,
 }
 
 object AuthorVars {
-  def fromNodeCubbieVars[V <: Var](truth:String, vars:V*):AuthorVars = {
-    new AuthorVars()
+  def fromNodeCubbieVars[V <: Var](truth:String, vars:Seq[V], embeddingMap:Map[String, Array[Double]]):AuthorVars = {
+    val aVars = new AuthorVars()
+    aVars.firstNames.
+    aVars
   }
 }

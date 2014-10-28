@@ -280,11 +280,8 @@ trait NodeCubbie[Vars <: NodeVariables[Vars]] extends Cubbie {
 
   val parentRef = RefSlot("parentRef", () => newNodeCubbie)
   val isMention = BooleanSlot("isMention")
-  val wikiUrl = StringSlot("wurl")
   val canopies = StringListSlot("canopies")
-  val moveable = BooleanSlot("mv")
   val source = StringSlot("src")
-
 
   def newNode(v: Vars, id:String)    = new Node(v,id)(null) {
     override val loadedFromDb = true
