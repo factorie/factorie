@@ -4,6 +4,8 @@ import cc.factorie.util.DefaultCmdOptions
 import cc.factorie.app.nlp.hcoref._
 import com.mongodb.{MongoClient, DB}
 import cc.factorie.variable.{DiffList, Var}
+import scala.io.Source
+import scala.util.Random
 
 /**
  * @author John Sullivan
@@ -19,20 +21,35 @@ trait MongoOpts extends DefaultCmdOptions {
 object AuthorCoref {
 
   val opts = new AuthorModelOptions with MongoOpts {
-    val fieldList = new CmdOption("field-list", List("",""), "LIST[FIELD]", "The list of fieldnames to deserialize from mongo.")
+    val embeddingFile = new CmdOption("embedding-file", "", "FILE", "The name of the embedding file to load.", true)
+    val embeddingDim = new CmdOption("embedding-dim", 200, "INT", "The dimension of the embeddings")
+  }
+
+  def loadEmbeddings(filename:String, dim:Int):Map[String, Array[Double]] = {
+    val src = Source.fromFile(filename)
+    val embMap = src.getLines().map{ line =>
+      val word :: embeddings = line.split('\t').toList
+      word -> embeddings.map(_.toDouble).toArray
+    }.toMap
+    src.close()
+    embMap
   }
 
   def main(args:Array[String]) {
     opts parse args
+    val embeddingMap = loadEmbeddings(opts.embeddingFile.value, opts.embeddingDim.value)
+    println("Loaded embedding map")
     val db = new MongoClient(opts.host.value, opts.port.value).getDB(opts.database.value)
-    val coll = new MongoAuthorCollection(opts.fieldList.value, db)
+    val coll = new MongoAuthorCollection(db, embeddingMap)
+    println("setup db")
     val authors = coll.loadAll
     println("loaded %d authors".format(authors.size))
 
+    implicit val r = new Random()
     val model = AuthorCorefModel.fromCmdOptions(opts)
     val numSamples = 300 * authors.size
     println("beginning %d samples".format(numSamples))
-    val sampler = new CorefSampler[AuthorVars](model, mentions, numSamples)
+    val sampler = new CorefSampler[AuthorVars](model, authors, numSamples)
       with AutoStoppingSampler[AuthorVars]
       with CanopyPairGenerator[AuthorVars]
       with NoSplitMoveGenerator[AuthorVars]

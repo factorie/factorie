@@ -54,9 +54,18 @@ class AuthorVars(val firstNames:BagOfWordsVariable,
 }
 
 object AuthorVars {
-  def fromNodeCubbieVars[V <: Var](truth:String, vars:Seq[V], embeddingMap:Map[String, Array[Double]]):AuthorVars = {
-    val aVars = new AuthorVars()
-    aVars.firstNames.
+  def fromNodeCubbie(nc:AuthorNodeCubbie, embeddingMap:Map[String, Array[Double]]):AuthorVars = {
+    val aVars = new AuthorVars(embeddingMap.head._2.length)
+    aVars.firstNames ++= nc.firstNameBag.value.fetch
+    aVars.middleNames ++= nc.middleNameBag.value.fetch
+    nc.title.value.split("""\s+""").foldLeft(aVars.topics){ case (topicEmb, word) =>
+      embeddingMap.get(word).map(topicEmb.add(_)(null))
+      topicEmb
+    }
+    aVars.venues ++= nc.venues.value.fetch
+    aVars.coAuthors ++= nc.coauthors.value.fetch
+    aVars.keywords ++= nc.keywords.value.fetch
+    aVars.canopy = nc.canopy.value
     aVars
   }
 }

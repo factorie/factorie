@@ -14,7 +14,6 @@ import cc.factorie.app.nlp.segment.{DeterministicSentenceSegmenter, Deterministi
 import cc.factorie.app.nlp.phrase.Phrase
 import cc.factorie.variable.{DenseDoubleBagVariable, CategoricalDomain, BagOfWordsVariable}
 import java.util.zip.GZIPInputStream
-import cc.factorie.app.nlp.hcoref.ReferenceMention
 import scala.Some
 import scala.collection.mutable.{ArrayBuffer, HashMap}
 
