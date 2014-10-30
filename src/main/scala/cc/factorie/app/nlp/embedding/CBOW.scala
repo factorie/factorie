@@ -58,6 +58,8 @@ class LogCBOWExample(val model:CBOW, val targetId:Int, val inputIndices:Array[In
     val contextEmbedding = new DenseTensor1(model.dims)
     val len = inputIndices.length
     var i = 0; while (i < len) { contextEmbedding += model.inputEmbedding(inputIndices(i)); i += 1 }
+    if (model.opts.normalizeX.value)
+      contextEmbedding *= (1.0 / len)
     //for (i <- start until start+length) contextEmbedding += model.embedding(context(i))
     // Positive case
     var score = targetEmbedding dot contextEmbedding
