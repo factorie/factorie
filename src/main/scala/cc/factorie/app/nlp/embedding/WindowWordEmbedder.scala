@@ -96,9 +96,9 @@ abstract class WordEmbedder(val opts:WindowWordEmbedderOptions) extends Paramete
       val examples = stringToExamples(string)
       //println("CBOW.train examples.size = "+examples.size)
       wordCount += examples.size
-      if (opts.checkGradient.value && wordCount >= 0000) {
-        print(s"CBOW testGradient ${examples.map(e => e.outputIndices.map(domain.category(_)).mkString(" ")).mkString(" ")} ...")
-        examples.foreach(e => (Example.testGradient(parameters, e, epsilon = 1e-7, lipschitz=1.5, verbose=true, returnOnFirstError=false))) // TODO Put back "assert"
+      if (opts.checkGradient.value && wordCount >= 10000) {
+        print(s"CBOW testGradient ${examples.map(e => e.outputIndices.map(domain.category).mkString(" ")).mkString(" ")} ...")
+        examples.foreach(e => Example.testGradient(parameters, parameters.keys, e, dx = 1e-7, verbose = true, returnOnFirstError = false)) // TODO Put back "assert"
         println("finished.")
       }
       trainer.processExamples(examples)
