@@ -12,7 +12,7 @@ import java.util.zip.GZIPOutputStream
 
 class CBOWOptions extends WindowWordEmbedderOptions {
   val margin = new CmdOption("margin", 0.1, "DOUBLE", "Margin for WSABIE training.")
-  val loss = new CmdOption("loss", "log", "STRING", "Loss function; options are wsabie and log.")
+  val loss = new CmdOption("loss", "wsabie", "STRING", "Loss function; options are wsabie and log.")
 }
 
 object CBOWExample {
@@ -65,7 +65,8 @@ class LogCBOWExample(val model:CBOW, val targetId:Int, val inputIndices:Array[In
     // Positive case
     var score = targetEmbedding dot contextEmbedding
     var expScore = math.exp(-score)
-    if (value ne null) value.accumulate(-math.log1p(expScore))
+    // FIXME this log1p is actually really slow and we don't use it for anything!
+//    if (value ne null) value.accumulate(-math.log1p(expScore))
     if (gradient ne null) {
       val stepSize = expScore/(1.0 + expScore)
       gradient.accumulate(model.outputWeights(targetId), contextEmbedding, stepSize)
@@ -78,7 +79,8 @@ class LogCBOWExample(val model:CBOW, val targetId:Int, val inputIndices:Array[In
       targetEmbedding = model.outputEmbedding(falseTarget)
       score = targetEmbedding dot contextEmbedding
       expScore = math.exp(-score)
-      if (value ne null) value.accumulate(-score - math.log1p(expScore))
+      // FIXME this log1p is actually really slow and we don't use it for anything!
+//      if (value ne null) value.accumulate(-score - math.log1p(expScore))
       if (gradient ne null) {
         val stepSize = -1.0 / (1.0 + expScore)
         gradient.accumulate(model.outputWeights(falseTarget), contextEmbedding, stepSize)

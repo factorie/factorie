@@ -99,6 +99,7 @@ abstract class WordEmbedder(val opts:WindowWordEmbedderOptions) extends Paramete
     if (wordIndices.length > opts.window.value) { // TODO was > 2*opts.window.value
       val array = wordIndices._rawArray
       val windowSize = opts.window.value
+      // this is slow
       for (targetPosition <- 0 until wordIndices.length - windowSize; example <- newExample(this, array, targetPosition, 1 + random.nextInt(windowSize))) yield example
     } else Nil
   }
