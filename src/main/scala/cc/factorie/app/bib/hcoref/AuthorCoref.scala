@@ -28,7 +28,8 @@ object AuthorCoref {
   def loadEmbeddings(filename:String, dim:Int):Map[String, Array[Double]] = {
     val src = Source.fromFile(filename)
     val embMap = src.getLines().map{ line =>
-      val word :: embeddings = line.split('\t').toList
+      val word :: embeddings = line.split("""\s+""").toList
+      assert(embeddings.length == opts.embeddingDim.value, "Expected embedding of length %d, found %d for word %s".format(opts.embeddingDim.value, embeddings.length, word))
       word -> embeddings.map(_.toDouble).toArray
     }.toMap
     src.close()
@@ -42,7 +43,7 @@ object AuthorCoref {
     val db = new MongoClient(opts.host.value, opts.port.value).getDB(opts.database.value)
     val coll = new MongoAuthorCollection(db, embeddingMap)
     println("setup db")
-    val authors = coll.loadAll
+    val authors = coll.loadMentions
     println("loaded %d authors".format(authors.size))
 
     implicit val r = new Random()
@@ -57,7 +58,7 @@ object AuthorCoref {
       val autoStopThreshold = 10000
       val logger = Logger.default
 
-      def newInstance(implicit d:DiffList) = new Node[AuthorVars](new AuthorVars())
+      def newInstance(implicit d:DiffList) = new Node[AuthorVars](new AuthorVars(opts.embeddingDim.value))
     }
 
     sampler.infer

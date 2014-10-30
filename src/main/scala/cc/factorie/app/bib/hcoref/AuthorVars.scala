@@ -65,7 +65,8 @@ object AuthorVars {
     aVars.venues ++= nc.venues.value.fetch
     aVars.coAuthors ++= nc.coauthors.value.fetch
     aVars.keywords ++= nc.keywords.value.fetch
-    aVars.canopy = nc.canopy.value
+    assert(nc.canopies.value.size == 1, "expected singular canopy found %s in %s".format(nc.canopies.value, nc.id.toString))
+    aVars.canopy = nc.canopies.value.head
     aVars
   }
 }

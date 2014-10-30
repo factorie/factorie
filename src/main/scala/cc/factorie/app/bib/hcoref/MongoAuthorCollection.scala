@@ -21,7 +21,6 @@ object AuthorNodeCubbie {
 class AuthorNodeCubbie extends NodeCubbie[AuthorVars] {
   val truth = StringSlot("gt")
   val title = StringSlot("title")
-  val canopy = StringSlot("canopy")
   val firstNameBag = new CubbieSlot("fnb", () => new HashMapCubbie)
   val middleNameBag = new CubbieSlot("mnb", () => new HashMapCubbie)
   val nickName = StringSlot("nn") // nickname  e.g. William Bruce Croft, nickname=Bruce; or William Freeman, nickname=Bill
@@ -36,10 +35,12 @@ class AuthorNodeCubbie extends NodeCubbie[AuthorVars] {
   val deletionSet: mutable.HashSet[String] = AuthorNodeCubbie.deletions
 }
 
-class MongoAuthorCollection(db:DB, embeddingMap:Map[String, Array[Double]]) extends MongoNodeCollection[AuthorVars, AuthorNodeCubbie](Seq.empty, Seq.empty, db) {
+class MongoAuthorCollection(db:DB, embeddingMap:Map[String, Array[Double]]) extends MongoNodeCollection[AuthorVars, AuthorNodeCubbie](Seq("authors"), Seq.empty, db) {
   protected def newNodeCubbie = new AuthorNodeCubbie
 
   protected def newNodeVars[V <: Var](truth: String, vars: V*) = new AuthorVars()
+
+  def loadMentions: Seq[Mention[AuthorVars]] = nodeCubbieColl.query({nc => nc.isMention.set(true)}).map(newNode(null, _).asInstanceOf[Mention[AuthorVars]]).toSeq
 
   override protected def newNode(v:AuthorVars, nc:AuthorNodeCubbie) = if (nc.isMention.value) {
     new Mention[AuthorVars](AuthorVars.fromNodeCubbie(nc, embeddingMap), nc.id.toString)(null)

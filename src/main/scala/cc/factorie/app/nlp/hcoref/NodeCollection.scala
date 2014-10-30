@@ -107,9 +107,9 @@ trait DBNodeCollection[Vars <: NodeVariables[Vars], NC <: NodeCubbie[Vars]] exte
 
 abstract class MongoNodeCollection[Vars <: NodeVariables[Vars], NC <: NodeCubbie[Vars]](val bagNames:Seq[String], val arrayNames:Seq[String], mongoDB:DB)(implicit ct: ClassTag[Vars]) extends DBNodeCollection[Vars, NC]{
   val numBags = ct.runtimeClass.getDeclaredFields.count(_.getType.getName.endsWith("BagOfWordsVariable")) -1
-  assert(bagNames.size == numBags+1, "Insufficient bag of words collection names : "+numBags+1+"<"+bagNames.size)
+  //assert(bagNames.size == numBags+1, "Insufficient bag of words collection names : "+numBags+1+"<"+bagNames.size)
   val numArrays = ct.runtimeClass.getDeclaredFields.count(_.getType.getName.endsWith("DenseDoubleBagVarable"))
-  assert(arrayNames.size == numArrays, "Insufficient dense collection names : "+numArrays+"<"+bagNames.size)
+  //assert(arrayNames.size == numArrays, "Insufficient dense collection names : "+numArrays+"<"+bagNames.size)
   protected val colls = bagNames.map(mongoDB.getCollection)
   val nodeCubbieColl = new MongoCubbieCollection[NC](colls(0),() => newNodeCubbie,(a:NC) => Seq(Seq(a.parentRef))) with LazyCubbieConverter[NC]
   val varsCubbieColls = colls.tail.map(coll => new MongoCubbieCollection(coll,() => newBOWCubbie,(a:BOWCubbie) => Seq(Seq(a.nodeId))) with LazyCubbieConverter[BOWCubbie])
@@ -143,7 +143,6 @@ abstract class MongoNodeCollection[Vars <: NodeVariables[Vars], NC <: NodeCubbie
   def cubbifyBOW(nodeId:String, bow:BagOfWordsVariable) = bow.value.asHashMap.map{
     case (w,d) => newBOWCubbie.store(nodeId, w, d)
   }
-
 
   def loadAll: Seq[N] = {
     val node2ParentId = mutable.HashMap[N, String]()
