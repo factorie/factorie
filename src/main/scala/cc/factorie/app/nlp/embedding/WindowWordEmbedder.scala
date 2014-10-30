@@ -39,6 +39,28 @@ abstract class WordEmbedder(val opts:WindowWordEmbedderOptions) extends Paramete
   val random = new Random(opts.seed.value)
   val domain = new CategoricalDomain[String]
   lazy val sampler = new Alias(domain.counts.asArray.map(_.toDouble))(random)
+  def makeNegativeSamples: Array[Int] =
+    if (opts.useAliasSampling.value) {
+      val len = opts.negative.value
+      val ret = new Array[Int](len)
+      var i = 0
+      while (i < len) {
+        ret(i) = sampler.sample()
+        i += 1
+      }
+      ret
+    } else {
+      val len = opts.negative.value
+      val ret = new Array[Int](len)
+      var i = 0
+      while (i < len) {
+        var r = random.nextDouble()
+        r = r * r * r // Rely on fact that domain is ordered by frequency, so we want to over-sample the earlier entries
+        ret(i) = (r * domain.size).toInt // TODO Make this better match a Ziph distribution!
+        i += 1
+      }
+      ret
+    }
   // Read in the vocabulary 
   for (splitLine <- io.Source.fromFile(opts.vocabulary.value).getLines().map(_.split(' '))) domain.indexWithCount(splitLine(1), splitLine(0).toInt)
   domain.freeze()
