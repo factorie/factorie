@@ -3,10 +3,9 @@ import cc.factorie.variable.CategoricalDomain
 import cc.factorie.model._
 import cc.factorie.la._
 import cc.factorie.optimize._
-import cc.factorie.util.{IntArrayBuffer}
+import cc.factorie.util.{Alias, IntArrayBuffer, DoubleAccumulator}
 import scala.util.Random
 import java.io._
-import cc.factorie.util.DoubleAccumulator
 import scala.collection.mutable.{ArrayOps,ArrayBuffer}
 import java.util.zip.GZIPOutputStream
 import java.util.zip.GZIPInputStream
@@ -26,6 +25,7 @@ class WindowWordEmbedderOptions extends cc.factorie.util.CmdOptions {
   val separateIO = new CmdOption("separate-io", false, "BOOLEAN", "If TRUE, parameterize input embeddings (U) separately from output embeddings (V).  Default is FALSE.")
   val checkGradient = new CmdOption("check-gradient", false, "BOOLEAN", "If TRUE, test the value/gradient calculation for every parameter for every example after the first 50000 example.  (Slow.)  Default is FALSE.")
   val outputExamples = new CmdOption("output-examples", "examples.txt.gz", "FILE", "Save the training targets/contexts in this file, one per line.")
+  val useAliasSampling = new CmdOption("alias-sampling", false, "BOOLEAN", "Sample negative examples using alias sampling vs. power-law approximation.")
 }
 
 trait WindowWordEmbedderExample extends Example {
@@ -34,11 +34,33 @@ trait WindowWordEmbedderExample extends Example {
   def changedWeights: ArrayBuffer[Weights]
 }
 
-
 abstract class WordEmbedder(val opts:WindowWordEmbedderOptions) extends Parameters {
   val dims = opts.dims.value
   val random = new Random(opts.seed.value)
   val domain = new CategoricalDomain[String]
+  lazy val sampler = new Alias(domain.counts.asArray.map(_.toDouble))(random)
+  def makeNegativeSamples: Array[Int] =
+    if (opts.useAliasSampling.value) {
+      val len = opts.negative.value
+      val ret = new Array[Int](len)
+      var i = 0
+      while (i < len) {
+        ret(i) = sampler.sample()
+        i += 1
+      }
+      ret
+    } else {
+      val len = opts.negative.value
+      val ret = new Array[Int](len)
+      var i = 0
+      while (i < len) {
+        var r = random.nextDouble()
+        r = r * r * r // Rely on fact that domain is ordered by frequency, so we want to over-sample the earlier entries
+        ret(i) = (r * domain.size).toInt // TODO Make this better match a Ziph distribution!
+        i += 1
+      }
+      ret
+    }
   // Read in the vocabulary 
   for (splitLine <- io.Source.fromFile(opts.vocabulary.value).getLines().map(_.split(' '))) domain.indexWithCount(splitLine(1), splitLine(0).toInt)
   domain.freeze()
@@ -50,9 +72,9 @@ abstract class WordEmbedder(val opts:WindowWordEmbedderOptions) extends Paramete
   def inputWeights(i:Int) = _inputEmbedding(i)
   def inputEmbedding(word:String) = { val index = domain.index(word); if (index >= 0) _inputEmbedding(index).value else null }
   private val _outputEmbedding = if (opts.separateIO.value) Array.fill(domain.size)(Weights(new DenseTensor1(dims).fill(() => random.nextDouble()/dims/10 - 0.5/dims/10))) else _inputEmbedding // TODO How should vectors be initialized? /10 good?
-  def outputEmbedding(i:Int) = _inputEmbedding(i).value
-  def outputWeights(i:Int) = _inputEmbedding(i)
-  def outputEmbedding(word:String) = { val index = domain.index(word); if (index >= 0) _inputEmbedding(index).value else null }
+  def outputEmbedding(i:Int) = _outputEmbedding(i).value
+  def outputWeights(i:Int) = _outputEmbedding(i)
+  def outputEmbedding(word:String) = { val index = domain.index(word); if (index >= 0) _outputEmbedding(index).value else null }
   
   private val _discardProb = new Array[Double](domain.size)
   def discardProb(wordIndex: Int): Double = {
@@ -77,6 +99,7 @@ abstract class WordEmbedder(val opts:WindowWordEmbedderOptions) extends Paramete
     if (wordIndices.length > opts.window.value) { // TODO was > 2*opts.window.value
       val array = wordIndices._rawArray
       val windowSize = opts.window.value
+      // this is slow
       for (targetPosition <- 0 until wordIndices.length - windowSize; example <- newExample(this, array, targetPosition, 1 + random.nextInt(windowSize))) yield example
     } else Nil
   }
@@ -96,9 +119,9 @@ abstract class WordEmbedder(val opts:WindowWordEmbedderOptions) extends Paramete
       val examples = stringToExamples(string)
       //println("CBOW.train examples.size = "+examples.size)
       wordCount += examples.size
-      if (opts.checkGradient.value && wordCount >= 0000) {
-        print(s"CBOW testGradient ${examples.map(e => e.outputIndices.map(domain.category(_)).mkString(" ")).mkString(" ")} ...")
-        examples.foreach(e => (Example.testGradient(parameters, e, epsilon = 1e-7, lipschitz=1.5, verbose=true, returnOnFirstError=false))) // TODO Put back "assert"
+      if (opts.checkGradient.value && wordCount >= 10000) {
+        print(s"CBOW testGradient ${examples.map(e => e.outputIndices.map(domain.category).mkString(" ")).mkString(" ")} ...")
+        examples.foreach(e => Example.testGradient(parameters, parameters.keys, e, dx = 1e-7, verbose = true, returnOnFirstError = false)) // TODO Put back "assert"
         println("finished.")
       }
       trainer.processExamples(examples)
