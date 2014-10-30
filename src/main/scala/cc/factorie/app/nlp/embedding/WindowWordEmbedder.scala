@@ -50,9 +50,9 @@ abstract class WordEmbedder(val opts:WindowWordEmbedderOptions) extends Paramete
   def inputWeights(i:Int) = _inputEmbedding(i)
   def inputEmbedding(word:String) = { val index = domain.index(word); if (index >= 0) _inputEmbedding(index).value else null }
   private val _outputEmbedding = if (opts.separateIO.value) Array.fill(domain.size)(Weights(new DenseTensor1(dims).fill(() => random.nextDouble()/dims/10 - 0.5/dims/10))) else _inputEmbedding // TODO How should vectors be initialized? /10 good?
-  def outputEmbedding(i:Int) = _inputEmbedding(i).value
-  def outputWeights(i:Int) = _inputEmbedding(i)
-  def outputEmbedding(word:String) = { val index = domain.index(word); if (index >= 0) _inputEmbedding(index).value else null }
+  def outputEmbedding(i:Int) = _outputEmbedding(i).value
+  def outputWeights(i:Int) = _outputEmbedding(i)
+  def outputEmbedding(word:String) = { val index = domain.index(word); if (index >= 0) _outputEmbedding(index).value else null }
   
   private val _discardProb = new Array[Double](domain.size)
   def discardProb(wordIndex: Int): Double = {
