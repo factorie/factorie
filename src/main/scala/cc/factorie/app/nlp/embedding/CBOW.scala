@@ -73,9 +73,14 @@ class LogCBOWExample(val model:CBOW, val targetId:Int, val inputIndices:Array[In
     }
     // Negative case
     for (n <- 0 until model.opts.negative.value) {
-      var r = model.random.nextDouble()
-      r = r * r * r // Rely on fact that domain is ordered by frequency, so we want to over-sample the earlier entries 
-      val falseTarget =  (r * model.domain.size).toInt // TODO Make this better match a Ziph distribution!
+      val falseTarget =
+        if (model.opts.useAliasSampling.value) {
+          model.sampler.sample()
+        } else {
+          var r = model.random.nextDouble()
+          r = r * r * r // Rely on fact that domain is ordered by frequency, so we want to over-sample the earlier entries
+          (r * model.domain.size).toInt // TODO Make this better match a Ziph distribution!
+        }
       targetEmbedding = model.outputEmbedding(falseTarget)
       score = targetEmbedding dot contextEmbedding
       expScore = math.exp(-score)
@@ -98,6 +103,8 @@ class WsabieCBOWExample(val model:CBOW, val targetId:Int, val inputIndices:Array
     val contextEmbedding = new DenseTensor1(model.dims)
     val len = inputIndices.length
     var i = 0; while (i < len) { contextEmbedding += model.inputEmbedding(inputIndices(i)); i += 1 }
+    // TODO FIX this is weird since normalizeX should average the contexts, not project things
+    // Also this should only project onto ball, not surface of sphere since nonconvex -luke
     val inputNormalizer = if (model.opts.normalizeX.value) 1.0 / math.sqrt(len) else 1.0 // TODO Should we have this normalization?  In my quick eyeing of results, it looks worse with normalization than without.
     if (inputNormalizer != 1.0) contextEmbedding *= inputNormalizer // Normalize the input embedding
     // Positive case

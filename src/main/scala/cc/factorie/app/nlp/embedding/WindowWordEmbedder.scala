@@ -3,10 +3,9 @@ import cc.factorie.variable.CategoricalDomain
 import cc.factorie.model._
 import cc.factorie.la._
 import cc.factorie.optimize._
-import cc.factorie.util.{IntArrayBuffer}
+import cc.factorie.util.{Alias, IntArrayBuffer, DoubleAccumulator}
 import scala.util.Random
 import java.io._
-import cc.factorie.util.DoubleAccumulator
 import scala.collection.mutable.{ArrayOps,ArrayBuffer}
 import java.util.zip.GZIPOutputStream
 import java.util.zip.GZIPInputStream
@@ -26,6 +25,7 @@ class WindowWordEmbedderOptions extends cc.factorie.util.CmdOptions {
   val separateIO = new CmdOption("separate-io", false, "BOOLEAN", "If TRUE, parameterize input embeddings (U) separately from output embeddings (V).  Default is FALSE.")
   val checkGradient = new CmdOption("check-gradient", false, "BOOLEAN", "If TRUE, test the value/gradient calculation for every parameter for every example after the first 50000 example.  (Slow.)  Default is FALSE.")
   val outputExamples = new CmdOption("output-examples", "examples.txt.gz", "FILE", "Save the training targets/contexts in this file, one per line.")
+  val useAliasSampling = new CmdOption("alias-sampling", false, "BOOLEAN", "Sample negative examples using alias sampling vs. power-law approximation.")
 }
 
 trait WindowWordEmbedderExample extends Example {
@@ -34,11 +34,11 @@ trait WindowWordEmbedderExample extends Example {
   def changedWeights: ArrayBuffer[Weights]
 }
 
-
 abstract class WordEmbedder(val opts:WindowWordEmbedderOptions) extends Parameters {
   val dims = opts.dims.value
   val random = new Random(opts.seed.value)
   val domain = new CategoricalDomain[String]
+  lazy val sampler = new Alias(domain.counts.asArray.map(_.toDouble))(random)
   // Read in the vocabulary 
   for (splitLine <- io.Source.fromFile(opts.vocabulary.value).getLines().map(_.split(' '))) domain.indexWithCount(splitLine(1), splitLine(0).toInt)
   domain.freeze()
