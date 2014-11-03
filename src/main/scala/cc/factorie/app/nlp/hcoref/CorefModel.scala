@@ -19,14 +19,19 @@ import cc.factorie.variable.BooleanValue
 /**
  * @author John Sullivan
  */
+trait DebuggableModel[Vars <: NodeVariables[Vars]] extends CorefModel[Vars] {
+  def debugOn() {templates.collect{case t:DebuggableTemplate => t.debugOn()}}
+  def debugOff() {templates.collect{case t:DebuggableTemplate => t.debugOff()}}
+}
+
 abstract class CorefModel[Vars <: NodeVariables[Vars]] extends TemplateModel with Parameters { // This is to ensure that the model's features' NodeVariables match the type of the model's NodeVariables
 implicit val params:Parameters = this
 
-  this += new StructuralPrior[Vars]() {this.debugOff()}
+  this += new StructuralPrior[Vars]
 }
 
-class StructuralPrior[Vars <: NodeVariables[Vars]](entityvalue:Double = -0.5,
-                                                   subEntityValue:Double = 0.25)
+class StructuralPrior[Vars <: NodeVariables[Vars]](entityvalue:Double = 0.5,
+                                                   subEntityValue:Double = -0.25)
   extends TupleTemplateWithStatistics3[Node[Vars]#IsRoot, Node[Vars]#IsMention, Node[Vars]#Exists] with DebuggableTemplate{
 
   def name = "StructuralPrior"
@@ -39,13 +44,13 @@ class StructuralPrior[Vars <: NodeVariables[Vars]](entityvalue:Double = -0.5,
 
   def score(isRoot: BooleanValue, isMention: BooleanValue, exists: BooleanValue): Double = {
     if(isRoot.booleanValue && exists.booleanValue) {
-      if(_debug) println("Entity benefit: " + -entityvalue)
-      -entityvalue
+      report(entityvalue, 1.0)
+      entityvalue
     } else if(!isRoot.booleanValue && !isMention.booleanValue && exists.booleanValue) {
-      if(_debug) println("Subentity penalty: " + -subEntityValue)
-      -subEntityValue
+      report(subEntityValue, 1.0)
+      subEntityValue
     } else {
-      if(_debug) println("Non-Root Mention " + 0)
+      report(0.0, 1.0)
       0.0
     }
   }

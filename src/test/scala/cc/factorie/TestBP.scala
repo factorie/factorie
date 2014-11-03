@@ -211,11 +211,11 @@ class TestBP extends util.FastLogging { //}extends FunSuite with BeforeAndAfter 
     assertEquals(trueLogZ, loopyLogZ, 0.01)
 
     val ex = new model.ChainLikelihoodExample(Seq(l0, l1, l2, l3))
-    assert(optimize.Example.testGradient(model.parameters, ex))
+    assert(optimize.Example.testGradient(model.parameters, model.parameters.keys, ex))
     val ex2 = new LikelihoodExample(Seq(l0, l1, l2, l3), model, InferByBPChain)
-    assert(optimize.Example.testGradient(model.parameters, ex2))
+    assert(optimize.Example.testGradient(model.parameters, model.parameters.keys, ex2))
     val ex3 = new LikelihoodExample(Seq(l0, l1, l2, l3), model, InferByBPTree)
-    assert(optimize.Example.testGradient(model.parameters, ex3))
+    assert(optimize.Example.testGradient(model.parameters, model.parameters.keys, ex3))
 
     val fastSum = model.inferFast(Seq(l0, l1, l2, l3))
     val sum = InferByBPChain.infer(Seq(l0, l1, l2, l3), model)

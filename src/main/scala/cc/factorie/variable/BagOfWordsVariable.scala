@@ -6,6 +6,10 @@ import scala.collection.mutable.{LinkedHashMap, HashMap}
  * @author John Sullivan
  */
 class BagOfWords(initialWords: Iterable[String] = null, initialBag: Map[String, Double] = null) {
+
+  def longest = _bag.keysIterator.toSeq.sortBy(_.length).lastOption.getOrElse("")
+  def topWord = _bag.toSeq.sortBy(_._2).lastOption.map(_._1).getOrElse("")
+
   var variable: BagOfWordsVariable = null
   protected var _l2Norm = 0.0
   protected var _l1Norm = 0.0
@@ -36,9 +40,7 @@ class BagOfWords(initialWords: Iterable[String] = null, initialBag: Map[String, 
   if (initialBag != null) for ((k, v) <- initialBag) this +=(k, v)
   def l2Norm = scala.math.sqrt(_l2Norm)
   def l1Norm = _l1Norm
-  def asHashMap: HashMap[String, Double] = {
-    val result = new HashMap[String, Double]; result ++= _bag; result
-  }
+  def asHashMap = _bag
   override def toString = _bag.toString()
   def apply(s: String): Double = _bag.getOrElse(s, 0.0)
   def contains(s: String): Boolean = _bag.contains(s)
@@ -78,6 +80,7 @@ class BagOfWords(initialWords: Iterable[String] = null, initialBag: Map[String, 
     for ((k, v) <- that.iterator) this +=(k, v)
   }
   def removeBag(that: BagOfWords) = for ((k, v) <- that.iterator) this -=(k, v)
+  def contains(other:BagOfWords) = this._bag.keySet.intersect(other._bag.keySet).size > 0
 }
 
 class BagOfWordsVariable(initialWords: Iterable[String] = Nil, initialMap: Map[String, Double] = null) extends Var with Iterable[(String, Double)] {
@@ -118,8 +121,8 @@ class BagOfWordsVariable(initialWords: Iterable[String] = Nil, initialMap: Map[S
   final def -=(x: BagOfWords): Unit = remove(x)(null)
   final def ++=(xs: Iterable[String]): Unit = xs.foreach(add(_)(null))
   final def --=(xs: Iterable[String]): Unit = xs.foreach(remove(_)(null))
-  final def ++=(xs: HashMap[String, Double]): Unit = for ((k, v) <- xs) add(k, v)(null)
-  final def --=(xs: HashMap[String, Double]): Unit = for ((k, v) <- xs) remove(k, v)(null)
+  final def ++=(xs: Map[String, Double]): Unit = for ((k, v) <- xs) add(k, v)(null)
+  final def --=(xs: Map[String, Double]): Unit = for ((k, v) <- xs) remove(k, v)(null)
 
   def ++(that:BagOfWordsVariable)(implicit d:DiffList):BagOfWordsVariable = {
     val n = new BagOfWordsVariable()

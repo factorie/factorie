@@ -94,7 +94,7 @@ class Cubbie {
    * @return a default map to be used as underyling map.
    */
   def _newDefaultMap: MapType = new scala.collection.mutable.HashMap[String, Any]
-
+  
   /**
    * Prints out the underlying map
    * @return a string representation of the underyling map.

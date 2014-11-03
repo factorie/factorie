@@ -53,16 +53,20 @@ trait CBOWExample extends WindowWordEmbedderExample {
 class LogCBOWExample(val model:CBOW, val targetId:Int, val inputIndices:Array[Int]) extends CBOWExample {
   val changedWeights = new ArrayBuffer[Weights]
   def outputIndices: Array[Int] = Array(targetId)
+  val samples = model.makeNegativeSamples // Do this once up front so that Example.testGradient will work
   def accumulateValueAndGradient(value: DoubleAccumulator, gradient: WeightsMapAccumulator): Unit = {
     var targetEmbedding = model.outputEmbedding(targetId)
     val contextEmbedding = new DenseTensor1(model.dims)
     val len = inputIndices.length
     var i = 0; while (i < len) { contextEmbedding += model.inputEmbedding(inputIndices(i)); i += 1 }
+    if (model.opts.normalizeX.value)
+      contextEmbedding *= (1.0 / len)
     //for (i <- start until start+length) contextEmbedding += model.embedding(context(i))
     // Positive case
     var score = targetEmbedding dot contextEmbedding
     var expScore = math.exp(-score)
-    if (value ne null) value.accumulate(-math.log1p(expScore))
+    // FIXME this log1p is actually really slow and we don't use it for anything!
+//    if (value ne null) value.accumulate(-math.log1p(expScore))
     if (gradient ne null) {
       val stepSize = expScore/(1.0 + expScore)
       gradient.accumulate(model.outputWeights(targetId), contextEmbedding, stepSize)
@@ -71,13 +75,12 @@ class LogCBOWExample(val model:CBOW, val targetId:Int, val inputIndices:Array[In
     }
     // Negative case
     for (n <- 0 until model.opts.negative.value) {
-      var r = model.random.nextDouble()
-      r = r * r * r // Rely on fact that domain is ordered by frequency, so we want to over-sample the earlier entries 
-      val falseTarget =  (r * model.domain.size).toInt // TODO Make this better match a Ziph distribution!
+      val falseTarget = samples(n)
       targetEmbedding = model.outputEmbedding(falseTarget)
       score = targetEmbedding dot contextEmbedding
       expScore = math.exp(-score)
-      if (value ne null) value.accumulate(-score - math.log1p(expScore))
+      // FIXME this log1p is actually really slow and we don't use it for anything!
+//      if (value ne null) value.accumulate(-score - math.log1p(expScore))
       if (gradient ne null) {
         val stepSize = -1.0 / (1.0 + expScore)
         gradient.accumulate(model.outputWeights(falseTarget), contextEmbedding, stepSize)
@@ -91,11 +94,13 @@ class LogCBOWExample(val model:CBOW, val targetId:Int, val inputIndices:Array[In
 class WsabieCBOWExample(val model:CBOW, val targetId:Int, val inputIndices:Array[Int]) extends CBOWExample {
   val changedWeights = new ArrayBuffer[Weights]
   def outputIndices: Array[Int] = Array(targetId)
-  val samples = for (i <- 0 until model.opts.negative.value) yield model.random.nextDouble() // Do this once up front so that Example.testGradient will work  
+  val samples = model.makeNegativeSamples // Do this once up front so that Example.testGradient will work
   def accumulateValueAndGradient(value: DoubleAccumulator, gradient: WeightsMapAccumulator): Unit = {
     val contextEmbedding = new DenseTensor1(model.dims)
     val len = inputIndices.length
     var i = 0; while (i < len) { contextEmbedding += model.inputEmbedding(inputIndices(i)); i += 1 }
+    // TODO FIX this is weird since normalizeX should average the contexts, not project things
+    // Also this should only project onto ball, not surface of sphere since nonconvex -luke
     val inputNormalizer = if (model.opts.normalizeX.value) 1.0 / math.sqrt(len) else 1.0 // TODO Should we have this normalization?  In my quick eyeing of results, it looks worse with normalization than without.
     if (inputNormalizer != 1.0) contextEmbedding *= inputNormalizer // Normalize the input embedding
     // Positive case
@@ -103,8 +108,7 @@ class WsabieCBOWExample(val model:CBOW, val targetId:Int, val inputIndices:Array
     val trueScore = trueTargetEmbedding dot contextEmbedding
     // Negative cases
     for (s <- samples) {
-      val r = s * s * s
-      val falseTargetId = (r * model.domain.size).toInt
+      val falseTargetId = s
       val falseTargetEmbedding = model.outputEmbedding(falseTargetId)
       val falseScore = falseTargetEmbedding dot contextEmbedding
       val objective = trueScore - falseScore - model.opts.margin.value

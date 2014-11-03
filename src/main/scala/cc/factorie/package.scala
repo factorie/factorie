@@ -17,6 +17,7 @@ import cc.factorie.util._
 import scala.language.implicitConversions
 import cc.factorie.model.IterableSingleFactor
 import scala.reflect.runtime.universe._
+import java.io.BufferedReader
 
 package object factorie extends CubbieConversions {
   var random = new Random(0)
@@ -37,6 +38,29 @@ package object factorie extends CubbieConversions {
     def overlapsWith(y:(Int, Int)):Boolean = (x._1 >= y._1 && x._1 <= y._2) || (x._2 >= y._1 && x._2 <= y._2)
   }
 
+  implicit class StringListExtras(s:Iterable[String]) {
+    def toCountBag:Map[String, Double] = s.groupBy(identity).mapValues(_.size.toDouble)
+  }
+
+  implicit class BufferedReaderExtras(rdr:BufferedReader) {
+
+    /** Returns an iterator over the lines of the buffered reader's contents.
+      * Consumes the reader and auto-closes. */
+    def toIterator:Iterator[String] = new Iterator[String] {
+      private var nextLine = rdr.readLine()
+
+      def next() = {
+        val res = nextLine
+        nextLine = rdr.readLine()
+        if(nextLine == null) {
+          rdr.close()
+        }
+        res
+      }
+
+      def hasNext = nextLine != null
+    }
+  }
 
   def assertStringEquals(expr:Any, str:String) = assert(expr.toString == str, "The string representation '" + expr.toString + "' does not match the expected value: '" + str +"'")
   def assertMinimalAccuracy(got:Double, goal:Double): Unit = assert(got >= goal, s"Accuracy ${got} is less than expected ${goal}.")

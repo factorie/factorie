@@ -1,11 +1,12 @@
 package cc.factorie.tutorial
 
 import cc.factorie.app.nlp.hcoref._
-import cc.factorie.variable.BagOfWordsVariable
+import cc.factorie.variable.{Var, BagOfWordsVariable}
 import com.mongodb.{MongoClient, DB}
 import cc.factorie._
 import cc.factorie.util.EvaluatableClustering
 import scala.util.Random
+import scala.collection.mutable
 
 /**
  * @author John Sullivan
@@ -44,24 +45,8 @@ object HierCorefDemo {
     def getVariables: Seq[Var] = Seq(names, context, mentions)
   }
 
-  class WikiCorefModel(namesWeight:Double, namesShift: Double, contextWeight:Double, contextShift: Double, mentionsWeight:Double, mentionsShift: Double)  extends CorefModel[WikiCorefVars] {
-    this += new ChildParentCosineDistance(namesWeight, namesShift, {w:WikiCorefVars => w.names}, "names") {this.debugOff()}
-    this += new ChildParentCosineDistance(contextWeight, contextShift, {w:WikiCorefVars => w.context}, "context") {this.debugOff()}
-    this += new ChildParentCosineDistance(mentionsWeight, mentionsShift, {w:WikiCorefVars => w.mentions}, "mentions") {this.debugOff()}
-    this += new BagOfWordsEntropy(0.25, {w:WikiCorefVars => w.names})
-  }
-
-  class HcorefNodeCubbie extends NodeCubbie[WikiCorefVars, Node[WikiCorefVars] with Persistence with NodeSource] {
-
-    def newNodeCubbie: HcorefNodeCubbie = new HcorefNodeCubbie()
-  }
-
-  class HcorefCubbieCollection(names: Seq[String], mongoDB: DB)
-    extends MongoNodeCollection[WikiCorefVars, Node[WikiCorefVars] with Persistence with NodeSource, HcorefNodeCubbie](names, mongoDB) {
-
-    protected def newBOWCubbie = new BOWCubbie()
-
-    protected def newNodeVars[V <: Var](truth: String, vars: V*): WikiCorefVars = {
+  object WikiCorefVars {
+    def fromNodeCubbieVars[V <: Var](truth:String, vars: Seq[V]):WikiCorefVars = {
       val context = vars(0).asInstanceOf[BagOfWordsVariable]
       val names = vars(1).asInstanceOf[BagOfWordsVariable]
       val mentions = vars(2).asInstanceOf[BagOfWordsVariable]
@@ -71,32 +56,28 @@ object HierCorefDemo {
         new WikiCorefVars(names, context, mentions, new BagOfWordsVariable(Seq(truth)))
       }
     }
+  }
 
+  class WikiCorefModel(namesWeight:Double, namesShift: Double, contextWeight:Double, contextShift: Double, mentionsWeight:Double, mentionsShift: Double, distanceWeight:Double, distanceShift:Double)  extends CorefModel[WikiCorefVars] {
+    this += new ChildParentCosineDistance(namesWeight, namesShift, {w:WikiCorefVars => w.names}, "names") {this.debugOff()}
+    this += new ChildParentCosineDistance(contextWeight, contextShift, {w:WikiCorefVars => w.context}, "context") {this.debugOff()}
+    this += new ChildParentCosineDistance(mentionsWeight, mentionsShift, {w:WikiCorefVars => w.mentions}, "mentions") {this.debugOff()}
+    this += new ChildParentStringDistance(distanceWeight, distanceShift, {w:WikiCorefVars => w.names}, "names")
+    this += new BagOfWordsEntropy(0.25, {w:WikiCorefVars => w.names})
+  }
+
+  val deletedEntries = mutable.HashSet[String]()
+  class HcorefNodeCubbie extends NodeCubbie[WikiCorefVars] {
+
+    val deletionSet: mutable.HashSet[String] = deletedEntries
+    def newNodeCubbie: HcorefNodeCubbie = new HcorefNodeCubbie()
+  }
+
+  class HcorefCubbieCollection(names: Seq[String], mongoDB: DB)
+    extends MongoNodeCollection[WikiCorefVars](names, Seq.empty[String], mongoDB) {
+
+    protected def newNodeVars[V <: Var](truth: String, vars: V*) = WikiCorefVars.fromNodeCubbieVars(truth, vars)
     protected def newNodeCubbie: HcorefNodeCubbie = new HcorefNodeCubbie
-
-    protected def newNode(v: WikiCorefVars, nc: HcorefNodeCubbie) = {
-      if (nc.isMention.value) {
-        new Mention[WikiCorefVars](v, nc.id.toString)(null) with Persistence with NodeSource {
-          def canopyIds: Set[String] = nc.canopies.value.toSet
-
-          protected val loadedFromDb = true
-          def source = nc.source.value
-          def moveable = nc.moveable.value
-        }
-      }
-      else {
-        new Node[WikiCorefVars](v, nc.id.toString)(null) with Persistence with NodeSource {
-
-          def canopyIds: Set[String] = this.leaves.collect {
-            case leaf: Mention[WikiCorefVars] => leaf.variables.canopies
-          }.flatten.toSet
-
-          protected val loadedFromDb = true
-          def source = nc.source.value
-          def moveable = nc.moveable.value
-        }
-      }
-    }
   }
 
   def main(args: Array[String]) = {
@@ -104,12 +85,12 @@ object HierCorefDemo {
     implicit val random = new scala.util.Random()
 
     val mongoConn = new MongoClient("localhost", 27017)
-    val mongoDb = mongoConn.getDB("wikicoref-ny")
+    val mongoDb = mongoConn.getDB("wikicoref-bos")
     val corefCollection = new HcorefCubbieCollection(Seq("mentions", "cbag", "nbag", "mbag"), mongoDb)
-    val allMentions = corefCollection.loadAll.filterNot(_.variables.truth.size == 0).filterNot(_.source == "wp")
+    val allMentions = corefCollection.loadAll.filterNot(_.variables.truth.size == 0)//.filterNot(_.source == "wp")
     println("Done loading")
 
-    val model = new WikiCorefModel(2.0, -0.25, 2.0, -0.25, 2.0, -0.25)
+    val model = new WikiCorefModel(2.0, -0.25, 2.0, -0.25, 2.0, -0.25, 0.0, 0.0)
 
     val numSamples = 200000
     val time = System.currentTimeMillis()
@@ -120,6 +101,7 @@ object HierCorefDemo {
       with NoSplitMoveGenerator[WikiCorefVars]
       with DebugCoref[WikiCorefVars] {
       def autoStopThreshold = 10000
+      val logger = Logger.default
 
       def newInstance(implicit d: DiffList): Node[WikiCorefVars] = new Node[WikiCorefVars](new WikiCorefVars/*, nextId*/) {
         def canopyIds: Set[String] = Set.empty[String]
@@ -143,7 +125,7 @@ object HierCorefDemo {
     implicit val random = new Random()
     val mentions = corefCollection.loadAll
 
-    val model = new WikiCorefModel(2.0, -0.25, 2.0, -0.25, 2.0, -0.25)
+    val model = new WikiCorefModel(2.0, -0.25, 2.0, -0.25, 2.0, -0.25, 0.0, 0.0)
     val numSamples = 20000
 
     val sampler = new HierarchicalCorefSampler[WikiCorefVars](model, mentions, numSamples) {
@@ -152,7 +134,7 @@ object HierCorefDemo {
 
     sampler.infer
 
-    mentions.filter{  e => e.isMention && e.parent.isDefined}.map{m => m.id -> m.root.id}
+    mentions.filter{  e => e.isMention && e.getParent.isDefined}.map{m => m.uniqueId -> m.root.uniqueId}
   }
 
   def doCoreference(mentions:Iterable[Node[WikiCorefVars]], iterations:Int, model:WikiCorefModel):Iterable[(Node[WikiCorefVars], Node[WikiCorefVars])] = {
@@ -160,11 +142,12 @@ object HierCorefDemo {
     implicit val random = new Random()
 
     val sampler = new HierarchicalCorefSampler[WikiCorefVars](model, mentions, iterations) with DebugCoref[WikiCorefVars] {
+      val logger = Logger.default
       override def newInstance(implicit d: DiffList): Node[WikiCorefVars] = new Node[WikiCorefVars](new WikiCorefVars)
     }
 
     sampler.infer
-    mentions.filter{  e => e.isMention && e.parent.isDefined}.map{m => m -> m.root}
+    mentions.filter{  e => e.isMention && e.getParent.isDefined}.map{m => m -> m.root}
   }
 
 

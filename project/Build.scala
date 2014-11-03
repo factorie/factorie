@@ -32,17 +32,19 @@ object Build extends sbt.Build {
     configs(NoNLP, WithNLP).
     settings(
       organization := "cc.factorie",
-      version := "1.0-SNAPSHOT",
+      version := "1.1-SNAPSHOT",
       scalaVersion := "2.10.4",
       scalacOptions := Seq("-deprecation", "-unchecked", "-encoding", "utf8"),
       resolvers ++= Dependencies.resolutionRepos,
       libraryDependencies ++= Seq(
         Compile.mongodb,
         Compile.akka,
-        Compile.jregex,
         Compile.colt,
         Compile.compiler,
         Compile.junit,
+        Compile.acompress,
+        Compile.snappy,
+        Compile.bliki,
         Test.scalatest
       )
     ).
@@ -73,10 +75,12 @@ object Dependencies {
   object Compile {
     val mongodb  = "org.mongodb" % "mongo-java-driver" % "2.11.1"
     val akka = "com.typesafe.akka" % "akka-actor_2.10" % "2.1.4"
-    val jregex = "net.sourceforge.jregex" % "jregex" % "1.2_01"
     val colt = "org.jblas" % "jblas" % "1.2.3"
     val compiler = "org.scala-lang" % "scala-compiler" % "2.10.4"
     val junit = "junit" % "junit" % "4.10"
+    val acompress = "org.apache.commons" % "commons-compress" % "1.8"
+    val snappy = "org.xerial.snappy" % "snappy-java" % "1.1.1.3"
+    val bliki = "info.bliki.wiki" % "bliki-core" % "3.0.19"
   }
 
   object Test {
@@ -85,6 +89,6 @@ object Dependencies {
 
   object Resources {
     // This may be brittle, but intransitive() avoids creating a circular dependency.
-    val nlpresources = "cc.factorie.app.nlp" % "factorie-nlp-resources" % "0.0.2" % "with-nlp-resources" intransitive()
+    val nlpresources = "cc.factorie.app.nlp" % "all-models" % "1.0.0" % "with-nlp-resources" intransitive()
   }
 }

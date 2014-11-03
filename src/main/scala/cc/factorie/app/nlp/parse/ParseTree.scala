@@ -30,6 +30,7 @@ object ParseTreeLabelDomain extends EnumDomain {
   index("") // necessary for empty categories
   freeze()
   def defaultCategory = "nn"
+  def defaultIndex = index(defaultCategory)
 }
 // TODO I think this should instead be "ParseEdgeLabels extends LabeledCategoricalSeqVariable". -akm
 class ParseTreeLabel(val tree:ParseTree, targetValue:String = ParseTreeLabelDomain.defaultCategory) extends LabeledCategoricalVariable(targetValue) { def domain = ParseTreeLabelDomain }
@@ -40,14 +41,19 @@ object ParseTree {
 }
 
 // TODO This initialization is really inefficient.  Fix it. -akm
-class ParseTree(val sentence:Sentence, theTargetParents:Seq[Int], theTargetLabels:Seq[String]) {
-  def this(sentence:Sentence) = this(sentence, Array.fill[Int](sentence.length)(ParseTree.noIndex), Array.tabulate(sentence.length)(i => ParseTreeLabelDomain.defaultCategory)) // Note: this puts in dummy target data which may be confusing
-  val _labels = theTargetLabels.map(s => new ParseTreeLabel(this, s)).toArray
-  val _parents = theTargetParents.toArray
-  val _targetParents = theTargetParents.toArray
-  //println("ParseTree parents "+theTargetParents.mkString(" "))
-  //println(" ParseTree labels "+theTargetLabels.mkString(" "))
-  //println(" ParseTree labels "+_labels.map(_.categoryValue).mkString(" "))
+class ParseTree(val sentence:Sentence, theTargetParents:Array[Int], theTargetLabels:Array[Int]) {
+  def this(sentence:Sentence) = this(sentence, Array.fill[Int](sentence.length)(ParseTree.noIndex), Array.fill(sentence.length)(ParseTreeLabelDomain.defaultIndex)) // Note: this puts in dummy target data which may be confusing
+  def this(sentence:Sentence, theTargetParents:Seq[Int], theTargetLabels:Seq[String]) = this(sentence, theTargetParents.toArray, theTargetLabels.map(c => ParseTreeLabelDomain.index(c)).toArray)
+  def check(parents:Array[Int]): Unit = {
+    val l = parents.length; var i = 0; while (i < l) {
+      require(parents(i) < l)
+      i += 1
+    }
+  }
+  check(theTargetParents)
+  val _labels = theTargetLabels.map(s => new ParseTreeLabel(this, ParseTreeLabelDomain.category(s))).toArray
+  val _parents = { val p = new Array[Int](theTargetParents.length); System.arraycopy(theTargetParents, 0, p, 0, p.length); p }
+  val _targetParents = theTargetParents
   def labels: Array[ParseTreeLabel] = _labels
   def parents: Array[Int] = _parents
   def targetParents: Array[Int] = _targetParents

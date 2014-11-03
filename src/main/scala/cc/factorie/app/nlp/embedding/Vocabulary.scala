@@ -8,9 +8,16 @@ import cc.factorie.app.strings.Stopwords
 import org.apache.commons.compress.compressors.CompressorStreamFactory
 import scala.xml.pull._
 import scala.collection.mutable.ArrayBuffer
+import javax.xml.stream._
+import javax.xml.stream.events._
+import javax.xml.stream.util._
+import java.text.NumberFormat
+import java.util.Locale
+import scala.util.Random
 
 class VocabularyOptions extends cc.factorie.util.CmdOptions {
   val minCount = new CmdOption("min-count", 200, "INT", "Words with count smaller than this will be discarded.  Default is 200.")
+  val skipProb = new CmdOption("skip-prob", 0.0, "DOUBLE", "The probabilty that each word string will be skipped in the indexing and counting.  Helps efficiently cull words occurring ~1 times.")
   val maxWikiPages = new CmdOption("max-wiki-pages", Int.MaxValue, "INT", "Read no more than this number of Wikipedia pages.  Default is unlimited.")
   val input = new CmdOption("input", List("enwiki-latest-pages-articles.xml.bz2"), "TXTFILE", "Text files from which to read training data.  Works with *.txt.gz and Wikipedia enwiki*.xmlgz2.")
 }
@@ -27,14 +34,25 @@ object Vocabulary {
     // Set up a String map to gather counts
     val domain = new CategoricalDomain[String]
     domain.gatherCounts = true
+    val printInterval = 100
+    val random = new scala.util.Random(0)
+    val skipThreshold = 1.0 - opts.skipProb.value
+    var printAtCount = printInterval
+    var wordCount = 0
     // From all files, segment contents into words, and count them
     files.foreach(file => {
       println("Vocabulary reading "+file.getName())
       for (line <- fileToStringIterator(file)) {
-        if (wikipediaArticleCount % 100 == 0) print("\r"+wikipediaArticleCount)
+        if (wikipediaArticleCount >= printAtCount) {
+          print("\r"+NumberFormat.getNumberInstance(Locale.US).format(wikipediaArticleCount)+" articles, "+NumberFormat.getNumberInstance(Locale.US).format(wordCount)+" tokens, "+NumberFormat.getNumberInstance(Locale.US).format(domain.size)+" vocabulary")
+          //print(s"\r$wikipediaArticleCount articles\t$wordCount words") ; 
+          printAtCount += printInterval
+        }
         for (word <- stringToWords(line)) {
           //println("Vocabulary read word "+word)
-          domain.index(word)
+          wordCount += 1
+          if (skipThreshold == 0.0 || random.nextDouble() < skipThreshold) // Randomly sample to avoid words appearing only ~1 times.
+            domain.index(new String(word)) // to avoid memory leak: http://stackoverflow.com/questions/15612157/substring-method-in-string-class-causes-memory-leak
         }
       }
     })
@@ -81,10 +99,18 @@ object Vocabulary {
           }
         }
       }
-      // bz2 compress wikipedia XML
       case name if name.startsWith("enwiki") && name.endsWith(".xml.bz2") => {
-        val input = new CompressorStreamFactory().createCompressorInputStream(new BufferedInputStream(new FileInputStream(file)))
-        val xml = new XMLEventReader(Source.fromInputStream(input))
+        val docIterator = cc.factorie.app.nlp.load.LoadWikipediaPlainText.fromCompressedFile(file, opts.maxWikiPages.value)
+        new Iterator[String] {
+          def hasNext: Boolean = docIterator.hasNext
+          def next(): String = { wikipediaArticleCount += 1; val doc = docIterator.next; /*println(doc.name);*/ doc.string }
+        }
+      }
+      // bz2 compress wikipedia XML
+      case name if name.startsWith("deprecated enwiki") && name.endsWith(".xml.bz2") => {
+        val input = new CompressorStreamFactory().createCompressorInputStream(CompressorStreamFactory.BZIP2, new FileInputStream(file))
+        val xml = new scala.xml.pull.XMLEventReader(Source.fromInputStream(input))
+        //val xml = XMLInputFactory.newInstance().createXMLEventReader(new InputStreamReader(input))
         val cleaningRegex = List(
             "\\{\\{[^\\}]*\\}\\}", // Remove everything {{inside}}
             "\\{\\|[^\\}]*\\|\\}", // Remove everything {|inside|}
@@ -96,7 +122,7 @@ object Vocabulary {
         new Iterator[String] {
           def hasNext: Boolean = {
             val result = xml.hasNext && wikipediaArticleCount < opts.maxWikiPages.value // Artificially stopping early
-            //if (!result) { xml.stop(); input.close(); println(getClass.getName+": fileToStringIterator closing.") }
+            if (!result) { /*xml.close();*/ xml.stop(); input.close(); println(getClass.getName+": fileToStringIterator closing.") }
             result
           }
           def next(): String = {
@@ -110,9 +136,9 @@ object Vocabulary {
               xml.next() match {
                 //case e => println(e)
                 case EvElemStart(_, "page", _, _) => { insidePage = true }
-                case EvElemEnd(_, "page") => { insidePage = false; done = true; wikipediaArticleCount += 1 }
+                case EvElemEnd(_, "page") => { insidePage = false; done = true }
                 case EvElemStart(_, "text", _, _) => { insideText = true }
-                case EvElemEnd(_, "text") => { insideText = false; done = true; wikipediaArticleCount += 1 }
+                case EvElemEnd(_, "text") => { insideText = false; done = true }
                 case EvText(t) if insideText => {
                   if (t.startsWith("!--") && !t.endsWith("--")) insideComment = true
                   else if (t.endsWith("--")) insideComment = false
@@ -125,6 +151,7 @@ object Vocabulary {
             }
             var s = cleaningRegex.replaceAllIn(sb.toString, " ")
             //println("Vocabulary.fileToStringIterator "+s)
+            s = s.trim; if (s.length > 0) { wikipediaArticleCount += 1; return s } else { /*println(s"Skipping at $wikipediaArticleCount");*/ return next() }
             s
           }
         }
