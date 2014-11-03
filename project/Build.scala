@@ -43,6 +43,8 @@ object Build extends sbt.Build {
         Compile.compiler,
         Compile.junit,
         Compile.acompress,
+        Compile.snappy,
+        Compile.bliki,
         Test.scalatest
       )
     ).
@@ -77,6 +79,8 @@ object Dependencies {
     val compiler = "org.scala-lang" % "scala-compiler" % "2.10.4"
     val junit = "junit" % "junit" % "4.10"
     val acompress = "org.apache.commons" % "commons-compress" % "1.8"
+    val snappy = "org.xerial.snappy" % "snappy-java" % "1.1.1.3"
+    val bliki = "info.bliki.wiki" % "bliki-core" % "3.0.19"
   }
 
   object Test {
