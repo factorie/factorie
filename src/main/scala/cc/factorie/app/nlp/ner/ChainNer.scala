@@ -36,7 +36,7 @@ import cc.factorie.util.JavaHashMap
  * PER      f1=0.940327 p=0.955329 r=0.925788 (tp=1497 fp=70 fn=120 true=1617 pred=1567)
  *
  */
-class Conll03ChainNer(url: java.net.URL=null) extends ChainNer[BilouConllNerTag](BilouConllNerDomain, (t, s) => new BilouConllNerTag(t, s), l => l.token, url) {
+class ConllChainNer(url: java.net.URL=null) extends ChainNer[BilouConllNerTag](BilouConllNerDomain, (t, s) => new BilouConllNerTag(t, s), l => l.token, url) {
   def loadDocs(fileName: String): Seq[Document] = cc.factorie.app.nlp.load.LoadConll2003(BILOU=true).fromFilename(fileName)
   override def process(document:Document): Document = {
     if (document.tokenCount > 0) {
@@ -46,6 +46,10 @@ class Conll03ChainNer(url: java.net.URL=null) extends ChainNer[BilouConllNerTag]
     } else document
   }
 }
+
+//TODO this serialized model doesn't exist yet?
+object ConllChainNer extends ConllChainNer(cc.factorie.util.ClasspathURL[ConllChainNer](".factorie"))
+
 
 /**
  * A base class for finite-state named entity recognizers
@@ -322,7 +326,7 @@ object ConllChainNerTrainer extends cc.factorie.util.HyperparameterMain {
     val opts = new ChainNerOpts
     implicit val random = new scala.util.Random(0)
     opts.parse(args)
-    val ner = new Conll03ChainNer
+    val ner = new ConllChainNer
     if (opts.brownClusFile.wasInvoked) {
       println(s"Reading brown cluster file: ${opts.brownClusFile.value}")
       for (line <- scala.io.Source.fromFile(opts.brownClusFile.value).getLines()) {
@@ -354,3 +358,25 @@ object ConllChainNerTrainer extends cc.factorie.util.HyperparameterMain {
   }
 }
 
+object ConllNerOptimizer {
+  def main(args: Array[String]) {
+    val opts = new ChainNerOpts
+    opts.parse(args)
+    opts.serialize.setValue(false)
+    import cc.factorie.util.LogUniformDoubleSampler
+    val l1 = cc.factorie.util.HyperParameter(opts.l1, new LogUniformDoubleSampler(1e-12, 1))
+    val l2 = cc.factorie.util.HyperParameter(opts.l2, new LogUniformDoubleSampler(1e-12, 1))
+    val lr = cc.factorie.util.HyperParameter(opts.learningRate, new LogUniformDoubleSampler(1e-3, 10))
+    val qs = new cc.factorie.util.QSubExecutor(10, "cc.factorie.app.nlp.ner.ConllChainNerTrainer")
+    val optimizer = new cc.factorie.util.HyperParameterSearcher(opts, Seq(l1, l2, lr), qs.execute, 100, 90, 60)
+    val result = optimizer.optimize()
+    println("Got results: " + result.mkString(" "))
+    println("Best l1: " + opts.l1.value + " best l2: " + opts.l2.value)
+    println("Running best configuration...")
+    opts.serialize.setValue(true)
+    import scala.concurrent.duration._
+    import scala.concurrent.Await
+    Await.result(qs.execute(opts.values.flatMap(_.unParse).toArray), 1.hours)
+    println("Done.")
+  }
+}
