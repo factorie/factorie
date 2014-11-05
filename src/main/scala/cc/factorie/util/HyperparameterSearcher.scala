@@ -14,7 +14,6 @@ package cc.factorie.util
 
 import scala.util.Random
 import scala.concurrent._
-import akka.actor._
 import java.text.SimpleDateFormat
 import java.io.{FileOutputStream, OutputStreamWriter}
 import cc.factorie.variable.Proportions
@@ -254,80 +253,5 @@ object QSubExecutor {
     resFile.write("END OF RESULTS\n")
     resFile.close()
     println(s"Done, file ${opts.outFile.value} written")
-  }
-}
-
-/**
- * An Executor which runs jobs from a pool of machines via ssh. It assumes
- * that private keys are properly set up.
- *
- * Each machine will cd into the specified directory and start a JVM which
- * will run the function evaluateParameters in the class whose name is passed.
- *
- * @param user The username
- * @param machines The list of machines on which to ssh
- * @param directory The directory to "cd" in each machine
- * @param className The class whose main function the slaves will run. Needs to be
- *                  an instance of HyperparameterMain
- * @param memory How much memory to give each slave JVM, in gigabytes
- * @param timeoutMinutes The timeout for the SSH commands
- */
-class SSHActorExecutor(user: String,
-                       machines: Seq[String],
-                       directory: String,
-                       className: String,
-                       memory: Int,
-                       timeoutMinutes: Int) extends Executor {
-  import com.typesafe.config.ConfigFactory
-  val customConf = ConfigFactory.parseString("my-balanced-dispatcher { type = BalancingDispatcher }")
-  val system = ActorSystem("ssh", customConf)
-  val actors = (0 until machines.length).map(i =>
-    system.actorOf(Props(new SSHActor(machines(i), i)).withDispatcher("my-balanced-dispatcher"), "actor-"+i))
-  case class ExecuteJob(args: String, jobId: Int)
-  import akka.pattern.ask
-  var job = 0
-  def execute(args: Array[String]): Future[Double] = {
-    job += 1
-    import scala.concurrent.duration._
-    actors.head.ask(ExecuteJob(serializeArgs(args), job))(timeoutMinutes.minutes) mapTo manifest[Double] fallbackTo Future.successful(Double.NegativeInfinity)
-  }
-  def shutdown() { system.shutdown() }
-  val date = new SimpleDateFormat("yyyy-MM-dd-HH-mm-ss").format(new java.util.Date())
-  val logPrefix = s"hyper-search-$date/"
-  println(s"Writing log files to $logPrefix")
-  class SSHActor(machine: String, i: Int) extends Actor {
-    def receive = {
-      case ExecuteJob(args, j) =>
-        val logFile = logPrefix+"-job-"+j+".log"
-        new java.io.File(logFile).getParentFile.mkdirs()
-        val jvmCommand = s"java -Xmx${memory}g -classpath '$classpath' cc.factorie.util.SSHExecutor --className=$className  '--classArgs=$args'"
-        val inSSh = s"cd $directory; $jvmCommand"
-        val userMachine = user + "@" + machine
-        val sshCommand = s"ssh $userMachine  $inSSh 2> $logFile.stderr"
-        import sys.process._
-        (sshCommand #> new java.io.File(logFile)).!
-        val double = s"tail -n 1 $logFile".!!
-        sender ! double.toDouble
-    }
-  }
-}
-
-/**
- * Slave job created by the SSHActorExecutor
- */
-object SSHExecutor {
-  object opts extends CmdOptions {
-    val className = new CmdOption("className", "", "STRING", "Class to run")
-    val classArgs = new CmdOption("classArgs", "", "STRING", "Arguments to pass it")
-  }
-  def main(args: Array[String]) {
-    opts.parse(args)
-    val cls = Class.forName(opts.className.value)
-    val mainMethod = cls.getMethods.filter(_.getName == "actualMain").head
-    val argsArray = opts.classArgs.value.split("::").toArray
-    println("Using args \n" + argsArray.mkString("\n"))
-    val result = mainMethod.invoke(null, argsArray).asInstanceOf[BoxedDouble].d
-    println("----- END OF JOB -----")
-    println(result)
   }
 }
