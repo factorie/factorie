@@ -61,7 +61,7 @@ abstract class ChainNer[L<:NerTag](labelDomain: CategoricalDomain[String],
 
   //DocumentAnnotator methods
   def tokenAnnotationString(token: Token): String = token.attr[L].categoryValue
-  def prereqAttrs = Seq(classOf[Sentence], classOf[pos.PennPosTag])
+  def prereqAttrs = Seq(classOf[Sentence])
   def postAttrs = Seq(m.runtimeClass).asInstanceOf[Seq[Class[_]]]
   def process(document: Document): Document = {
     if (document.tokenCount == 0) return document
