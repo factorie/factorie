@@ -19,7 +19,7 @@ object AuthorNodeCubbie {
 }
 
 class AuthorNodeCubbie extends NodeCubbie[AuthorVars] {
-  val truth = StringSlot("gt")
+  val truth = new CubbieSlot("gtbag", () => new HashMapCubbie)
   val title = StringSlot("title")
   val firstNameBag = new CubbieSlot("fnb", () => new HashMapCubbie)
   val middleNameBag = new CubbieSlot("mnb", () => new HashMapCubbie)
@@ -48,5 +48,5 @@ class MongoAuthorCollection(db:DB, embeddingMap:Map[String, Array[Double]]) exte
     new Node[AuthorVars](AuthorVars.fromNodeCubbie(nc, embeddingMap), nc.id.toString)(null)
   }
 
-  def getTruth(nc: AuthorNodeCubbie) = nc.truth.value
+  def getTruth(nc: AuthorNodeCubbie) = nc.truth.value.fetch.head._1
 }

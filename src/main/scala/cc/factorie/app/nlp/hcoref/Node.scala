@@ -271,6 +271,7 @@ trait NodeVariables[Self <: NodeVariables[Self]] extends SelfVariable[Self] {
 
   def getVariables: Seq[Var]
   def size:Int = getVariables.size
+  override def toString:String = "%s(%s)".format(this.getClass.getSimpleName, getVariables.map(_.toString).mkString(", "))
 }
 
 trait NodeCubbie[Vars <: NodeVariables[Vars]] extends Cubbie {

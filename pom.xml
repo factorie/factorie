@@ -62,6 +62,11 @@ limitations under the License.
             <name>dev-iesl.cs.umass.edu</name>
             <url>https://dev-iesl.cs.umass.edu/nexus/content/repositories/thirdparty/</url>
         </repository>
+        <repository>
+          <id>iesl-snapshots</id>
+          <name>iesl-snapshots</name>
+          <url>https://dev-iesl.cs.umass.edu/nexus/content/groups/public-snapshots/</url>
+        </repository>
 
         <repository>
             <id>info-bliki-repository</id>
@@ -106,6 +111,11 @@ limitations under the License.
             <groupId>com.fasterxml.jackson.module</groupId>
             <artifactId>jackson-module-scala_2.10</artifactId>
             <version>2.2.3</version>
+        </dependency>
+        <dependency>
+            <groupId>edu.umass.cs.iesl</groupId>
+            <artifactId>namejuggler_2.10</artifactId>
+            <version>0.1-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>

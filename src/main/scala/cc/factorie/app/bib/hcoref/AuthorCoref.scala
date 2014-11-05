@@ -1,6 +1,6 @@
 package cc.factorie.app.bib.hcoref
 
-import cc.factorie.util.DefaultCmdOptions
+import cc.factorie.util.{EvaluatableClustering, DefaultCmdOptions}
 import cc.factorie.app.nlp.hcoref._
 import com.mongodb.{MongoClient, DB}
 import cc.factorie.variable.{DiffList, Var}
@@ -48,19 +48,41 @@ object AuthorCoref {
 
     implicit val r = new Random()
     val model = AuthorCorefModel.fromCmdOptions(opts)
-    val numSamples = 300 * authors.size
+
+    val trainer = new CorefSampler[AuthorVars](model, authors.labeled, authors.size * 150)
+      with AutoStoppingSampler[AuthorVars]
+      with CanopyPairGenerator[AuthorVars]
+      with NoSplitMoveGenerator[AuthorVars]
+      with DebugCoref[AuthorVars]
+      with TrainingObjective[AuthorVars] {
+      def newInstance(implicit d: DiffList) = new Node[AuthorVars](new AuthorVars())
+
+      val autoStopThreshold = 10000
+    }
+    trainer.train(100000)
+
+    authors.toSingletons()
+    println(trainer.model.parameters.tensors)
+
+
+    val numSamples = 50 * authors.size
     println("beginning %d samples".format(numSamples))
     val sampler = new CorefSampler[AuthorVars](model, authors, numSamples)
       with AutoStoppingSampler[AuthorVars]
       with CanopyPairGenerator[AuthorVars]
       with NoSplitMoveGenerator[AuthorVars]
+      //with DebugDiffListMoveGenerator[AuthorVars]
       with DebugCoref[AuthorVars] {
       val autoStopThreshold = 10000
       val logger = Logger.default
+
+      def outerGetBagSize(n: Node[AuthorVars]) = n.variables.firstNames.size
 
       def newInstance(implicit d:DiffList) = new Node[AuthorVars](new AuthorVars(opts.embeddingDim.value))
     }
 
     sampler.infer
+
+    println(EvaluatableClustering.evaluationString(authors.filter(_.variables.truth.size > 0).predictedClustering, authors.filter(_.variables.truth.size > 0).trueClustering))
   }
 }
