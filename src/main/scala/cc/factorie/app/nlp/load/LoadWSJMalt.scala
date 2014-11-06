@@ -95,7 +95,7 @@ object LoadWSJMalt {
         }
         loadLemma match{
 	      case AnnotationTypes.GOLD => {token.attr += new TokenLemma(token, goldLemma)}
-	      case AnnotationTypes.AUTO => {token.attr += new TokenLemma(token, goldLemma)}//{token.attr += new TokenLemma(token, autoLemma)}
+	      case AnnotationTypes.AUTO => {token.attr += new TokenLemma(token, autoLemma)}
 	      case AnnotationTypes.NONE => {/* do nothing */}
         }
         loadParse match{

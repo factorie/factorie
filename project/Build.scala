@@ -38,7 +38,6 @@ object Build extends sbt.Build {
       resolvers ++= Dependencies.resolutionRepos,
       libraryDependencies ++= Seq(
         Compile.mongodb,
-        Compile.akka,
         Compile.colt,
         Compile.compiler,
         Compile.junit,
@@ -74,7 +73,6 @@ object Dependencies {
   
   object Compile {
     val mongodb  = "org.mongodb" % "mongo-java-driver" % "2.11.1"
-    val akka = "com.typesafe.akka" % "akka-actor_2.10" % "2.1.4"
     val colt = "org.jblas" % "jblas" % "1.2.3"
     val compiler = "org.scala-lang" % "scala-compiler" % "2.10.4"
     val junit = "junit" % "junit" % "4.10"
@@ -84,7 +82,7 @@ object Dependencies {
   }
 
   object Test {
-    val scalatest = "org.scalatest" % "scalatest_2.10" % "1.9.1" % "test"
+    val scalatest = "org.scalatest" % "scalatest_2.10" % "2.2.2" % "test"
   }
 
   object Resources {
