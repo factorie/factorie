@@ -1,8 +1,7 @@
 package cc.factorie.app.nlp
 
 import org.scalatest.FlatSpec
-import org.scalatest.matchers.Matchers
-import cc.factorie.app.nlp.segment.{DeterministicSentenceSegmenter, DeterministicTokenizer}
+import org.scalatest._
 import cc.factorie.app.nlp.pos.{PennPosTag, PennPosDomain}
 import cc.factorie.app.nlp.parse._
 
