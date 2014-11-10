@@ -20,32 +20,17 @@ trait MongoOpts extends DefaultCmdOptions {
 
 object AuthorCoref {
 
-  val opts = new AuthorModelOptions with MongoOpts {
-    val embeddingFile = new CmdOption("embedding-file", "", "FILE", "The name of the embedding file to load.", true)
-    val embeddingDim = new CmdOption("embedding-dim", 200, "INT", "The dimension of the embeddings")
-  }
-
-  def loadEmbeddings(filename:String, dim:Int):Map[String, Array[Double]] = {
-    val src = Source.fromFile(filename)
-    val embMap = src.getLines().map{ line =>
-      val word :: embeddings = line.split("""\s+""").toList
-      assert(embeddings.length == opts.embeddingDim.value, "Expected embedding of length %d, found %d for word %s".format(opts.embeddingDim.value, embeddings.length, word))
-      word -> embeddings.map(_.toDouble).toArray
-    }.toMap
-    src.close()
-    embMap
-  }
+  val opts = new AuthorModelOptions with MongoOpts with InMemoryHashMapKeystoreOpts
 
   def main(args:Array[String]) {
     opts parse args
-    val embeddingMap = loadEmbeddings(opts.embeddingFile.value, opts.embeddingDim.value)
+    val embeddingMap = InMemoryHashMapKeystore.fromOpts(opts)
     println("Loaded embedding map")
     val db = new MongoClient(opts.host.value, opts.port.value).getDB(opts.database.value)
     val coll = new MongoAuthorCollection(db, embeddingMap)
     println("setup db")
     val authors = coll.loadMentions
     println("loaded %d authors".format(authors.size))
-
     implicit val r = new Random()
     val model = AuthorCorefModel.fromCmdOptions(opts)
 
@@ -78,11 +63,14 @@ object AuthorCoref {
 
       def outerGetBagSize(n: Node[AuthorVars]) = n.variables.firstNames.size
 
-      def newInstance(implicit d:DiffList) = new Node[AuthorVars](new AuthorVars(opts.embeddingDim.value))
+      def newInstance(implicit d:DiffList) = new Node[AuthorVars](new AuthorVars(opts.keystoreDim.value))
     }
 
     sampler.infer
 
     println(EvaluatableClustering.evaluationString(authors.filter(_.variables.truth.size > 0).predictedClustering, authors.filter(_.variables.truth.size > 0).trueClustering))
+
+    println("Inserting rows")
+    coll.updateCollection(authors.filter(a => a.exists && !AuthorNodeCubbie.deletions.contains(a.uniqueId)))
   }
 }

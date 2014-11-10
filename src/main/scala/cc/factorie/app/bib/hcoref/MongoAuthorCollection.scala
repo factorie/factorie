@@ -1,8 +1,8 @@
 package cc.factorie.app.bib.hcoref
 
 import cc.factorie.app.nlp.hcoref._
-import cc.factorie.util.Cubbie
-import cc.factorie.variable.Var
+import cc.factorie.util.{DoubleSeq, Cubbie}
+import cc.factorie.variable.{BagOfWords, Var}
 import com.mongodb.DB
 import scala.collection.mutable
 
@@ -16,6 +16,69 @@ class HashMapCubbie extends Cubbie {
 
 object AuthorNodeCubbie {
   val deletions = mutable.HashSet[String]()
+
+
+  def fromNode(n:Node[AuthorVars]):AuthorNodeCubbie = fromNode(new AuthorNodeCubbie, n)
+  def fromNode(nc:AuthorNodeCubbie, n:Node[AuthorVars]):AuthorNodeCubbie = {
+    nc.firstNameBag.set(new HashMapCubbie().store(n.variables.firstNames.value.asHashMap.toMap))
+    nc.middleNameBag.set(new HashMapCubbie().store(n.variables.middleNames.value.asHashMap.toMap))
+    if (n.variables.truth.size > 0) { // avoid creating empty truth bags
+      nc.truth.set(new HashMapCubbie().store(n.variables.truth.value.asHashMap.toMap))
+    }
+    nc.coauthors.set(new HashMapCubbie().store(n.variables.firstNames.value.asHashMap.toMap))
+    nc.venues.set(new HashMapCubbie().store(n.variables.firstNames.value.asHashMap.toMap))
+    nc.keywords.set(new HashMapCubbie().store(n.variables.firstNames.value.asHashMap.toMap))
+    nc.canopies.set(n.variables.canopies)
+    nc.parentRef.set(n.getParent.map(_.uniqueId))
+    nc.topicEmbedding.set(DoubleSeq(n.variables.topics.value))
+    nc.title.set(n.variables.title)
+    nc.isMention.set(n.isMention)
+    nc.id_=(n.uniqueId)
+    nc
+  }
+
+  def fromTSVStringEmbedding(s:String):AuthorNodeCubbie = {
+    val arr = s.split("\t")
+    val (args, embeddings) = arr.splitAt(11)
+    val nc = fromTSVString(args)
+    nc.topicEmbedding set DoubleSeq(embeddings.map(_.toDouble))
+    nc
+  }
+  def fromTSVString(s:String):AuthorNodeCubbie = fromTSVString(s.split("\t"))
+
+  private def splitBagString(s:String):Map[String, Double] = s.split("""\s+""").map { kv =>
+    val arr = kv.split(":")
+    if(arr.size == 2) {
+      val Array(key, valString) = arr
+      key -> valString.toDouble
+    } else {
+      kv -> 1.0
+    }
+  }.toMap
+
+  def buildBagString(bag:Map[String, Double]):String = bag.asHashMap.map{case(key, value) => key + ":" + value}.mkString(" ")
+
+
+  private def fromTSVString(arr:Array[String]):AuthorNodeCubbie = {
+    val Array(id, firstName, middleName, coauthors, keywords, venues, canopy, title, isMentionString, parentRefString, truthString) = arr
+    val nc = new AuthorNodeCubbie
+    nc.id = id
+    nc.firstNameBag set new HashMapCubbie().store(splitBagString(firstName))
+    nc.middleNameBag set new HashMapCubbie().store(splitBagString(middleName))
+    nc.coauthors set new HashMapCubbie().store(splitBagString(coauthors))
+    nc.keywords set new HashMapCubbie().store(splitBagString(keywords))
+    nc.venues set new HashMapCubbie().store(splitBagString(venues))
+    nc.canopies set canopy
+    nc.title set title
+    nc.isMention set (isMentionString.toLowerCase == "true")
+    if(parentRefString.nonEmpty) {
+      nc.parentRef set parentRefString
+    }
+    if(truthString.nonEmpty) {
+      nc.truth set new HashMapCubbie().store(splitBagString(truthString))
+    }
+    nc
+  }
 }
 
 class AuthorNodeCubbie extends NodeCubbie[AuthorVars] {
@@ -26,6 +89,7 @@ class AuthorNodeCubbie extends NodeCubbie[AuthorVars] {
   val nickName = StringSlot("nn") // nickname  e.g. William Bruce Croft, nickname=Bruce; or William Freeman, nickname=Bill
   val emails = new CubbieSlot("emails", () => new HashMapCubbie)
   val topics = new CubbieSlot("topics", () => new HashMapCubbie)
+  val topicEmbedding = new DoubleSeqSlot("topicEmb")
   val keywords = new CubbieSlot("keywords", () => new HashMapCubbie)
   val venues = new CubbieSlot("venues", () => new HashMapCubbie)
   val coauthors = new CubbieSlot("coauthors", () => new HashMapCubbie)
@@ -33,9 +97,22 @@ class AuthorNodeCubbie extends NodeCubbie[AuthorVars] {
   def newNodeCubbie = new AuthorNodeCubbie
 
   val deletionSet: mutable.HashSet[String] = AuthorNodeCubbie.deletions
+
+  import AuthorNodeCubbie._
+  def toTSVString = Seq(id.toString,
+                        buildBagString(firstNameBag.value.fetch),
+                        buildBagString(middleNameBag.value.fetch),
+                        buildBagString(coauthors.value.fetch),
+                        buildBagString(keywords.value.fetch),
+                        buildBagString(venues.value.fetch),
+                        canopies.value.head,
+                        title.value,
+                        isMention.value.toString,
+                        if(parentRef.isDefined) parentRef.value else "",
+                        buildBagString(truth.value.fetch)).mkString("\t")
 }
 
-class MongoAuthorCollection(db:DB, embeddingMap:Map[String, Array[Double]]) extends MongoNodeCollection[AuthorVars, AuthorNodeCubbie](Seq("authors"), Seq.empty, db) {
+class MongoAuthorCollection(db:DB, embeddingMap:Keystore) extends MongoNodeCollection[AuthorVars, AuthorNodeCubbie](Seq("authors"), Seq.empty, db) {
   protected def newNodeCubbie = new AuthorNodeCubbie
 
   protected def newNodeVars[V <: Var](truth: String, vars: V*) = new AuthorVars()
@@ -46,6 +123,25 @@ class MongoAuthorCollection(db:DB, embeddingMap:Map[String, Array[Double]]) exte
     new Mention[AuthorVars](AuthorVars.fromNodeCubbie(nc, embeddingMap), nc.id.toString)(null)
   } else {
     new Node[AuthorVars](AuthorVars.fromNodeCubbie(nc, embeddingMap), nc.id.toString)(null)
+  }
+
+  override protected def cubbify(n:Node[AuthorVars]) = AuthorNodeCubbie.fromNode(n)
+
+  /** Set the collection to only un-corefed mentions */
+  def setToSingletons() {
+    nodeCubbieColl.remove(c => c.isMention.set(false))
+  }
+
+  def updateCollection(ns:Iterable[Node[AuthorVars]]) {
+    AuthorNodeCubbie.deletions.map{del =>
+      nodeCubbieColl.remove{c => c.id = del; c}
+    }
+    println("Removed %s deleted records".format(AuthorNodeCubbie.deletions.size))
+    ns.foreach { n =>
+      val nc = AuthorNodeCubbie.fromNode(n)
+      nodeCubbieColl.update({c => c.id = n.uniqueId; c}, {c => AuthorNodeCubbie.fromNode(c, n)}, true)
+    }
+    println("Upserted %d nodes".format(ns.size))
   }
 
   def getTruth(nc: AuthorNodeCubbie) = nc.truth.value.fetch.head._1

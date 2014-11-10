@@ -18,6 +18,7 @@ class AuthorVars(val firstNames:BagOfWordsVariable,
   def this(dim:Int=200) = this(new BagOfWordsVariable(), new BagOfWordsVariable(), new DenseDoubleBagVariable(dim), new BagOfWordsVariable(), new BagOfWordsVariable(), new BagOfWordsVariable(), "", new BagOfWordsVariable())
 
   def getVariables = Seq(firstNames, middleNames, topics, venues, coAuthors, keywords)
+  var title = ""
 
   def --=(other: AuthorVars)(implicit d: DiffList) {
     this.firstNames remove other.firstNames.value
@@ -59,14 +60,21 @@ class AuthorVars(val firstNames:BagOfWordsVariable,
 }
 
 object AuthorVars {
-  def fromNodeCubbie(nc:AuthorNodeCubbie, embeddingMap:Map[String, Array[Double]]):AuthorVars = {
-    val aVars = new AuthorVars(embeddingMap.head._2.length)
+
+  def fromNodeCubbie(nc:AuthorNodeCubbie):AuthorVars = {
+    require(nc.topicEmbedding.isDefined, "No embedding map defined on record: %s".format(nc.id.toString))
+    fromNodeCubbie(nc, nc.topicEmbedding.value.toArray)
+  }
+  def fromNodeCubbie(nc:AuthorNodeCubbie, embeddingMap:Keystore):AuthorVars = {
+    fromNodeCubbie(nc, embeddingMap.generateVector(nc.title.value.split("""\s+""")))
+  }
+
+  protected def fromNodeCubbie(nc:AuthorNodeCubbie, topicArray:Array[Double]):AuthorVars = {
+    val aVars = new AuthorVars(topicArray.length)
+    aVars.title = nc.title.value
     aVars.firstNames ++= nc.firstNameBag.value.fetch
     aVars.middleNames ++= nc.middleNameBag.value.fetch
-    nc.title.value.split("""\s+""").foldLeft(aVars.topics){ case (topicEmb, word) =>
-      embeddingMap.get(word).map(topicEmb.add(_)(null))
-      topicEmb
-    }
+    aVars.topics.add(topicArray)(null)
     aVars.venues ++= nc.venues.value.fetch
     aVars.coAuthors ++= nc.coauthors.value.fetch
     aVars.keywords ++= nc.keywords.value.fetch

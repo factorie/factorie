@@ -29,9 +29,10 @@ package object hcoref {
     }
   }
 
-  implicit class NodeListGrountTruthUtils[Vars <: NodeVariables[Vars] with GroundTruth](val nodes:Iterable[Node[Vars]]) {
+  implicit class NodeListGroundTruthUtils[Vars <: NodeVariables[Vars] with GroundTruth](val nodes:Iterable[Node[Vars]]) {
     //this logic is ugly, but should always be correct for mentions
-    private val mentionToTruth = nodes.filter(_.isMention).map(m => m.uniqueId -> m.variables.truth.iterator.next()._1)
+    private lazy val mentionToTruth = nodes.filter(_.isMention)
+      .map(m => m.uniqueId -> m.variables.truth.iterator.next()._1)
     def trueClustering = new BasicEvaluatableClustering(mentionToTruth)
 
 
