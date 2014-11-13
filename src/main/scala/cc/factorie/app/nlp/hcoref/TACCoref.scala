@@ -174,7 +174,7 @@ object TACCoref {
     val predMap = test.map{m:Node[DenseDocEntityVars] => m.root}.toSet.map { entities:Node[DenseDocEntityVars] =>
       entities.variables.truth.value.topWord -> entities.mentions.map(_.uniqueId).toSet
     }.toMap
-    println(LinkingScorer.scoreString(predMap, goldMap))
+    //println(LinkingScorer.scoreString(predMap, goldMap))
   }
 }
 

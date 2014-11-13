@@ -14,7 +14,6 @@ object AuthorCorefModel {
     if(opts.entitySizeWeight.value != 0.0)authorCorefModel += new EntitySizePrior(opts.entitySizeWeight.value,opts.entitySizeExponent.value)
     if(opts.bagTopicsWeight.value != 0.0)authorCorefModel += new DenseCosineDistance(opts.bagTopicsWeight.value,opts.bagTopicsShift.value, {b:AuthorVars => b.topics}, "topics")
     if(opts.bagTopicsEntropy.value != 0.0)authorCorefModel += new DenseBagOfWordsEntropy(opts.bagTopicsEntropy.value, {b:AuthorVars => b.topics}, "topics")
-    if(opts.bagTopicsPrior.value != 0.0)authorCorefModel += new DenseBagOfWordsSizePrior(opts.bagTopicsPrior.value, {b:AuthorVars => b.topics}, "topics")
     if(opts.bagCoAuthorWeight.value != 0.0)authorCorefModel += new ChildParentCosineDistance(opts.bagCoAuthorWeight.value,opts.bagCoAuthorShift.value, {b:AuthorVars => b.coAuthors}, "coauthors")
     if(opts.bagCoAuthorEntropy.value != 0.0)authorCorefModel += new BagOfWordsEntropy(opts.bagCoAuthorEntropy.value, {b:AuthorVars => b.coAuthors}, "coauthors")
     if(opts.bagCoAuthorPrior.value != 0.0)authorCorefModel += new BagOfWordsSizePrior(opts.bagCoAuthorPrior.value, {b:AuthorVars => b.coAuthors}, "coauthors")
