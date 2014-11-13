@@ -73,4 +73,32 @@ object AuthorCoref {
     println("Inserting rows")
     coll.updateCollection(authors.filter(a => a.exists && !AuthorNodeCubbie.deletions.contains(a.uniqueId)))
   }
+
+
+  def runOnCanopy(ncs:Iterable[AuthorNodeCubbie], opts:AuthorModelOptions):Iterable[AuthorNodeCubbie] = {
+    val mentions = ncs.map{ nc =>
+      if(nc.isMention.value) {
+        new Mention[AuthorVars](AuthorVars.fromNodeCubbie(nc), nc.id.toString)(null)
+      } else {
+        new Node[AuthorVars](AuthorVars.fromNodeCubbie(nc), nc.id.toString)(null)
+      }
+    }
+
+    implicit val rand = new Random()
+    val model = AuthorCorefModel.fromCmdOptions(opts)
+    val sampler = new CorefSampler[AuthorVars](model, mentions, mentions.size * 50)
+      with AutoStoppingSampler[AuthorVars]
+      with CanopyPairGenerator[AuthorVars]
+      with NoSplitMoveGenerator[AuthorVars]
+      with DebugCoref[AuthorVars]
+      with TrainingObjective[AuthorVars] {
+      def newInstance(implicit d: DiffList) = new Node[AuthorVars](new AuthorVars())
+
+      val autoStopThreshold = 10000
+    }
+
+    sampler.infer
+
+    sampler.entities.filter(_.exists).map(AuthorNodeCubbie.fromNode)
+  }
 }

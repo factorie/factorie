@@ -4,7 +4,6 @@ import edu.umass.cs.iesl.namejuggler.PersonNameWithDerivations
 import edu.umass.cs.iesl.scalacommons.NonemptyString
 import edu.umass.cs.iesl.scalacommons.OptionUtils
 import edu.umass.cs.iesl.scalacommons.StringUtils
-import scala.collection.mutable
 
 /**
  * @author John Sullivan
@@ -26,4 +25,9 @@ object Canopies {
     case None => ""
   }
 
+  def streamCanopies(ncs:Iterator[AuthorNodeCubbie]):Iterator[(String, String)] = ncs.map { nc =>
+    fromString(nc.fullName.value) -> nc.id.toString
+  }
+
 }
+

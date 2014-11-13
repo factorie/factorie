@@ -19,6 +19,7 @@ class AuthorVars(val firstNames:BagOfWordsVariable,
 
   def getVariables = Seq(firstNames, middleNames, topics, venues, coAuthors, keywords)
   var title = ""
+  var fullName = ""
 
   def --=(other: AuthorVars)(implicit d: DiffList) {
     this.firstNames remove other.firstNames.value
@@ -71,6 +72,7 @@ object AuthorVars {
 
   protected def fromNodeCubbie(nc:AuthorNodeCubbie, topicArray:Array[Double]):AuthorVars = {
     val aVars = new AuthorVars(topicArray.length)
+    aVars.fullName = nc.fullName.value
     aVars.title = nc.title.value
     aVars.firstNames ++= nc.firstNameBag.value.fetch
     aVars.middleNames ++= nc.middleNameBag.value.fetch
