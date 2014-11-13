@@ -17,7 +17,7 @@ import cc.factorie.app.nlp._
 import cc.factorie.app.nlp.ner.{ConllNerDomain, OntonotesEntityTypeDomain}
 import cc.factorie.util.{ClasspathURL, BinarySerializer}
 import java.io._
-import cc.factorie.variable.{LabeledCategoricalVariable, BinaryFeatureVectorVariable, CategoricalVectorDomain}
+import cc.factorie.variable.{CategoricalVariable, LabeledCategoricalVariable, BinaryFeatureVectorVariable, CategoricalVectorDomain, CategoricalLabeling}
 import cc.factorie.optimize.{PredictorExample, Trainer, OptimizableObjectives}
 import cc.factorie.app.classify.backend.LinearMulticlassClassifier
 import cc.factorie.app.nlp.load.LoadConll2011
@@ -25,7 +25,8 @@ import cc.factorie.app.nlp.load.LoadConll2011
 
 /** Categorical variable indicating whether the noun phrase is person, location, organization, etc. 
     according to the CoNLL 2003 entity type domain: PER, ORG, LOC, MISC. */
-class ConllEntityType(targetValue:String) extends LabeledCategoricalVariable(targetValue) {
+class ConllEntityType(targetIndex:Int) extends CategoricalVariable[String](targetIndex) with CategoricalLabeling[String] {
+  def this(targetCategory:String) = this(ConllNerDomain.index(targetCategory))
   def domain = ConllNerDomain
 }
 
@@ -33,7 +34,7 @@ class ConllPhraseEntityType(val phrase:Phrase, targetValue:String) extends Conll
 
 /** Categorical variable indicating whether the noun phrase is person, location, organization, etc. 
     according to the Ontonotes entity type domain. */
-class OntonotesEntityType(targetValue:String,val exactMatch:Boolean = false) extends LabeledCategoricalVariable(targetValue) {
+class OntonotesEntityType(targetValue:String, val exactMatch:Boolean = false) extends LabeledCategoricalVariable(targetValue) {
   def domain = OntonotesEntityTypeDomain
 
 }

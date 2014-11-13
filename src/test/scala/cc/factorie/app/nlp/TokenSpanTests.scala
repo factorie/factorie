@@ -1,6 +1,6 @@
 package cc.factorie.app.nlp
 
-import org.scalatest.{Matchers, FlatSpec}
+import org.scalatest._
 
 /**
  * @author John Sullivan

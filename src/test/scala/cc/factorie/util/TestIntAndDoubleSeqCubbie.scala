@@ -1,7 +1,6 @@
 package cc.factorie.util
 
-import org.scalatest.{Matchers, FlatSpec}
-import cc.factorie.db.mongo.{MongoCubbieCollection, MongoCubbie}
+import org.scalatest._
 import cc.factorie.db.mongo.MongoCubbieConverter
 
 /**

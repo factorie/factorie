@@ -80,7 +80,8 @@ object DocumentAnnotatorPipeline extends FastLogging  {
     classOf[phrase.Gender] -> (() => phrase.MentionPhraseGenderLabeler),
     classOf[phrase.Number] -> (() => phrase.MentionPhraseNumberLabeler),
     classOf[phrase.DatePhraseFinder.DatePhraseList] -> (() => phrase.DatePhraseFinder),
-    classOf[coref.WithinDocCoref] -> (() => coref.NerForwardCoref)
+    classOf[coref.WithinDocCoref] -> (() => coref.NerForwardCoref),
+    classOf[relation.RelationMentionSeq] -> (() => relation.ConllPatternBasedRelationFinder)
     //classOf[phrase.NumberLabel[phrase.NounPhrase]] -> (() => phrase.NounPhraseNumberLabeler),
     //classOf[MentionEntityType] ->  (() => coref.mention.MentionEntityTypeLabeler),
     //classOf[cc.factorie.util.coref.GenericEntityMap[coref.mention.Mention]] -> (() => coref.NerForwardCoref)

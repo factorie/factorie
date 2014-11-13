@@ -19,6 +19,11 @@ import cc.factorie.variable.BooleanValue
 /**
  * @author John Sullivan
  */
+trait DebuggableModel[Vars <: NodeVariables[Vars]] extends CorefModel[Vars] {
+  def debugOn() {templates.collect{case t:DebuggableTemplate => t.debugOn()}}
+  def debugOff() {templates.collect{case t:DebuggableTemplate => t.debugOff()}}
+}
+
 abstract class CorefModel[Vars <: NodeVariables[Vars]] extends TemplateModel with Parameters { // This is to ensure that the model's features' NodeVariables match the type of the model's NodeVariables
 implicit val params:Parameters = this
 

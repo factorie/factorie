@@ -16,18 +16,18 @@ trait DeterministicPairGenerator[Vars <: NodeVariables[Vars]] extends PairGenera
 
   proposalHooks += {p:Proposal[(Node[Vars], Node[Vars])] =>
     val (e1, e2) = p.context
-    e1.parent match {
-      case Some(parent) => mentionMap.put(parent.id, parent)
+    e1.getParent match {
+      case Some(parent) => mentionMap.put(parent.uniqueId, parent)
       case None => Unit
     }
-    e2.parent match {
-      case Some(parent) => mentionMap.put(parent.id, parent)
+    e2.getParent match {
+      case Some(parent) => mentionMap.put(parent.uniqueId, parent)
       case None => Unit
     }
   }
 
   private val mentionMap = mutable.HashMap[String, Node[Vars]]()
-  mentionMap ++= mentions.map(m => m.id -> m)
+  mentionMap ++= mentions.map(m => m.uniqueId -> m)
 
   override def nextContext:(Node[Vars], Node[Vars]) = {
     val e1 = sampleEntity
@@ -73,9 +73,9 @@ trait DeterministicPairGenerator[Vars <: NodeVariables[Vars]] extends PairGenera
 
   proposalHooks += {p:Proposal[(Node[Vars], Node[Vars])] =>
     val (e1, e2) = p.context
-    e1.parent match {
+    e1.getParent match {
       case Some(ent) => addEntity(ent)
-      case None => e2.parent match {
+      case None => e2.getParent match {
         case Some(ent) => addEntity(ent)
         case None => Unit
       }

@@ -18,7 +18,8 @@ import cc.factorie.variable._
 import scala.collection.mutable
 
 /** A sub-sequence of Tokens within a Section (which is in turn part of a Document). */
-class TokenSpan(theSection:Section, initialStart:Int, initialLength:Int) extends SpanVariable[Section,Token](theSection, initialStart, initialLength) with Attr {
+class TokenSpan(theSection:Section, initialStart:Int, initialLength:Int) extends SpanVariable[Section,Token](theSection, initialStart, initialLength) with Attr with Ordered[TokenSpan] {
+  def this(tokens:Seq[Token]) = this(tokens.head.section, tokens.head.positionInSection, tokens.size)
   /** The Document Section of which this TokenSpan is a subsequence. */
   final def section = chain  // Just a convenient alias
   /** The Document to which this TokenSpan belongs. */
@@ -64,7 +65,7 @@ class TokenSpan(theSection:Section, initialStart:Int, initialLength:Int) extends
   /**
    * Returns the character offsets of this TokenSpan into the raw text of its original document.
    */
-  def characterOffsets:(Int, Int) = this.apply(0).stringStart -> this.apply(length).stringEnd
+  def characterOffsets:(Int, Int) = this.head.stringStart -> this.last.stringEnd
 
   /**
    * Returns a sequence of tokens that contains @param size tokens before and after the tokenspan.
@@ -87,6 +88,36 @@ class TokenSpan(theSection:Section, initialStart:Int, initialLength:Int) extends
       idx += 1
     }
     window
+  }
+
+
+  /**
+   * Implements ordering between two tokenspans, assumed to share the same document
+   */
+  def compare(other: TokenSpan): Int = if(this.section.head.stringStart > other.section.head.stringStart) {
+    1
+  } else if(this.section.head.stringStart < other.section.head.stringStart) {
+    -1
+  } else {
+    if (this.sentence.start > other.sentence.start) {
+      1
+    } else if (this.sentence.start < other.sentence.start) {
+      -1
+    } else {
+      if (this.start > other.start) {
+        1
+      } else if (this.start < other.start) {
+        -1
+      } else {
+        if (this.end < other.end) {
+          1
+        } else if (this.end > other.end) {
+          -1
+        } else {
+          0
+        }
+      }
+    }
   }
 }
 trait TokenSpanCollection[S<:TokenSpan] extends SpanVarCollection[S, Section, Token]
@@ -147,30 +178,30 @@ trait TokenSpanWithPhraseCubbie extends TokenSpanCubbie {
   }
 }
 
-trait TokenSpanWithDocRefCubbie[DC<:DocumentCubbie[_,_,_]] extends TokenSpanCubbie {
-  def newDocumentCubbie: DC
-  val doc = RefSlot("doc", ()=>newDocumentCubbie)
-  override def finishStoreTokenSpan(ts:TokenSpan): Unit = {
-    super.finishStoreTokenSpan(ts)
-    doc := ts.document.name
-  }
-  def fetchTokenSpan(/* implicit cr:CubbieRefs */): TokenSpan = {
-    throw new Error("Not yet implemented")
-    val ts = new TokenSpan(null, start.value, length.value)
-    finishFetchTokenSpan(ts)
-    ts
-  }
-}
-
-trait TokenSpanNerLabelCubbieSlot extends TokenSpanCubbie {
-  def newTokenSpanNerLabel(ts:TokenSpan, s:String): cc.factorie.app.nlp.ner.NerSpanLabel
-  val ner = StringSlot("ner")
-  override def finishStoreTokenSpan(ts:TokenSpan): Unit = {
-    super.finishStoreTokenSpan(ts)
-    ner := ts.attr[cc.factorie.app.nlp.ner.NerSpanLabel].categoryValue
-  }
-  override def finishFetchTokenSpan(ts:TokenSpan): Unit = {
-    super.finishFetchTokenSpan(ts)
-    ts.attr += newTokenSpanNerLabel(ts, ner.value)
-  }
-}
+//trait TokenSpanWithDocRefCubbie[DC<:DocumentCubbie[_,_,_]] extends TokenSpanCubbie {
+//  def newDocumentCubbie: DC
+//  val doc = RefSlot("doc", ()=>newDocumentCubbie)
+//  override def finishStoreTokenSpan(ts:TokenSpan): Unit = {
+//    super.finishStoreTokenSpan(ts)
+//    doc := ts.document.name
+//  }
+//  def fetchTokenSpan(/* implicit cr:CubbieRefs */): TokenSpan = {
+//    throw new Error("Not yet implemented")
+//    val ts = new TokenSpan(null, start.value, length.value)
+//    finishFetchTokenSpan(ts)
+//    ts
+//  }
+//}
+//
+//trait TokenSpanNerLabelCubbieSlot extends TokenSpanCubbie {
+//  def newTokenSpanNerLabel(ts:TokenSpan, s:String): cc.factorie.app.nlp.ner.NerSpanLabel
+//  val ner = StringSlot("ner")
+//  override def finishStoreTokenSpan(ts:TokenSpan): Unit = {
+//    super.finishStoreTokenSpan(ts)
+//    ner := ts.attr[cc.factorie.app.nlp.ner.NerSpanLabel].categoryValue
+//  }
+//  override def finishFetchTokenSpan(ts:TokenSpan): Unit = {
+//    super.finishFetchTokenSpan(ts)
+//    ts.attr += newTokenSpanNerLabel(ts, ner.value)
+//  }
+//}
