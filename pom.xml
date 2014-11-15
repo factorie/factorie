@@ -21,14 +21,14 @@ limitations under the License.
   <url>http://factorie.cs.umass.edu</url>
   <groupId>cc.factorie</groupId>
   <artifactId>factorie_${scala.majorVersion}</artifactId>
-  <version>1.1-SNAPSHOT</version>
+  <version>1.2-SNAPSHOT</version>
   <packaging>jar</packaging>
   <inceptionYear>2009</inceptionYear>
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <scala.majorVersion>2.10</scala.majorVersion>
-    <scala.minorVersion>.4</scala.minorVersion>
+    <scala.majorVersion>2.11</scala.majorVersion>
+    <scala.minorVersion>.2</scala.minorVersion>
     <scalatest.version>2.2.2</scalatest.version>
     <junit.version>4.10</junit.version>
   </properties>
@@ -190,7 +190,7 @@ limitations under the License.
                       </goals>
                     </pluginExecutionFilter>
                     <action>
-                      <execute/>
+                      <execute />
                     </action>
                   </pluginExecution>
                 </pluginExecutions>
