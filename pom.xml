@@ -125,6 +125,11 @@ limitations under the License.
       <artifactId>commons-compress</artifactId>
       <version>1.8</version>
     </dependency>
+      <dependency>
+          <groupId>commons-lang</groupId>
+          <artifactId>commons-lang</artifactId>
+          <version>2.6</version>
+      </dependency>
 
     <dependency>
       <groupId>org.xerial.snappy</groupId>
