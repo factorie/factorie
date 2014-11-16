@@ -125,11 +125,11 @@ limitations under the License.
       <artifactId>commons-compress</artifactId>
       <version>1.8</version>
     </dependency>
-      <dependency>
-          <groupId>commons-lang</groupId>
-          <artifactId>commons-lang</artifactId>
-          <version>2.6</version>
-      </dependency>
+    <dependency>
+      <groupId>commons-lang</groupId>
+      <artifactId>commons-lang</artifactId>
+      <version>2.6</version>
+    </dependency>
 
     <dependency>
       <groupId>org.xerial.snappy</groupId>
@@ -360,6 +360,21 @@ limitations under the License.
 
         <build>
           <plugins>
+            <plugin>
+              <groupId>net.alchim31.maven</groupId>
+              <artifactId>scala-maven-plugin</artifactId>
+              <version>3.2.0</version>
+              <executions>
+                <execution>
+                  <goals>
+                    <goal>doc</goal>
+                  </goals>
+                  <phase>deploy</phase>
+                </execution>
+              </executions>
+            </plugin>
+
+
             <plugin>
               <groupId>org.apache.maven.plugins</groupId>
               <artifactId>maven-source-plugin</artifactId>
