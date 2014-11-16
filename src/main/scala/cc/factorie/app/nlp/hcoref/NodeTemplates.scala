@@ -188,7 +188,7 @@ class ChildParentPersonNameTemplate[Vars <: NodeVariables[Vars]](weight:Double, 
 
 /**
  * This feature serves to ensure that certain merges are forbidden. Specifically no two nodes that share the same value
- * in the [[BagOfWordsVariable]] should be permitted to merge. Together with [[IdentityFactor]] it can create uniquely
+ * in the [[cc.factorie.variable.BagOfWordsVariable]] should be permitted to merge. Together with [[IdentityFactor]] it can create uniquely
  * identifying features.
  */
 class ExclusiveConstraintFactor[Vars <: NodeVariables[Vars]](getBag:(Vars => BagOfWordsVariable), bagName:String = "")(implicit ct:ClassTag[Vars])
