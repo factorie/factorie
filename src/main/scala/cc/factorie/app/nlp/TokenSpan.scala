@@ -90,6 +90,29 @@ class TokenSpan(theSection:Section, initialStart:Int, initialLength:Int) extends
     window
   }
 
+  /**
+   * Returns an iterable over tokens before and after the token span without preserving order
+   */
+  def contextBag(size:Int):Iterable[Token] = {
+    var idx = 0
+    var window = mutable.ArrayBuffer[Token]()
+    var t = Option(this.head)
+    while(idx < size && t.isDefined) {
+      t = t.flatMap(_.getPrev)
+      window ++= t
+      idx += 1
+    }
+    idx = 0
+    t = Option(this.last)
+    while(idx < size && t.isDefined) {
+      t = t.flatMap(_.getNext)
+      window ++= t
+      idx += 1
+    }
+    window
+  }
+
+
 
   /**
    * Implements ordering between two tokenspans, assumed to share the same document
