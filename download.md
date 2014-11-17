@@ -8,10 +8,13 @@ group: prefix
 Download
 ===
 
-The latest release of Factorie is 1.0
+The latest release of Factorie is 1.1
 
-- Executable Jar: [factorie-1.0.jar](https://github.com/factorie/factorie/releases/download/factorie-1.0/factorie-1.0.jar)
-- Source files: [factorie-1.0-sources.jar](https://github.com/factorie/factorie/releases/download/factorie-1.0/factorie-1.0-sources.jar)
+- Executable Jar (2.11): [factorie_2.11-1.1.jar](https://github.com/factorie/factorie/releases/download/factorie_2.11-1.1/factorie_2.11-1.1.jar)
+- Source files (2.11): [factorie_2.11-1.1-sources.jar](https://github.com/factorie/factorie/releases/download/factorie_2.11-1.1/factorie_2.11-1.1-sources.jar)
+- Executable Jar (2.10): [factorie_2.10-1.1.jar](https://github.com/factorie/factorie/releases/download/factorie_2.10-1.1/factorie_2.10-1.1.jar)
+- Source files (2.10): [factorie_2.10-1.1-sources.jar](https://github.com/factorie/factorie/releases/download/factorie_2.10-1.1/factorie_2.10-1.1-sources.jar)
+
 
 Or, you can can clone the latest snapshot version from GitHub:
 
@@ -24,4 +27,4 @@ See [Installation](tutorials/UsersGuide20Installation.html) for details.
 Earlier Versions
 ---
 
-To download earlier versions of Factorie (for example 1.0.0-M7), see our [GitHub releases page] (https://github.com/factorie/factorie/releases).
+To download earlier versions of Factorie (for example 1.0), see our [GitHub releases page](https://github.com/factorie/factorie/releases).
