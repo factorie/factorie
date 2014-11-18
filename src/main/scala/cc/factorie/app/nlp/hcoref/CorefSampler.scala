@@ -28,11 +28,11 @@ abstract class CorefSampler[Vars <: NodeVariables[Vars]](override val model:Core
   this.temperature = 0.001
 
   val beforeInferHooks = new Hooks1[Unit]
-  protected def beforeInferHook = beforeInferHooks()
+  protected def beforeInferHook = beforeInferHooks
   val afterInferHooks = new Hooks1[Unit]
-  protected def afterInferHook = afterInferHooks()
+  protected def afterInferHook = afterInferHooks
 
-  def infer {
+  def infer() {
     beforeInferHook
     contexts foreach process
     afterInferHook
@@ -57,7 +57,7 @@ trait AutoStoppingSampler[Vars <: NodeVariables[Vars]] extends CorefSampler[Vars
     super.processProposals(props)
   }
 
-  override def infer = {
+  override def infer() = {
     beforeInferHook
     var step = 0
 

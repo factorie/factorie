@@ -30,7 +30,6 @@ class TokenSpan(theSection:Section, initialStart:Int, initialLength:Int) extends
   def sentence = tokens(0).sentence
   // TODO Implement something like this? def containsSentenceIndex(i:Int): Boolean // Does this TokenSpan contain the token in the ith position of the sentence containing this TokenSpan.
   
-  @deprecated("Use 'string' instead.") def phrase: String = string
   /** Return the substring of the Document covered by this TokenSpan.
       If this is a multi-Token TokenSpan, this will include all original characters in the Document, including those skipped by tokenization. */
   def documentString: String = document.string.substring(tokens.head.stringStart, tokens.last.stringEnd) // TODO Handle Token.attr[TokenString] changes
@@ -53,14 +52,7 @@ class TokenSpan(theSection:Section, initialStart:Int, initialLength:Int) extends
     }
     false
   }
-  override def toString = "TokenSpan("+start+","+end+":"+this.phrase+")"
-  // TODO This seems unsafe.  Can we delete it? -akm
-  /** A short name for this span */
-  @deprecated("This method will be deleted in the near future.")
-  def name: String = attr.values.head match {
-    case label:LabeledCategoricalVariable[String @unchecked] => label.categoryValue
-    case x => x.toString
-  }
+  override def toString = "TokenSpan("+start+","+end+":"+this.string+")"
 
   /**
    * Returns the character offsets of this TokenSpan into the raw text of its original document.
@@ -197,7 +189,7 @@ trait TokenSpanWithPhraseCubbie extends TokenSpanCubbie {
   val phrase = StringSlot("phrase")
   override def finishStoreTokenSpan(ts:TokenSpan): Unit = {
     super.finishStoreTokenSpan(ts)
-    phrase := ts.phrase
+    phrase := ts.string
   }
 }
 

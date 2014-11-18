@@ -57,7 +57,7 @@ class Lexicons( val sources : List[(String,BufferedSource)]) {
   }
 
   def apply(span : TokenSpan) : List[String] = {
-    if(lexiconMap.contains(removeTrail(span.phrase))) lexiconMap(removeTrail(span.phrase)) else List[String]()
+    if(lexiconMap.contains(removeTrail(span.string))) lexiconMap(removeTrail(span.string)) else List[String]()
   }
 
 
