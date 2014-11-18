@@ -29,10 +29,13 @@ class AhoCorasick(val sep : String) extends Serializable {
   private val logger = Logger.getLogger("cc.factorie.app.nlp.lexicon.AhoCorasick")
   
   val root : TrieNode = new TrieNode(sep)
-  var constructed : Boolean = false
+  private var constructed : Boolean = false
   
   /** Construct an instance from a Seq of phrases. */
   def this(sep : String, lexicon : Seq[Seq[String]]) = { this(sep); this ++= lexicon }
+
+  /** Accessor method for constructed. */
+  def isConstructed() : Boolean = { constructed }
   
   /**
    * Checks if the input phrase appears exactly in the lexicon.
@@ -40,7 +43,9 @@ class AhoCorasick(val sep : String) extends Serializable {
    */
   def findExactMention(input : Seq[String]) : Boolean = {
     if (!constructed) {
-      setTransitions()
+      synchronized {
+        setTransitions()
+      }
     }
     var i = 0
     var curNode = root
@@ -70,7 +75,9 @@ class AhoCorasick(val sep : String) extends Serializable {
   /** Finds all mentions of the trie phrases in a tokenized input text. */
   def findMentions(input : Seq[String]) : Set[LexiconMention] = {
     if (!constructed) {
-      setTransitions()
+      synchronized {
+        setTransitions()
+      }
     }
     val mentions : Set[LexiconMention] = new java.util.HashSet[LexiconMention]()
     var i = 0
@@ -108,7 +115,9 @@ class AhoCorasick(val sep : String) extends Serializable {
   /** Tags a Token's features with a specific tag, if it's context forms a phrase in the trie. */
   def tagMentions(input : Seq[Token], featureFunc : (Token => CategoricalVectorVar[String]), tag : String) : Unit = {
     if (!constructed) {
-      setTransitions()
+      synchronized {
+        setTransitions()
+      }
     }
     var i = 0
     var curNode = root
@@ -141,7 +150,9 @@ class AhoCorasick(val sep : String) extends Serializable {
    */
   def lemmatizeAndTagMentions(input : Seq[Token], featureFunc : (Token => CategoricalVectorVar[String]), tag : String, lemmatizer : Lemmatizer) : Unit = {
     if (!constructed) {
-      setTransitions()
+      synchronized {
+        setTransitions()
+      }
     }
     var i = 0
     var curNode = root
@@ -183,11 +194,13 @@ class AhoCorasick(val sep : String) extends Serializable {
     root.add(input,0)
     constructed = false
   }
-  
+
   /** Calculate the failure transitions. */
   def setTransitions() : Unit = {
-    TrieNode.setFailureTransitions(root)
-    constructed = true
+    if (!constructed) {
+      TrieNode.setFailureTransitions(root)
+      constructed = true
+    }
   }
   
   def size() : Int = { root.getNumPhrases() }
