@@ -1,6 +1,8 @@
 README
 ===
 
+**NOTE**: When you push changes to the site you will get a page build warning email from GitHub along the lines of: "your site's a subdomain, but is set up as an A record. It should be a CNAME to `your-username.github.io`." According to the GitHub support team, this can be safely ignored.
+
 This file describes the process of generating the Factorie website from the markdown files in this directory.
 
 You should only need to do this if you are working on the design of the website and would like to test your work.
