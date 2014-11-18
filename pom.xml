@@ -360,19 +360,29 @@ limitations under the License.
 
         <build>
           <plugins>
-            <plugin>
-              <groupId>net.alchim31.maven</groupId>
-              <artifactId>scala-maven-plugin</artifactId>
-              <version>3.2.0</version>
-              <executions>
-                <execution>
-                  <goals>
-                    <goal>doc</goal>
-                  </goals>
-                  <phase>deploy</phase>
-                </execution>
-              </executions>
-            </plugin>
+        <plugin>
+          <groupId>net.alchim31.maven</groupId>
+          <artifactId>scala-maven-plugin</artifactId>
+          <version>3.2.0</version>
+          <executions>
+            <execution>
+              <goals>
+                <goal>compile</goal>
+                <goal>testCompile</goal>
+                <goal>doc</goal>
+              </goals>
+            </execution>
+          </executions>
+          <configuration>
+            <recompileMode>incremental</recompileMode>
+            <useZincServer>true</useZincServer>
+            <scalaVersion>${scala.majorVersion}${scala.minorVersion}</scalaVersion>
+            <jvmArgs>
+              <jvmArg>-Xms64m</jvmArg>
+              <jvmArg>-Xmx1800m</jvmArg>
+            </jvmArgs>
+          </configuration>
+        </plugin>
 
 
             <plugin>
@@ -427,7 +437,7 @@ limitations under the License.
               <configuration>
                 <serverId>ossrh</serverId>
                 <nexusUrl>https://oss.sonatype.org/</nexusUrl>
-                <autoReleaseAfterClose>false</autoReleaseAfterClose>
+                <autoReleaseAfterClose>true</autoReleaseAfterClose>
               </configuration>
             </plugin>
           </plugins>
