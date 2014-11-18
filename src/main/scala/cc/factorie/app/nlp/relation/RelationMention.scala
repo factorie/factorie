@@ -7,7 +7,7 @@ import scala.collection.mutable
 
 object RelationArgFeaturesDomain extends CategoricalDomain[String]
 
-@deprecated("Marked for Possible Deletion")
+@deprecated("Marked for Possible Deletion", "Before 2014-11-17")
 class ArgFeatures(val arg: Mention, val first: Boolean) extends BinaryFeatureVectorVariable[String] {
   def domain = RelationArgFeaturesDomain
 

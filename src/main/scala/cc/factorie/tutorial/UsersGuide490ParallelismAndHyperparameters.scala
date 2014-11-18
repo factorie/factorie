@@ -193,7 +193,7 @@ object Tutorial90ParallelismAndHyperparameters extends App {
    */
   import scala.concurrent.ExecutionContext.Implicits.global
   import scala.concurrent.future
-  val executor1 = (a: Array[String]) => future { 1.0 }
+  val executor1 = (a: Array[String]) => Future { 1.0 }
   /*&
    * The HyperparameterSearcher polls the futures every once in a while to see when they
    * finish. It doesn't wait for them all to finish, which might never happen in distributed

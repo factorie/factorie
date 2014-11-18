@@ -584,9 +584,3 @@ class Cubbie {
 
 }
 
-
-// Also make a version of this that caches objects as they come out of MongoDB
-@deprecated("Will be removed.")
-class CubbieRefs extends scala.collection.mutable.HashMap[Any, Cubbie]
-
-

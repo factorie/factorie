@@ -66,14 +66,14 @@ object EmbeddingDistance {
 
     while (true) {
       print("Enter word (EXIT to break) : ")
-      var words = readLine.stripLineEnd.toLowerCase.split(' ').map(word => getID(word)).filter(id => id != -1)
+      val words = scala.io.StdIn.readLine().stripLineEnd.toLowerCase.split(' ').map(word => getID(word)).filter(id => id != -1)
       if (words.size == 0) {
         println("words not in vocab")
       } else {
         val embedding_in = new DenseTensor1(D, 0)
         words.foreach(word => embedding_in.+=(weights(word)))
         embedding_in./=(words.size)
-        var pq = new PriorityQueue[(String, Double)]()(dis)
+        val pq = new PriorityQueue[(String, Double)]()(dis)
         for (i <- 0 until vocab.size) if (words.size != 1 || !words(0).equals(vocab(i))) {
           val embedding_out = weights(i)
           val score = TensorUtils.cosineDistance(embedding_in, embedding_out)

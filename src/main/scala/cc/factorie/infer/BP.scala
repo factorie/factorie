@@ -19,9 +19,7 @@ import scala.collection.Set
 import cc.factorie.util.{DoubleSeq, RangeIntSeq, SparseDoubleSeq}
 import scala.collection.mutable
 import cc.factorie.variable._
-import scala.Some
 import cc.factorie.model._
-import scala.Some
 import cc.factorie.maths
 
 trait BPRing {
@@ -589,13 +587,13 @@ object BPUtil {
     val result = new ArrayBuffer[(BPEdge, Boolean)]
     val toProcess = new mutable.Queue[(BPEdge, Boolean)]
     val visitedVariables = new mutable.HashSet[DiscreteVar]
-    root.edges foreach (e => toProcess += Pair(e, true))
+    root.edges foreach (e => toProcess += e -> true)
     while (!toProcess.isEmpty) {
       val (edge, v2f) = toProcess.dequeue()
       if (!checkLoops || !visited(edge)) {
         visited += edge
         visitedVariables += edge.variable
-        result += Pair(edge, v2f)
+        result += edge -> v2f
         val edges =
           if (v2f) edge.bpFactor.edges.filter(_ != edge)
           else {
@@ -603,7 +601,7 @@ object BPUtil {
               edge.bpVariable.edges.filter(_ != edge) 
             else Seq.empty[BPEdge]
           }
-        edges.foreach(ne => toProcess += Pair(ne, !v2f))
+        edges.foreach(ne => toProcess += ne -> !v2f)
       }
     }
     require(varying.forall(visitedVariables.contains), "Treewise BP assumes the graph is connected")
@@ -617,12 +615,12 @@ object BPUtil {
     val visitedVariables = mutable.HashSet[DiscreteVar]()
     while (!varying.forall(visitedVariables.contains)) {
       val root = summary.bpVariable(varying.collectFirst({case v if !visitedVariables.contains(v) => v}).head)
-      root.edges foreach (e => toProcess += Pair(e, true))
+      root.edges foreach (e => toProcess += e -> true)
       while (!toProcess.isEmpty) {
         val (edge, v2f) = toProcess.dequeue()
         if (!visited(edge)) {
           visited += edge
-          result += Pair(edge, v2f)
+          result += edge -> v2f
           visitedVariables += edge.bpVariable.variable
           val edges =
             if (v2f) edge.bpFactor.edges.filter(_ != edge)
@@ -631,7 +629,7 @@ object BPUtil {
                 edge.bpVariable.edges.filter(_ != edge)
               else Seq.empty[BPEdge]
             }
-          edges.foreach(ne => toProcess += Pair(ne, !v2f))
+          edges.foreach(ne => toProcess += ne -> !v2f)
         }
       }
     }

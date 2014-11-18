@@ -188,7 +188,7 @@ abstract class JobQueueExecutor(memory: Int, className: String, cores: Int = 1) 
     val thisId = id
     val as = serializeArgs(args)
     import scala.concurrent.ExecutionContext.Implicits.global
-    future {
+    Future {
       import sys.process._
       val thisPrefix = s"$prefix/job-$thisId"
       val outFile = thisPrefix+"-out"

@@ -241,7 +241,7 @@ object BinarySerializer extends GlobalLogging {
   private def readDoubleArray(s: DataInputStream): Array[Double] = { val arr = new Array[Double](s.readInt()); var i = 0; while (i < arr.length) { arr(i) = s.readDouble(); i += 1 }; arr }
   private def writeDoubleArray(s: DataOutputStream, arr: Array[Double]): Unit = writeDoubleArray(s, arr, arr.length)
   private def writeDoubleArray(s: DataOutputStream, arr: Array[Double], length: Int): Unit = { s.writeInt(length); var i = 0; while (i < length) { s.writeDouble(arr(i)); i += 1 } }
-  private def readIntArray(s: DataInputStream, arr: Array[Int]): Array[Int] = { val length = readInt(); var i = 0; while (i < length) { arr(i) = s.readInt(); i += 1 }; arr }
+  private def readIntArray(s: DataInputStream, arr: Array[Int]): Array[Int] = { val length = scala.io.StdIn.readInt(); var i = 0; while (i < length) { arr(i) = s.readInt(); i += 1 }; arr }
   private def readIntArray(s: DataInputStream): Array[Int] = { val arr = new Array[Int](s.readInt()); var i = 0; while (i < arr.length) { arr(i) = s.readInt(); i += 1 }; arr }
   private def writeIntArray(s: DataOutputStream, arr: Array[Int]): Unit = writeIntArray(s, arr, arr.length)
   private def writeIntArray(s: DataOutputStream, arr: Array[Int], length: Int): Unit = { s.writeInt(length); var i = 0; while (i < length) { s.writeInt(arr(i)); i += 1 } }
