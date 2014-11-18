@@ -39,6 +39,8 @@ If you'd like to add FACTORIE as a dependency in a Maven-manged project, simply 
 <dependencies>
 ```
 
+If you would like a version that is compatible with Scala 2.10 rather than 2.11, simply replace 2.11 with 2.10 above.
+
 ## Checking out Source from GitHub
 
 You can get the latest FACTORIE source code by cloning our repository on Github:
