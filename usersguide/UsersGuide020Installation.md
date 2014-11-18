@@ -19,34 +19,15 @@ There are two ways to use FACTORIE as a library, by directly including the jar i
 
 If you have the FACTORIE source, you can also run `mvn package`, which will generate a jar in the target folder which you can then include in other projects.
 
-If you'd like to add FACTORIE as a dependency in a Maven-manged project, first add the FACTORIE repository in the repositories section of the project's pom.xml:
-
-```xml
-<repositories>
-  ...
-  <repository>
-    <id>IESL Releases</id>
-    <name>IESL Repo</name>
-    <url>https://dev-iesl.cs.umass.edu/nexus/content/groups/public</url>
-    <snapshots>
-      <enabled>false</enabled>
-    </snapshots>
-    <releases>
-      <enabled>true</enabled>
-    </releases>
-  </repository>
-</repositories>
-```
-
-Then add FACTORIE as a dependency in the dependencies section:
+If you'd like to add FACTORIE as a dependency in a Maven-manged project, simply add FACTORIE as a dependency in the dependencies section:
 
 ```xml
 <dependencies>
   ...
   <dependency>
     <groupId>cc.factorie</groupId>
-    <artifactId>factorie</artifactId>
-    <version>1.0.0-RC1</version>
+    <artifactId>factorie_2.11</artifactId>
+    <version>1.1</version>
   </dependency>
 <dependencies>
 ```
@@ -104,31 +85,38 @@ To additionally include all of the pre-trained NLP models, execute the following
 mvn -Dmaven.test.skip=true package -Pnlp-jar-with-dependencies
 ```
 
-To use FACTORIE's pre-trained NLP models in a Maven project, you can add additional dependencies on a per-model basis. For example, to use our pre-trained part-of-speech models, you would add the entry:
-
-```xml
-<dependency>
-  <groupId>cc.factorie.app.nlp</groupId>
-  <artifactId>pos</artifactId>
-  <version>1.0-RC5</version>
-</dependency>
-```
-
-To add support for different models, just change the artifactId accordingly. We provide trained models for part-of-speech tagging (pos), dependency parsing (parse), named-entity recognition (ner), mention finding (mention), and coreference (coref). You may also need to include our lexicons (lexicon), and if you choose to use our state-of-the-art ConllStackedChainNer model for named entity recognition, you will also need to include WordNet data (wordnet).
-
-To include all of the pre-trained models at once, you can add the all-models dependency:
+To use FACTORIE's pre-trained NLP models in a Maven project, you can add the all-models dependency:
 
 ```xml
 <dependency>
   <groupId>cc.factorie.app.nlp</groupId>
   <artifactId>all-models</artifactId>
-  <version>1.0-RC8</version>
+  <version>1.0.0</version>
 </dependency>
+```
+
+You will also need to add our FACTORIE repository in the repositories section of the project's pom.xml:
+
+```xml
+<repositories>
+  ...
+  <repository>
+    <id>IESL Releases</id>
+    <name>IESL Repo</name>
+    <url>https://dev-iesl.cs.umass.edu/nexus/content/groups/public</url>
+    <snapshots>
+      <enabled>false</enabled>
+    </snapshots>
+    <releases>
+      <enabled>true</enabled>
+    </releases>
+  </repository>
+</repositories>
 ```
 
 ## Eclipse and IntelliJ IDEA Setup
 
-To import FACTORIE as a project in Eclipse or IDEA, start by cloning the git repository. 
+To import FACTORIE as a project in Eclipse or IDEA, start by cloning the git repository.
 
 **Eclipse (Kepler):**
 
@@ -166,7 +154,7 @@ To import FACTORIE as a project in Eclipse or IDEA, start by cloning the git rep
 
 9. IDEA should detect that this is a git project and ask if you want to register it as such. If you'd like to manage git version control through IDEA you should say yes.
 
-10. When IDEA asks whether you'd like to enable type-aware highlighting, it is probably best to say yes. 
+10. When IDEA asks whether you'd like to enable type-aware highlighting, it is probably best to say yes.
 
 11. To compile FACTORIE, do Build -> Make Project
 
@@ -185,4 +173,3 @@ Please report specific problems with the installation, bugs in the code, or feat
 We generally follow the Scala style guide suggestions at [http://davetron5000.github.com/scala-style/index.html](http://davetron5000.github.com/scala-style/index.html).
 
 For indentation use two spaces rather than tabs.
-
