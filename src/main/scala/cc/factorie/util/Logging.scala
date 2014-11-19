@@ -74,12 +74,15 @@ object Logger {
   val DEBUG = 90
   val TRACE = 100
 
-  val loggerMap = new scala.collection.mutable.HashMap[String,Logger]
+  // TODO replace with collection.concurrent.TrieMap once getOrElseUpdate is
+  // actually threadsafe (see https://issues.scala-lang.org/browse/SI-7943)
+  val loggerMap = collection.mutable.HashMap[String,Logger]()
   val globalLogger = new Logger("cc.factorie", System.err, INFO)
   val neverLogger = new Logger("null", System.err, Int.MinValue) {
     override def log(theLevel: Int)(x: => Any): Unit = {}
   }
-  def logger(name:String) = loggerMap.getOrElseUpdate(name, new Logger(name, System.err, INFO))
+  // see comment on loggerMap above
+  def logger(name:String) = synchronized{ loggerMap.getOrElseUpdate(name, new Logger(name, System.err, INFO)) }
   def getLogger(name:String) = logger(name) // Alias for similarity to log4j
   def getRootLogger = globalLogger // for similarity to log4j
 
