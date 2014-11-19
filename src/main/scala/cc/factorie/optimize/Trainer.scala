@@ -13,9 +13,7 @@
 package cc.factorie.optimize
 
 import cc.factorie.la._
-import util._
 import cc.factorie._
-import java.util.concurrent.{ExecutorService, Executors, Callable}
 import util._
 import util.FastLogging
 import cc.factorie.model.WeightsSet
