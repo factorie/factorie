@@ -154,7 +154,7 @@ class UnionLexicon(val name: String, val members: PhraseLexicon*) extends Mutabl
 class TriePhraseLexicon(val name: String, val tokenizer: StringSegmenter = cc.factorie.app.strings.nonWhitespaceSegmenter, val lemmatizer: Lemmatizer = LowercaseLemmatizer, val sep: String = " ") extends MutableLexicon {
   val trie = new AhoCorasick(sep)
   
-  def +=(phrase:String): Unit = {
+  def +=(phrase:String): Unit = synchronized {
     val words: Seq[String] = tokenizer(phrase).toSeq
     trie += words.map(lemmatizer.lemmatize(_))
   }
@@ -162,10 +162,10 @@ class TriePhraseLexicon(val name: String, val tokenizer: StringSegmenter = cc.fa
   /** All a lines from the input Source to this lexicon.  Source is assumed to contain multiple newline-separated lexicon entries.
    * Overriden to call setTransitions after reading the file.
    */
-  override def ++=(source:Source): this.type = { for (line <- source.getLines()) { val phrase = line.trim; if (phrase.length > 0) TriePhraseLexicon.this.+=(phrase) }; trie.setTransitions(); source.close(); this }
+  override def ++=(source:Source): this.type = synchronized { for (line <- source.getLines()) { val phrase = line.trim; if (phrase.length > 0) TriePhraseLexicon.this.+=(phrase) }; trie.setTransitions(); source.close(); this }
   
-  def setTransitions() : Unit = { trie.setTransitions() }
-  
+  def setTransitions() : Unit = synchronized { trie.setTransitions() }
+
   /** Checks whether the lexicon contains this already-lemmatized/tokenized single word */
   def containsLemmatizedWord(word: String): Boolean = { containsLemmatizedWords(List(word).toSeq) }
   

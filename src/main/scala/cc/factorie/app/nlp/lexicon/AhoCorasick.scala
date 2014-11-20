@@ -43,9 +43,7 @@ class AhoCorasick(val sep : String) extends Serializable {
    */
   def findExactMention(input : Seq[String]) : Boolean = {
     if (!constructed) {
-      synchronized {
-        setTransitions()
-      }
+      setTransitions()
     }
     var i = 0
     var curNode = root
@@ -75,9 +73,7 @@ class AhoCorasick(val sep : String) extends Serializable {
   /** Finds all mentions of the trie phrases in a tokenized input text. */
   def findMentions(input : Seq[String]) : Set[LexiconMention] = {
     if (!constructed) {
-      synchronized {
-        setTransitions()
-      }
+      setTransitions()
     }
     val mentions : Set[LexiconMention] = new java.util.HashSet[LexiconMention]()
     var i = 0
@@ -115,9 +111,7 @@ class AhoCorasick(val sep : String) extends Serializable {
   /** Tags a Token's features with a specific tag, if it's context forms a phrase in the trie. */
   def tagMentions(input : Seq[Token], featureFunc : (Token => CategoricalVectorVar[String]), tag : String) : Unit = {
     if (!constructed) {
-      synchronized {
-        setTransitions()
-      }
+      setTransitions()
     }
     var i = 0
     var curNode = root
@@ -150,9 +144,7 @@ class AhoCorasick(val sep : String) extends Serializable {
    */
   def lemmatizeAndTagMentions(input : Seq[Token], featureFunc : (Token => CategoricalVectorVar[String]), tag : String, lemmatizer : Lemmatizer) : Unit = {
     if (!constructed) {
-      synchronized {
-        setTransitions()
-      }
+      setTransitions()
     }
     var i = 0
     var curNode = root
@@ -181,7 +173,7 @@ class AhoCorasick(val sep : String) extends Serializable {
   }
   
   /** Adds a Seq of phrases into the current Trie, and fixes the failure transitions. */
-  def ++=(input : Seq[Seq[String]]) : Unit = {
+  def ++=(input : Seq[Seq[String]]) : Unit = synchronized {
     logger.log(Logger.INFO)("Appending to automaton")
     for (e <- input) { root.add(e,0) }
     setTransitions()
@@ -190,13 +182,13 @@ class AhoCorasick(val sep : String) extends Serializable {
   /**
    * Adds a single phrase to the Trie. The failure transitions will be recalculated on the next lookup.
    */
-  def +=(input : Seq[String]) : Unit = {
+  def +=(input : Seq[String]) : Unit = synchronized {
     root.add(input,0)
     constructed = false
   }
 
   /** Calculate the failure transitions. */
-  def setTransitions() : Unit = {
+  def setTransitions() : Unit = synchronized {
     if (!constructed) {
       TrieNode.setFailureTransitions(root)
       constructed = true
