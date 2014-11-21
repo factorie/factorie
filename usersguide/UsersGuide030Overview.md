@@ -14,7 +14,7 @@ and learning methods are built on a small set of common graphical
 model primitives.
 
 ## Introduction to Graphical Models
-  
+
 Graphical models are a formalism in which a graph denotes the
 conditional dependence structure between random variables.  The
 formalism is the marriage between probability theory and graph theory.
@@ -62,7 +62,7 @@ other, edges instead connect variables to factors (which are drawn as
 black squares).  In other words, variables are connected to other
 variables only *through* factors.  The variables connected to a factor
 are called the "neighbors" of the factor. A factor graph is a bipartite
-graph connecting variables and factors. 
+graph connecting variables and factors.
 
 Factor graphs represent a joint distribution over random variables by
 a product of (normalized or unnormalized) non-negative values---one
@@ -118,7 +118,7 @@ FACTORIE is explicitly designed to support independent,
 non-intertwined definitions of
 
 1. data representations with variables,
-2. models (value preferences, distributions, dependencies) with factors, 
+2. models (value preferences, distributions, dependencies) with factors,
 3. inference methods, and
 4. parameter estimation.
 
@@ -289,8 +289,8 @@ are often useful in FACTORIE programs.
 : has value of type A.  In other words, it is a variable whose value is a pointer to a Scala object.
 `EdgeVariable[A,B]`
 : has value of type `Tuple[A,B]`, that is a pair of objects: a "source" of type `A` and a "destination" of type `B`.
-`ArrowVariable[A,B] extends EdgeVar[A,B]
-: like `EdgeVariable` has value of type `Tuple[A,B]`, but only the the "destination" is mutable, while the "source" is immutable.
+`ArrowVariable[A,B] extends EdgeVar[A,B]`
+: like `EdgeVariable` has value of type `Tuple[A,B]`, but only the "destination" is mutable, while the "source" is immutable.
 
 
 
@@ -412,7 +412,7 @@ that generated it, and occurs in the same sequence position).
 
 The standard HMM is "time invariant" (sometimes called "stationary"),
 meaning that the hidden state-transition probabilities and the
-observation-from-state generation probabilities do not dependent on
+observation-from-state generation probabilities do not depend on
 their position in the sequence.  Thus, although each transition needs
 its own factor in the factor graph (because each factor has different
 neighboring variables), each of these factors can share the same
@@ -445,7 +445,7 @@ implementation of numbered "unroll" methods.  For example `Template2`
 implements its `unroll` method in terms of two abstract methods:
 `unroll1` and `unroll2`.  The `unroll1` method takes as input a
 variable with type matching the first neighbor of the factor, and is
-responsible creating and returning a (possibly empty) collection of
+responsible for creating and returning a (possibly empty) collection of
 templated factors that touch this variable---finding the second
 neighbor in each case by traversing some relational structure among
 the variables.  
@@ -701,7 +701,7 @@ is an area of future work.
 
 
 
-### Estimating parameters 
+### Estimating parameters
 
 (To be provided from Luke's text.)
 
@@ -730,5 +730,3 @@ This package is not yet implemented, but will be in the future.
 ### Natural language processing
 
 ### Topic Modeling
-
-
