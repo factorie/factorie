@@ -217,7 +217,7 @@ object Classify {
     // Read instances
     if (opts.readTextDirs.wasInvoked) {
       var numDocs = 0; var numDirs = 0
-      for (directory <- opts.readTextDirs.value.split("\\s+")) {
+      for (directory <- opts.readTextDirs.value.split(",")) {
         val directoryFile = new File(directory)
         if (!directoryFile.exists) throw new IllegalArgumentException("Directory " + directory + " does not exist.")
         for (file <- new File(directory).listFiles; if file.isFile) {
