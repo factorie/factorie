@@ -24,7 +24,7 @@ class Phrase(section:Section, start:Int, length:Int, offsetToHeadToken: Int) ext
   def this(span:TokenSpan, headTokenIndex:Int = -1) = this(span.section, span.start, span.length, headTokenIndex)
   
   assert(offsetToHeadToken == -1 || offsetToHeadToken >= 0 && offsetToHeadToken < length, "Offset from beginning of span, headTokenOffset="+offsetToHeadToken+", but span only has length "+length)
-  val headTokenOffset = if (offsetToHeadToken == -1) HeadTokenOffset(this) else offsetToHeadToken
+  lazy val headTokenOffset = if (offsetToHeadToken == -1) HeadTokenOffset(this) else offsetToHeadToken
   
   def headToken: Token = this.apply(headTokenOffset)
   
@@ -60,7 +60,7 @@ object HeadTokenOffset {
     // If there is a parse, then traverse up the tree until just before we exit the Span
     val parse = sentence.parse
     if (parse ne null) {
-      var headSentenceIndex = span.end-1 - sentence.start
+      var headSentenceIndex = math.min(span.end, sentence.end)-1 - sentence.start
       var parentSentenceIndex = parse.parentIndex(headSentenceIndex)
       while (span.contains(parentSentenceIndex + sentence.start)) {
         headSentenceIndex = parentSentenceIndex

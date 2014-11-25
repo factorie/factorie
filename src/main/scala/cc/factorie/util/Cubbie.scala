@@ -16,6 +16,7 @@ package cc.factorie.util
 import collection.mutable
 import util.parsing.json.JSON
 import cc.factorie.la.Tensor
+import java.nio.{DoubleBuffer, ByteBuffer}
 
 /**
  * A Cubbie provides typed access to an underlying Map data-structure. This map can come
@@ -93,7 +94,7 @@ class Cubbie {
    * @return a default map to be used as underyling map.
    */
   def _newDefaultMap: MapType = new scala.collection.mutable.HashMap[String, Any]
-
+  
   /**
    * Prints out the underlying map
    * @return a string representation of the underyling map.
@@ -379,10 +380,7 @@ class Cubbie {
    */
   trait PrimitiveSlot[T] extends Slot[T] {
     def value: T = _map(name).asInstanceOf[T]
-
-    def :=(value: T) {
-      _map.update(name, value)
-    }
+    def :=(value: T): Unit = _map.update(name, value)
   }
 
   case class IntSlot(name: String) extends PrimitiveSlot[Int] {
@@ -410,7 +408,12 @@ class Cubbie {
   case class DateSlot(name: String) extends PrimitiveSlot[java.util.Date]
   // TODO We need other primitive types supported in BSON
 
+  // Note: This is not supported by cc.factorie.db.mongo.MongoCubbieCollection
   case class TensorSlot(name: String) extends PrimitiveSlot[Tensor]
+
+  // These are specially handled in cc.factorie.db.mongo.MongoCubbieCollection
+  case class IntSeqSlot(name:String) extends PrimitiveSlot[IntSeq]
+  case class DoubleSeqSlot(name:String) extends PrimitiveSlot[DoubleSeq]
 
 
   /** This allows any type to be stored in a slot.  But note that BSON and JSON only support the above restricted set of types.
@@ -456,6 +459,8 @@ class Cubbie {
   case class StringListSlot(name: String) extends PrimitiveListSlot[String]
 
   case class TensorListSlot(name: String) extends PrimitiveListSlot[Tensor]
+
+
   /**
    * A slot that contains a list of cubbies.
    * @param name the name of the slot.
@@ -579,12 +584,6 @@ class Cubbie {
 
 }
 
-object JSonTest {
-  def main(args: Array[String]) {
-    val json = JSON.parseFull("")
-
-  }
-}
 
 // Also make a version of this that caches objects as they come out of MongoDB
 @deprecated("Will be removed.")

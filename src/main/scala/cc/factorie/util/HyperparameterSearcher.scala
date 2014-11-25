@@ -14,7 +14,6 @@ package cc.factorie.util
 
 import scala.util.Random
 import scala.concurrent._
-import akka.actor._
 import java.text.SimpleDateFormat
 import java.io.{FileOutputStream, OutputStreamWriter}
 import cc.factorie.variable.Proportions
@@ -177,28 +176,12 @@ class JobDistributor(cmds: CmdOptions,
                              parameters: Seq[DistributorParameter[_]],
                              executor: Array[String] => Future[Double],
                              secondsToSleep: Int = 60) {
-//  private def sampledParameters(rng: Random): Array[String] = {
-//    parameters.foreach(_.set(rng))
-//    cmds.values.flatMap(_.unParse).toArray
-//  }
-
   // the contract is that distribute will also set the appropriate values in cmds
   def distribute: Int = {
     val numParams = parameters.head.numSettings
     assert(parameters.map(_.numSettings).filterNot(_ == numParams).isEmpty, "All parameter lists must be of the same length")
 
-//    val settings = (0 until numParams).map(i => {parameters.foreach{ case(cmdStr, vals) => {
-    //      if(cmds.get(cmdStr).isDefined){
-    //        val cmd = cmds.get(cmdStr).get
-    ////        cmd.setValue(vals(i).asInstanceOf[cmd.m.erasure.getClass])
-    ////        cmd.setValue(vals(i).asInstanceOf[cmd.value.type])
-    //        cmd.setValue(vals(i).asInstanceOf[cmd.valueClass])
-    //      }
-    //    }}; cmds.values.flatMap(_.unParse).toArray})
-
-//    val settings = (0 until numParams).map(i => {parameters.foreach{ case(cmd, vals) => cmd.setValue(vals(i))}; cmds.values.flatMap(_.unParse).toArray})
     val settings = (0 until numParams).map(i => {parameters.foreach(_.set); cmds.values.flatMap(_.unParse).toArray})
-
 
     println("Starting job distributor")
     val futures = settings.map(s => (s,executor(s)))
@@ -246,7 +229,7 @@ trait Executor {
  * @param memory How many gigabytes of RAM to use.
  * @param className The class which will be run.
  */
-abstract class JobQueueExecutor(memory: Int, className: String, logPrefix: String = "hyper-search") extends Executor {
+abstract class JobQueueExecutor(memory: Int, className: String, cores: Int = 1, logPrefix: String = "hyper-search") extends Executor {
   /**
    * Runs a job in the queue
    * @param script the file name of the shell script to be run
@@ -295,9 +278,9 @@ abstract class JobQueueExecutor(memory: Int, className: String, logPrefix: Strin
  * @param memory How many gigabytes of RAM to use.
  * @param className The class which will be run.
  */
-class QSubExecutor(memory: Int, className: String, logPrefix: String = "hyper-search") extends JobQueueExecutor(memory, className, logPrefix) {
+class QSubExecutor(memory: Int, className: String, cores: Int = 1, logPrefix: String = "hyper-search") extends JobQueueExecutor(memory, className, cores, logPrefix) {
   import sys.process._
-  def runJob(script: String, logFile: String) { s"qsub -sync y -l mem_token=${memory}G -cwd -j y -o $logFile -S /bin/sh $script".!! }
+  def runJob(script: String, logFile: String) { s"qsub -pe blake $cores -sync y -l mem_token=${memory}G -cwd -j y -o $logFile -S /bin/sh $script".!! }
 }
 
 /**
@@ -326,85 +309,5 @@ object QSubExecutor {
     resFile.write("END OF RESULTS\n")
     resFile.close()
     println(s"Done, file ${opts.outFile.value} written")
-  }
-}
-
-/**
- * An Executor which runs jobs from a pool of machines via ssh. It assumes
- * that private keys are properly set up.
- *
- * Each machine will cd into the specified directory and start a JVM which
- * will run the function evaluateParameters in the class whose name is passed.
- *
- * @param user The username
- * @param machines The list of machines on which to ssh
- * @param directory The directory to "cd" in each machine
- * @param className The class whose main function the slaves will run. Needs to be
- *                  an instance of HyperparameterMain
- * @param memory How much memory to give each slave JVM, in gigabytes
- * @param timeoutMinutes The timeout for the SSH commands
- */
-class SSHActorExecutor(user: String,
-                       machines: Seq[String],
-                       directory: String,
-                       className: String,
-                       memory: Int,
-                       timeoutMinutes: Int,
-                       logPrefix: String = "hyper-search") extends Executor {
-  import com.typesafe.config.ConfigFactory
-  val customConf = ConfigFactory.parseString("my-balanced-dispatcher { type = BalancingDispatcher }")
-  val system = ActorSystem("ssh", customConf)
-  val actors = (0 until machines.length).map(i =>
-    system.actorOf(Props(new SSHActor(machines(i), i)).withDispatcher("my-balanced-dispatcher"), "actor-"+i))
-  case class ExecuteJob(args: String, jobId: Int)
-  import akka.pattern.ask
-  var job = 0
-  def execute(args: Array[String]): Future[Double] = {
-    job += 1
-    import scala.concurrent.duration._
-    actors.head.ask(ExecuteJob(serializeArgs(args), job))(timeoutMinutes.minutes) mapTo manifest[Double] fallbackTo Future.successful(Double.NegativeInfinity)
-  }
-  def shutdown() { system.shutdown() }
-  val date = new SimpleDateFormat("yyyy-MM-dd-HH-mm-ss").format(new java.util.Date())
-  val log = s"$logPrefix-$date/"
-  println(s"Writing log files to $log")
-  class SSHActor(machine: String, i: Int) extends Actor {
-    def receive = {
-      case ExecuteJob(args, j) =>
-        val logFile = log+"ssh-job-"+j+".log"
-        new java.io.File(logFile).getParentFile.mkdirs()
-        val jvmCommand = s"java -Xmx${memory}g -classpath '$classpath' cc.factorie.util.SSHExecutor --className=$className  '--classArgs=$args'"
-        val inSSh = s"cd $directory; $jvmCommand"
-        val userMachine = user + "@" + machine
-        val sshCommand = s"ssh $userMachine  $inSSh 2> $logFile.stderr"
-        import sys.process._
-        (sshCommand #> new java.io.File(logFile)).!
-        val doubleStr = s"tail -n 1 $logFile".!!
-        val ret = {
-          if(!doubleStr.matches("""/-?(?:0|[1-9]\d*)(?:\.\d*)?(?:[eE][+\-]?\d+)?/""")) Double.NegativeInfinity
-          else doubleStr.toDouble
-        }
-        sender ! ret
-    }
-  }
-}
-
-/**
- * Slave job created by the SSHActorExecutor
- */
-object SSHExecutor {
-  object opts extends CmdOptions {
-    val className = new CmdOption("className", "", "STRING", "Class to run")
-    val classArgs = new CmdOption("classArgs", "", "STRING", "Arguments to pass it")
-  }
-  def main(args: Array[String]) {
-    opts.parse(args)
-    val cls = Class.forName(opts.className.value)
-    val mainMethod = cls.getMethods.filter(_.getName == "actualMain").head
-    val argsArray = opts.classArgs.value.split("::").toArray
-    println("Using args \n" + argsArray.mkString("\n"))
-    val result = mainMethod.invoke(null, argsArray).asInstanceOf[BoxedDouble].d
-    println("----- END OF JOB -----")
-    println(result)
   }
 }

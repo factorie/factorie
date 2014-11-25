@@ -12,7 +12,6 @@
    limitations under the License. */
 
 package cc.factorie.app.nlp
-import cc.factorie._
 import scala.collection.mutable.ArrayBuffer
 import scala.collection.mutable
 import cc.factorie.util.{Cubbie, Attr}
@@ -121,16 +120,17 @@ class Document extends DocumentSubstring with Attr with UniqueId {
   // Managing sections.  These are the canonical Sections, but alternative Sections can be attached as Attr's.
   /** A predefined Section that covers the entirety of the Document string, and even grows as the length of this Document may grow.
       If the user does not explicitly add Sections to the document, this Section is the only one returned by the "sections" method. */
-  val asSection: Section = new Section { def document: Document = Document.this; def stringStart = 0; def stringEnd = document.stringEnd }
-  private var _sections: mutable.Buffer[Section] = new ArrayBuffer[Section]
+  lazy val asSection: Section = new Section { def document: Document = Document.this; def stringStart = 0; def stringEnd = document.stringEnd }
+  private lazy val _sections: mutable.Buffer[Section] = new ArrayBuffer[Section] += asSection
   /** The canonical list of Sections containing the tokens of the document.  
       The user may create and add Sections covering various substrings within the Document.
       If the user does not explicitly add any Sections, by default there will be one Section that covers the entire Document string;
       this one Section is the one returned by "Document.asSection".
       Note that Sections may overlap with each other, representing alternative tokenizations or annotations. */
-  def sections: Seq[Section] = if (_sections.length == 0) Seq(asSection) else _sections
-  /** Add a new Section to this Document's canonical list of Sections. */
-  def +=(s: Section) = _sections += s
+  def sections: Seq[Section] = _sections // if (_sections.length == 0) Seq(asSection) else _sections
+  /** Add a new Section to this Document's canonical list of Sections.  
+      If the only previously existing Section is the default (asSection), then remove it before adding the argument. */
+  def +=(s: Section) = { if (_sections.length == 1 && _sections(0) == asSection) _sections.clear(); _sections += s }
   /** Remove a Section from this Document's canonical list of Sections. */
   def -=(s: Section) = _sections -= s
   /** Remove all Section from this Document's canonical list of Sections. */
@@ -141,16 +141,11 @@ class Document extends DocumentSubstring with Attr with UniqueId {
   def tokens: Iterable[Token] = if (sections.length == 1) sections.head.tokens else new Iterable[Token] { def iterator = for (section <- sections.iterator; token <- section.tokens.iterator) yield token }
   /** Return an Iterable collection of all Sentences in all canonical Sections of this Document. */
   def sentences: Iterable[Sentence] = if (sections.length == 1) sections.head.sentences else new Iterable[Sentence] { def iterator = for (section <- sections.iterator; sentence <- section.sentences.iterator) yield sentence }
-  // Spans no longer have a canonical storage location in a Document
-  //def spans: Iterator[TokenSpan] = for (section <- sections.iterator; span <- section.spans.iterator) yield span
-  //def spans: Iterable[TokenSpan] = if (sections.length == 1) sections.head.spans else new Iterable[TokenSpan] { def iterator = for (section <- sections.iterator; span <- section.spans.iterator) yield span }
   
   /** An efficient way to get the total number of Tokens in the canonical Sections of this Document. */
   def tokenCount: Int = if (sections.length == 0) sections.head.length else sections.foldLeft(0)((result, section) => result + section.length)
   /** An efficient way to get the total number of Sentences in the canonical Sections of this Document. */
   def sentenceCount: Int = if (sections.length == 0) sections.head.sentences.length else sections.foldLeft(0)((result, section) => result + section.sentences.length)
-  ///** An efficient way to get the total number of Spans (not including Sentences) in the canonical Sections of this Document. */
-  //def spanCount: Int = if (sections.length == 0) sections.head.spans.length else sections.foldLeft(0)((result, section) => result + section.spans.length)
     
   /** The collection of DocumentAnnotators that have been run on this Document,
       For keeping records of which DocumentAnnotators have been run on this document, producing which annotations.  
@@ -158,7 +153,7 @@ class Document extends DocumentSubstring with Attr with UniqueId {
       for example from classOf[cc.factorie.app.nlp.pos.PennPos] to classOf[cc.factorie.app.nlp.pos.ChainPosTagger].
       Note that this map records annotations placed not just on the Document itself, but also its constituents,
       such as NounPhraseNumberLabel on NounPhrase, PennPos on Token, ParseTree on Sentence, etc. */
-  val annotators = new collection.mutable.LinkedHashMap[Class[_], Class[_]]
+  lazy val annotators = new collection.mutable.LinkedHashMap[Class[_], Class[_]]
   /** Return true if an annotation of class 'c' been placed somewhere within this Document. */
   def hasAnnotation(c:Class[_]): Boolean = annotators.keys.exists(k => c.isAssignableFrom(k))
   /** Optionally return the DocumentAnnotator that produced the annotation of class 'c' within this Document. */
@@ -214,11 +209,10 @@ class Document extends DocumentSubstring with Attr with UniqueId {
     case annotator:DocumentAnnotator => owplString(Seq(annotator.tokenAnnotationString(_)))
   }
 
+  /** Return the Section that contains the pair of string offsets into the document. */
   def getSectionByOffsets(strStart:Int, strEnd:Int):Option[Section] =
     this.sections.map(sec => (sec.stringStart, sec.stringEnd, sec)).sortBy(_._1)
       .find{case(start, end, _) => start <= strStart && end >= strEnd}.map(_._3)
-
-
 }
 
 /** Used as an attribute on Document to hold the document's name. */
@@ -232,44 +226,43 @@ case class DocumentName(string:String) {
 
 /** A Cubbie for serializing a Document, with separate slots for the Tokens, Sentences, and TokenSpans. 
     Note that it does not yet serialize Sections, and relies on Document.asSection being the only Section. */
-class DocumentCubbie[TC<:TokenCubbie,SC<:SentenceCubbie,TSC<:TokenSpanCubbie](val tc:()=>TC, val sc:()=>SC, val tsc:()=>TSC) extends Cubbie with AttrCubbieSlots {
-  val name = StringSlot("name")
-  val string = StringSlot("string")  
-  val tokens = CubbieListSlot("tokens", tc)
-  val sentences = CubbieListSlot("sentences", sc)
-  val spans = CubbieListSlot("spans", tsc)
-  def storeDocument(doc:Document): this.type = {
-    name := doc.name
-    string := doc.string
-    if (doc.asSection.length > 0) tokens := doc.tokens.toSeq.map(t => tokens.constructor().storeToken(t))
-//    if (doc.spans.length > 0) spans := doc.spans.map(s => spans.constructor().store(s))
-    if (doc.asSection.sentences.length > 0) sentences := doc.sentences.toSeq.map(s => sentences.constructor().storeSentence(s))
-    storeAttr(doc)
-    this
-  }
-  def fetchDocument: Document = {
-    val doc = new Document(string.value).setName(name.value)
-    if (tokens.value ne null) tokens.value.foreach(tc => doc.asSection += tc.fetchToken)
-    //if (spans.value ne null) spans.value.foreach(sc => doc += sc.fetch(doc))
-    if (sentences.value ne null) sentences.value.foreach(sc =>  sc.fetchSentence(doc.asSection))
-    fetchAttr(doc)
-    doc
-  }
-}
+//class DocumentCubbie[TC<:TokenCubbie,SC<:SentenceCubbie,TSC<:TokenSpanCubbie](val tc:()=>TC, val sc:()=>SC, val tsc:()=>TSC) extends Cubbie with AttrCubbieSlots {
+//  val name = StringSlot("name")
+//  val string = StringSlot("string")  
+//  val tokens = CubbieListSlot("tokens", tc)
+//  val sentences = CubbieListSlot("sentences", sc)
+//  val spans = CubbieListSlot("spans", tsc)
+//  def storeDocument(doc:Document): this.type = {
+//    name := doc.name
+//    string := doc.string
+//    if (doc.asSection.length > 0) tokens := doc.tokens.toSeq.map(t => tokens.constructor().storeToken(t))
+////    if (doc.spans.length > 0) spans := doc.spans.map(s => spans.constructor().store(s))
+//    if (doc.asSection.sentences.length > 0) sentences := doc.sentences.toSeq.map(s => sentences.constructor().storeSentence(s))
+//    storeAttr(doc)
+//    this
+//  }
+//  def fetchDocument: Document = {
+//    val doc = new Document(string.value).setName(name.value)
+//    if (tokens.value ne null) tokens.value.foreach(tc => doc.asSection += tc.fetchToken)
+//    //if (spans.value ne null) spans.value.foreach(sc => doc += sc.fetch(doc))
+//    if (sentences.value ne null) sentences.value.foreach(sc =>  sc.fetchSentence(doc.asSection))
+//    fetchAttr(doc)
+//    doc
+//  }
+//}
 
 // TODO Consider moving this to file util/Attr.scala
-trait AttrCubbieSlots extends Cubbie {
-  val storeHooks = new cc.factorie.util.Hooks1[Attr]
-  val fetchHooks = new cc.factorie.util.Hooks1[AnyRef]
-  def storeAttr(a:Attr): this.type = { storeHooks(a); this }
-  def fetchAttr(a:Attr): Attr = { fetchHooks(a); a }
-}
-
-trait DateAttrCubbieSlot extends AttrCubbieSlots {
-  val date = DateSlot("date")
-  storeHooks += ((a:Attr) => date := a.attr[java.util.Date])
-  //fetchHooks += ((a:Attr) => a.attr += date.value)
-  fetchHooks += { case a:Attr => a.attr += date.value }
-}
-
+//trait AttrCubbieSlots extends Cubbie {
+//  val storeHooks = new cc.factorie.util.Hooks1[Attr]
+//  val fetchHooks = new cc.factorie.util.Hooks1[AnyRef]
+//  def storeAttr(a:Attr): this.type = { storeHooks(a); this }
+//  def fetchAttr(a:Attr): Attr = { fetchHooks(a); a }
+//}
+//
+//trait DateAttrCubbieSlot extends AttrCubbieSlots {
+//  val date = DateSlot("date")
+//  storeHooks += ((a:Attr) => date := a.attr[java.util.Date])
+//  //fetchHooks += ((a:Attr) => a.attr += date.value)
+//  fetchHooks += { case a:Attr => a.attr += date.value }
+//}
 

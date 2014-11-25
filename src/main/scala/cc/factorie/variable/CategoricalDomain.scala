@@ -58,7 +58,7 @@ class CategoricalDomain[C] extends DiscreteDomain(0) with IndexedSeq[Categorical
   type Value <: variable.CategoricalValue[C]
   def this(values:Iterable[C]) = { this(); values.foreach(value(_)); freeze() }
 
-  private val __indices: mutable.Map[C, Value] = JavaHashMap[C, Value]()
+  private val __indices: java.util.HashMap[C,Value] = new java.util.HashMap[C,Value]
   def _indices = __indices
   private val lock = new util.RWLock
   /** If positive, throw error if size tries to grow larger than it.  Use for growable multi-dim Factor weightsSet;
@@ -74,22 +74,18 @@ class CategoricalDomain[C] extends DiscreteDomain(0) with IndexedSeq[Categorical
       This method is thread-safe so that multiple threads may read and index data simultaneously. */
   def value(category: C): Value = {
     if (category == null) throw new Error("Null is not a valid category.")
-    if (_frozen)_indices.getOrElse(category, null.asInstanceOf[Value])
-    else {
+    if (_frozen) {
+      __indices.get(category)
+    } else {
       lock.withReadLock {
-        var thisIndex = null.asInstanceOf[Value]
-        val indexOpt = _indices.get(category)
-        if (indexOpt.isDefined)
-          thisIndex = indexOpt.get
-        else { // double-tap locking necessary to ensure only one thread adds to _indices
+        var thisIndex = __indices.get(category)
+        if (thisIndex eq null) { // double-tap locking necessary to ensure only one thread adds to _indices
           lock.readUnlock()
           lock.writeLock()
           try {
-            val indexOpt = _indices.get(category)
-            if (indexOpt.isDefined)
-              thisIndex = indexOpt.get
-            else {
-              val m = _elements.size
+            thisIndex = __indices.get(category)
+            if (thisIndex eq null) {
+              val m = _elements.length
               if (maxSize > 0 && m >= maxSize) {
                 if (growPastMaxSize)
                   throw new Error("Index size exceeded maxSize")
@@ -99,9 +95,10 @@ class CategoricalDomain[C] extends DiscreteDomain(0) with IndexedSeq[Categorical
                   return null.asInstanceOf[Value]
                 }
               }
+              // TODO Consider calling "new String(category)" here to avoid substring memory leak: http://stackoverflow.com/questions/15612157/substring-method-in-string-class-causes-memory-leak 
               val e: Value = newCategoricalValue(m, category).asInstanceOf[Value]
               _elements += e
-              _indices(category) = e
+              __indices.put(category, e)
               thisIndex = e
             }
           } finally {
@@ -109,7 +106,6 @@ class CategoricalDomain[C] extends DiscreteDomain(0) with IndexedSeq[Categorical
             lock.readLock()
           }
         }
-        //_indices.getOrElse(category, null)
         thisIndex
       }
     }
@@ -133,16 +129,30 @@ class CategoricalDomain[C] extends DiscreteDomain(0) with IndexedSeq[Categorical
     if (gatherCounts && i != -1) incrementCount(i)
     i
   }
+  /** Return the integer associated with the category, 
+      and also (whether or not 'gatherCounts' is true') 
+      increment by 'count' the number of times this Domain says the category has been seen.
+      If the category is not already in this CategoricalDomain and 'frozen' is false,
+      and 'mazSize' will not be exceeded,
+      then add the category to this CategoricalDomain.
+      This method is thread-safe so that multiple threads may read and index data simultaneously. */
+  def indexWithCount(category:C, count:Int): Int = {
+    val i = indexOnly(category)
+    this synchronized { _increment(i, count) }
+    i
+  }
   /** Like index, but throw an exception if the category is not already there. */
-  def getIndex(category:C): Int = lock.withReadLock({ _indices.getOrElse(category, throw new Error("Category not present; use index() to cause the creation of a new value.")).intValue})
+  def getIndex(category:C): Int = lock.withReadLock({
+    (if(_indices.containsKey(category)) _indices.get(category) else throw new Error("Category not present; use index() to cause the creation of a new value.")).intValue
+  })
   override def freeze(): Unit = {
     _frozen = true
   }
 
   def +=(x:C) : Unit = this.value(x)
   def ++=(xs:Traversable[C]) : Unit = xs.foreach(this.index(_))
-  /** Wipe the domain and its indices clean */
-  def clear(): Unit = { _frozen = false; _elements.clear(); lock.withWriteLock { _indices.clear() } }
+  /** Wipe the domain, its elements, indices and counts clean */
+  def clear(): Unit = { _frozen = false; _elements.clear(); lock.withWriteLock { _indices.clear(); _clear() } }
   // Separate argument types preserves return collection type
   def indexAll(c: Iterator[C]) = c map index
   def indexAll(c: List[C]) = c map index
@@ -164,20 +174,34 @@ class CategoricalDomain[C] extends DiscreteDomain(0) with IndexedSeq[Categorical
   def count(i:Int): Int = _apply(i)
   def count(category:C): Int = _apply(indexOnly(category))
   def counts: cc.factorie.util.IntSeq = _takeAsIntSeq(length) // _toSeq.take(length)
-  def countsTotal: Int = _sum
+  private var cachedCountsTotal: Long = -1
+  def countsTotal: Long =
+    if (frozen && cachedCountsTotal >= 0)
+      cachedCountsTotal
+    else {
+      var total: Long = 0
+      var i = 0
+      val len = _length
+      while (i < len) {
+        total += _apply(i)
+        i += 1
+      }
+      cachedCountsTotal = total
+      total
+    }
   def incrementCount(i:Int): Unit = this synchronized { _increment(i, 1) }
   def incrementCount(category:C): Unit = incrementCount(indexOnly(category))
   private def someCountsGathered: Boolean = { var i = 0; while (i < _length) { if (_apply(i) > 0) return true; i += 1 }; false }
   /** Returns the number of unique entries trimmed */
-  def trimBelowCount(threshold:Int): Int = {
+  def trimBelowCount(threshold:Int, preserveCounts:Boolean = false): Int = {
     assert(!frozen)
     if (!someCountsGathered) throw new Error("Can't trim without first gathering any counts.")
     val origEntries = _elements.clone()
-    clear()
+    val origCounts = _toArray
+    clear() // This will also clear the counts
     gatherCounts = false
-    for (i <- 0 until origEntries.size)
-      if (_apply(i) >= threshold) indexOnly(origEntries(i).category.asInstanceOf[C])
-    _clear() // We don't need counts any more; allow it to be garbage collected.
+    if (preserveCounts) { for (i <- 0 until origEntries.size) if (origCounts(i) >= threshold) indexWithCount(origEntries(i).category.asInstanceOf[C], origCounts(i)) }
+    else { for (i <- 0 until origEntries.size) if (origCounts(i) >= threshold) indexOnly(origEntries(i).category.asInstanceOf[C]) }
     freeze()
     origEntries.size - size
   }

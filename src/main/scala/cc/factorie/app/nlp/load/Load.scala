@@ -18,6 +18,7 @@ import cc.factorie.app.nlp._
     such as plain text files, labeled data from Ontonotes, etc. 
     @author Andrew McCallum */
 trait Load {
+  // TODO Consider making this Iterator[Document] instead of Seq[Document]; then LoadWikipediaPlainText could inherit this. -akm
   def fromSource(source:io.Source): Seq[Document]
   def fromString(string:String): Seq[Document] = fromSource(io.Source.fromString(string))
   def fromStream(stream:java.io.InputStream, encoding:String = "UTF-8"): Seq[Document] = fromSource(io.Source.fromInputStream(stream, encoding))

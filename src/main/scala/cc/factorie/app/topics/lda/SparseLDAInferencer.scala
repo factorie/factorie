@@ -102,7 +102,7 @@ class SparseLDAInferencer(
   def exportThetas(docs:Iterable[Doc]): Unit = {
     for (doc <- docs) {
       val theta = doc.theta
-      theta.value.zero()
+      theta.value.masses.zero()
       for (dv <- doc.zs.discreteValues) theta.value.masses.+=(dv.intValue, 1.0)
     }
   }

@@ -18,6 +18,12 @@ object WordVec {
     opts.parse(args)
     println("Default Charset of this JVM=" + Charset.defaultCharset());
     println("User Provided Charset for this project=" + opts.encoding.value)
+    
+    if (opts.explore.wasInvoked) {
+      EmbeddingDistance.run(opts)
+      return
+    }
+    
     val wordEmbedding = if (opts.cbow.value == true) new CBOWNegSamplingEmbeddingModel(opts) else new SkipGramNegSamplingEmbeddingModel(opts)
     val st1 = System.currentTimeMillis()
     wordEmbedding.buildVocab()

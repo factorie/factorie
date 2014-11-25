@@ -30,6 +30,10 @@ import cc.factorie.variable.{StringVariable, ChainLink, CategoricalValue}
     @param stringEnd The offset into the Document string of the character immediately after the last character of the Token. */
 class Token(val stringStart:Int, val stringEnd:Int) extends cc.factorie.app.chain.Observation[Token] with ChainLink[Token,Section] with DocumentSubstring with Attr {
   assert(stringStart <= stringEnd)
+//  override def _setChainPosition(c:Section, p:Int): Unit = {
+//    super._setChainPosition(c, p)
+//    assert(stringStart < section.stringEnd && stringStart >= section.stringStart && stringEnd <= section.stringEnd)
+//  }
   /** Create a Token and also append it to the list of Tokens in the Section.
       There must not already be Tokens in the document with higher stringStart indices.
       Note that the start and end indices are character offsets into the Document string, not the Section string.
@@ -89,7 +93,7 @@ class Token(val stringStart:Int, val stringEnd:Int) extends cc.factorie.app.chai
   lazy val fileStringEnd = stringEnd + document.startOffset
 
   // Common attributes, will return null if not present
-  def posTag = attr[cc.factorie.app.nlp.pos.PennPosTag]
+  def posTag = attr[cc.factorie.app.nlp.pos.PennPosTag] // Should we return the abstract PosTag here instead? -akm
   def nerTag = attr[cc.factorie.app.nlp.ner.NerTag]
   def lemma = attr[cc.factorie.app.nlp.lemma.TokenLemma]
   // Parse attributes, will throw exception if parse is not present

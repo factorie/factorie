@@ -13,8 +13,13 @@
 
 package cc.factorie.app.nlp
 import cc.factorie.app.nlp.phrase.Phrase
-import cc.factorie.util.Threading
+import cc.factorie.util.{Cubbie, Threading}
 import cc.factorie.app.nlp.coref.Mention
+import scala.reflect.ClassTag
+import cc.factorie.app.nlp.pos.PennPosTag
+import java.util.Date
+import scala.util.Random
+import cc.factorie.variable.DiffList
 
 trait DocumentAnnotator {
   def process(document: Document): Document  // NOTE: this method may mutate and return the same document that was passed in

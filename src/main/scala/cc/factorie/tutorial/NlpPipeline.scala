@@ -15,8 +15,16 @@ package cc.factorie.tutorial
 object NlpPipeline extends App {
   import cc.factorie._
   import cc.factorie.app.nlp._
-  val doc = new Document("Education is the most powerful weapon which you can use to change the world.")
-  DocumentAnnotatorPipeline(pos.OntonotesForwardPosTagger).process(doc)
+  var doc = new Document("Education is the most powerful weapon which you can use to change the world.")
+  val annotator = DocumentAnnotatorPipeline(pos.OntonotesForwardPosTagger, parse.WSJTransitionBasedParser)
+  annotator.process(doc)
   for (token <- doc.tokens)
-    println("%-10s %-5s".format(token.string, token.posTag.categoryValue))
+    println("%-10s %-5s %-4d %-7s".format(token.string, token.posTag.categoryValue, token.parseParentIndex, token.parseLabel.categoryValue))
+    
+    
+  for (line <- scala.io.Source.stdin.getLines()) {
+    doc = new Document(line)
+    for (token <- doc.tokens)
+      println("%-10s %-5s %-7s".format(token.string, token.posTag.categoryValue, token.nerTag.categoryValue))
+  }
 }

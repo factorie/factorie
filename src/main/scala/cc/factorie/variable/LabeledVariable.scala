@@ -166,7 +166,7 @@ trait CategoricalLabeling[C] extends CategoricalVariable[C] with LabeledMutableC
 /** A mutable categorical variable that has a true, target "labeled" value, separate from its current value.
     The only abstract method is "domain".    
     @author Andrew McCallum */
-abstract class LabeledCategoricalVariable[C](targetCategory:C) extends CategoricalVariable(targetCategory) with CategoricalLabeling[C]
+abstract class LabeledCategoricalVariable[C](targetCategory:C) extends CategoricalVariable[C](targetCategory) with CategoricalLabeling[C]
 
 
 // For Booleans

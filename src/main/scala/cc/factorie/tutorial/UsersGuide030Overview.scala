@@ -226,28 +226,17 @@ if `v1` has integer values, we can set the value of `v1` to 3 by `v1
 
 The following is a selection of FACTORIE's most widely-used variable classes.
 
-`IntegerVariable`
-: has value with Scala type Int.
-`DoubleVariable`
-: has value with Scala type Double.
-`TensorVariable`
-: has value of type Tensor, which is defined in the FACTORIE linear algebra package `cc.factorie.la`.  This variable class makes no restrictions on the dimensionality of the tensor, nor the lengths of its dimensions.
-`VectorVariable`
-: has value of type Tensor1, which is a one-dimensional Tensor (also traditionally called a "vector").  In addition each `VectorVariable` is associated with a `DiscreteDomain` (further described below) whose size matches the length of the variable's vector value.
-`DiscreteVariable extends VectorVar`
-: has a value among N possible values, each of type `DiscreteValue`, and each associated with an integer 0 through N-1.  This `DiscreteValue` inherits from `Tensor1` and can also be interpreted as a "one-hot" vector with value 1.0 in one position and 0.0 everywhere else.  Given a `DiscreteValue dv1` its integer value can be obtained by `dv1.intValue`.  The length of the vector (in other words, the value of N) can be obtained by `dv1.length`.
-`CategoricalVariable[A] extends DiscreteVar`
-: has value among N possible values, each of type `CategoricalValue[A]` (which inherits from `DiscreteValue`), each associated with an integer 0 through N-1, and also associated with a "category" (often of type String).  These variables are often used for representing class labels and words, when a mapping from String category names to integer indices is desirable for efficiency (such as indexing into an array of parameters).  Given a `CategoricalValue[String] cv1` its integer value can be obtained by `cv1.intValue` and its categorical (String) value can be obtained by `cv1.categoryValue`.  Its value may be set with an integer: `cv1 := 2` or set by category string: `cv1 := "sports"`.  (The mapping between Strings and integers is stored in a `CategoricalDomain`, which is described below.)
-`CategoricalVectorVariable[A] extends VectorVar`
-: has value of type Tensor1, which is a one-dimensional Tensor.  In addition each `CategoricalVectorVariable` is associated with a `CategoricalDomain[A]`, which stores a mapping between values of type A (e.g. `String`) and integers.  Thus each position in the vector is associated with a category.  This variable type is useful for storing bag-of-words counts, for example.
-`BooleanVariable extends CategoricalVar[Boolean]`
-: has one of two possible values, each of type `BooleanValue` (which inherits from CategoricalValue[Boolean]), one of which is associated with integer 0 and boolean value false, the other of which is associated with integer value 1 and boolean value true.  Given a `BooleanValue bv1` its integer value can be obtained by `bv1.intValue` and its boolean value can be obtained by `bv1.booleanValue`.
-`MassesVariable extends TensorVar`
-: has value `Masses`, which are Tensors constrained to contain non-negative values.  `Masses` are useful as the parameters of Dirichlet distributions.
-`ProportionsVariable extends MassesVar`
-: has value `Proportions`, which are `Masses` constrained to sum to 1.0.  `Proportions` are useful as the parameters of discrete or multinomial distributions.
-`RealVariable extends VectorVar`
-: has a single real scalar value, stored in an object of type `RealValue` (which inherits from Tensor1).  This variable is similar to `DoubleValue` in that it stores a scalar value, however since its value type inherits from Tensor1, it can be used in dot products.
+* `IntegerVariable` has value with Scala type Int.
+*`DoubleVariable` has value with Scala type Double.
+*`TensorVariable` has value of type Tensor, which is defined in the FACTORIE linear algebra package `cc.factorie.la`.  This variable class makes no restrictions on the dimensionality of the tensor, nor the lengths of its dimensions.
+* `VectorVariable` has value of type Tensor1, which is a one-dimensional Tensor (also traditionally called a "vector").  In addition each `VectorVariable` is associated with a `DiscreteDomain` (further described below) whose size matches the length of the variable's vector value.
+* `DiscreteVariable extends VectorVar` has a value among N possible values, each of type `DiscreteValue`, and each associated with an integer 0 through N-1.  This `DiscreteValue` inherits from `Tensor1` and can also be interpreted as a "one-hot" vector with value 1.0 in one position and 0.0 everywhere else.  Given a `DiscreteValue dv1` its integer value can be obtained by `dv1.intValue`.  The length of the vector (in other words, the value of N) can be obtained by `dv1.length`.
+* `CategoricalVariable[A] extends DiscreteVar` has value among N possible values, each of type `CategoricalValue[A]` (which inherits from `DiscreteValue`), each associated with an integer 0 through N-1, and also associated with a "category" (often of type String).  These variables are often used for representing class labels and words, when a mapping from String category names to integer indices is desirable for efficiency (such as indexing into an array of parameters).  Given a `CategoricalValue[String] cv1` its integer value can be obtained by `cv1.intValue` and its categorical (String) value can be obtained by `cv1.categoryValue`.  Its value may be set with an integer: `cv1 := 2` or set by category string: `cv1 := "sports"`.  (The mapping between Strings and integers is stored in a `CategoricalDomain`, which is described below.)
+* `CategoricalVectorVariable[A] extends VectorVar` has value of type Tensor1, which is a one-dimensional Tensor.  In addition each `CategoricalVectorVariable` is associated with a `CategoricalDomain[A]`, which stores a mapping between values of type A (e.g. `String`) and integers.  Thus each position in the vector is associated with a category.  This variable type is useful for storing bag-of-words counts, for example.
+* `BooleanVariable extends CategoricalVar[Boolean]` has one of two possible values, each of type `BooleanValue` (which inherits from CategoricalValue[Boolean]), one of which is associated with integer 0 and boolean value false, the other of which is associated with integer value 1 and boolean value true.  Given a `BooleanValue bv1` its integer value can be obtained by `bv1.intValue` and its boolean value can be obtained by `bv1.booleanValue`.
+* `MassesVariable extends TensorVar` has value `Masses`, which are Tensors constrained to contain non-negative values.  `Masses` are useful as the parameters of Dirichlet distributions.
+* `ProportionsVariable extends MassesVar` has value `Proportions`, which are `Masses` constrained to sum to 1.0.  `Proportions` are useful as the parameters of discrete or multinomial distributions.
+* `RealVariable extends VectorVar` has a single real scalar value, stored in an object of type `RealValue` (which inherits from Tensor1).  This variable is similar to `DoubleVariable` in that it stores a scalar value, however since its value type inherits from Tensor1, it can be used in dot products.
 
 All of the above variable classes have constructors in which their
 initial value may be set.  For example, `new IntegerVariable(3)` will

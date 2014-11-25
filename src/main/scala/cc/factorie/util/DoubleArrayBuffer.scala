@@ -209,4 +209,5 @@ class DoubleArrayBuffer extends ProtectedDoubleArrayBuffer with DenseDoubleSeq {
   def +=:(i:Double): Unit = _prepend(i)
   def insert(index:Int, elt:Double): Unit = _insert(index, elt)
   override def toSeq = _toSeq
+  override def _array = super[ProtectedDoubleArrayBuffer]._array
 }

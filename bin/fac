@@ -6,6 +6,10 @@ factoriedir=`dirname $factoriedir`
 
 cp=$factoriedir/src/main/resources:$factoriedir/target/classes
 
+## The following hack will enable jline command-line editing in bin/fac --inter.
+## We need to find a better permanent solution, however. -akm
+#cp=$cp:$HOME/.m2/repository/org/scala-lang/jline/2.10.4/jline-2.10.4.jar
+
 # Look for a sibling directory containing 'factorie-nlp-resources'
 #echo factoriedir $factoriedir
 factorienlpdir=$factoriedir/../factorie-nlp-resources
@@ -14,8 +18,8 @@ if [ -e $factorienlpdir ] ; then
   cp=$cp:$factorienlpdir/src/main/resources:$factorienlpdir/target/classes
 fi 
 
-factoriejar=$factoriedir/target/factorie-1.0-SNAPSHOT-jar-with-dependencies.jar
-factorienlpjar=$factoriedir/target/factorie-1.0-SNAPSHOT-nlp-jar-with-dependencies.jar
+factoriejar=$factoriedir/target/factorie-1.1-SNAPSHOT-jar-with-dependencies.jar
+factorienlpjar=$factoriedir/target/factorie-1.1-SNAPSHOT-nlp-jar-with-dependencies.jar
 
 if [ -e $factorienlpjar ] ; then
   cp=$cp:$factorienlpjar
@@ -41,7 +45,7 @@ FACTORIE commands:
 
   nlp                run NLP server listening on a socket (pos, ner, parse, coref,... available)
   lda                train and use a latent Dirichlet allocation model
-  word2vec           learn word embeddings using Skip-Gram and Continuous Bag-Of-Words (CBOW) models
+  wordvec           learn word embeddings using Skip-Gram and Continuous Bag-Of-Words (CBOW) models
 
 Include --help with any option for more information
 EOF
@@ -52,11 +56,13 @@ CLASS=
 case $CMD in
 	nlp) CLASS=cc.factorie.app.nlp.NLP;;
 	lda) CLASS=cc.factorie.app.topics.lda.LDA;;
-	word2vec) CLASS=cc.factorie.app.nlp.embeddings.WordVec;;
+	wordvec) CLASS=cc.factorie.app.nlp.embeddings.WordVec;;
 	classify) CLASS=cc.factorie.app.classify.Classify;;
 	inter) CLASS=cc.factorie.util.Interpreter;;
+        inter2) CLASS='scala.tools.nsc.MainGenericRunner -usejavacp';;
 	run) CLASS=$1; shift;;
 	*) echo "Unrecognized command: $CMD"; help; exit 1;;
 esac
 
+echo $JAVA_COMMAND
 $JAVA_COMMAND $CLASS $*

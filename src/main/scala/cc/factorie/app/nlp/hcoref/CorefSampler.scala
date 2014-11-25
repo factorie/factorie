@@ -12,7 +12,7 @@
    limitations under the License. */
 package cc.factorie.app.nlp.hcoref
 
-import cc.factorie.infer.SettingsSampler
+import cc.factorie.infer.{Proposal, SettingsSampler}
 import scala.util.Random
 import cc.factorie.util.Hooks1
 import scala.reflect.ClassTag
@@ -23,16 +23,49 @@ import scala.reflect.ClassTag
  */
 abstract class CorefSampler[Vars <: NodeVariables[Vars]](override val model:CorefModel[Vars], val mentions:Iterable[Node[Vars]], val iterations:Int)(implicit override val random:Random, val varsTag:ClassTag[Vars])
   extends SettingsSampler[(Node[Vars], Node[Vars])](model) {
-  this: PairContextGenerator[Vars] with MoveGenerator[Vars] =>
+  this: PairGenerator[Vars] with MoveGenerator[Vars] =>
 
   this.temperature = 0.001
 
   val beforeInferHooks = new Hooks1[Unit]
   protected def beforeInferHook = beforeInferHooks()
+  val afterInferHooks = new Hooks1[Unit]
+  protected def afterInferHook = afterInferHooks()
 
   def infer {
     beforeInferHook
-    processAll(contexts)
+    contexts foreach process
+    afterInferHook
   }
 
+}
+
+trait AutoStoppingSampler[Vars <: NodeVariables[Vars]] extends CorefSampler[Vars] {
+  this: PairGenerator[Vars] with MoveGenerator[Vars] =>
+
+  def autoStopThreshold:Int
+
+  private var runOfEmptyProposals = 0
+
+
+  override def processProposals(props: Seq[Proposal[(Node[Vars], Node[Vars])]]) = {
+    if(props.size == 1) { // a proposal of size one is 'empty' because NoMove is always a valid choice
+      runOfEmptyProposals += 1
+    } else {
+      runOfEmptyProposals = 0
+    }
+    super.processProposals(props)
+  }
+
+  override def infer = {
+    beforeInferHook
+    var step = 0
+
+    while (step < iterations && runOfEmptyProposals < autoStopThreshold) {
+      process(nextContext)
+      step += 1
+    }
+    println("Stopping automatically after %d steps".format(step))
+    afterInferHook
+  }
 }

@@ -17,25 +17,25 @@ import cc.factorie.db.mongo.MongoCubbieImplicits._
 import scala.collection.mutable
 import com.mongodb.DB
 import scala.reflect.ClassTag
-import cc.factorie.util.Cubbie
-import cc.factorie.variable.{Var, BagOfWordsVariable}
+import cc.factorie.util.{ArrayDoubleSeq, Cubbie}
+import cc.factorie.variable.{DenseDoubleBagVariable, Var, BagOfWordsVariable}
 
 /**
  * User: escher
  * Date: 11/2/13
  */
-trait NodeCollection[Vars <: NodeVariables[Vars], N <: Node[Vars]] {
+trait NodeCollection[Vars <: NodeVariables[Vars]] {
+  type N = Node[Vars]
   def +=(n :N)                       :Unit
   def ++=(es:Iterable[N])            :Unit
   def drop()                         :Unit
   def store(nodesToStore:Iterable[N]):Unit
   def nextBatch(n:Int=10)            :Seq[N]
   def loadAll                        :Seq[N]
-  //  def loadByIds(ids:Seq[String])     :Seq[N]
 }
 
 class BOWCubbie extends Cubbie{
-  val nodeId = RefSlot[NodeCubbie[_,_]]("nid",()=>null.asInstanceOf[NodeCubbie[_,_]])  //todo understand how this null works
+  val nodeId = RefSlot[NodeCubbie[_]]("nid",()=>null.asInstanceOf[NodeCubbie[_]])  //todo understand how this null works
   val word   = StringSlot("w")
   val count  = DoubleSlot("c")
   def fetch = this.word -> this.count
@@ -47,10 +47,26 @@ class BOWCubbie extends Cubbie{
   }
 }
 
-trait DBNodeCollection[Vars <: NodeVariables[Vars], N <: Node[Vars] with Persistence, NC<:NodeCubbie[Vars, N]] extends NodeCollection[Vars, N]{
+class DenseArrayCubbie extends Cubbie {
+  val nodeId = RefSlot[NodeCubbie[_]]("nid",()=>null.asInstanceOf[NodeCubbie[_]])  //todo understand how this null works
+  val arr = DoubleSeqSlot("a")
+  def fetch = this.arr
+  def store(id:String, arr:Array[Double]) = {
+    nodeId := id
+    this.arr := new ArrayDoubleSeq(arr)
+    this
+  }
+}
+
+trait DBNodeCollection[Vars <: NodeVariables[Vars]] extends NodeCollection[Vars]{
+  type NC = NodeCubbie[Vars]
   protected val _id2cubbie = mutable.HashMap[String,NC]()
   protected def newNodeCubbie :NC
-  protected def newNode(v:Vars, nc:NC) :N
+  protected def newNode(v:Vars, nc:NC) = if(nc.isMention.value) {
+    nc.newMention(v, nc.id.toString)
+  } else {
+    nc.newNode(v, nc.id.toString)
+  }
   protected def cubbify(n:N) = {val nc = newNodeCubbie; nc.store(n); nc}
   protected def nodeCubbieColl :MutableCubbieCollection[NC]
   def += (n:N){ insert(n) }
@@ -60,14 +76,14 @@ trait DBNodeCollection[Vars <: NodeVariables[Vars], N <: Node[Vars] with Persist
   def insert(ns:Iterable[N]) { nodeCubbieColl ++= ns.map(cubbify) }
   def drop:Unit
   def store(nodesToStore:Iterable[N]) {
-    val (created, others) = nodesToStore.partition(n => !n.wasDeleted && !n.wasLoadedFromDb)
+    val (created, others) = nodesToStore.partition(n => n.exists && !n.loadedFromDb)
     nodeCubbieColl ++= created.map(cubbify)
     for(node <- others){
-      if(node.wasDeleted){
-        nodeCubbieColl.remove(_.idIs(node.id))
+      if(!node.exists){
+        nodeCubbieColl.remove(_.idIs(node.uniqueId))
       }
       else {
-        nodeCubbieColl.updateDelta(_id2cubbie(node.id),cubbify(node))
+        nodeCubbieColl.updateDelta(_id2cubbie(node.uniqueId),cubbify(node))
       }
     }
   }
@@ -75,7 +91,7 @@ trait DBNodeCollection[Vars <: NodeVariables[Vars], N <: Node[Vars] with Persist
   def assembleNodes(toAssemble:Seq[N], node2ParentId: Map[N, String], id2Node:Map[String, N]) {
 
     def assembleHelper(n:N) {
-      if(!n.parent.isDefined && node2ParentId.isDefinedAt(n)) {
+      if(!n.getParent.isDefined && node2ParentId.isDefinedAt(n)) {
         val parent = id2Node(node2ParentId(n))
         n.alterParent(Some(parent))(null)
         assembleHelper(parent)
@@ -90,25 +106,33 @@ trait DBNodeCollection[Vars <: NodeVariables[Vars], N <: Node[Vars] with Persist
 
 }
 
-abstract class MongoNodeCollection[Vars <: NodeVariables[Vars], N <: Node[Vars] with Persistence,
-NC<:NodeCubbie[Vars, N]](val names:Seq[String], mongoDB:DB)(implicit ct: ClassTag[Vars]) extends DBNodeCollection[Vars, N, NC]{
-  val numBags = ct.runtimeClass.getDeclaredFields.count(_.getType.getName.endsWith("BagOfWordsVariable"))
-  assert(names.size == numBags+1, "Insufficient collection names : "+numBags+1+"<"+names.size)
-  protected val colls = names.map(mongoDB.getCollection)
+abstract class MongoNodeCollection[Vars <: NodeVariables[Vars]](val bagNames:Seq[String], val arrayNames:Seq[String], mongoDB:DB)(implicit ct: ClassTag[Vars]) extends DBNodeCollection[Vars]{
+  val numBags = ct.runtimeClass.getDeclaredFields.count(_.getType.getName.endsWith("BagOfWordsVariable")) -1
+  assert(bagNames.size == numBags+1, "Insufficient bag of words collection names : "+numBags+1+"<"+bagNames.size)
+  val numArrays = ct.runtimeClass.getDeclaredFields.count(_.getType.getName.endsWith("DenseDoubleBagVarable"))
+  assert(arrayNames.size == numArrays, "Insufficient dense collection names : "+numArrays+"<"+bagNames.size)
+  protected val colls = bagNames.map(mongoDB.getCollection)
   val nodeCubbieColl = new MongoCubbieCollection[NC](colls(0),() => newNodeCubbie,(a:NC) => Seq(Seq(a.parentRef))) with LazyCubbieConverter[NC]
   val varsCubbieColls = colls.tail.map(coll => new MongoCubbieCollection(coll,() => newBOWCubbie,(a:BOWCubbie) => Seq(Seq(a.nodeId))) with LazyCubbieConverter[BOWCubbie])
+  val denseCubbieColls = arrayNames.map{ arrName =>
+    new MongoCubbieCollection(mongoDB.getCollection(arrName),() => newDenseCubbie, (a:DenseArrayCubbie) => Seq(Seq(a.nodeId))) with LazyCubbieConverter[DenseArrayCubbie]
+  }
 
   def drop: Unit = ???
 
   def nextBatch(n: Int): Seq[N] = ???
 
   override def += (n:N){
-    var index = 1
+    var bowIdx = 1
+    var arrIdx = 0
     for(v <- n.variables.getVariables){
       v match {
         case bow:BagOfWordsVariable =>
-          varsCubbieColls(index) ++= cubbifyBOW(n.id, bow)
-          index+=1
+          varsCubbieColls(bowIdx) ++= cubbifyBOW(n.uniqueId, bow)
+          bowIdx+=1
+        case arr:DenseDoubleBagVariable =>
+          denseCubbieColls(arrIdx) += new DenseArrayCubbie().store(n.uniqueId, arr.value)
+          arrIdx += 1
         case _ => println("can't cubbify this type")
       }
     }
@@ -140,7 +164,7 @@ NC<:NodeCubbie[Vars, N]](val names:Seq[String], mongoDB:DB)(implicit ct: ClassTa
     val nodes =
       for(nc <- nodeCubbieColl.toSeq) yield {
         _id2cubbie += nc.id.toString -> nc
-        val vars = varsCubbieColls.map(coll => {
+        val bowVars = varsCubbieColls.map(coll => {
           val it = coll.findByAttribute("bid",Seq(nc.id))
           val bag = new BagOfWordsVariable
           for(b <- it){
@@ -148,7 +172,15 @@ NC<:NodeCubbie[Vars, N]](val names:Seq[String], mongoDB:DB)(implicit ct: ClassTa
           }
           bag
         })
-        val v = newNodeVars(getTitleFromWikiURL(nc.wikiUrl.value), vars:_*)
+        val arrVars = denseCubbieColls.flatMap{ coll => //todo check that this is correct
+           coll.findByAttribute("bid", Seq(nc.id)).map{cub =>
+            val arr = cub.arr.value.asArray
+            val denseVar = new DenseDoubleBagVariable(arr.length)
+            denseVar.set(arr)(null)
+            denseVar
+          }
+        }
+        val v = newNodeVars(getTitleFromWikiURL(nc.wikiUrl.value), (bowVars ++ arrVars):_*)
         val n = newNode(v,nc)
         id2Node += nc.id.toString -> n
         if(nc.parentRef.isDefined){
@@ -173,7 +205,8 @@ NC<:NodeCubbie[Vars, N]](val names:Seq[String], mongoDB:DB)(implicit ct: ClassTa
   //    }
   //  }
 
-  protected def newBOWCubbie : BOWCubbie
+  protected def newBOWCubbie  = new BOWCubbie()
+  protected def newDenseCubbie = new DenseArrayCubbie()
 
   protected def newNodeVars[V <: Var](truth: String, vars: V*) : Vars
 }
