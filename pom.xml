@@ -345,102 +345,126 @@ limitations under the License.
         </build>
       </profile>
       <profile>
-        <id>sonatype-release</id>
-
-        <distributionManagement>
-          <snapshotRepository>
-            <id>ossrh</id>
-            <url>https://oss.sonatype.org/content/repositories/snapshots</url>
-          </snapshotRepository>
-          <repository>
-            <id>ossrh</id>
-            <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
-          </repository>
-        </distributionManagement>
-
+        <id>coverage-check</id>
         <build>
           <plugins>
-        <plugin>
-          <groupId>net.alchim31.maven</groupId>
-          <artifactId>scala-maven-plugin</artifactId>
-          <version>3.2.0</version>
-          <executions>
-            <execution>
-              <goals>
-                <goal>compile</goal>
-                <goal>testCompile</goal>
-                <goal>doc</goal>
-              </goals>
-            </execution>
-          </executions>
-          <configuration>
-            <recompileMode>incremental</recompileMode>
-            <useZincServer>true</useZincServer>
-            <scalaVersion>${scala.majorVersion}${scala.minorVersion}</scalaVersion>
-            <jvmArgs>
-              <jvmArg>-Xms64m</jvmArg>
-              <jvmArg>-Xmx1800m</jvmArg>
-            </jvmArgs>
-          </configuration>
-        </plugin>
-
-
             <plugin>
-              <groupId>org.apache.maven.plugins</groupId>
-              <artifactId>maven-source-plugin</artifactId>
-              <version>2.2.1</version>
-              <executions>
-                <execution>
-                  <id>attach-sources</id>
-                  <phase>package</phase>
-                  <goals>
-                    <goal>jar-no-fork</goal>
-                  </goals>
-                </execution>
-              </executions>
-            </plugin>
-
-            <plugin>
-              <groupId>org.apache.maven.plugins</groupId>
-              <artifactId>maven-javadoc-plugin</artifactId>
-              <version>2.9.1</version>
-              <executions>
-                <execution>
-                  <id>attach-javadocs</id>
-                  <goals>
-                    <goal>jar</goal>
-                  </goals>
-                </execution>
-              </executions>
-            </plugin>
-
-            <plugin>
-              <groupId>org.apache.maven.plugins</groupId>
-              <artifactId>maven-gpg-plugin</artifactId>
-              <version>1.5</version>
-              <executions>
-                <execution>
-                  <id>sign-artifacts</id>
-                  <phase>verify</phase>
-                  <goals>
-                    <goal>sign</goal>
-                  </goals>
-                </execution>
-              </executions>
-            </plugin>
-
-            <plugin>
-              <groupId>org.sonatype.plugins</groupId>
-              <artifactId>nexus-staging-maven-plugin</artifactId>
-              <version>1.6.3</version>
-              <extensions>true</extensions>
+              <groupId>org.scoverage</groupId>
+              <artifactId>scoverage-maven-plugin</artifactId>
+              <version>1.0.0</version>
               <configuration>
-                <serverId>ossrh</serverId>
-                <nexusUrl>https://oss.sonatype.org/</nexusUrl>
-                <autoReleaseAfterClose>true</autoReleaseAfterClose>
+                <scalaVersion>${scala.majorVersion}${scala.minorVersion}</scalaVersion>
+              <!--   <minimumCoverage>80</minimumCoverage> -->
+              <!--   <failOnMinimumCoverage>true</failOnMinimumCoverage> -->
               </configuration>
+              <executions>
+                <execution>
+                  <goals>
+                    <goal>check</goal>
+                  </goals>
+                </execution>
+              </executions>
             </plugin>
           </plugins>
+        </build>
+      </profile>
+        <profile>
+          <id>sonatype-release</id>
+
+          <distributionManagement>
+            <snapshotRepository>
+              <id>ossrh</id>
+              <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+            </snapshotRepository>
+            <repository>
+              <id>ossrh</id>
+              <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
+            </repository>
+          </distributionManagement>
+
+          <build>
+            <plugins>
+              <plugin>
+                <groupId>net.alchim31.maven</groupId>
+                <artifactId>scala-maven-plugin</artifactId>
+                <version>3.2.0</version>
+                <executions>
+                  <execution>
+                    <goals>
+                      <goal>compile</goal>
+                      <goal>testCompile</goal>
+                      <goal>doc</goal>
+                    </goals>
+                  </execution>
+                </executions>
+                <configuration>
+                  <recompileMode>incremental</recompileMode>
+                  <useZincServer>true</useZincServer>
+                  <scalaVersion>${scala.majorVersion}${scala.minorVersion}</scalaVersion>
+                  <jvmArgs>
+                    <jvmArg>-Xms64m</jvmArg>
+                    <jvmArg>-Xmx1800m</jvmArg>
+                  </jvmArgs>
+                </configuration>
+              </plugin>
+
+
+              <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-source-plugin</artifactId>
+                <version>2.2.1</version>
+                <executions>
+                  <execution>
+                    <id>attach-sources</id>
+                    <phase>package</phase>
+                    <goals>
+                      <goal>jar-no-fork</goal>
+                    </goals>
+                  </execution>
+                </executions>
+              </plugin>
+
+              <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-javadoc-plugin</artifactId>
+                <version>2.9.1</version>
+                <executions>
+                  <execution>
+                    <id>attach-javadocs</id>
+                    <goals>
+                      <goal>jar</goal>
+                    </goals>
+                  </execution>
+                </executions>
+              </plugin>
+
+              <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-gpg-plugin</artifactId>
+                <version>1.5</version>
+                <executions>
+                  <execution>
+                    <id>sign-artifacts</id>
+                    <phase>verify</phase>
+                    <goals>
+                      <goal>sign</goal>
+                    </goals>
+                  </execution>
+                </executions>
+              </plugin>
+
+              <plugin>
+                <groupId>org.sonatype.plugins</groupId>
+                <artifactId>nexus-staging-maven-plugin</artifactId>
+                <version>1.6.3</version>
+                <extensions>true</extensions>
+                <configuration>
+                  <serverId>ossrh</serverId>
+                  <nexusUrl>https://oss.sonatype.org/</nexusUrl>
+                  <autoReleaseAfterClose>true</autoReleaseAfterClose>
+                </configuration>
+              </plugin>
+            </plugins>
         </build>
       </profile>
     </profiles>
