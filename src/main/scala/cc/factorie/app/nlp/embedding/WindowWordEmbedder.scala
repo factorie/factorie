@@ -21,7 +21,7 @@ class WindowWordEmbedderOptions extends cc.factorie.util.CmdOptions {
   val normalizeX = new CmdOption("normalize-x", false, "BOOL", "If true, normalize input context by the number of context words in the training example.")
   val vocabulary = new CmdOption("vocabulary", "vocabulary.txt", "FILE", "Filename in which to find the words, one per line, each preceded by its count.")
   val negative = new CmdOption("negative", 3, "INT", "The number of NCE negative examples to use for each positive example.")
-  val maxWikiPages = new CmdOption("max-wiki-pages", Int.MaxValue, "INT", "Read no more than this number of Wikipedia pages.  Default is Int.MaxValue.")
+  val maxWikiPages = new CmdOption("max-wiki-pages", Long.MaxValue, "LONG", "Read no more than this number of Wikipedia pages.  Default is Int.MaxValue.")
   val separateIO = new CmdOption("separate-io", false, "BOOLEAN", "If TRUE, parameterize input embeddings (U) separately from output embeddings (V).  Default is FALSE.")
   val checkGradient = new CmdOption("check-gradient", false, "BOOLEAN", "If TRUE, test the value/gradient calculation for every parameter for every example after the first 50000 example.  (Slow.)  Default is FALSE.")
   val outputExamples = new CmdOption("output-examples", "examples.txt.gz", "FILE", "Save the training targets/contexts in this file, one per line.")
