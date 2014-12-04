@@ -71,7 +71,7 @@ class BagOfWords(initialWords: Iterable[String] = null, initialBag: Map[String, 
       _l1Norm -= w
       _l2Norm += w * w - 2.0 * this(s) * w
       //if(w!=1.0)println("  remove: "+w)
-      if (withinEpsilon(w, _bag(s))) _bag.remove(s)
+      if (_bag.contains(s) && withinEpsilon(w, _bag(s))) _bag.remove(s)
       else _bag(s) = _bag.getOrElse(s, 0.0) - w
     }
   }
