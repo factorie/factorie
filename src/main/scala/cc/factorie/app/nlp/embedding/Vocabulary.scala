@@ -18,7 +18,7 @@ import scala.util.Random
 class VocabularyOptions extends cc.factorie.util.CmdOptions {
   val minCount = new CmdOption("min-count", 200, "INT", "Words with count smaller than this will be discarded.  Default is 200.")
   val skipProb = new CmdOption("skip-prob", 0.0, "DOUBLE", "The probabilty that each word string will be skipped in the indexing and counting.  Helps efficiently cull words occurring ~1 times.")
-  val maxWikiPages = new CmdOption("max-wiki-pages", Int.MaxValue, "INT", "Read no more than this number of Wikipedia pages.  Default is unlimited.")
+  val maxWikiPages = new CmdOption("max-wiki-pages", Long.MaxValue, "LONG", "Read no more than this number of Wikipedia pages.  Default is unlimited.")
   val input = new CmdOption("input", List("enwiki-latest-pages-articles.xml.bz2"), "TXTFILE", "Text files from which to read training data.  Works with *.txt.gz and Wikipedia enwiki*.xmlgz2.")
 }
 
@@ -99,13 +99,12 @@ object Vocabulary {
           }
         }
       }
-      case name if name.startsWith("enwiki") && name.endsWith(".xml.bz2") => {
+      case name if name.startsWith("enwiki") && name.endsWith(".xml.bz2") =>
         val docIterator = cc.factorie.app.nlp.load.LoadWikipediaPlainText.fromCompressedFile(file, opts.maxWikiPages.value)
         new Iterator[String] {
           def hasNext: Boolean = docIterator.hasNext
-          def next(): String = { wikipediaArticleCount += 1; val doc = docIterator.next; /*println(doc.name);*/ doc.string }
+          def next(): String = { wikipediaArticleCount += 1; val doc = docIterator.next(); /*println(doc.name);*/ doc.string }
         }
-      }
       // bz2 compress wikipedia XML
       case name if name.startsWith("deprecated enwiki") && name.endsWith(".xml.bz2") => {
         val input = new CompressorStreamFactory().createCompressorInputStream(CompressorStreamFactory.BZIP2, new FileInputStream(file))
