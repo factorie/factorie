@@ -123,6 +123,15 @@ class CmdOptions {
       case None =>
     }
   }
+
+  /** Writes options from this instance into another instance of opts of a different type. */
+  def writeInto[Opts <: CmdOptions](other:Opts):Opts = {
+    other.opts ++= other.opts.keySet.intersect(this.opts.keySet).map { key =>
+      key -> this.opts(key)
+    }
+    other
+  }
+
   /*object CmdOption {
     def apply[T](name:String, defaultValue:T, valueName:String, helpMsg:String)(implicit m:Manifest[T]): CmdOption[T] =
       new CmdOption[T](name, defaultValue, valueName, helpMsg)
