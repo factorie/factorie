@@ -37,6 +37,7 @@ package object factorie extends CubbieConversions {
   implicit class IntPairExtras(val x:(Int, Int)) {
     def overlapsWith(y:(Int, Int)):Boolean = (x._1 >= y._1 && x._1 <= y._2) || (x._2 >= y._1 && x._2 <= y._2)
   }
+
   implicit class StringListExtras(s:Iterable[String]) {
     def toCountBag:Map[String, Double] = s.groupBy(identity).mapValues(_.size.toDouble)
   }

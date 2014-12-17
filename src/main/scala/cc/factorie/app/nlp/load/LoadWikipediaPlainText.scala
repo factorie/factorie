@@ -28,21 +28,21 @@ import scala.xml.{XML,Text,Elem}
     If the regex specifies a group (via parenthesis) then the Document's name will be set to the match of the contents of this first group. */
 class LoadWikipediaPlainText {
   /** This assumes that the file has format of enwiki-latest-pages-articles.xml.bz2. */
-  def fromCompressedFilename(filename:String, maxArticleCount:Int = Int.MaxValue): Iterator[Document] = {
+  def fromCompressedFilename(filename: String, maxArticleCount: Long): Iterator[Document] = {
     //require(filename.startsWith("enwiki") && filename.endsWith(".xml.bz2"))
     val inputStream = new CompressorStreamFactory().createCompressorInputStream(CompressorStreamFactory.BZIP2, new FileInputStream(filename))
-    fromInputStream(inputStream)
+    fromInputStream(inputStream, maxArticleCount)
   }
   /** This assumes that the file has format of enwiki-latest-pages-articles.xml.bz2. */
-  def fromCompressedFile(file:File, maxArticleCount:Int = Int.MaxValue): Iterator[Document] = {
+  def fromCompressedFile(file: File, maxArticleCount: Long): Iterator[Document] = {
     val inputStream = new CompressorStreamFactory().createCompressorInputStream(CompressorStreamFactory.BZIP2, new FileInputStream(file))
-    fromInputStream(inputStream)
+    fromInputStream(inputStream, maxArticleCount)
   }
   
   // An io.Source version of this just keeps growing until it runs out of memory, as if io.Source were keeping the entire contents in memory.
   // So we make an InputStream version of this method.
   
-  def fromInputStream(input:InputStream, maxArticleCount:Int = Int.MaxValue): Iterator[Document] = {
+  def fromInputStream(input: InputStream, maxArticleCount: Long): Iterator[Document] = {
     new Iterator[Document] {
       val bufferedReader = new BufferedReader(new InputStreamReader(input))
       var bufferedReaderDone = false
@@ -57,6 +57,7 @@ class LoadWikipediaPlainText {
         result
       }
       // Try to fetch one document, but if there is no text in this article, return null
+      // TODO: remove talk pages! -luke
       private def getNextDocument1: Document = {
         val nonBracket = "[^\\[\\]]*"
         val cleaningRegex = ("(?s)" + (List( // Make "." match also match newline
@@ -103,7 +104,7 @@ class LoadWikipediaPlainText {
         new Document(text).setName(title)
       }
       def hasNext: Boolean = articleCount < maxArticleCount && (nextDocument ne null)
-      def next: Document = {
+      def next(): Document = {
         val result = nextDocument
         nextDocument = getNextDocument
         result

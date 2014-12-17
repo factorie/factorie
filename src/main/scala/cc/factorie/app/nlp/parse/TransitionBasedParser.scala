@@ -229,7 +229,12 @@ class TransitionBasedParser extends DocumentAnnotator {
     trainFromVariables(generateDecisions(ss, ParserConstants.BOOSTING, nThreads), trainer, evaluate)
 
   // For DocumentAnnotator trait
-  def process(doc: Document) = { doc.sentences.foreach(process); doc }
+  def process(doc: Document) = {
+    doc.sentences.foreach(process)
+    if (!doc.annotators.contains(classOf[ParseTree]))
+      doc.annotators(classOf[ParseTree]) = this.getClass
+    doc
+  }
   def prereqAttrs = Seq(classOf[Sentence], classOf[PennPosTag], classOf[lemma.WordNetTokenLemma]) // Sentence also includes Token
   def postAttrs = Seq(classOf[ParseTree])
   override def tokenAnnotationString(token:Token): String = {

@@ -26,6 +26,7 @@ abstract class NerTag(val token:Token, initialCategory:String) extends Categoric
    def baseCategoryValue: String = if (categoryValue.length > 1 && categoryValue(1) == '-') categoryValue.substring(2) else categoryValue
  }
 
+
 /** A categorical variable holding the named entity type of a TokenSpan.
     More specific subclasses have a domain, such as ConllNerDomain.
     @author Andrew McCallum */

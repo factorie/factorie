@@ -210,7 +210,6 @@ class Document extends DocumentSubstring with Attr with UniqueId {
   def getSectionByOffsets(strStart:Int, strEnd:Int):Option[Section] =
     this.sections.map(sec => (sec.stringStart, sec.stringEnd, sec)).sortBy(_._1)
       .find{case(start, end, _) => start <= strStart && end >= strEnd}.map(_._3)
-
 }
 
 /** Used as an attribute on Document to hold the document's name. */

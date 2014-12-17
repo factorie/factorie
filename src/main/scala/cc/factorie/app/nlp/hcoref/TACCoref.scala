@@ -166,7 +166,7 @@ object TACCoref {
 
     sampler.infer
 
-    println(EvaluatableClustering.evaluationString(test.predictedClustering, test.trueClustering))
+    //println(EvaluatableClustering.evaluationString(test.predictedClustering, test.trueClustering))
     val goldMap = test.map { mention =>
       mention.variables.truth.value.asHashMap.keySet.head -> mention.uniqueId
     }.groupBy(_._1).mapValues(_.map(_._2).toSet)

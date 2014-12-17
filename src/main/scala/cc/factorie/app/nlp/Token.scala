@@ -109,7 +109,6 @@ class Token(val stringStart:Int, val stringEnd:Int) extends cc.factorie.app.chai
     window
   }
 
-
   // Common attributes, will return null if not present
   def posTag = attr[cc.factorie.app.nlp.pos.PennPosTag] // Should we return the abstract PosTag here instead? -akm
   def nerTag = attr[cc.factorie.app.nlp.ner.NerTag]
