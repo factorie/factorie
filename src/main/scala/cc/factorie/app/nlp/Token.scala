@@ -109,11 +109,6 @@ class Token(val stringStart:Int, val stringEnd:Int) extends cc.factorie.app.chai
     window
   }
 
-
-  /** Character-wise string start of this token in the original file from which it came */
-  lazy val fileStringStart = stringStart + document.startOffset
-  lazy val fileStringEnd = stringEnd + document.startOffset
-
   // Common attributes, will return null if not present
   def posTag = attr[cc.factorie.app.nlp.pos.PennPosTag] // Should we return the abstract PosTag here instead? -akm
   def nerTag = attr[cc.factorie.app.nlp.ner.NerTag]

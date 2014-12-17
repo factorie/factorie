@@ -408,12 +408,8 @@ class ForwardPosTagger extends DocumentAnnotator {
   }
 
   def process(d: Document) = {
-    println("Adding PennPosTag to doc annotators")
     predict(d)
-    if (!d.annotators.contains(classOf[PennPosTag])) {
-      d.annotators(classOf[PennPosTag]) = this.getClass
-      println("added PennPosTag to doc annotators")
-    }
+    if (!d.annotators.contains(classOf[PennPosTag])) d.annotators(classOf[PennPosTag]) = this.getClass
     d
   }
   def process(s: Sentence) = { predict(s); s }
