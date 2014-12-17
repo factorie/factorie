@@ -68,7 +68,7 @@ class LogUniformDoubleSampler(lower: Double, upper: Double, numBuckets: Int = 10
 }
 
 /**
- * A container for a hyperparameter which will be optimized.
+ * A container for a hyperparameter which will be optimized by random sampling.
  * @param option The CmdOption for the parameter
  * @param sampler A sampler which can return values for the parameter
  */
@@ -90,7 +90,7 @@ case class HyperParameter[T](option: CmdOption[T], sampler: ParameterSampler[T])
 }
 
 /**
- * A container for a hyperparameter which will be optimized.
+ * A container for a hyperparameter for which a job will be run for every value.
  * @param option The CmdOption for the parameter
  * @param params Range of settings to use for the parameter
  */
@@ -161,7 +161,6 @@ class HyperParameterSearcher(cmds: CmdOptions,
   }
 }
 
-
 /**
  * Run a job using the given executor on each set of the given parameters, where a set is defined as parameters
  * with the same index from each list (each list of parameters should be the same length).
@@ -173,9 +172,9 @@ class HyperParameterSearcher(cmds: CmdOptions,
  */
 // TODO HyperParameterSearcher should probably inherit from this or something like it
 class JobDistributor(cmds: CmdOptions,
-                             parameters: Seq[DistributorParameter[_]],
-                             executor: Array[String] => Future[Double],
-                             secondsToSleep: Int = 60) {
+                     parameters: Seq[DistributorParameter[_]],
+                     executor: Array[String] => Future[Double],
+                     secondsToSleep: Int = 60) {
   // the contract is that distribute will also set the appropriate values in cmds
   def distribute: Int = {
     val numParams = parameters.head.numSettings
@@ -229,7 +228,7 @@ trait Executor {
  * @param memory How many gigabytes of RAM to use.
  * @param className The class which will be run.
  */
-abstract class JobQueueExecutor(memory: Int, className: String, cores: Int = 1, logPrefix: String = "hyper-search") extends Executor {
+abstract class JobQueueExecutor(memory: Int, className: String, cores: Int = 1) extends Executor {
   /**
    * Runs a job in the queue
    * @param script the file name of the shell script to be run
@@ -237,7 +236,7 @@ abstract class JobQueueExecutor(memory: Int, className: String, cores: Int = 1, 
    */
   def runJob(script: String, logFile: String)
   val date = new SimpleDateFormat("yyyy-MM-dd-HH-mm-ss").format(new java.util.Date())
-  val prefix = s"$logPrefix-$date"
+  val prefix = s"hyper-search-$date"
   println(s"QSubExecutor saving logs in $prefix.")
   var id = 0
   def execute(args: Array[String]) = {
@@ -245,7 +244,8 @@ abstract class JobQueueExecutor(memory: Int, className: String, cores: Int = 1, 
     val thisId = id
     val as = serializeArgs(args)
     import scala.concurrent.ExecutionContext.Implicits.global
-    future {
+    Future {
+      import sys.process._
       val thisPrefix = s"$prefix/job-$thisId"
       val outFile = thisPrefix+"-out"
       new java.io.File(thisPrefix).getParentFile.mkdirs()
@@ -278,7 +278,7 @@ abstract class JobQueueExecutor(memory: Int, className: String, cores: Int = 1, 
  * @param memory How many gigabytes of RAM to use.
  * @param className The class which will be run.
  */
-class QSubExecutor(memory: Int, className: String, cores: Int = 1, logPrefix: String = "hyper-search") extends JobQueueExecutor(memory, className, cores, logPrefix) {
+class QSubExecutor(memory: Int, className: String, cores: Int = 1) extends JobQueueExecutor(memory, className, cores) {
   import sys.process._
   def runJob(script: String, logFile: String) { s"qsub -pe blake $cores -sync y -l mem_token=${memory}G -cwd -j y -o $logFile -S /bin/sh $script".!! }
 }
