@@ -271,6 +271,7 @@ trait NodeVariables[Self <: NodeVariables[Self]] extends SelfVariable[Self] {
 
   def getVariables: Seq[Var]
   def size:Int = getVariables.size
+  override def toString:String = "%s(%s)".format(this.getClass.getSimpleName, getVariables.map(_.toString).mkString(", "))
 }
 
 trait NodeCubbie[Vars <: NodeVariables[Vars]] extends Cubbie {
@@ -280,11 +281,8 @@ trait NodeCubbie[Vars <: NodeVariables[Vars]] extends Cubbie {
 
   val parentRef = RefSlot("parentRef", () => newNodeCubbie)
   val isMention = BooleanSlot("isMention")
-  val wikiUrl = StringSlot("wurl")
   val canopies = StringListSlot("canopies")
-  val moveable = BooleanSlot("mv")
   val source = StringSlot("src")
-
 
   def newNode(v: Vars, id:String)    = new Node(v,id)(null) {
     override val loadedFromDb = true

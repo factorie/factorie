@@ -16,6 +16,7 @@ import cc.factorie._
 import scala.collection.mutable.ArrayBuffer
 import cc.factorie.util.{Cubbie, Attr}
 import cc.factorie.variable.{StringVariable, ChainLink, CategoricalValue}
+import scala.collection.mutable
 
 // There are two ways to create Tokens and add them to Sentences and/or Documents:
 // Without String arguments, in which case the string is assumed to already be in the Document
@@ -87,6 +88,27 @@ class Token(val stringStart:Int, val stringEnd:Int) extends cc.factorie.app.chai
   // TODO The ClearSegmenter should set Token._sentence, so the "sentence" method doesn't have to search for it. -akm
   /** Return the 0-start index of this token in its Sentence.  If not part of a sentence, return -1. */
   def positionInSentence = if (sentence eq null) -1 else position - sentence.start // TODO Consider throwing an Error here? -akm
+  // TODO this method is also defined on token span - centralize
+  /**  Returns an iterable over tokens before and after the token span without preserving order */
+  def contextBag(size:Int):Iterable[Token] = {
+    var idx = 0
+    var window = mutable.ArrayBuffer[Token]()
+    var t = Option(this)
+    while(idx < size && t.isDefined) {
+      t = t.flatMap(_.getPrev)
+      window ++= t
+      idx += 1
+    }
+    idx = 0
+    t = Option(this)
+    while(idx < size && t.isDefined) {
+      t = t.flatMap(_.getNext)
+      window ++= t
+      idx += 1
+    }
+    window
+  }
+
 
   /** Character-wise string start of this token in the original file from which it came */
   lazy val fileStringStart = stringStart + document.startOffset

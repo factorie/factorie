@@ -285,8 +285,8 @@ are often useful in FACTORIE programs.
 : has value of type A.  In other words, it is a variable whose value is a pointer to a Scala object.
 `EdgeVariable[A,B]`
 : has value of type `Tuple[A,B]`, that is a pair of objects: a "source" of type `A` and a "destination" of type `B`.
-`ArrowVariable[A,B] extends EdgeVar[A,B]
-: like `EdgeVariable` has value of type `Tuple[A,B]`, but only the the "destination" is mutable, while the "source" is immutable.
+`ArrowVariable[A,B] extends EdgeVar[A,B]`
+: like `EdgeVariable` has value of type `Tuple[A,B]`, but only the "destination" is mutable, while the "source" is immutable.
 
 
 
@@ -408,7 +408,7 @@ that generated it, and occurs in the same sequence position).
 
 The standard HMM is "time invariant" (sometimes called "stationary"),
 meaning that the hidden state-transition probabilities and the
-observation-from-state generation probabilities do not dependent on
+observation-from-state generation probabilities do not depend on
 their position in the sequence.  Thus, although each transition needs
 its own factor in the factor graph (because each factor has different
 neighboring variables), each of these factors can share the same
@@ -441,7 +441,7 @@ implementation of numbered "unroll" methods.  For example `Template2`
 implements its `unroll` method in terms of two abstract methods:
 `unroll1` and `unroll2`.  The `unroll1` method takes as input a
 variable with type matching the first neighbor of the factor, and is
-responsible creating and returning a (possibly empty) collection of
+responsible for creating and returning a (possibly empty) collection of
 templated factors that touch this variable---finding the second
 neighbor in each case by traversing some relational structure among
 the variables.  

@@ -69,12 +69,32 @@ object HierCorefDemo {
   val deletedEntries = mutable.HashSet[String]()
   class HcorefNodeCubbie extends NodeCubbie[WikiCorefVars] {
 
+    val wikiUrl = StringSlot("wurl")
+    val moveable = BooleanSlot("mv")
+
     val deletionSet: mutable.HashSet[String] = deletedEntries
     def newNodeCubbie: HcorefNodeCubbie = new HcorefNodeCubbie()
   }
 
   class HcorefCubbieCollection(names: Seq[String], mongoDB: DB)
-    extends MongoNodeCollection[WikiCorefVars](names, Seq.empty[String], mongoDB) {
+    extends MongoNodeCollection[WikiCorefVars, HcorefNodeCubbie](names, Seq.empty[String], mongoDB) {
+
+    val WikiTitleExtractor1 = """.+?/wiki/(.+)""".r
+    val WikiTitleExtractor2 = """.+?/\.\.\./(.+)""".r
+    val WikiTitleExtractor3 = """.+?/(.+)""".r
+
+    def getTitleFromWikiURL(wikiUrl: String): String = {
+      val name = wikiUrl match {
+        case WikiTitleExtractor1(name) => name
+        case WikiTitleExtractor2(name) => name
+        case WikiTitleExtractor3(name) => name
+        case "" => ""
+        case _ => throw new Error("cannot extract wikititle from " + wikiUrl)
+      }
+      name.replaceAll("_", " ")
+    }
+
+    def getTruth(nc: HcorefNodeCubbie) = getTitleFromWikiURL(nc.wikiUrl.value)
 
     protected def newNodeVars[V <: Var](truth: String, vars: V*) = WikiCorefVars.fromNodeCubbieVars(truth, vars)
     protected def newNodeCubbie: HcorefNodeCubbie = new HcorefNodeCubbie

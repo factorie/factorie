@@ -218,7 +218,7 @@ class AssignmentStack(val assignment:Assignment, val next:AssignmentStack = null
 
 /** Allows an iterator over the assignments to the neighbors of a factor (optionally specifying the variables that should vary)
     @author Sameer Singh */
-@deprecated("May be removed in future due to inefficiency.")
+@deprecated("May be removed in future due to inefficiency.", "Before 2014-11-17")
 object AssignmentIterator {
   def assignments1[N1 <: Var](f1: Factor1[N1], varying: Set[Var]): Iterator[Assignment] = assignments1(f1._1, varying)
 

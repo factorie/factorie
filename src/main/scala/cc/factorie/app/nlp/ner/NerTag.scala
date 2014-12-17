@@ -24,9 +24,6 @@ import cc.factorie.variable._
 abstract class NerTag(val token:Token, initialCategory:String) extends CategoricalVariable(initialCategory) {
    /** Return "PER" instead of "I-PER". */
    def baseCategoryValue: String = if (categoryValue.length > 1 && categoryValue(1) == '-') categoryValue.substring(2) else categoryValue
-
-   @deprecated("Use baseCategoryValue instead. This will be removed in the next release.")
-   def shortCategoryValue: String = baseCategoryValue
  }
 
 
@@ -38,7 +35,7 @@ abstract class NerSpanLabel(val span:TokenSpan, initialCategory:String) extends 
     @author Andrew McCallum */
 abstract class NerSpan(section:Section, start:Int, length:Int) extends TokenSpan(section, start, length) {
   def label: NerSpanLabel
-  override def toString = "NerSpan("+length+","+label.categoryValue+":"+this.phrase+")"
+  override def toString = "NerSpan("+length+","+label.categoryValue+":"+this.string+")"
 }
 // Note: There are currently no labeled counterparts to these SpanLabels.
 

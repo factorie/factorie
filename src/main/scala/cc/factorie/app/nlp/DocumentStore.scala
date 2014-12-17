@@ -352,7 +352,7 @@ object DocumentStore {
 }
 
 class DocumentStore(mongoDB:String = "DocumentDB") {
-  val mongo = new Mongo()
+  val mongo = new MongoClient()
   val db = mongo.getDB(mongoDB)
   val collection = db.getCollection("documents")
   val cubbieCollection = new MongoCubbieCollection[StandardDocumentCubbie](collection, () => new StandardDocumentCubbie)

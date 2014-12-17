@@ -44,7 +44,7 @@ trait DenseTensor extends Tensor with TensorWithMutableDefaultValue with DenseDo
     case ds:DoubleSeq => super.:=(ds)
   }
   def fill(f: ()=>Double): this.type = { var i = 0; val len = length; while (i < len) { __values(i) = f(); i += 1 }; this }
-  @deprecated("Use fill() instead.")
+  @deprecated("Use fill() instead.", "Before 2014-11-17")
   def initializeRandomly(mean: Double = 0.0, variance: Double = 1.0)(implicit rng: scala.util.Random): Unit = { (0 until length).foreach(i => _values(i) = rng.nextGaussian()*variance + mean ) }
   def forallActiveElements(f:(Int,Double)=>Boolean): Boolean = forallElements(f)
   override def :=(a:Array[Double]): Unit = { require(a.length == length, "Expected length="+length+" but got "+a.length); System.arraycopy(a, 0, _values, 0, a.length) }

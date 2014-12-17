@@ -312,7 +312,7 @@ class LDACmd {
       val printTopics =   new CmdOption("print-topics", 20, "N", "Just before exiting print top N words for each topic.")
       val printPhrases =  new CmdOption("print-topics-phrases", 20, "N", "Just before exiting print top N phrases for each topic.")
       val thetaServer   = new CmdOption("theta-server", 50, "N", "Read from sdin newline-separated documents, and output a theta topic distribution for each, estimated by N iterations of sampling on the document.")
-      val verbose =       new CmdOption("verbose", "Turn on verbose output") { override def invoke = LDACmd.this.verbose = true }
+      val verbose =       new CmdOption("verbose", "Turn on verbose output", false) { override def invoke = LDACmd.this.verbose = true }
       // TODO Add stopwords option
       // TODO Add option to save alphas somewhere, perhaps first line of the writeDocs file, like a document containing only numbers (with extra newline at the end):
       // alphas

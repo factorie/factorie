@@ -31,9 +31,9 @@ object Build extends sbt.Build {
   lazy val factorie = Project("factorie", file(".")).
     configs(NoNLP, WithNLP).
     settings(
-      organization := "cc.factorie",
-      version := "1.1-SNAPSHOT",
-      scalaVersion := "2.10.4",
+      organization := "cc.factorie_2.11",
+      version := "1.2-SNAPSHOT",
+      scalaVersion := "2.11.2",
       scalacOptions := Seq("-deprecation", "-unchecked", "-encoding", "utf8"),
       resolvers ++= Dependencies.resolutionRepos,
       libraryDependencies ++= Seq(
@@ -42,6 +42,7 @@ object Build extends sbt.Build {
         Compile.compiler,
         Compile.junit,
         Compile.acompress,
+        Compile.acommonslang,
         Compile.snappy,
         Compile.bliki,
         Test.scalatest
@@ -74,9 +75,10 @@ object Dependencies {
   object Compile {
     val mongodb  = "org.mongodb" % "mongo-java-driver" % "2.11.1"
     val colt = "org.jblas" % "jblas" % "1.2.3"
-    val compiler = "org.scala-lang" % "scala-compiler" % "2.10.4"
+    val compiler = "org.scala-lang" % "scala-compiler" % "2.11.2"
     val junit = "junit" % "junit" % "4.10"
     val acompress = "org.apache.commons" % "commons-compress" % "1.8"
+    val acommonslang = "commons-lang" % "commons-lang" % "2.6"
     val snappy = "org.xerial.snappy" % "snappy-java" % "1.1.1.3"
     val bliki = "info.bliki.wiki" % "bliki-core" % "3.0.19"
   }
