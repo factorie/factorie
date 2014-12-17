@@ -66,7 +66,8 @@ object EmbeddingDistance {
 
     while (true) {
       print("Enter word (EXIT to break) : ")
-      val words = scala.io.StdIn.readLine().stripLineEnd.toLowerCase.split(' ').map(word => getID(word)).filter(id => id != -1)
+      Source.stdin.getLines().flatMap(_.stripLineEnd.toLowerCase.split(' ').map(getID)).filter(_ != -1)
+      val words = Source.stdin.getLines().flatMap(_.stripLineEnd.toLowerCase.split(' ').map(getID)).filter(_ != -1).toArray
       if (words.size == 0) {
         println("words not in vocab")
       } else {
