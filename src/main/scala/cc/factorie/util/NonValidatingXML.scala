@@ -5,6 +5,9 @@ import scala.xml.Elem
 import javax.xml.parsers.{SAXParserFactory, SAXParser}
 
 /**
+ * Convenience class for loading in xml docs that specify
+ * a dtd that is unavailable.
+ *
  * @author John Sullivan
  */
 object NonValidatingXML extends XMLLoader[Elem] {
@@ -16,4 +19,3 @@ object NonValidatingXML extends XMLLoader[Elem] {
     f.newSAXParser()
   }
 }
-

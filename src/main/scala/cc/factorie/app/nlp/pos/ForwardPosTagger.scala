@@ -407,7 +407,11 @@ class ForwardPosTagger extends DocumentAnnotator {
     }
   }
 
-  def process(d: Document) = { predict(d); d }
+  def process(d: Document) = {
+    predict(d)
+    if (!d.annotators.contains(classOf[PennPosTag])) d.annotators(classOf[PennPosTag]) = this.getClass
+    d
+  }
   def process(s: Sentence) = { predict(s); s }
   def prereqAttrs: Iterable[Class[_]] = List(classOf[Token], classOf[Sentence], classOf[segment.PlainNormalizedTokenString])
   def postAttrs: Iterable[Class[_]] = List(classOf[PennPosTag])

@@ -12,7 +12,7 @@
    limitations under the License. */
 package cc.factorie.app.nlp.segment
 
-import cc.factorie.app.nlp.{DocumentAnnotator, Token, Document}
+import cc.factorie.app.nlp.{UnknownDocumentAnnotator, DocumentAnnotator, Token, Document}
 
 /** Split a String into a sequence of Tokens.  Aims to adhere to tokenization rules used in Ontonotes and Penn Treebank.
     Note that CoNLL tokenization would use tokenizeAllDashedWords=true.
@@ -32,7 +32,6 @@ class DeterministicTokenizer(caseSensitive:Boolean = false, tokenizeSgml:Boolean
   val htmlComment = "(?:<|&lt;)!--(?:[^\u0000](?!-->))*[^\u0000]?--(?:>|&gt;)"; patterns += htmlComment
   val sgml2 = "<%(?:[^\u0000](?!%>))*[^\u0000]?%>"; patterns += sgml2 // Some HTML contains "<% blah %>" tags.
   val sgml = "</?[A-Za-z!].*?(?<!%)>"; patterns += sgml // Closing with "%>" doesn't count
-
   val htmlSymbol = "&(?:HT|TL|UR|LR|QC|QL|QR|amp|copy|reg|trade|odq|nbsp|cdq|lt|gt|#[0-9A-Za-z]+);"; patterns += htmlSymbol // TODO Make this list complete
   val url = "https?://[^ \t\n\f\r\"<>|()]+[^ \t\n\f\r\"<>|.!?(){},-]"; patterns += url
   val url2 = "(?:(?:www\\.(?:[^ \t\n\f\r\"<>|.!?(){},]+\\.)+[a-zA-Z]{2,4})|(?:(?:[^ \t\n\f\r\"`'<>|.!?(){},-_$]+\\.)+(?:com|org|net|edu|gov|cc|info|uk|de|fr|ca)))(?:/[^ \t\n\f\r\"<>|()]+[^ \t\n\f\r\"<>|.!?(){},-])?"; patterns += url2 // Common simple URL without the http
@@ -140,6 +139,8 @@ class DeterministicTokenizer(caseSensitive:Boolean = false, tokenizeSgml:Boolean
         if (string == ".") prevTokenPeriod = true else prevTokenPeriod = false
       }
     }
+    if (!document.annotators.contains(classOf[Token]))
+      document.annotators(classOf[Token]) = this.getClass
     document
   }
   def prereqAttrs: Iterable[Class[_]] = Nil
