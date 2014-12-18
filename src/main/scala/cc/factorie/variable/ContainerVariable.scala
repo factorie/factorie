@@ -14,6 +14,7 @@
 package cc.factorie.variable
 
 import scala.collection.mutable.ArrayBuffer
+import scala.reflect.ClassTag
 
 /** A variable that is a container for other variables (whose type is this.ContainedVariableType),
     A Template that neighbors a ContainerVariable subclass, will also unroll a Factor
@@ -24,7 +25,7 @@ import scala.collection.mutable.ArrayBuffer
 trait ContainerVariable[A<:Var] extends Var {
   type Value <: scala.collection.Seq[A#Value]
   type ContainedVariableType = A
-  def containedVariableManifest(implicit m:Manifest[A]) = m
+  def containedVariableManifest(implicit m:ClassTag[A]) = m
 }
 
 // NOTE: Vars#hashCode must be based on the contents of the collection, or else Factor uniq'ing won't work.

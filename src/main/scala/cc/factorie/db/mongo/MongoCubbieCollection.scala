@@ -24,6 +24,7 @@ import scala.Predef._
 import scala.Some
 import scala.language.implicitConversions
 import java.nio.{ByteBuffer, IntBuffer}
+import scala.reflect.ClassTag
 
 
 /**
@@ -718,7 +719,7 @@ class CachedFunction[F, T](val delegate: F => T) extends Map[F, T] {
   }
 }
 
-class LazyInverter(val cubbies: PartialFunction[Manifest[Cubbie], Iterable[Cubbie]])
+class LazyInverter(val cubbies: PartialFunction[ClassTag[Cubbie], Iterable[Cubbie]])
   extends (Cubbie#InverseSlot[Cubbie] => Iterable[Cubbie]) {
   def apply(slot: Cubbie#InverseSlot[Cubbie]) = {
     val typed = slot.asInstanceOf[Cubbie#InverseSlot[Cubbie]]
@@ -727,18 +728,18 @@ class LazyInverter(val cubbies: PartialFunction[Manifest[Cubbie], Iterable[Cubbi
   }
 }
 
-class IndexedLazyInverter(val cubbies: PartialFunction[Manifest[Cubbie], Iterable[Cubbie]])
+class IndexedLazyInverter(val cubbies: PartialFunction[ClassTag[Cubbie], Iterable[Cubbie]])
   extends (Cubbie#InverseSlot[Cubbie] => Iterable[Cubbie]) {
 
 
   val index = new mutable.HashMap[(Cubbie#AbstractRefSlot[Cubbie], Any), Seq[Cubbie]]
   val indexed = new mutable.HashSet[Cubbie#AbstractRefSlot[Cubbie]]
-  val prototypes = new mutable.HashMap[Manifest[Cubbie], Option[Cubbie]] //cubbies.map(p => p._1 -> p._2.headOption)
+  val prototypes = new mutable.HashMap[ClassTag[Cubbie], Option[Cubbie]] //cubbies.map(p => p._1 -> p._2.headOption)
 
   def findCubbiesWhereRefSlotIs(refSlotFunction: Cubbie => Cubbie#AbstractRefSlot[Cubbie],
                                 id: Any,
                                 inWhere: Iterable[Cubbie],
-                                ofType: Manifest[Cubbie]) = {
+                                ofType: ClassTag[Cubbie]) = {
     {
       for (prototype <- prototypes.getOrElseUpdate(ofType, cubbies(ofType).headOption);
            refSlot = refSlotFunction(prototype)) yield {
@@ -760,7 +761,7 @@ class IndexedLazyInverter(val cubbies: PartialFunction[Manifest[Cubbie], Iterabl
 }
 
 
-class LazyMongoInverter(val cubbies: PartialFunction[Manifest[Cubbie], AbstractCubbieCollection[Cubbie]],
+class LazyMongoInverter(val cubbies: PartialFunction[ClassTag[Cubbie], AbstractCubbieCollection[Cubbie]],
                         val cache: GenericMap[Any, Cubbie] = Map.empty)
   extends (Cubbie#InverseSlot[Cubbie] => Iterable[Cubbie]) {
   def apply(slot: Cubbie#InverseSlot[Cubbie]) = {

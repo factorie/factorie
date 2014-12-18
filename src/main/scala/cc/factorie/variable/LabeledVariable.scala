@@ -16,6 +16,7 @@ package cc.factorie.variable
 import cc.factorie.util.Attr
 import cc.factorie._
 import cc.factorie.model.TupleTemplateWithStatistics2
+import scala.reflect._
 
 // Naming explanation:
 // Variables in "aimer/target" pairs, used for labeled data for training.
@@ -237,7 +238,7 @@ class LabeledStringVariable(targetValue:String) extends StringVariable(targetVal
 
 /** A source of factors whose score is the Hamming objective, with score 1.0 for each variable whose current global value is its target value, and 0 for all other variables.
     @author Andrew McCallum */
-class HammingTemplate[A<:LabeledVar]()(implicit ma: Manifest[A], mt: Manifest[A#TargetType]) extends TupleTemplateWithStatistics2[A,A#TargetType]() {
+class HammingTemplate[A<:LabeledVar]()(implicit ma: ClassTag[A], mt: ClassTag[A#TargetType]) extends TupleTemplateWithStatistics2[A,A#TargetType]() {
   def unroll1(aimer:A) = Factor(aimer, aimer.target.asInstanceOf[A#TargetType])
   def unroll2(target:A#TargetType) = throw new Error("Cannot unroll from the target variable.")
   def score(value1:A#Value, value2:A#TargetType#Value) = if (value1 == value2) 1.0 else 0.0 // TODO
@@ -245,11 +246,11 @@ class HammingTemplate[A<:LabeledVar]()(implicit ma: Manifest[A], mt: Manifest[A#
 }
 /** A source of factors whose score is the Hamming objective, with score 1.0 for each variable whose current global value is its target value, and 0 for all other variables.
     @author Andrew McCallum */
-object HammingObjective extends HammingTemplate[LabeledVar]()(scala.reflect.ManifestFactory.classType(classOf[LabeledVar]), scala.reflect.ManifestFactory.classType(classOf[TargetVar]))
+object HammingObjective extends HammingTemplate[LabeledVar]()(classTag[LabeledVar], classTag[LabeledVar#TargetType])
 
 /** A source of factors whose score is the Hamming loss, with score 0.0 for each variable whose current global value is its target value, and 1.0 for all other variables.
     @author Alexandre Passos */
-class HammingLossTemplate[A<:LabeledVar]()(implicit am:Manifest[A], tm:Manifest[A#TargetType]) extends TupleTemplateWithStatistics2[A,A#TargetType] {
+class HammingLossTemplate[A<:LabeledVar]()(implicit am:ClassTag[A], tm:ClassTag[A#TargetType]) extends TupleTemplateWithStatistics2[A,A#TargetType] {
   import cc.factorie.la._
   def unroll1(aimer:A) = Factor(aimer, aimer.target)
   def unroll2(target:A#TargetType) = throw new Error("Cannot unroll from the target variable.")
@@ -267,7 +268,7 @@ class HammingLossTemplate[A<:LabeledVar]()(implicit am:Manifest[A], tm:Manifest[
 }
 /** A source of factors whose score is the Hamming loss, with score 0.0 for each variable whose current global value is its target value, and 1.0 for all other variables.
     @author Alexandre Passos */
-object HammingLoss extends HammingLossTemplate[LabeledVar]()(scala.reflect.ManifestFactory.classType(classOf[LabeledVar]), scala.reflect.ManifestFactory.classType(classOf[TargetVar]))
+object HammingLoss extends HammingLossTemplate[LabeledVar]()(classTag[LabeledVar], classTag[LabeledVar#TargetType])
 
 
 // Evaluation

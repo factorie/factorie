@@ -13,9 +13,10 @@
 package cc.factorie.util
 import scala.language.existentials
 import scala.Error
+import scala.reflect.ClassTag
 
 object ClasspathURL {
-  def fromDirectory[C](suffix:String)(implicit m: Manifest[C]): java.net.URL = {
+  def fromDirectory[C](suffix:String)(implicit m: ClassTag[C]): java.net.URL = {
     Option(System.getProperty(m.runtimeClass.getName)) match {
       case Some(url) =>
         try { new java.net.URL(url + "/"+ suffix) }
@@ -30,7 +31,7 @@ object ClasspathURL {
 
     }
   }
-  def apply[C](suffix:String)(implicit m: Manifest[C]): java.net.URL = {
+  def apply[C](suffix:String)(implicit m: ClassTag[C]): java.net.URL = {
     Option(System.getProperty(m.runtimeClass.getName)) match {
       case Some(url) => try { new java.net.URL(url) }
         catch {

@@ -15,6 +15,7 @@ package cc.factorie.db.mongo
 import cc.factorie.util.Cubbie
 import annotation.tailrec
 import scala.collection.{Map => GenericMap}
+import scala.reflect.ClassTag
 
 
 object GraphLoader {
@@ -159,7 +160,7 @@ object GraphLoader {
   def toRefs(index:Index) = index.filter(_._1._2 == "_id").map(pair => pair._1._3 -> pair._2.head)
 
   class IndexBasedInverter(index:Index) extends (Cubbie#InverseSlot[Cubbie] => Iterable[Cubbie]){
-    val prototypeCache = new collection.mutable.HashMap[Manifest[Cubbie],Cubbie]
+    val prototypeCache = new collection.mutable.HashMap[ClassTag[Cubbie],Cubbie]
 
     def apply(v1: Cubbie#InverseSlot[Cubbie]) = {
       val prototype = prototypeCache.getOrElseUpdate(v1.manifest, v1.manifest.runtimeClass.newInstance().asInstanceOf[Cubbie])

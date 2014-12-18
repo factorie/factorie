@@ -17,6 +17,7 @@ import collection.mutable
 import util.parsing.json.JSON
 import cc.factorie.la.Tensor
 import java.nio.{DoubleBuffer, ByteBuffer}
+import scala.reflect.ClassTag
 
 /**
  * A Cubbie provides typed access to an underlying Map data-structure. This map can come
@@ -253,11 +254,11 @@ class Cubbie {
    * The Inverse slot is a default implementation of the AbstractInverseSlot.
    * @param name the name for this slot.
    * @param slot the foreign slot.
-   * @param m a manifest.
+   * @param m a classtag.
    * @tparam A the type of cubbies this slot contains.
    */
   case class InverseSlot[A <: Cubbie](name: String,
-                                      slot: A => A#AbstractRefSlot[Cubbie])(implicit m: Manifest[A])
+                                      slot: A => A#AbstractRefSlot[Cubbie])(implicit m: ClassTag[A])
     extends AbstractInverseSlot[A] {
 
     /**
@@ -283,7 +284,7 @@ class Cubbie {
 
     def target = Some(cubbie.id)
 
-    def manifest = m.asInstanceOf[Manifest[Cubbie]]
+    def manifest = m.asInstanceOf[ClassTag[Cubbie]]
 
     def cubbie: thisCubbie.type = thisCubbie
 

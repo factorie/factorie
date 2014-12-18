@@ -22,6 +22,7 @@ import cc.factorie.la.Tensor1
 import cc.factorie.la.DenseTensor1
 import cc.factorie.la.Tensor2
 import cc.factorie.la.DenseTensor2
+import scala.reflect.ClassTag
 
 // "Classifier"s take "values" of variables as input rather than the variables themselves.
 // This is in contrast to "Classifier"s, which take variables as input.
@@ -73,7 +74,7 @@ trait BinaryClassifier[Input] extends Classifier[Double, Input] {
 }
 
 class ClassifierTemplate[Input, Value <: DiscreteValue, T <: LabeledMutableDiscreteVar, F <: Var { type Value = Input }]
-  (classifier: Classifier[Tensor1, Input], l2f: T => F)(implicit ml: Manifest[T], implicit val mf: Manifest[F]) extends Template2[T,F] {
+  (classifier: Classifier[Tensor1, Input], l2f: T => F)(implicit ml: ClassTag[T], implicit val mf: ClassTag[F]) extends Template2[T,F] {
   def unroll1(v: T) = Factor(v, l2f(v))
   def unroll2(v: F) = Nil
   def score(v1: T#Value, v2: Input): Double = classifier.classification(v2).prediction(v1.asInstanceOf[DiscreteValue].intValue)
@@ -81,7 +82,7 @@ class ClassifierTemplate[Input, Value <: DiscreteValue, T <: LabeledMutableDiscr
 
 trait MulticlassClassifier[Input] extends Classifier[Tensor1, Input] {
   def classification(input: Input) = new MulticlassClassification(predict(input))
-  def asTemplate[Value <: DiscreteValue, T <: LabeledMutableDiscreteVar, F <: Var { type Value = Input }](l2f: T => F)(implicit ml: Manifest[T], mf: Manifest[F]) =
+  def asTemplate[Value <: DiscreteValue, T <: LabeledMutableDiscreteVar, F <: Var { type Value = Input }](l2f: T => F)(implicit ml: ClassTag[T], mf: ClassTag[F]) =
     new ClassifierTemplate[Input, Value, T, F](MulticlassClassifier.this, l2f)
 }
 
@@ -157,7 +158,7 @@ trait MulticlassClassifierTrainer[C <: MulticlassClassifier[Tensor1]] extends Ba
     train(classifier, labels, labels.map(l2f), labels.map(l2w))
 }
 
-class ClassifierTemplate2[T <: DiscreteVar](l2f: T => TensorVar, classifier: MulticlassClassifier[Tensor1])(implicit ml: Manifest[T], mf: Manifest[TensorVar]) extends Template2[T, TensorVar] {
+class ClassifierTemplate2[T <: DiscreteVar](l2f: T => TensorVar, classifier: MulticlassClassifier[Tensor1])(implicit ml: ClassTag[T], mf: ClassTag[TensorVar]) extends Template2[T, TensorVar] {
   def unroll1(v: T) = Factor(v, l2f(v))
   def unroll2(v: TensorVar) = Nil
   def score(v1: T#Value, v2: TensorVar#Value): Double = classifier.predict(v2.asInstanceOf[Tensor1])(v1.asInstanceOf[DiscreteValue].intValue)
@@ -173,7 +174,7 @@ class LinearMulticlassClassifier(val labelSize: Int, val featureSize: Int) exten
   val weights = Weights(new DenseTensor2(featureSize, labelSize))
   def predict(features: Tensor1): Tensor1 = weights.value.leftMultiply(features)
   def accumulateObjectiveGradient(accumulator: WeightsMapAccumulator, features: Tensor1, gradient: Tensor1, weight: Double) = accumulator.accumulate(weights, features outer gradient)
-  def asDotTemplate[T <: LabeledMutableDiscreteVar](l2f: T => TensorVar)(implicit ml: Manifest[T]) = new DotTemplateWithStatistics2[T,TensorVar] {
+  def asDotTemplate[T <: LabeledMutableDiscreteVar](l2f: T => TensorVar)(implicit ml: ClassTag[T]) = new DotTemplateWithStatistics2[T,TensorVar] {
     def unroll1(v: T) = Factor(v, l2f(v))
     def unroll2(v: TensorVar) = Nil
     val weights = LinearMulticlassClassifier.this.weights

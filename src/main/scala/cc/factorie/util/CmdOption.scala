@@ -14,9 +14,10 @@
 
 
 package cc.factorie.util
-import scala.reflect.Manifest
+import scala.reflect.ClassTag
 import scala.collection.mutable.{HashMap,HashSet,ArrayBuffer}
 import cc.factorie._
+import scala.reflect.runtime.universe._
 
 /** Concrete version is implemented as an inner class of @see CmdOptions.
     @author Andrew McCallum */
@@ -140,22 +141,22 @@ class CmdOptions {
     def apply(name:String, helpMsg:String): CmdOption[Any] =
       new CmdOption[Any](name, helpMsg)
   }*/
-  class CmdOption[T](val name:String, val helpMsg:String, val required:Boolean = false)(implicit m:Manifest[T]) extends cc.factorie.util.CmdOption[T] {
-    def this(name:String, defaultValue:T, valueName:String, helpMsg:String, required:Boolean)(implicit m:Manifest[T]) = {
+  class CmdOption[T](val name:String, val helpMsg:String, val required:Boolean = false)(implicit m:TypeTag[T]) extends cc.factorie.util.CmdOption[T] {
+    def this(name:String, defaultValue:T, valueName:String, helpMsg:String, required:Boolean)(implicit m:TypeTag[T]) = {
       this(name, helpMsg, required)
       this.valueName = valueName
       value = defaultValue
       this.defaultValue = defaultValue
     }
-    def this(name:String, defaultValue:T, valueName:String, helpMsg:String)(implicit m:Manifest[T]) = this(name, defaultValue, valueName, helpMsg, false)
+    def this(name:String, defaultValue:T, valueName:String, helpMsg:String)(implicit m:TypeTag[T]) = this(name, defaultValue, valueName, helpMsg, false)
     /*def this(name:String, defaultValue:T, helpMsg:String)(implicit m:Manifest[T]) = {
       this(name, defaultValue, { val fields = m.runtimeClass.getName.split("[^A-Za-z]+"); if (fields.length > 1) fields.last else fields.head }, helpMsg)
     }*/
-    def this(name:String, shortName:Char, defaultValue:T, valueName:String, helpMsg:String, required:Boolean)(implicit m:Manifest[T]) = {
+    def this(name:String, shortName:Char, defaultValue:T, valueName:String, helpMsg:String, required:Boolean)(implicit m:TypeTag[T]) = {
       this(name, defaultValue, valueName, helpMsg, required)
       this.shortName = shortName
     }
-    def this(name:String, shortName:Char, defaultValue:T, valueName:String, helpMsg:String)(implicit m:Manifest[T]) = this(name, shortName, defaultValue, valueName, helpMsg, false)
+    def this(name:String, shortName:Char, defaultValue:T, valueName:String, helpMsg:String)(implicit m:TypeTag[T]) = this(name, shortName, defaultValue, valueName, helpMsg, false)
     /*def this(name:String, shortName:Char, defaultValue:T, helpMsg:String)(implicit m:Manifest[T]) = {
       this(name, defaultValue, helpMsg)
       this.shortName = shortName
@@ -163,8 +164,8 @@ class CmdOptions {
     CmdOptions.this += this
     // TODO When we have Scala 2.8 default args, add a "shortName" one-char alternative here
     var shortName: Char = ' ' // space char indicates no shortName
-    val valueManifest: Manifest[T] = m
-    def valueClass: Class[_] = m.runtimeClass
+    val valueManifest = m
+    def valueClass: Class[_] = m.
     var valueName: String = null
     var defaultValue: T = _
     var value: T = _
@@ -251,6 +252,7 @@ class CmdOptions {
           i
         }
       } else if ((valueClass eq classOf[List[_]]) && (valueManifest.typeArguments(0).runtimeClass eq classOf[Double])) {
+
         // Handle CmdOpt whose value is a List[String]
         if (args(index).contains(',')) {
           // Handle the case in which the list is comma-separated

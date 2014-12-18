@@ -20,6 +20,7 @@ import cc.factorie.util.StoreFetchCubbie
 import scala.util.Random
 import cc.factorie.variable.{TensorVar, LabeledMutableDiscreteVar, HashFeatureVectorVariable}
 import cc.factorie.model.Template2
+import scala.reflect.ClassTag
 
 class DecisionTreeMulticlassTrainer[Label](treeTrainer: DecisionTreeTrainer = new ID3DecisionTreeTrainer)
   (implicit random: Random)
@@ -67,14 +68,14 @@ class RandomForestMulticlassClassifier(var trees: Seq[DTree], val labelSize: Int
     // FIXME these should be logged along with the regular decision tree scores
     res
   }
-  def asTemplate[T <: LabeledMutableDiscreteVar](l2f: T => TensorVar)(implicit ml: Manifest[T]): Template2[T, TensorVar] =
+  def asTemplate[T <: LabeledMutableDiscreteVar](l2f: T => TensorVar)(implicit ml: ClassTag[T]): Template2[T, TensorVar] =
     new ClassifierTemplate2(l2f, this)
 }
 
 class DecisionTreeMulticlassClassifier(var tree: DTree, val labelSize: Int) extends MulticlassClassifier[Tensor1] {
   def predict(features: Tensor1) =
     DTree.score(features, tree)
-  def asTemplate[T <: LabeledMutableDiscreteVar](l2f: T => TensorVar)(implicit ml: Manifest[T]): Template2[T, TensorVar] =
+  def asTemplate[T <: LabeledMutableDiscreteVar](l2f: T => TensorVar)(implicit ml: ClassTag[T]): Template2[T, TensorVar] =
     new ClassifierTemplate2[T](l2f, this)
 }
 
