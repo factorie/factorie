@@ -17,7 +17,7 @@ import collection.mutable
 import util.parsing.json.JSON
 import cc.factorie.la.Tensor
 import java.nio.{DoubleBuffer, ByteBuffer}
-import scala.reflect.ClassTag
+import scala.reflect._
 
 /**
  * A Cubbie provides typed access to an underlying Map data-structure. This map can come
@@ -254,11 +254,10 @@ class Cubbie {
    * The Inverse slot is a default implementation of the AbstractInverseSlot.
    * @param name the name for this slot.
    * @param slot the foreign slot.
-   * @param m a classtag.
    * @tparam A the type of cubbies this slot contains.
    */
-  case class InverseSlot[A <: Cubbie](name: String,
-                                      slot: A => A#AbstractRefSlot[Cubbie])(implicit m: ClassTag[A])
+  case class InverseSlot[A <: Cubbie:ClassTag](name: String,
+                                      slot: A => A#AbstractRefSlot[Cubbie])
     extends AbstractInverseSlot[A] {
 
     /**
@@ -273,9 +272,9 @@ class Cubbie {
       cache(this.asInstanceOf[InverseSlot[Cubbie]]).asInstanceOf[Iterable[A]]
     }
 
-    //todo: this is probably very slow, as I need access the manifest, runtimeClass, create new object etc.
+    //todo: this is probably very slow, as I need access the classtag, runtimeClass, create new object etc.
     def value2(implicit cache: collection.Map[(Class[Cubbie], String, Any), Iterable[Cubbie]]) = {
-      val foreignCubbie = m.runtimeClass.newInstance().asInstanceOf[A]
+      val foreignCubbie = classTag[A].runtimeClass.newInstance().asInstanceOf[A]
       val foreignSlot = slot(foreignCubbie)
       cache((foreignCubbie.cubbieClass, foreignSlot.name, cubbie.id)).asInstanceOf[Iterable[A]]
     }
@@ -284,7 +283,7 @@ class Cubbie {
 
     def target = Some(cubbie.id)
 
-    def manifest = m.asInstanceOf[ClassTag[Cubbie]]
+    def tag = classTag[A]
 
     def cubbie: thisCubbie.type = thisCubbie
 

@@ -25,7 +25,7 @@ import scala.reflect.ClassTag
 trait ContainerVariable[A<:Var] extends Var {
   type Value <: scala.collection.Seq[A#Value]
   type ContainedVariableType = A
-  def containedVariableManifest(implicit m:ClassTag[A]) = m
+  def containedVariableTag(implicit m:ClassTag[A]) = m
 }
 
 // NOTE: Vars#hashCode must be based on the contents of the collection, or else Factor uniq'ing won't work.

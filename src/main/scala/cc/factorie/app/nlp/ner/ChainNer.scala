@@ -84,10 +84,10 @@ abstract class ChainNer[L<:NerTag](labelDomain: CategoricalDomain[String],
     def domain = ChainNERFeaturesDomain
     override def skipNonCategories = true
   }
-  class ChainNERModel[Features <: CategoricalVectorVar[String]](featuresDomain: CategoricalVectorDomain[String],
+  class ChainNERModel[Features <: CategoricalVectorVar[String]:ClassTag](featuresDomain: CategoricalVectorDomain[String],
                                                                 labelToFeatures: L => Features,
                                                                 labelToToken: L => Token,
-                                                                tokenToLabel: Token => L)(implicit mf: Manifest[Features])
+                                                                tokenToLabel: Token => L)
     extends ChainModel(labelDomain, featuresDomain, labelToFeatures, labelToToken, tokenToLabel) //with Parameters {
 
   val model = new ChainNERModel[ChainNERFeatures](ChainNERFeaturesDomain, l => labelToToken(l).attr[ChainNERFeatures], labelToToken, t => t.attr[L])

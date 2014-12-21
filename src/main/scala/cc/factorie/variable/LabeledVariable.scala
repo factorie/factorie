@@ -17,6 +17,7 @@ import cc.factorie.util.Attr
 import cc.factorie._
 import cc.factorie.model.TupleTemplateWithStatistics2
 import scala.reflect._
+import scala.reflect.runtime.universe._
 
 // Naming explanation:
 // Variables in "aimer/target" pairs, used for labeled data for training.
@@ -238,24 +239,24 @@ class LabeledStringVariable(targetValue:String) extends StringVariable(targetVal
 
 /** A source of factors whose score is the Hamming objective, with score 1.0 for each variable whose current global value is its target value, and 0 for all other variables.
     @author Andrew McCallum */
-class HammingTemplate[A<:LabeledVar]()(implicit ma: ClassTag[A], mt: ClassTag[A#TargetType]) extends TupleTemplateWithStatistics2[A,A#TargetType]() {
-  def unroll1(aimer:A) = Factor(aimer, aimer.target.asInstanceOf[A#TargetType])
-  def unroll2(target:A#TargetType) = throw new Error("Cannot unroll from the target variable.")
-  def score(value1:A#Value, value2:A#TargetType#Value) = if (value1 == value2) 1.0 else 0.0 // TODO
-  def accuracy(variables: Iterable[A]): Double = variables.map(v => Factor(v, v.target.asInstanceOf[A#TargetType]).currentScore).sum / variables.size
+class HammingTemplate[A<:LabeledVar:ClassTag, T <: TargetVar:ClassTag]() extends TupleTemplateWithStatistics2[A,T]() {
+  def unroll1(aimer:A) = Factor(aimer, aimer.target.asInstanceOf[T])
+  def unroll2(target:T) = throw new Error("Cannot unroll from the target variable.")
+  def score(value1:A#Value, value2:T#Value) = if (value1 == value2) 1.0 else 0.0 // TODO
+  def accuracy(variables: Iterable[A]): Double = variables.map(v => Factor(v, v.target.asInstanceOf[T]).currentScore).sum / variables.size
 }
 /** A source of factors whose score is the Hamming objective, with score 1.0 for each variable whose current global value is its target value, and 0 for all other variables.
     @author Andrew McCallum */
-object HammingObjective extends HammingTemplate[LabeledVar]()(classTag[LabeledVar], classTag[LabeledVar#TargetType])
+object HammingObjective extends HammingTemplate[LabeledVar, TargetVar]()
 
 /** A source of factors whose score is the Hamming loss, with score 0.0 for each variable whose current global value is its target value, and 1.0 for all other variables.
     @author Alexandre Passos */
-class HammingLossTemplate[A<:LabeledVar]()(implicit am:ClassTag[A], tm:ClassTag[A#TargetType]) extends TupleTemplateWithStatistics2[A,A#TargetType] {
+class HammingLossTemplate[A<:LabeledVar:ClassTag, T <: TargetVar:ClassTag]() extends TupleTemplateWithStatistics2[A,T] {
   import cc.factorie.la._
-  def unroll1(aimer:A) = Factor(aimer, aimer.target)
-  def unroll2(target:A#TargetType) = throw new Error("Cannot unroll from the target variable.")
-  def score(value1:A#Value, value2:A#TargetType#Value) = if (value1 == value2) 0.0 else 1.0
-  def accuracy(variables: Iterable[A]): Double = variables.map(v => Factor(v, v.target).currentScore).sum / variables.size
+  def unroll1(aimer:A) = Factor(aimer, aimer.target.asInstanceOf[T])
+  def unroll2(target:T) = throw new Error("Cannot unroll from the target variable.")
+  def score(value1:A#Value, value2:T#Value) = if (value1 == value2) 0.0 else 1.0
+  def accuracy(variables: Iterable[A]): Double = variables.map(v => Factor(v, v.target.asInstanceOf[T]).currentScore).sum / variables.size
   override def valuesScore(t: Tensor) = t match {
     case v: SingletonBinaryTensorLike2 => if (v.singleIndex1 == v.singleIndex2) 0.0 else 1.0
     case v: SingletonBinaryLayeredTensorLike2 => if (v.singleIndex1 == v.inner.maxIndex) 0.0 else 1.0
@@ -268,7 +269,7 @@ class HammingLossTemplate[A<:LabeledVar]()(implicit am:ClassTag[A], tm:ClassTag[
 }
 /** A source of factors whose score is the Hamming loss, with score 0.0 for each variable whose current global value is its target value, and 1.0 for all other variables.
     @author Alexandre Passos */
-object HammingLoss extends HammingLossTemplate[LabeledVar]()(classTag[LabeledVar], classTag[LabeledVar#TargetType])
+object HammingLoss extends HammingLossTemplate[LabeledVar, TargetVar]()
 
 
 // Evaluation

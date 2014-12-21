@@ -723,7 +723,7 @@ class LazyInverter(val cubbies: PartialFunction[ClassTag[Cubbie], Iterable[Cubbi
   extends (Cubbie#InverseSlot[Cubbie] => Iterable[Cubbie]) {
   def apply(slot: Cubbie#InverseSlot[Cubbie]) = {
     val typed = slot.asInstanceOf[Cubbie#InverseSlot[Cubbie]]
-    val result = cubbies.lift(slot.manifest).getOrElse(Nil).filter(c => typed.slot(c).opt == Some(typed.cubbie.id))
+    val result = cubbies.lift(slot.tag).getOrElse(Nil).filter(c => typed.slot(c).opt == Some(typed.cubbie.id))
     result
   }
 }
@@ -756,7 +756,7 @@ class IndexedLazyInverter(val cubbies: PartialFunction[ClassTag[Cubbie], Iterabl
 
   def apply(slot: Cubbie#InverseSlot[Cubbie]) = {
     val typed = slot.asInstanceOf[Cubbie#InverseSlot[Cubbie]]
-    findCubbiesWhereRefSlotIs(typed.slot, typed.cubbie.id, cubbies.lift(typed.manifest).getOrElse(Nil), typed.manifest)
+    findCubbiesWhereRefSlotIs(typed.slot, typed.cubbie.id, cubbies.lift(typed.tag).getOrElse(Nil), typed.tag)
   }
 }
 
@@ -766,7 +766,7 @@ class LazyMongoInverter(val cubbies: PartialFunction[ClassTag[Cubbie], AbstractC
   extends (Cubbie#InverseSlot[Cubbie] => Iterable[Cubbie]) {
   def apply(slot: Cubbie#InverseSlot[Cubbie]) = {
     val typed = slot.asInstanceOf[Cubbie#InverseSlot[Cubbie]]
-    val found = for (coll <- cubbies.lift(slot.manifest)) yield {
+    val found = for (coll <- cubbies.lift(slot.tag)) yield {
       val raw = coll.findBySlot(c => slot.slot(c).asInstanceOf[Cubbie#RefSlot[Cubbie]], Seq(typed.cubbie.id))
       raw.map(c => cache.getOrElse(c.id, c)).toSeq
     }

@@ -163,7 +163,7 @@ object GraphLoader {
     val prototypeCache = new collection.mutable.HashMap[ClassTag[Cubbie],Cubbie]
 
     def apply(v1: Cubbie#InverseSlot[Cubbie]) = {
-      val prototype = prototypeCache.getOrElseUpdate(v1.manifest, v1.manifest.runtimeClass.newInstance().asInstanceOf[Cubbie])
+      val prototype = prototypeCache.getOrElseUpdate(v1.tag, v1.tag.runtimeClass.newInstance().asInstanceOf[Cubbie])
       val prototypeClass = prototype.cubbieClass
       val attrName = v1.slot(prototype).name
       index((prototypeClass,attrName,v1.target.get))

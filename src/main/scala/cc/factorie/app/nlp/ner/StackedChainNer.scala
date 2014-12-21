@@ -89,10 +89,10 @@ class StackedChainNer[L<:NerTag](labelDomain: CategoricalDomain[String],
     override def skipNonCategories = true
   }
 
-  class StackedChainNereModel[Features <: CategoricalVectorVar[String]](featuresDomain1:CategoricalVectorDomain[String],
+  class StackedChainNereModel[Features <: CategoricalVectorVar[String]:ClassTag](featuresDomain1:CategoricalVectorDomain[String],
                                                                         labelToFeatures1:L=>Features,
                                                                         labelToToken1:L=>Token,
-                                                                        tokenToLabel1:Token=>L)(implicit mf: Manifest[Features])
+                                                                        tokenToLabel1:Token=>L)
     extends ChainModel(labelDomain, featuresDomain1, labelToFeatures1, labelToToken1, tokenToLabel1) with Parameters {
 
     // Factor for embedding of observed token
