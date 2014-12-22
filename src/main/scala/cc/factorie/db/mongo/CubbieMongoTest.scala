@@ -14,6 +14,7 @@ package cc.factorie.db.mongo
 
 import cc.factorie.util.Cubbie
 import com.mongodb.{MongoClient, Mongo}
+import scala.reflect.classTag
 
 /**
  * This class shows some example usage of cubbies and mongo serialization and querying.
@@ -158,15 +159,15 @@ object CubbieMongoTest {
     kid.name := "Kid 2"
     //more experimental stuff from here on:
 
-    implicit val inverter = new CachedFunction(new LazyInverter(Map(manifest[Person] -> Seq(james, laura, kid))))
+    implicit val inverter = new CachedFunction(new LazyInverter(Map(classTag[Person] -> Seq(james, laura, kid))))
 
     println(james.children.value)
 
-    val mongoInverter = new CachedFunction(new LazyMongoInverter(Map(manifest[Person] -> persons)))
+    val mongoInverter = new CachedFunction(new LazyMongoInverter(Map(classTag[Person] -> persons)))
 
     println(james.children.value(mongoInverter))
 
-    val indexedInverter = new CachedFunction(new IndexedLazyInverter(Map(manifest[Person] -> Seq(james, laura, kid))))
+    val indexedInverter = new CachedFunction(new IndexedLazyInverter(Map(classTag[Person] -> Seq(james, laura, kid))))
 
     println(james.children.value(indexedInverter))
 

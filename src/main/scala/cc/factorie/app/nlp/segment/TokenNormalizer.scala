@@ -12,6 +12,7 @@
    limitations under the License. */
 package cc.factorie.app.nlp.segment
 import cc.factorie.app.nlp._
+import scala.reflect.ClassTag
 
 /** Clean up Token.string according to various standard practices.
     The aim here is to to put into plain text, the way most people would write an email message,
@@ -32,7 +33,7 @@ class TokenNormalizer1[A<:TokenString](
     val normalizeHtmlSymbol:Boolean = true, // Convert &lt; to <, etc
     val normalizeHtmlAccent:Boolean = true, // Convert Beyonc&eacute; to Beyonce
     val americanize:Boolean = false
-  )(implicit m:Manifest[A]) extends DocumentAnnotator {
+  )(implicit m:ClassTag[A]) extends DocumentAnnotator {
   
   val dashRegex = ("\\A("+DeterministicTokenizer.dash+")+\\Z").r
   val mdashRegex = ("\\A("+DeterministicTokenizer.mdash+")+\\Z").r

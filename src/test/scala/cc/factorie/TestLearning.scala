@@ -74,7 +74,7 @@ class TestRealVariable extends JUnitSuite with cc.factorie.util.FastLogging {
       def unroll2(prob: Prob) = Nil
     }
     val model = new TemplateModel with Parameters { addTemplates(new SimpleTemplate(this)) }
-    val objective = new HammingTemplate[Data]
+    val objective = new HammingTemplate[Data, Data#TargetType]
 
     val pieces = new ArrayBuffer[LikelihoodExample[Iterable[DiscreteVar],Model]]
     pieces += new LikelihoodExample(trainings.toIterable, model, InferByBPLoopy)

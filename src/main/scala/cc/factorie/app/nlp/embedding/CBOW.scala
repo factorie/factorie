@@ -139,7 +139,7 @@ object CBOW {
     val opts = new CBOWOptions
     opts.parse(args)
     if (!opts.input.wasInvoked) { println("Option --input is required."); System.exit(-1) }
-    Vocabulary.opts.maxWikiPages.value = opts.maxWikiPages.value // temporary kludge
+    Vocabulary.opts.maxWikiPages.setValue(opts.maxWikiPages.value) // temporary kludge
     val cbow = new CBOW(opts)
     cbow.train(opts.input.value)
     cbow.writeInputEmbeddings("embeddings.txt")

@@ -17,6 +17,7 @@ package cc.factorie.app.nlp.phrase
 import cc.factorie.app.nlp._
 import scala.collection.mutable.ListBuffer
 import cc.factorie.app.nlp.load.{ChunkTag, BILOUNestedChunkTag, BILOUChunkTag}
+import scala.reflect.ClassTag
 
 /** User: cellier
  *  Date: 10/28/13
@@ -42,7 +43,7 @@ object NestedNPChunkPhraseFinder extends NPChunkPhraseFinder[BILOUNestedChunkTag
 //Default for MentionFinder is BILOU Notation over BIO since BILOU performed best for NP mention finding
 object NPChunkMentionFinder extends NPChunkPhraseFinder[BILOUChunkTag]
 
-class NPChunkPhraseFinder[L<:ChunkTag](implicit m: Manifest[L]) extends DocumentAnnotator {
+class NPChunkPhraseFinder[L<:ChunkTag](implicit m: ClassTag[L]) extends DocumentAnnotator {
   def prereqAttrs = Seq(classOf[Token], classOf[Sentence], m.runtimeClass)
   def postAttrs = Seq(classOf[NounPhraseList])
   override def tokenAnnotationString(token:Token): String = token.document.attr[PhraseList].filter(phrase => phrase.contains(token)) match { case phraseSeq:Seq[Phrase] if phraseSeq.length > 0 => phraseSeq.map(phrase => phrase.attr[NounPhraseType].categoryValue+":"+ phrase.attr[OntonotesPhraseEntityType].categoryValue +":" +phrase.indexOf(token)).mkString(","); case _ => "_" }

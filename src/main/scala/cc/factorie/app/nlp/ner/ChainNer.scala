@@ -13,6 +13,7 @@ import cc.factorie.app.chain.ChainModel
 import cc.factorie.optimize.{Trainer, AdaGrad, ParameterAveraging}
 import cc.factorie.app.chain.SegmentEvaluation
 import cc.factorie.util.JavaHashMap
+import scala.reflect.ClassTag
 
 /**
  * NER tagger for the CoNLL 2003 corpus
@@ -57,7 +58,7 @@ object ConllChainNer extends ConllChainNer(cc.factorie.util.ClasspathURL[ConllCh
 abstract class ChainNer[L<:NerTag](labelDomain: CategoricalDomain[String],
                                    newLabel: (Token, String) => L,
                                    labelToToken: L => Token,
-                                   url: java.net.URL=null)(implicit m: Manifest[L]) extends DocumentAnnotator {
+                                   url: java.net.URL=null)(implicit m: ClassTag[L]) extends DocumentAnnotator {
 
   //DocumentAnnotator methods
   def tokenAnnotationString(token: Token): String = token.attr[L].categoryValue
@@ -83,10 +84,10 @@ abstract class ChainNer[L<:NerTag](labelDomain: CategoricalDomain[String],
     def domain = ChainNERFeaturesDomain
     override def skipNonCategories = true
   }
-  class ChainNERModel[Features <: CategoricalVectorVar[String]](featuresDomain: CategoricalVectorDomain[String],
+  class ChainNERModel[Features <: CategoricalVectorVar[String]:ClassTag](featuresDomain: CategoricalVectorDomain[String],
                                                                 labelToFeatures: L => Features,
                                                                 labelToToken: L => Token,
-                                                                tokenToLabel: Token => L)(implicit mf: Manifest[Features])
+                                                                tokenToLabel: Token => L)
     extends ChainModel(labelDomain, featuresDomain, labelToFeatures, labelToToken, tokenToLabel) //with Parameters {
 
   val model = new ChainNERModel[ChainNERFeatures](ChainNERFeaturesDomain, l => labelToToken(l).attr[ChainNERFeatures], labelToToken, t => t.attr[L])

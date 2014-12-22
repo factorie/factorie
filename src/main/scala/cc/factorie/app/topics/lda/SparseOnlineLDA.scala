@@ -403,11 +403,11 @@ object SparseOnlineLDA {
 
   def main(args:Array[String]): Unit = {
     object opts extends cc.factorie.util.DefaultCmdOptions {
-      val numTopics =     new CmdOption("num-topics", 't', 10, "N", "Number of topics.")
-      val batchSize =     new CmdOption("batch-size", 'b', 100, "N", "Number of documents to be process in one go")
+      val numTopics =     new CmdOption("num-topics", 10, "N", "Number of topics.", false, 't')
+      val batchSize =     new CmdOption("batch-size", 100, "N", "Number of documents to be process in one go", false, 'b')
       val alpha =         new CmdOption("alpha", 0.1, "N", "Dirichlet parameter for per-document topic proportions.")
       val beta =          new CmdOption("beta", 0.1, "N", "Dirichlet parameter for per-topic word proportions.")
-      val numSamples =    new CmdOption("num-samples", 'i', 5, "N", "Number of sweeps.")
+      val numSamples =    new CmdOption("num-samples", 5, "N", "Number of sweeps.", false, 'i')
       val readLines =     new CmdOption("read-lines", "", "FILENAME", "File containing lines of text, one for each document.")
       val maxNumDocs =    new CmdOption("max-num-docs", Int.MaxValue, "N", "The maximum number of documents to read.")
       val numBatches =    new CmdOption("num-batches", 5000, "N", "Num batches to process")

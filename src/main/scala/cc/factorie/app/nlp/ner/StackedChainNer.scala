@@ -27,9 +27,10 @@ import cc.factorie.optimize.{ParameterAveraging, AdaGrad}
 import cc.factorie.variable._
 import cc.factorie.optimize.Trainer
 import cc.factorie.la.WeightsMapAccumulator
+import scala.reflect.ClassTag
 
 
-class TokenSequence[T<:NerTag](token: Token)(implicit m: Manifest[T]) extends collection.mutable.ArrayBuffer[Token] {
+class TokenSequence[T<:NerTag](token: Token)(implicit m: ClassTag[T]) extends collection.mutable.ArrayBuffer[Token] {
   this.prepend(token)
   val label : String = token.attr[T].categoryValue.split("-")(1)
   def key = this.mkString("-")
@@ -42,7 +43,7 @@ class StackedChainNer[L<:NerTag](labelDomain: CategoricalDomain[String],
                                  embeddingDim: Int,
                                  scale: Double,
                                  useOffsetEmbedding: Boolean,
-                                 url: java.net.URL=null)(implicit m: Manifest[L]) extends DocumentAnnotator {
+                                 url: java.net.URL=null)(implicit m: ClassTag[L]) extends DocumentAnnotator {
   object NERModelOpts {
     val argsList = new scala.collection.mutable.HashMap[String, String]()
     argsList += ("scale" -> scale.toString)
@@ -88,10 +89,10 @@ class StackedChainNer[L<:NerTag](labelDomain: CategoricalDomain[String],
     override def skipNonCategories = true
   }
 
-  class StackedChainNereModel[Features <: CategoricalVectorVar[String]](featuresDomain1:CategoricalVectorDomain[String],
+  class StackedChainNereModel[Features <: CategoricalVectorVar[String]:ClassTag](featuresDomain1:CategoricalVectorDomain[String],
                                                                         labelToFeatures1:L=>Features,
                                                                         labelToToken1:L=>Token,
-                                                                        tokenToLabel1:Token=>L)(implicit mf: Manifest[Features])
+                                                                        tokenToLabel1:Token=>L)
     extends ChainModel(labelDomain, featuresDomain1, labelToFeatures1, labelToToken1, tokenToLabel1) with Parameters {
 
     // Factor for embedding of observed token

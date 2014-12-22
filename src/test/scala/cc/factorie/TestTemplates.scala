@@ -22,9 +22,6 @@ import cc.factorie.model.{DotTemplate2, DotTemplateWithStatistics1}
  */
 class TestTemplates extends JUnitSuite  with cc.factorie.util.FastLogging {
 
-  //implicit def template2initialized1[S1<:DiscretesValue](t:VectorStatistics1[S1])(implicit m:Manifest[S1]): InitializedTemplate = new InitializedTemplate(t.init)
-  //implicit def template2initialized(t:Template): InitializedTemplate = new InitializedTemplate(t)
-  
   @Test
   def testCreateDiff() {
     //this test just shows how variables create diff objects that point to them
