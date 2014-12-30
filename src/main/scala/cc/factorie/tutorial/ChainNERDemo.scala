@@ -66,7 +66,7 @@ object ChainNERDemo {
   }
   
   // The training objective
-  val objective = new HammingTemplate[Label]
+  val objective = new HammingTemplate[Label, Label#TargetType]
 
   def main(args: Array[String]): Unit = {
     implicit val random = new scala.util.Random(0)

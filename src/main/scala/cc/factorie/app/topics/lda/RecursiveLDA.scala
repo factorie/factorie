@@ -50,34 +50,13 @@ object RecursiveLDA {
   val minDocLength = 5
   
   def main(args:Array[String]): Unit = {
-    var verbose = false
-    object opts extends cc.factorie.util.DefaultCmdOptions {
-      val numTopics =     new CmdOption("num-topics", 't', 10, "N", "Number of topics at each of the two recursive levels; total number of topics will be N*N.")
-      val numLayers =     new CmdOption("num-layers", 'l', 2, "N", "Number of layers of recursion in topic tree; currently only values accepted are 1 and 2.")
-      val alpha =         new CmdOption("alpha", 0.1, "N", "Dirichlet parameter for per-document topic proportions.")
-      val beta =          new CmdOption("beta", 0.01, "N", "Dirichlet parameter for per-topic word proportions.")
-      val numThreads =    new CmdOption("num-threads", 2, "N", "Number of threads for multithreaded topic inference.")
-      val numIterations = new CmdOption("num-iterations", 'i', 50, "N", "Number of iterations of inference.")
-      val diagnostic =    new CmdOption("diagnostic-interval", 'd', 10, "N", "Number of iterations between each diagnostic printing of intermediate results.")
-      val diagnosticPhrases= new CmdOption("diagnostic-phrases", false, "true|false", "If true diagnostic printing will include multi-word phrases.")
-      val fitAlpha =      new CmdOption("fit-alpha-interval", Int.MaxValue, "N", "Number of iterations between each re-estimation of prior on per-document topic distribution.")
-      val tokenRegex =    new CmdOption("token-regex", "\\p{Alpha}+", "REGEX", "Regular expression for segmenting tokens.")
-      val readDirs =      new CmdOption("read-dirs", List(""), "DIR...", "Space-(or comma)-separated list of directories containing plain text input files.")
+    object opts extends LDAOpts {
       val readNIPS=       new CmdOption("read-nips", List(""), "DIR...", "Read data from McCallum's local directory of NIPS papers.")
-      val readLines =     new CmdOption("read-lines", "", "FILENAME", "File containing lines of text, one for each document.")
-      val readLinesRegex= new CmdOption("read-lines-regex", "", "REGEX", "Regular expression with parens around the portion of the line that should be read as the text of the document.")
-      val readLinesRegexGroups= new CmdOption("read-lines-regex-groups", List(1), "GROUPNUMS", "The --read-lines-regex group numbers from which to grab the text of the document.")
-      val readLinesRegexPrint = new CmdOption("read-lines-regex-print", false, "BOOL", "Print the --read-lines-regex match that will become the text of the document.")
-      val readDocs =      new CmdOption("read-docs", "lda-docs.txt", "FILENAME", "Add documents from filename , reading document names, words and z assignments")
       val readDocsTopicIndex = new CmdOption("read-docs-topic-index", 0, "N", "Only include in this model words that were assigned to the given topic index.  (Used for disk-based parallelism.)")
-      val writeDocs =     new CmdOption("write-docs", "lda-docs.txt", "FILENAME", "Save LDA state, writing document names, words and z assignments") 
-      val maxNumDocs =    new CmdOption("max-num-docs", Int.MaxValue, "N", "The maximum number of documents to read.")
-      val printTopics =   new CmdOption("print-topics", 20, "N", "Just before exiting print top N words for each topic.")
-      val printPhrases =  new CmdOption("print-topics-phrases", 20, "N", "Just before exiting print top N phrases for each topic.")
-      val verboseOpt =    new CmdOption("verbose", "Turn on verbose output", false) { override def invoke = verbose = true }
-      // TODO Add stopwords option
+      val numLayers =     new CmdOption("num-layers", 2, "N", "Number of layers of recursion in topic tree; currently only values accepted are 1 and 2.", false , 'l')
     }
     opts.parse(args)
+    val verbose = opts.verbose.value
     implicit val random = new scala.util.Random(0)
     val numTopics = opts.numTopics.value
     println("numTopics="+numTopics)

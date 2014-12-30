@@ -13,10 +13,6 @@
 
 package cc.factorie.directed
 
-import cc.factorie._
-import scala.reflect.Manifest
-import scala.collection.mutable.{HashSet,HashMap}
-import scala.util.Random
 import cc.factorie.variable.{DoubleVariable, DiscreteVariable, DiscreteValue}
 
 object GaussianMixture extends DirectedFamily4[DoubleVariable,Mixture[DoubleVariable],Mixture[DoubleVariable],DiscreteVariable] {

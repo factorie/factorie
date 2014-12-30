@@ -133,8 +133,8 @@ object ForwardBackwardPOS {
       val trainFile = new CmdOption("train", "", "FILE", "An OWPL train file.", true)
       val devFile =   new CmdOption("dev", "", "FILE", "An OWPL dev file", true)
       val testFile =  new CmdOption("test", "", "FILE", "An OWPL test file.", true)
-      val takeOnly =  new CmdOption("takeOnly", "-1", "INT", "A limit on the number of sentences loaded from each file.")
-      val iterations =new CmdOption("iterations", "10", "INT", "The number of iterations to train for.")
+      val takeOnly =  new CmdOption("takeOnly", -1, "INT", "A limit on the number of sentences loaded from each file.")
+      val iterations =new CmdOption("iterations", 10, "INT", "The number of iterations to train for.")
       val modelDir =  new CmdOption("model", "", "DIR", "Directory in which to save the trained model.")
       val extraId =   new CmdOption("label", "", "STRING", "An extra identifier.  Useful for testing different sets of features.")
     }
@@ -143,7 +143,7 @@ object ForwardBackwardPOS {
     import opts._
 
     if (trainFile.wasInvoked && devFile.wasInvoked && testFile.wasInvoked) {
-      def load(f: String): Seq[Document] = LoadOWPL.fromFilename(f, labelMaker, limitSentenceCount=takeOnly.value.toInt)
+      def load(f: String): Seq[Document] = LoadOWPL.fromFilename(f, labelMaker, limitSentenceCount=takeOnly.value)
 
       // load the data
       val trainDocs = load(trainFile.value)
@@ -153,7 +153,7 @@ object ForwardBackwardPOS {
       initPosFeatures(trainDocs ++ devDocs ++ testDocs)
 
       train(trainDocs, devDocs, testDocs,
-        iterations = iterations.value.toInt,
+        iterations = iterations.value,
         modelFile = modelDir.value,
         extraId = extraId.value
       )

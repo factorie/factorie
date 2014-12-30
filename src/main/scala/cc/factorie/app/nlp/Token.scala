@@ -142,14 +142,14 @@ class Token(val stringStart:Int, val stringEnd:Int) extends cc.factorie.app.chai
   // Span methods.  Don't delete these yet.  Still small chance may have a canonical "SpanList" in Section.
 //  def inSpan: Boolean = chain.hasSpanContaining(position) 
 //  def inSpanOfClass[A<:TokenSpan](c:Class[A]): Boolean = chain.hasSpanOfClassContaining(c, position)
-//  def inSpanOfClass[A<:TokenSpan](implicit m:Manifest[A]): Boolean = chain.hasSpanOfClassContaining(m.erasure.asInstanceOf[Class[A]], position)
+//  def inSpanOfClass[A<:TokenSpan:ClassTag]: Boolean = chain.hasSpanOfClassContaining(m.erasure.asInstanceOf[Class[A]], position)
 //  def spans:Seq[TokenSpan] = chain.spansContaining(position) //.toList
 //  def spansOfClass[A<:TokenSpan](c:Class[A]) = chain.spansOfClassContaining(c, position)
-//  def spansOfClass[A<:TokenSpan](implicit m:Manifest[A]) = chain.spansOfClassContaining(m.erasure.asInstanceOf[Class[A]], position)
+//  def spansOfClass[A<:TokenSpan:ClassTag] = chain.spansOfClassContaining(m.erasure.asInstanceOf[Class[A]], position)
 //  def startsSpans: Iterable[TokenSpan] = chain.spansStartingAt(position)
-//  def startsSpansOfClass[A<:TokenSpan](implicit m:Manifest[A]): Iterable[A] = chain.spansOfClassStartingAt(position)
+//  def startsSpansOfClass[A<:TokenSpan:ClassTag]: Iterable[A] = chain.spansOfClassStartingAt(position)
 //  def endsSpans: Iterable[TokenSpan] = chain.spansEndingAt(position)
-//  def endsSpansOfClass[A<:TokenSpan](implicit m:Manifest[A]): Iterable[A] = chain.spansOfClassEndingAt(position)
+//  def endsSpansOfClass[A<:TokenSpan:ClassTag]: Iterable[A] = chain.spansOfClassEndingAt(position)
   
   // String feature help:
   def matches(t2:Token): Boolean = string == t2.string // TODO Consider renaming "stringMatches"

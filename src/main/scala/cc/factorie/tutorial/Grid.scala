@@ -102,7 +102,7 @@ object Grid {
     val image = createDonut(1.0, 50, 20, 7.5, (25.0, 25.0))
     val pixels = image.flatMap(_.toSeq).toSeq
     val gridModel = new CombinedModel(LocalTemplate, PairwiseTemplate)
-    val objective = new HammingTemplate[Pixel]
+    val objective = new HammingTemplate[Pixel, Pixel#TargetType]
     pixels.foreach(_.setUsingObserved())
     implicit val random = new scala.util.Random(0)
     pixels.foreach(_.setRandomly)
