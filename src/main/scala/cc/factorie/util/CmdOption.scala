@@ -186,14 +186,14 @@ class CmdOptions {
       * returning the current index of the input args after processing. */
     protected def parseValue(args:Seq[String], index:Int):Int = {
 
-      println("parsing %s starting at index %s".format(args, index))
+//      println("parsing %s starting at index %s".format(args, index))
       var nextIndex = index
       //
       def processList[RT](converter:String => RT):List[RT] = if(args(index) contains ",") {
         args(index).split(",").toList.map(converter)
       } else {
         val arr = args.drop(index).takeWhile(s => !s.startsWith("-"))
-        println("found %s as the relevant subset" format arr)
+//        println("found %s as the relevant subset" format arr)
         nextIndex += arr.size
         arr.toList.map(converter)
       }
