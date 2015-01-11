@@ -154,7 +154,7 @@ of libsvm-style training examples for classification and regression.
 
 Figaro...
 
-[Alchemy](http://ai.cs.washington.edu/projects/alchemy) is a library for stastistical relational learning, mostly structured around Markov Logic Networks. While MLNs are representable in factorie, its main focus is on other kinds of model. Factorie also provides many tools for machine learning and natural language processing which do not fit in the statistical relational learning framework.
+[Alchemy](http://ai.cs.washington.edu/projects/alchemy) is a library for statistical relational learning, mostly structured around Markov Logic Networks. While MLNs are representable in factorie, its main focus is on other kinds of model. Factorie also provides many tools for machine learning and natural language processing which do not fit in the statistical relational learning framework.
 
 PEBL...
 

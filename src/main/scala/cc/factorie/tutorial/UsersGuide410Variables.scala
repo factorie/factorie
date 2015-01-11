@@ -235,7 +235,7 @@ object TutorialVariables extends App {
   assert("peach" == cv1.categoryValue)
   println("cv1 integer value is " + cv1.intValue)
   assert(cv1.intValue == cd.index("peach"))
-  // The domain grew automatically to accomodate the new category values
+  // The domain grew automatically to accommodate the new category values
   println("The cd CategoricalDomain size is now " + cd.size)
   assert(5 == cd.size)
   // You cannot create CategoricalValue or DiscreteValue yourself.
