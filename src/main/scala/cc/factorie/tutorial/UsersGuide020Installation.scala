@@ -26,7 +26,7 @@ There are two ways to use FACTORIE as a library, by directly including the jar i
 
 If you have the FACTORIE source, you can also run `mvn package`, which will generate a jar in the target folder which you can then include in other projects.
 
-If you'd like to add FACTORIE as a dependency in a Maven-manged project, simply add FACTORIE as a dependency in the dependencies section of your pom.xml:
+If you'd like to add FACTORIE as a dependency in a Maven-managed project, simply add FACTORIE as a dependency in the dependencies section of your pom.xml:
 
 ```xml
 <dependencies>

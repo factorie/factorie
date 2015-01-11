@@ -75,7 +75,7 @@ Factor graphs represent a joint distribution over random variables by
 a product of (normalized or unnormalized) non-negative values---one
 value for each factor in the graph.  The factors can be understood as
 "compatibility functions" that take as input the values of the
-variables which they neighbor, and outputing a "compatibility score"
+variables which they neighbor, and outputting a "compatibility score"
 such that higher scores indicate the combination of values is more
 likely, and lower scores indicate the combination of values is less
 likely.  A score of 0 indicates the combination is impossible.
@@ -86,7 +86,7 @@ each (child) variable, where the factor is also connected to the other
 the child's value.  The factor's scores are normalized probabilities.
 
 Undirected graphical models can be represented with one factor per
-clique (or other arbitary subsets of clique members).  The factors'
+clique (or other arbitrary subsets of clique members).  The factors'
 scores are unnormalized non-negative values, and thus in order to
 obtain a normalized joint probability distribution over all the
 variables in the model, we must normalize the product of factor scores
@@ -129,7 +129,7 @@ non-intertwined definitions of
 3. inference methods, and
 4. parameter estimation.
 
-This separation provides FACTORIE users with great flexibilty to
+This separation provides FACTORIE users with great flexibility to
 mix-and-match different choices in each of these four dimensions.  For
 example, the data representation for some task may be written just
 once, while different choices of dependencies are explored for this
@@ -203,7 +203,7 @@ simply return the variable's globally-assigned value.
 
 FACTORIE has different subclasses of `Var` for holding values of
 different types.  There are a large number of traits and classes for
-variables.  The following naming convensions make their interpretation
+variables.  The following naming conventions make their interpretation
 easier.  All abstract traits and classes end in `Var`, while concrete
 classes end in `Variable`.  Almost all classes ending in `Variable`
 have an abstract `Var` counterpart that does not necessarily specify
@@ -567,7 +567,7 @@ variables.  For example, a `DiscreteMarginal2` specifies two
 `DiscreteVar`s, and a `Proportions2` which contains their marginal
 distribution.  A `RealGaussianMarginal1` represents a univariate
 Gaussian distribution with a specified mean and variance.  Naturally a
-marginal that results from maximum aposteriori inference will simply
+marginal that results from maximum a posteriori inference will simply
 have a spike with all probability on the maximum-scoring values.  The
 most widely used marginals are those over a single variable,
 inheriting from `Marginal1` because marginals over multiple variables

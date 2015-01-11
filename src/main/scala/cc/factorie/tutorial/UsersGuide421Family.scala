@@ -17,7 +17,7 @@
  **/
 
 package cc.factorie.tutorial
-object TutorialFamily extends App{
+object TutorialFamily extends App {
   import cc.factorie._ 
   import cc.factorie.la._ 
     
