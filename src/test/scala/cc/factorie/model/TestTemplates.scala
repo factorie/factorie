@@ -10,26 +10,17 @@
    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
    See the License for the specific language governing permissions and
    limitations under the License. */
-package cc.factorie
+package cc.factorie.model
 
-import org.scalatest.junit._
+import cc.factorie._
+import cc.factorie.variable.{BooleanVariable, DiffList, RealVariable, Var, _}
 import org.junit.Test
-import cc.factorie.variable._
-import cc.factorie.model.{DotTemplate2, DotTemplateWithStatistics1}
+import org.scalatest.junit._
 
 /**
  * @author sriedel
  */
 class TestTemplates extends JUnitSuite  with cc.factorie.util.FastLogging {
-
-  @Test
-  def testCreateDiff() {
-    //this test just shows how variables create diff objects that point to them
-    val b = new BooleanVariable(true)
-    val diff = new DiffList
-    b.set(false)(diff)
-    assert(diff(0).variable === b)
-  }
 
   @Test
   def testFactorsOfDiffList() {
@@ -68,7 +59,7 @@ class TestTemplates extends JUnitSuite  with cc.factorie.util.FastLogging {
       class Member extends BooleanVariable {
         def owner = Aggregate.this
       }
-      val members = for (i <- 0 until 10) yield new Member 
+      val members = for (i <- 0 until 10) yield new Member
     }
     val aggregate = new Aggregate
     val template = new DotTemplate2[Aggregate,Vars[Aggregate#Member]] with Parameters {
@@ -77,7 +68,7 @@ class TestTemplates extends JUnitSuite  with cc.factorie.util.FastLogging {
       def unroll1(v: Aggregate) = Factor(v,Vars(v.members))
       //override def unroll2s(v: Aggregate#Member) = Factor(v.owner,Vars(v.owner.members))
       override def unroll(v:Var) = v match { case v:Aggregate#Member => Factor(v.owner, Vars(v.owner.members)); case _ => Nil }
-      override def statistics(v1:Aggregate#Value, v2:Vars[Aggregate#Member]#Value) = 
+      override def statistics(v1:Aggregate#Value, v2:Vars[Aggregate#Member]#Value) =
         new RealVariable(v2.count(_.booleanValue)).value // TODO Just create a RealValue; don't bother with a RealVariable
     }
     val diff = new DiffList
