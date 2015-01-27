@@ -96,7 +96,7 @@ class WordNetLemmatizer(val inputStreamFactory: String=>InputStream) extends Doc
     for (token <- document.tokens) token.attr += new WordNetTokenLemma(token, lemma(token.string, token.posTag.categoryValue))
     document
   }
-  override def tokenAnnotationString(token:Token): String = { val l = token.attr[WordNetTokenLemma]; l.value }
+  override def tokenAnnotationString(token:Token): String = { val l = token.attr[WordNetTokenLemma]; if (l ne null) l.value else "_"}
   def prereqAttrs: Iterable[Class[_]] = List(classOf[PennPosTag])
   def postAttrs: Iterable[Class[_]] = List(classOf[WordNetTokenLemma])
 

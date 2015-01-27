@@ -54,14 +54,14 @@ trait VerboseMove[Vars <: NodeVariables[Vars]] extends Move[Vars] {
   override abstract def operation(node1:Node[Vars], node2:Node[Vars])(d:DiffList):DiffList = {
     d match {
       case v:Verbosity =>
-        v.srcId = node2.id.toString
+        v.srcId = node2.uniqueId.toString
         v.srcDepth = node2.depth - 1
         v.srcBagSize = getBagSize(node2)
         v.srcIsEnt = node2.isRoot
         v.srcIsMent = node2.isMention
         v.srcMentionCount = node2.mentionCountVar.value
 
-        v.dstId = node1.id.toString
+        v.dstId = node1.uniqueId.toString
         v.dstDepth = node1.depth - 1
         v.dstBagSize = getBagSize(node1)
         v.dstIsEnt = node1.isRoot
@@ -76,8 +76,8 @@ trait VerboseMove[Vars <: NodeVariables[Vars]] extends Move[Vars] {
     val res = super.operation(node1, node2)(d)
     d match {
       case v:Verbosity =>
-        node1.parent match {
-          case Some(p) => v.newParentId = p.id
+        node1.getParent match {
+          case Some(p) => v.newParentId = p.uniqueId
           case None => Unit
         }
       case _ => Unit
@@ -106,7 +106,7 @@ trait VerboseMoveGenerator[Vars <: NodeVariables[Vars]] extends MoveGenerator[Va
           } else {
             moves += new MergeLeft[Vars](e2, e1) with VerboseMove[Vars] {def getBagSize(n:Node[Vars]) = outerGetBagSize(n)}
           }
-          e1 = e1.parent.getOrElse(null.asInstanceOf[Node[Vars]])
+          e1 = e1.getParent.getOrElse(null.asInstanceOf[Node[Vars]])
         }
       }
     } else {

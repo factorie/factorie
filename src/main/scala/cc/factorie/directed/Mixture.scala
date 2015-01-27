@@ -109,7 +109,7 @@ object Mixture extends DirectedFamily1[Mixture[Var]] {
 
 /*
 // TODO Not yet finished
-class InfiniteMixture[P<:Parameter:Manifest](constructor: =>P) extends MixtureComponents[P] {
+class InfiniteMixture[P<:Parameter:ClassTag](constructor: =>P) extends MixtureComponents[P] {
   val generativeTemplate = new MixtureComponentsTemplate
   //def generativeFactor = new generativeTemplate.Factor(this, Vars.fromSeq(components))
   def generativeFactor = new generativeTemplate.Factor(this)

@@ -12,6 +12,7 @@
    limitations under the License. */
 
 package cc.factorie.app.nlp.ner
+
 import cc.factorie.app.nlp._
 import cc.factorie.variable._
 
@@ -21,11 +22,10 @@ import cc.factorie.variable._
      More specific subclasses have a domain, such as BilouConllNerDomain.
      @author Andrew McCallum */
 abstract class NerTag(val token:Token, initialCategory:String) extends CategoricalVariable(initialCategory) {
-  /** Return "PER" instead of "I-PER". */
-  def shortCategoryValue: String = if (categoryValue.length > 1 && categoryValue(1) == '-') categoryValue.substring(2) else categoryValue
-  def baseCategoryValue: String = if (intValue == 0) "O" else categoryValue.drop(2)
-  // TODO Pick just one of the above.
-}
+   /** Return "PER" instead of "I-PER". */
+   def baseCategoryValue: String = if (categoryValue.length > 1 && categoryValue(1) == '-') categoryValue.substring(2) else categoryValue
+ }
+
 
 /** A categorical variable holding the named entity type of a TokenSpan.
     More specific subclasses have a domain, such as ConllNerDomain.
@@ -35,7 +35,7 @@ abstract class NerSpanLabel(val span:TokenSpan, initialCategory:String) extends 
     @author Andrew McCallum */
 abstract class NerSpan(section:Section, start:Int, length:Int) extends TokenSpan(section, start, length) {
   def label: NerSpanLabel
-  override def toString = "NerSpan("+length+","+label.categoryValue+":"+this.phrase+")"
+  override def toString = "NerSpan("+length+","+label.categoryValue+":"+this.string+")"
 }
 // Note: There are currently no labeled counterparts to these SpanLabels.
 

@@ -62,7 +62,7 @@ trait Var {
     else
       fields.last
   }
-  /** Return the string often used as a prefix of the toString reprsentation of this variable. */
+  /** Return the string often used as a prefix of the toString representation of this variable. */
   def printName = shortClassName
   /** Return a short string representation of this variable, suitable for debugging messages. */
   override def toString = printName + "(_)"

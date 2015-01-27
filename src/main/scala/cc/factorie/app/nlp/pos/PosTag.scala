@@ -16,6 +16,8 @@ import cc.factorie._
 import cc.factorie.app.nlp._
 import cc.factorie.variable._
 
+abstract class PosTag(val token:Token, initialIndex:Int) extends CategoricalVariable[String](initialIndex)
+
 /** Penn Treebank part-of-speech tag domain. */
 object PennPosDomain extends CategoricalDomain[String] {
   this ++= Vector(
@@ -80,6 +82,7 @@ object PennPosDomain extends CategoricalDomain[String] {
   val prpdIndex = index("PRP$")
   val wpIndex = index("WP")
   val wpdIndex = index("WP$")
+  val ccIndex = index("CC")
 
   def isNoun(pos:String): Boolean = pos(0) == 'N' 
   def isProperNoun(pos:String) = { pos == "NNP" || pos == "NNPS" }
@@ -88,8 +91,9 @@ object PennPosDomain extends CategoricalDomain[String] {
   def isPersonalPronoun(pos: String) = pos == "PRP"
 }
 /** A categorical variable, associated with a token, holding its Penn Treebank part-of-speech category.  */
-class PennPosTag(val token:Token, initialValue:String) extends CategoricalVariable(initialValue) {
-  def domain = PennPosDomain
+class PennPosTag(token:Token, initialIndex:Int) extends PosTag(token, initialIndex) {
+  def this(token:Token, initialCategory:String) = this(token, PennPosDomain.index(initialCategory))
+  final def domain = PennPosDomain
   def isNoun = PennPosDomain.isNoun(categoryValue)
   def isProperNoun = PennPosDomain.isProperNoun(categoryValue)
   def isVerb = PennPosDomain.isVerb(categoryValue)

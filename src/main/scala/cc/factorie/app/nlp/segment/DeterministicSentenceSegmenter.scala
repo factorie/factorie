@@ -113,6 +113,8 @@ class DeterministicSentenceSegmenter extends DocumentAnnotator {
       if (sentenceStart < tokens.length) newSentence(tokens.length) // Final sentence
       for (sentence <- section.sentences; token <- sentence.tokens) token._sentence = sentence  // Set each Token's internal record of its sentence, to avoid having to look it up later. 
     }
+    if (!document.annotators.contains(classOf[Sentence]))
+      document.annotators(classOf[Sentence]) = this.getClass
     document
   }
   def prereqAttrs: Iterable[Class[_]] = List(classOf[Token])

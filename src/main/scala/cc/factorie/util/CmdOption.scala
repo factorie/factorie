@@ -14,17 +14,17 @@
 
 
 package cc.factorie.util
-import scala.reflect.Manifest
+import scala.reflect.ClassTag
 import scala.collection.mutable.{HashMap,HashSet,ArrayBuffer}
 import cc.factorie._
+import scala.reflect.runtime.universe._
 
 /** Concrete version is implemented as an inner class of @see CmdOptions.
     @author Andrew McCallum */
 trait CmdOption[T] {
   def name: String
   def shortName: Char
-  def helpString: String
-  def valueClass: Class[_]
+  def helpMsg: String
   def valueName: String
   def defaultValue: T
   def value: T
@@ -123,168 +123,97 @@ class CmdOptions {
       case None =>
     }
   }
-  /*object CmdOption {
-    def apply[T](name:String, defaultValue:T, valueName:String, helpMsg:String)(implicit m:Manifest[T]): CmdOption[T] =
-      new CmdOption[T](name, defaultValue, valueName, helpMsg)
-    def apply[T](name:String, shortName:Char, defaultValue:T, valueName:String, helpMsg:String)(implicit m:Manifest[T]): CmdOption[T] =
-      new CmdOption[T](name, shortName, defaultValue, valueName, helpMsg)
-    def apply(name:String, helpMsg:String): CmdOption[Any] =
-      new CmdOption[Any](name, helpMsg)
-  }*/
-  class CmdOption[T](val name:String, val helpMsg:String, val required:Boolean = false)(implicit m:Manifest[T]) extends cc.factorie.util.CmdOption[T] {
-    def this(name:String, defaultValue:T, valueName:String, helpMsg:String, required:Boolean = false)(implicit m:Manifest[T]) = {
-      this(name, helpMsg, required)
-      this.valueName = valueName
-      value = defaultValue
-      this.defaultValue = defaultValue
-    }
-    /*def this(name:String, defaultValue:T, helpMsg:String)(implicit m:Manifest[T]) = {
-      this(name, defaultValue, { val fields = m.runtimeClass.getName.split("[^A-Za-z]+"); if (fields.length > 1) fields.last else fields.head }, helpMsg)
-    }*/
-    def this(name:String, shortName:Char, defaultValue:T, valueName:String, helpMsg:String, required:Boolean = false)(implicit m:Manifest[T]) = {
-      this(name, defaultValue, valueName, helpMsg, required)
-      this.shortName = shortName
-    }
-    /*def this(name:String, shortName:Char, defaultValue:T, helpMsg:String)(implicit m:Manifest[T]) = {
-      this(name, defaultValue, helpMsg)
-      this.shortName = shortName
-    }*/
-    CmdOptions.this += this
-    // TODO When we have Scala 2.8 default args, add a "shortName" one-char alternative here
-    var shortName: Char = ' ' // space char indicates no shortName
-    val valueManifest: Manifest[T] = m
-    def valueClass: Class[_] = m.runtimeClass
-    var valueName: String = null
-    var defaultValue: T = _
-    var value: T = _
-    var invokedCount = 0
-    def setValue(v: T) { value = v }
-    def hasValue = valueClass != noClass
-    def noClass = classOf[Any] // This is the value of m.runtimeClass if no type is specified for T in CmdOption[T].
-    /** Attempt to match and process command-line option at position 'index' in 'args'.
-        Return the index of the next position to be processed. */
-    def parse(args:Seq[String], index:Int): Int = {
-      if (valueClass == noClass && args(index) == "--"+name || args(index) == "-"+shortName) {
-        // support options like --help or -h (i.e. no arguments to option)
-        invoke
-        invokedCount += 1
-        index + 1
-      } else if (args(index) == "--"+name || args(index) == "-"+shortName) {
-        // support options like --file foo, or -f foo (or just --file or -f, in which case value is the defaultValue)
-        var newIndex = index + 1
-        // If the next args does not begin with regex "-.+" assume it is the value of this argument and parse it...
-        if (newIndex < args.length && !(args(newIndex).startsWith("-") && args(newIndex).length > 1)) newIndex = parseValue(args, newIndex)
-        else if (valueClass == classOf[Boolean]) this.asInstanceOf[CmdOption[Boolean]].value = true // for CmdOption[Boolean], invoking with no value arg defaults to true
-        // ...otherwise the value will just remain the defaultValue
-        invoke
-        invokedCount += 1
-        newIndex
-      } else if (args(index).startsWith("--"+name+"=")) {
-        // support --file=foo
-        // modified on 1/21/2012 to support --file=foo=bar --brian
-        val rightOfEq = args(index).drop(name.size + 3)
-        parseValue(List(rightOfEq), 0)
-        invoke
-        invokedCount += 1
-        index + 1
-      } else index
-    }
-    /** Called after this CmdOption has been matched and value has been parsed. */
-    def invoke(): Unit = {}
-    /** After we have found a match, request that argument(s) to command-line option be parsed.
-        Return the index position that should be processed next.
-        This method allows one option to possibly consume multiple args, (in contrast with parseValue(String).) */
-    protected def parseValue(args:Seq[String], index:Int): Int = {
-      //println("CmdOption    "+valueManifest)
-      //val listIntManifest = Manifest.classType[List[Int]](classOf[List[Int]], Manifest.classType[Int](classOf[Int]))
-      //println("Manifest     "+listIntManifest)
-      //println("CmdOption == "+(valueManifest == listIntManifest))
-      //println("typeArgs     "+(valueManifest.typeArguments))
-      //println("typeArgs1 == "+((valueClass eq classOf[List[_]])))
-      //if (valueManifest.typeArguments.size > 0) println("typeArgs2 == "+((valueManifest.typeArguments(0).runtimeClass eq classOf[Int])))
-      //println("typeArgs ==  "+((valueClass eq classOf[List[_]]) && (valueManifest.typeArguments(0).runtimeClass eq classOf[Int])))
-      if ((valueClass eq classOf[List[_]]) && (valueManifest.typeArguments(0).runtimeClass eq classOf[String])) {
-        // Handle CmdOpt whose value is a List[String]
-        if (args(index).contains(',')) {
-          // Handle the case in which the list is comma-separated
-          value = args(index).split(",").toList.asInstanceOf[T]
-          index + 1
-        } else {
-          // Handle the case in which the list is space-separated
-          var i = index
-          val listValue = new scala.collection.mutable.ListBuffer[String]
-          // Read arguments until we find another CmdOption, which must begin with either with regex "--" or "-.+"
-          while (i < args.length && !args(i).startsWith("--") && !(args(i).startsWith("-") && args(i).length > 1)) {
-            listValue += args(i)
-            i += 1
-          }
-          value = listValue.toList.asInstanceOf[T]
-          i
-        }
-      } else if ((valueClass eq classOf[List[_]]) && (valueManifest.typeArguments(0).runtimeClass eq classOf[Int])) {
-        // Handle CmdOpt whose value is a List[String]
-        if (args(index).contains(',')) {
-          // Handle the case in which the list is comma-separated
-          value = args(index).split(",").toList.map(_.toInt).asInstanceOf[T]
-          index + 1
-        } else {
-          // Handle the case in which the list is space-separated
-          var i = index
-          val listValue = new scala.collection.mutable.ListBuffer[Int]
-          // Read arguments until we find another CmdOption, which must begin with either with regex "--" or "-.+"
-          while (i < args.length && !args(i).startsWith("--") && !(args(i).startsWith("-") && args(i).length > 1)) {
-            listValue += args(i).toInt
-            i += 1
-          }
-          value = listValue.toList.asInstanceOf[T]
-          i
-        }
-      } else if ((valueClass eq classOf[List[_]]) && (valueManifest.typeArguments(0).runtimeClass eq classOf[Double])) {
-        // Handle CmdOpt whose value is a List[String]
-        if (args(index).contains(',')) {
-          // Handle the case in which the list is comma-separated
-          value = args(index).split(",").toList.map(_.toDouble).asInstanceOf[T]
-          index + 1
-        } else {
-          // Handle the case in which the list is space-separated
-          var i = index
-          val listValue = new scala.collection.mutable.ListBuffer[Double]
-          // Read arguments until we find another CmdOption, which must begin with either with regex "--" or "-.+"
-          while (i < args.length && !args(i).startsWith("--") && !(args(i).startsWith("-") && args(i).length > 1)) {
-            listValue += args(i).toDouble
-            i += 1
-          }
-          value = listValue.toList.asInstanceOf[T]
-          i
-        }
-      } else {
-        parseValue(args(index))
-        index + 1
-      }
-    }
-    /** Parse a value from a single arg */
-    protected def parseValue(valueStr:String): Unit = {
-      // TODO Is there a better way to do this?
-      if (valueClass eq classOf[Int]) value = Integer.parseInt(valueStr).asInstanceOf[T]
-      else if (valueClass eq classOf[Float]) value = java.lang.Float.parseFloat(valueStr).asInstanceOf[T]
-      else if (valueClass eq classOf[Double]) value = java.lang.Double.parseDouble(valueStr).asInstanceOf[T]
-      else if (valueClass eq classOf[Short]) value = java.lang.Short.parseShort(valueStr).asInstanceOf[T]
-      else if (valueClass eq classOf[Long]) value = java.lang.Long.parseLong(valueStr).asInstanceOf[T]
-      else if (valueClass eq classOf[Boolean]) value = java.lang.Boolean.parseBoolean(valueStr).asInstanceOf[T]
-      else if (valueClass eq classOf[Char]) value = valueStr.apply(0).asInstanceOf[T]
-      else if (valueClass eq classOf[String]) value = valueStr.asInstanceOf[T]
-      // Support comma-separated multiple values, e.g. --train=eng.train,eng.testa
-      //else if (valueManifest <:< Manifest.classType[List[String]](classOf[List[String]], Manifest.classType[String](classOf[String]))) value = valueStr.split(",").toList.asInstanceOf[T] // Now handled above.
-      //else if (valueManifest <:< Manifest.classType[List[Int]](classOf[List[Int]], Manifest.classType[Int](classOf[Int]))) value = valueStr.split(',').map(Integer.parseInt(_)).toList.asInstanceOf[T]
-      else throw new Error("CmdOption does not handle value of type "+valueManifest)
-      // TODO Add an option that will run the interpreter on some code
-    }
-    // TODO Format long help messages more nicely.
-    def helpString: String = {
-      val defaultValueString = if(defaultValue == null)  "null" else defaultValue  match { case d:Seq[_] => d.mkString(",");  case _ => defaultValue }
 
-      if (valueClass != noClass) "--%-15s %s\n".format(name+"="+valueName, helpMsg+"  Default="+defaultValueString)
-      else "--%-15s %s\n".format(name, helpMsg)
+  /** Writes options from this instance into another instance of opts of a different type. */
+  def writeInto[Opts <: CmdOptions](other:Opts):Opts = {
+    other.opts ++= other.opts.keySet.intersect(this.opts.keySet).map { key =>
+      key -> this.opts(key)
+    }
+    other
+  }
+
+  class CmdOption[T:TypeTag](val name:String, val defaultValue:T, val valueName:String, val helpMsg:String, val required:Boolean, val shortName:Char) extends cc.factorie.util.CmdOption[T] {
+    def this(name:String, defaultValue:T, valueName:String, helpMsg:String) = this(name, defaultValue, valueName, helpMsg, false, name.head)
+    def this(name:String, defaultValue:T, valueName:String, helpMsg:String, required:Boolean) = this(name, defaultValue, valueName, helpMsg, required, name.head)
+    def this(name:String, helpMsg:String) = this(name, null.asInstanceOf[T], null.asInstanceOf[String], helpMsg)
+    def this(name:String, helpMsg:String, required:Boolean) = this(name, null.asInstanceOf[T], null.asInstanceOf[String], helpMsg, required)
+    def this(name:String, shortName:Char, defaultValue:T, valueName:String, helpMsg:String, required:Boolean) = this(name, defaultValue, valueName, helpMsg, required, shortName)
+
+    CmdOptions.this += this
+    private def valueType = typeOf[T]
+    private def matches(str:String):Boolean = str == ("--" + name) || str == ("-" + shortName)
+
+    var _value = defaultValue
+
+    def value:T = {
+      _value
+    }
+
+    def setValue(v: T) { _value = v }
+
+    def hasValue = !(valueType =:= typeOf[Nothing])
+
+    var invokedCount = 0
+
+    def parse(args: Seq[String], index: Int) =
+     if(!hasValue && matches(args(index))) {
+       invoke()
+       invokedCount += 1
+       index + 1
+     } else if(args(index) == "--"+name || args(index) == "-"+shortName) {
+       // support options like --file foo, or -f foo (or just --file or -f, in which case value is the defaultValue)
+       var newIndex = index + 1
+       // If the next args does not begin with regex "-.+" assume it is the value of this argument and parse it...
+       if (newIndex < args.length && !(args(newIndex).startsWith("-") && args(newIndex).length > 1)) newIndex = parseValue(args, newIndex)
+       else if (valueType =:= typeOf[Boolean]) setValue(true.asInstanceOf[T]) // for CmdOption[Boolean], invoking with no value arg defaults to true
+       // ...otherwise the value will just remain the defaultValue
+       invoke
+       invokedCount += 1
+       newIndex
+     } else if (args(index).startsWith("--"+name+"=")) {
+       // support --file=foo
+       // modified on 1/21/2012 to support --file=foo=bar --brian
+       val rightOfEq = args(index).drop(name.size + 3)
+       parseValue(List(rightOfEq), 0)
+       invoke
+       invokedCount += 1
+       index + 1
+     } else index
+
+    def invoke():Unit = {}
+
+    /** Parses each of the supported value types of cmdoption, setting the value field and
+      * returning the current index of the input args after processing. */
+    protected def parseValue(args:Seq[String], index:Int):Int = {
+
+//      println("parsing %s starting at index %s".format(args, index))
+      var nextIndex = index
+      //
+      def processList[RT](converter:String => RT):List[RT] = if(args(index) contains ",") {
+        args(index).split(",").toList.map(converter)
+      } else {
+        val arr = args.drop(index).takeWhile(s => !s.startsWith("-"))
+//        println("found %s as the relevant subset" format arr)
+        nextIndex += arr.size
+        arr.toList.map(converter)
+      }
+
+      setValue(valueType match {
+        case t if t =:= typeOf[List[String]] => processList(identity).asInstanceOf[T]
+        case t if t =:= typeOf[List[Int]] => processList(_.toInt).asInstanceOf[T]
+        case t if t =:= typeOf[List[Double]] => processList(_.toDouble).asInstanceOf[T]
+        case t if t =:= typeOf[Char] => args(index).head.asInstanceOf[T]
+        case t if t =:= typeOf[String] => args(index).asInstanceOf[T]
+        case t if t =:= typeOf[Short] => args(index).toShort.asInstanceOf[T]
+        case t if t =:= typeOf[Int] => args(index).toInt.asInstanceOf[T]
+        case t if t =:= typeOf[Long] => args(index).toLong.asInstanceOf[T]
+        case t if t =:= typeOf[Double] => args(index).toDouble.asInstanceOf[T]
+        case t if t =:= typeOf[Float] => args(index).toFloat.asInstanceOf[T]
+        case t if t =:= typeOf[Boolean] => args(index).toBoolean.asInstanceOf[T]
+        case otw => throw new Error("CmdOption does not handle values of type " + otw)
+      })
+      if (nextIndex == index) nextIndex += 1
+      nextIndex
     }
   }
 }
@@ -293,7 +222,7 @@ class CmdOptions {
 trait DefaultCmdOptions extends CmdOptions {
   new CmdOption("help", "", "STRING", "Print this help message.") {
     override def invoke = {
-      DefaultCmdOptions.this.values.foreach(o => println(o.helpString))
+      DefaultCmdOptions.this.values.foreach(o => println(o.helpMsg))
       System.exit(0)
     }
   }

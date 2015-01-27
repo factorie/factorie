@@ -407,7 +407,11 @@ class ForwardPosTagger extends DocumentAnnotator {
     }
   }
 
-  def process(d: Document) = { predict(d); d }
+  def process(d: Document) = {
+    predict(d)
+    if (!d.annotators.contains(classOf[PennPosTag])) d.annotators(classOf[PennPosTag]) = this.getClass
+    d
+  }
   def process(s: Sentence) = { predict(s); s }
   def prereqAttrs: Iterable[Class[_]] = List(classOf[Token], classOf[Sentence], classOf[segment.PlainNormalizedTokenString])
   def postAttrs: Iterable[Class[_]] = List(classOf[PennPosTag])
@@ -465,14 +469,10 @@ object ForwardPosTester {
     }else if (opts.testFiles.wasInvoked){
       testFileList =  opts.testFiles.value.split(",")
     }
-
-    def posLabelMaker(tok: Token, labels: Seq[String]): Seq[MutableCategoricalVar[String]] = {
-      Seq(new LabeledPennPosTag(tok, if(labels(0) == "XX") "PUNC" else labels(0)))
-    }
 	
 	val testPortionToTake =  if(opts.testPortion.wasInvoked) opts.testPortion.value else 1.0
 	val testDocs = testFileList.map(fname => {
-	  if(opts.owpl.value) load.LoadOWPL.fromFilename(fname, posLabelMaker).head
+	  if(opts.owpl.value) load.LoadOWPL.fromFilename(fname, pennPosLabelMaker).head
 	  else load.LoadOntonotes5.fromFilename(fname).head
 	})
     val testSentencesFull = testDocs.flatMap(_.sentences)
@@ -507,17 +507,13 @@ object ForwardPosTrainer extends HyperparameterMain {
     }else if (opts.testFiles.wasInvoked){
       testFileList =  opts.testFiles.value.split(",")
     }
-
-    def posLabelMaker(tok: Token, labels: Seq[String]): Seq[MutableCategoricalVar[String]] = {
-      Seq(new LabeledPennPosTag(tok, if(labels(0) == "XX") "PUNC" else labels(0)))
-    }
     
     val trainDocs = trainFileList.map(fname => {
-	  if(opts.owpl.value) load.LoadOWPL.fromFilename(fname, posLabelMaker).head
+	  if(opts.owpl.value) load.LoadOWPL.fromFilename(fname, pennPosLabelMaker).head
 	  else load.LoadOntonotes5.fromFilename(fname).head
 	})
     val testDocs = testFileList.map(fname => {
-	  if(opts.owpl.value) load.LoadOWPL.fromFilename(fname, posLabelMaker).head
+	  if(opts.owpl.value) load.LoadOWPL.fromFilename(fname, pennPosLabelMaker).head
 	  else load.LoadOntonotes5.fromFilename(fname).head
 	})
 

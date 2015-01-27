@@ -38,7 +38,7 @@ object Grid {
     def setUsingObserved() = this.setCategory(observed.doubleValue > 0.0)(null)
   }
 
-  def createDonut(sigma: Double, N: Int = 25, outerRadius: Double = 7.5, innerRadius: Double = 7.5, c: (Double, Double) = Pair(10.0, 10.0), random: scala.util.Random = new scala.util.Random(0)): Seq[Seq[Pixel]] = {
+  def createDonut(sigma: Double, N: Int = 25, outerRadius: Double = 7.5, innerRadius: Double = 7.5, c: (Double, Double) = (10.0, 10.0), random: scala.util.Random = new scala.util.Random(0)): Seq[Seq[Pixel]] = {
 
     def checkInCircle(x: Int, y: Int, c: (Double, Double), outer: Double, inner: Double) = {
       val d = math.pow(x - c._1, 2) + math.pow(y - c._2, 2)
@@ -99,10 +99,10 @@ object Grid {
 
 
   def main(args: Array[String]) {
-    val image = createDonut(1.0, 50, 20, 7.5, Pair(25.0, 25.0))
+    val image = createDonut(1.0, 50, 20, 7.5, (25.0, 25.0))
     val pixels = image.flatMap(_.toSeq).toSeq
     val gridModel = new CombinedModel(LocalTemplate, PairwiseTemplate)
-    val objective = new HammingTemplate[Pixel]
+    val objective = new HammingTemplate[Pixel, Pixel#TargetType]
     pixels.foreach(_.setUsingObserved())
     implicit val random = new scala.util.Random(0)
     pixels.foreach(_.setRandomly)

@@ -24,6 +24,7 @@ import scala.collection.mutable.ArrayBuffer
 import cc.factorie.app.nlp.ner.NerTag
 import cc.factorie.variable._
 import cc.factorie.model._
+import scala.reflect.ClassTag
 
 class TestSerialize extends JUnitSuite  with cc.factorie.util.FastLogging{
 
@@ -208,11 +209,6 @@ class TestSerialize extends JUnitSuite  with cc.factorie.util.FastLogging{
 
    assertSameWeights(model2, model)
  }
-
- // NOTE: this is a hack to get around broken Manifest <:< for singleton types
- // this is fixed in 2.10 so once we upgrade we can remove this hack (that assumes all params are covariant!)
- def checkCompat(m1: Manifest[_], m2: Manifest[_]): Boolean =
-   m2.runtimeClass.isAssignableFrom(m1.runtimeClass) && m1.typeArguments.zip(m2.typeArguments).forall({case (l, r) => checkCompat(l, r)})
 
  @Test def testClassifierPosSerialization() {
    val model = new app.nlp.pos.ForwardPosTagger

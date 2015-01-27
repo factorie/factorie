@@ -12,6 +12,7 @@
    limitations under the License. */
 package cc.factorie.app.nlp.segment
 import cc.factorie.app.nlp._
+import scala.reflect.ClassTag
 
 /** Clean up Token.string according to various standard practices.
     The aim here is to to put into plain text, the way most people would write an email message,
@@ -32,7 +33,7 @@ class TokenNormalizer1[A<:TokenString](
     val normalizeHtmlSymbol:Boolean = true, // Convert &lt; to <, etc
     val normalizeHtmlAccent:Boolean = true, // Convert Beyonc&eacute; to Beyonce
     val americanize:Boolean = false
-  )(implicit m:Manifest[A]) extends DocumentAnnotator {
+  )(implicit m:ClassTag[A]) extends DocumentAnnotator {
   
   val dashRegex = ("\\A("+DeterministicTokenizer.dash+")+\\Z").r
   val mdashRegex = ("\\A("+DeterministicTokenizer.mdash+")+\\Z").r
@@ -41,7 +42,7 @@ class TokenNormalizer1[A<:TokenString](
   val ellipsisRegex = ("\\A("+DeterministicTokenizer.ellipsis+")\\Z").r
   val apostropheRegex =  DeterministicTokenizer.ap2.replace("'", "").r // ("[\u0092\u2019`\u0091\u2018\u201B]|&(apos|rsquo|#00?39|#00?92|#2019);").r // Note, does not include ' because we don't need to substitute for ' -- it is already what we want; but we do include the single back quotes here
   val currencyRegex = ("\\A("+DeterministicTokenizer.currency+")\\Z").r // Responsible for all cases, except "cents"
-  val htmlAccentRegex = DeterministicTokenizer.htmlAccentedLetter.r
+  val htmlAccentRegex = ("&([aeiouyntlAEIOUYNTL])(?:acute|grave|uml|circ|orn|tilde|ring);").r //DeterministicTokenizer.htmlAccentedLetter can't be used because it doesn't define the parenthesized "group" needed below.
   val htmlSymbolRegex = ("\\A"+DeterministicTokenizer.htmlSymbol+"\\Z").r
   val htmlSymbolMap = new scala.collection.mutable.HashMap[String,String] {
     override def default(s:String) = s
@@ -70,7 +71,7 @@ class TokenNormalizer1[A<:TokenString](
     else if (unescapeAsterisk && string == "\\*\\*") token.attr += newTokenString(token, "**")
     else if (normalizeMDash && mdashRegex.findFirstMatchIn(string) != None) token.attr += newTokenString(token, "--") // replace all em-dashes with two dashes
     else if (normalizeDash && dashRegex.findPrefixMatchOf(string) != None) token.attr += newTokenString(token, if (token.hasPrecedingWhitespace && token.hasFollowingWhitespace && !token.precedesNewline) "--" else "-") // replace all dash with dash
-    else if (normalizeHtmlAccent && htmlAccentRegex.findFirstMatchIn(string) != None) token.attr += newTokenString(token, htmlAccentRegex.replaceSomeIn(string, m => Some(m.group(1)))) // replace all dash with dash
+    else if (normalizeHtmlAccent && htmlAccentRegex.findFirstMatchIn(string) != None) token.attr += newTokenString(token, htmlAccentRegex.replaceSomeIn(string, m => Some(m.group(1)))) // replace &eacute with e
     else if (normalizeHtmlSymbol && htmlSymbolRegex.findPrefixMatchOf(string) != None) token.attr += newTokenString(token, htmlSymbolMap(string)) // replace all dash with dash
     else if (normalizeQuote && quoteRegex.findFirstMatchIn(string) != None) token.attr += newTokenString(token, "\"") // replace all quotes with ".  This must come before normalizeApostrophe
     else if (normalizeApostrophe && apostropheRegex.findFirstMatchIn(string) != None) token.attr += newTokenString(token, apostropheRegex.replaceAllIn(string, "'")) // replace all apostrophes with simple '

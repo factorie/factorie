@@ -22,6 +22,7 @@ import cc.factorie.variable._
 import cc.factorie.app.nlp._
 import cc.factorie.optimize.{LikelihoodExample, BatchTrainer, OnlineTrainer}
 import cc.factorie.app.chain.ChainModel
+import cc.factorie.app.chineseStrings._
 
 /** A linear-chain CRF model for Chinese word segmentation with four companion 
     objects, each pre-trained on a different corpus that corresponds to a 
@@ -59,7 +60,7 @@ class ChainChineseWordSegmenter(
 
     ( 0 to segmentedText.size ).foreach{ i =>
 
-      if( i == 0 || labelDomain.isEndOfSentence(segmentedText(i - 1).character.string(0)) )
+      if( i == 0 || isEndOfSentence(segmentedText(i - 1).character.string(0)) )
         new Sentence(document)
     
       if( i > 0 && (i == segmentedText.size || labelDomain.indicatesSegmentStart(segmentedText(i).categoryValue))){

@@ -2,7 +2,7 @@ Downloading and compiling
 =========================
 
 Factorie's source code is kept on Github, on a git repository. To
-download it you need git. If you don't alreayd have it installed, find
+download it you need git. If you don't already have it installed, find
 it in
 http://git-scm.com/
 

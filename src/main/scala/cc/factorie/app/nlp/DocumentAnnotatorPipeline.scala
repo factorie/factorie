@@ -74,13 +74,14 @@ object DocumentAnnotatorPipeline extends FastLogging  {
     classOf[lemma.LowercaseTokenLemma] -> (() => lemma.LowercaseLemmatizer),
     classOf[ner.NerTag] -> (() => ner.ConllChainNer), // TODO Should there be a different default?
     classOf[ner.BilouConllNerTag] -> (() => ner.NoEmbeddingsConllStackedChainNer),
-    classOf[ner.BilouOntonotesNerTag] -> (() => ner.NER2),
+    classOf[ner.BilouOntonotesNerTag] -> (() => ner.BasicOntonotesNER),
     //classOf[coref.mention.NerMentionList] -> (() => coref.mention.NerAndPronounMentionFinder),
     //classOf[phrase.GenderLabel[coref.Mention]] -> (() => phrase.GenderLabeler[]),
     classOf[phrase.Gender] -> (() => phrase.MentionPhraseGenderLabeler),
     classOf[phrase.Number] -> (() => phrase.MentionPhraseNumberLabeler),
     classOf[phrase.DatePhraseFinder.DatePhraseList] -> (() => phrase.DatePhraseFinder),
-    classOf[coref.WithinDocCoref] -> (() => coref.NerForwardCoref)
+    classOf[coref.WithinDocCoref] -> (() => coref.NerForwardCoref),
+    classOf[relation.RelationMentionSeq] -> (() => relation.ConllPatternBasedRelationFinder)
     //classOf[phrase.NumberLabel[phrase.NounPhrase]] -> (() => phrase.NounPhraseNumberLabeler),
     //classOf[MentionEntityType] ->  (() => coref.mention.MentionEntityTypeLabeler),
     //classOf[cc.factorie.util.coref.GenericEntityMap[coref.mention.Mention]] -> (() => coref.NerForwardCoref)

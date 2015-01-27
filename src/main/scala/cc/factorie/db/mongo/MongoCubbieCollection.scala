@@ -16,13 +16,15 @@ import org.bson.BSONObject
 import scala.collection.JavaConversions._
 import com.mongodb._
 import org.bson.types.BasicBSONList
-import cc.factorie.util.Cubbie
+import cc.factorie.util.{DoubleSeq, IntSeq, Cubbie, ArrayIntSeq, ArrayDoubleSeq}
 import collection.{Map => GenericMap, mutable, JavaConversions}
 import scala.collection.mutable.ArrayBuffer
 import scala._
 import scala.Predef._
 import scala.Some
 import scala.language.implicitConversions
+import java.nio.{ByteBuffer, IntBuffer}
+import scala.reflect.ClassTag
 
 
 /**
@@ -389,11 +391,48 @@ trait LazyCubbieConverter[C <: Cubbie] extends MongoCubbieConverter[C] {
 }
 
 
+
 /**
  * Helper methods to convert cubbies into mongo objects and vice versa.
  */
 object MongoCubbieConverter {
+  import org.xerial.snappy.Snappy
+  
+  // Values 0x80 through 0xff are available for user-defined types.  See BSON spec: http://bsonspec.org/spec.html
+  val intSeqMongoType: Byte = 0xf0.asInstanceOf[Byte]
+  val doubleSeqMongoType: Byte = 0xf1.asInstanceOf[Byte]
 
+  // Methods and classes for converting Mongo binary byte arry to IntSeq and vice versa
+  def intSeqToByteArray(is:IntSeq): Array[Byte] = {
+    Snappy.compress(is.asArray)
+    //val len = is.length; val byteBuf = ByteBuffer.allocate(len * 4); val intBuf = byteBuf.asIntBuffer 
+    //intBuf.put(is._rawArray, 0, len); byteBuf.array
+  }
+  def byteArrayToIntSeq(ba:Array[Byte]): ArrayIntSeq = {
+    new ArrayIntSeq(Snappy.uncompressIntArray(ba))
+    //val byteBuf = ByteBuffer.wrap(ba); val len = ba.length / 4; val intBuf = byteBuf.asIntBuffer
+    //// TODO Note this still double-allocates memory :-(  Is there no way to convert a byte array to a double array *in place*??
+    //val intArray = new Array[Int](len); intBuf.get(intArray); new ArrayIntSeq(intArray) 
+    ////assert(intBuf.hasArray); new ArrayIntSeq(intBuf.array) // Doesn't work because this intBuf doesn't have a backing array
+  }
+  class IntSeqBinary(is: IntSeq) extends org.bson.types.Binary(intSeqMongoType, intSeqToByteArray(is))
+  
+  // Methods and classes for converting Mongo binary byte arry to DoubleSeq and vice versa
+  def doubleSeqToByteArray(ds:DoubleSeq): Array[Byte] = {
+    Snappy.compress(ds.asArray)
+    //val len = ds.length; val byteBuf = ByteBuffer.allocate(len * 8); val intBuf = byteBuf.asDoubleBuffer 
+    //intBuf.put(ds._rawArray, 0, len); byteBuf.array
+  }
+  def byteArrayToDoubleSeq(ba:Array[Byte]): ArrayDoubleSeq = {
+    new ArrayDoubleSeq(Snappy.uncompressDoubleArray(ba))
+    //val byteBuf = ByteBuffer.wrap(ba); val len = ba.length / 8; val doubleBuf = byteBuf.asDoubleBuffer
+    //// TODO Note this still double-allocates memory :-(  Is there no way to convert a byte array to a double array *in place*??
+    //val doubleArray = new Array[Double](len); doubleBuf.get(doubleArray); new ArrayDoubleSeq(doubleArray) 
+    ////assert(doubleBuf.hasArray); new ArrayDoubleSeq(doubleBuf.array) // Doesn't work because this doubleBuf doesn't have a backing array
+  }
+  class DoubleSeqBinary(ds: DoubleSeq) extends org.bson.types.Binary(doubleSeqMongoType, doubleSeqToByteArray(ds))
+
+  
   def eagerDBO(cubbie: Cubbie): DBObject = {
     toMongo(cubbie._map).asInstanceOf[DBObject]
   }
@@ -420,6 +459,8 @@ object MongoCubbieConverter {
           dbMap.put(key.asInstanceOf[String], mongoValue)
         }
         dbMap
+      case is:IntSeq => new IntSeqBinary(is)
+      case ds:DoubleSeq => new DoubleSeqBinary(ds)
       case l: Seq[_] =>
         val dbList = new BasicDBList
         for (element <- l) dbList.add(toMongo(element).asInstanceOf[AnyRef])
@@ -430,8 +471,12 @@ object MongoCubbieConverter {
 
   def toCubbie(any: Any): Any = {
     any match {
+      case binary: org.bson.types.Binary => binary.getType match {
+        case `intSeqMongoType` => byteArrayToIntSeq(binary.getData)
+        case `doubleSeqMongoType` => byteArrayToDoubleSeq(binary.getData)
+      }
       case dbList: BasicBSONList =>
-        val list = new ArrayBuffer[Any]
+        val list = new ArrayBuffer[Any](dbList.length)
         for (element <- dbList) list += toCubbie(element)
         list
       case dbo: DBObject =>
@@ -444,6 +489,10 @@ object MongoCubbieConverter {
 
   def toLazyCubbie(any: Any): Any = {
     any match {
+      case binary: org.bson.types.Binary => binary.getType match { // TODO Note this is not lazy
+        case `intSeqMongoType` => byteArrayToIntSeq(binary.getData)
+        case `doubleSeqMongoType` => byteArrayToDoubleSeq(binary.getData)
+      }
       case dbList: BasicBSONList => new BasicBSONBSeq(dbList)
       case dbo: BSONObject => new BSONMap(dbo)
       case _ => any
@@ -670,27 +719,27 @@ class CachedFunction[F, T](val delegate: F => T) extends Map[F, T] {
   }
 }
 
-class LazyInverter(val cubbies: PartialFunction[Manifest[Cubbie], Iterable[Cubbie]])
+class LazyInverter(val cubbies: PartialFunction[ClassTag[Cubbie], Iterable[Cubbie]])
   extends (Cubbie#InverseSlot[Cubbie] => Iterable[Cubbie]) {
   def apply(slot: Cubbie#InverseSlot[Cubbie]) = {
     val typed = slot.asInstanceOf[Cubbie#InverseSlot[Cubbie]]
-    val result = cubbies.lift(slot.manifest).getOrElse(Nil).filter(c => typed.slot(c).opt == Some(typed.cubbie.id))
+    val result = cubbies.lift(slot.tag).getOrElse(Nil).filter(c => typed.slot(c).opt == Some(typed.cubbie.id))
     result
   }
 }
 
-class IndexedLazyInverter(val cubbies: PartialFunction[Manifest[Cubbie], Iterable[Cubbie]])
+class IndexedLazyInverter(val cubbies: PartialFunction[ClassTag[Cubbie], Iterable[Cubbie]])
   extends (Cubbie#InverseSlot[Cubbie] => Iterable[Cubbie]) {
 
 
   val index = new mutable.HashMap[(Cubbie#AbstractRefSlot[Cubbie], Any), Seq[Cubbie]]
   val indexed = new mutable.HashSet[Cubbie#AbstractRefSlot[Cubbie]]
-  val prototypes = new mutable.HashMap[Manifest[Cubbie], Option[Cubbie]] //cubbies.map(p => p._1 -> p._2.headOption)
+  val prototypes = new mutable.HashMap[ClassTag[Cubbie], Option[Cubbie]] //cubbies.map(p => p._1 -> p._2.headOption)
 
   def findCubbiesWhereRefSlotIs(refSlotFunction: Cubbie => Cubbie#AbstractRefSlot[Cubbie],
                                 id: Any,
                                 inWhere: Iterable[Cubbie],
-                                ofType: Manifest[Cubbie]) = {
+                                ofType: ClassTag[Cubbie]) = {
     {
       for (prototype <- prototypes.getOrElseUpdate(ofType, cubbies(ofType).headOption);
            refSlot = refSlotFunction(prototype)) yield {
@@ -707,17 +756,17 @@ class IndexedLazyInverter(val cubbies: PartialFunction[Manifest[Cubbie], Iterabl
 
   def apply(slot: Cubbie#InverseSlot[Cubbie]) = {
     val typed = slot.asInstanceOf[Cubbie#InverseSlot[Cubbie]]
-    findCubbiesWhereRefSlotIs(typed.slot, typed.cubbie.id, cubbies.lift(typed.manifest).getOrElse(Nil), typed.manifest)
+    findCubbiesWhereRefSlotIs(typed.slot, typed.cubbie.id, cubbies.lift(typed.tag).getOrElse(Nil), typed.tag)
   }
 }
 
 
-class LazyMongoInverter(val cubbies: PartialFunction[Manifest[Cubbie], AbstractCubbieCollection[Cubbie]],
+class LazyMongoInverter(val cubbies: PartialFunction[ClassTag[Cubbie], AbstractCubbieCollection[Cubbie]],
                         val cache: GenericMap[Any, Cubbie] = Map.empty)
   extends (Cubbie#InverseSlot[Cubbie] => Iterable[Cubbie]) {
   def apply(slot: Cubbie#InverseSlot[Cubbie]) = {
     val typed = slot.asInstanceOf[Cubbie#InverseSlot[Cubbie]]
-    val found = for (coll <- cubbies.lift(slot.manifest)) yield {
+    val found = for (coll <- cubbies.lift(slot.tag)) yield {
       val raw = coll.findBySlot(c => slot.slot(c).asInstanceOf[Cubbie#RefSlot[Cubbie]], Seq(typed.cubbie.id))
       raw.map(c => cache.getOrElse(c.id, c)).toSeq
     }

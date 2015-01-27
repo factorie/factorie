@@ -34,6 +34,7 @@ trait DoubleSeq {
   def forallElements(f:(Int,Double)=>Boolean): Boolean = { val l = length; var i = 0; while (i < l) { if (!f(i, apply(i))) return false; i += 1 }; true }
   def forall(f:Double=>Boolean): Boolean = { val l = length; var i = 0; while (i < l) { if (!f(apply(i))) { println("DoubleSeq.forall "+apply(i)); return false }; i += 1 }; true }
   def map(f:(Double)=>Double): DoubleSeq = { val l = length; val a = new Array[Double](l); var i = 0; while (i < l) { a(i) = f(apply(i)); i += 1 }; new ArrayDoubleSeq(a) }
+  def filter(f:(Double)=>Boolean): DoubleSeq = { val l = length; val r = new DoubleArrayBuffer; var i = 0; while (i < l) { val a = apply(i); if (f(a)) r += a; i += 1 }; r }
   def contains(d:Double): Boolean
   def oneNorm: Double
   def twoNormSquared: Double
@@ -114,6 +115,9 @@ trait DoubleSeq {
   
   /** Return the values as an Array[Double].  Not guaranteed to be a copy; in fact if it is possible to return a pointer to an internal array, it will simply return this. */  
   def asArray: Array[Double] = toArray // Can be overridden for further efficiency
+  /** Return the values as an Array[Double] whose length may be longer than this.length. */
+  def _rawArray: Array[Double] = asArray  // Overridden in subclasses for efficiency.  Careful: _rawArray.length may not equal length.  
+  
   /** With uncopied contents */
   def asSeq: Seq[Double] = new IndexedSeq[Double] {
     def length = DoubleSeq.this.length
@@ -156,6 +160,16 @@ trait DenseDoubleSeq extends DoubleSeq {
     while (i < l) {
       if (apply(max1) < apply(i)) { max2 = max1; max1 = i }
       else if (apply(max2) < apply(i)) max2 = i
+      i += 1
+    }
+    (max1, max2)
+  }
+  def max2: (Double, Double) = {
+    val l = length; var i = 1
+    var max1 = apply(0); var max2 = apply(1)
+    while (i < l) {
+      if (max1 < apply(i)) { max2 = max1; max1 = apply(i) }
+      else if (max2 < apply(i)) max2 = apply(i)
       i += 1
     }
     (max1, max2)
@@ -305,7 +319,10 @@ trait MutableDoubleSeq extends IncrementableDoubleSeq {
   def +=(i:Int, incr:Double): Unit // = update(i, apply(i)+incr)
   def zero(): Unit // = this := 0.0 //{ var i = 0; while (i < length) { update(i, 0.0); i += 1 }}
   // Concrete methods, efficient for dense representations
-  def substitute(oldValue:Double, newValue:Double): Unit = { var i = 0; while (i < length) { if (apply(i) == oldValue) update(i, newValue); i += 1 } }
+  /** Change all occurrences of oldValue to newValue. */
+  def substitute(oldValue:Double, newValue:Double): this.type = { var i = 0; while (i < length) { if (apply(i) == oldValue) update(i, newValue); i += 1 }; this }
+  /** Like map, but it changes in place. */
+  def substitute(f:(Double)=>Double): this.type = { var i = 0; while (i < length) { update(i, f(apply(i))); i += 1 }; this }
   def :=(d:Double): Unit = { val l = length; var i = 0; while (i < l) { update(i, d); i += 1 }}
   def :=(ds:DoubleSeq): Unit = ds match {
     case ds:SparseDoubleSeq => { zero(); /* Use defaultValue instead? */ ds.foreachActiveElement((i,v) => update(i, v)) }
@@ -321,6 +338,7 @@ trait MutableDoubleSeq extends IncrementableDoubleSeq {
   def /=(ds:DoubleSeq): Unit = { val l = length; require(ds.length == l); var i = 0; while (i < l) { /=(i, ds(i)); i += 1 }}
   def abs(): Unit = { val l = length; var i = 0; while (i < l) { val d = apply(i); if (d < 0.0) update(i, math.abs(d)); i += 1 }}
   def normalize(): Double = { val n = oneNorm; /=(n); n }
+  def project(maxNorm:Double): Double = { val n = twoNorm; if (n > maxNorm) /=(n/maxNorm); n }
   def oneNormalize(): Double = normalize()
   def twoNormalize(): Double = { val n = twoNorm; /=(n); n }
   def twoSquaredNormalize(): Double = { val n = twoNormSquared; /=(n); n }
@@ -394,11 +412,14 @@ final class ArrayDoubleSeq(override val asArray:Array[Double]) extends MutableDo
   def update(i:Int, v:Double): Unit = asArray(i) = v
   def zero(): Unit = java.util.Arrays.fill(asArray, 0.0)
   def +=(i:Int, v:Double): Unit = asArray(i) += v
+  override def _rawArray: Array[Double] = asArray
+
 }
 
 final class TruncatedArrayDoubleSeq(val array:Array[Double], val length:Int) extends DenseDoubleSeq {
   def apply(i:Int): Double = array(i)
   override def toArray = { val a = new Array[Double](length); System.arraycopy(array, 0, a, 0, length); a }
+  override def _rawArray: Array[Double] = array
 }
 
 final class SubArrayDoubleSeq(val array:Array[Double], val start:Int, val length:Int) extends DenseDoubleSeq {

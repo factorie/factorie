@@ -15,7 +15,7 @@ package cc.factorie.app.nlp.phrase
 import cc.factorie.app.nlp._
 import cc.factorie.variable.{EnumDomain, CategoricalVariable}
 import scala.reflect.ClassTag
-import cc.factorie.app.nlp.coref.{Mention, WithinDocCoref, MentionList}
+import cc.factorie.app.nlp.coref.{PronounSets, Mention, WithinDocCoref, MentionList}
 
 object GenderDomain extends EnumDomain {
   val UNKNOWN,     // uncertain 
@@ -80,6 +80,8 @@ class PhraseGenderLabeler[A<:AnyRef](documentAttrToPhrases:(A)=>Iterable[Phrase]
     val lemma = word.toLowerCase
     if (maleWords.contains(lemma)) Some(GenderDomain.MALE)
     else if (femaleWords.contains(lemma)) Some(GenderDomain.FEMALE)
+    else if (PronounSets.neuter.contains(lemma)) Some(GenderDomain.NEUTER)
+    else if (PronounSets.allPersonPronouns.contains(lemma)) Some(GenderDomain.PERSON)
     else None
 }
 

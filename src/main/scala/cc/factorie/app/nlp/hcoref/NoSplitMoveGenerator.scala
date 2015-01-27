@@ -9,6 +9,7 @@ trait NoSplitMoveGenerator[Vars <: NodeVariables[Vars]] extends MoveGenerator[Va
   this :SettingsSampler[(Node[Vars], Node[Vars])] =>
 
   def settings(c:(Node[Vars], Node[Vars])) = new MoveSettingIterator[Vars] {
+
     var (e1, e2) = c
 
     val moves = new scala.collection.mutable.ArrayBuffer[Move[Vars]]()
@@ -23,7 +24,7 @@ trait NoSplitMoveGenerator[Vars <: NodeVariables[Vars]] extends MoveGenerator[Va
           } else {
             moves += new MergeLeft[Vars](e2, e1)
           }
-          e1 = e1.parent.getOrElse(null.asInstanceOf[Node[Vars]])
+          e1 = e1.getParent.getOrElse(null.asInstanceOf[Node[Vars]])
         }
       }
     }

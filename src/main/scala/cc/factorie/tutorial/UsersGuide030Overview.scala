@@ -75,7 +75,7 @@ Factor graphs represent a joint distribution over random variables by
 a product of (normalized or unnormalized) non-negative values---one
 value for each factor in the graph.  The factors can be understood as
 "compatibility functions" that take as input the values of the
-variables which they neighbor, and outputing a "compatibility score"
+variables which they neighbor, and outputting a "compatibility score"
 such that higher scores indicate the combination of values is more
 likely, and lower scores indicate the combination of values is less
 likely.  A score of 0 indicates the combination is impossible.
@@ -86,7 +86,7 @@ each (child) variable, where the factor is also connected to the other
 the child's value.  The factor's scores are normalized probabilities.
 
 Undirected graphical models can be represented with one factor per
-clique (or other arbitary subsets of clique members).  The factors'
+clique (or other arbitrary subsets of clique members).  The factors'
 scores are unnormalized non-negative values, and thus in order to
 obtain a normalized joint probability distribution over all the
 variables in the model, we must normalize the product of factor scores
@@ -129,7 +129,7 @@ non-intertwined definitions of
 3. inference methods, and
 4. parameter estimation.
 
-This separation provides FACTORIE users with great flexibilty to
+This separation provides FACTORIE users with great flexibility to
 mix-and-match different choices in each of these four dimensions.  For
 example, the data representation for some task may be written just
 once, while different choices of dependencies are explored for this
@@ -203,7 +203,7 @@ simply return the variable's globally-assigned value.
 
 FACTORIE has different subclasses of `Var` for holding values of
 different types.  There are a large number of traits and classes for
-variables.  The following naming convensions make their interpretation
+variables.  The following naming conventions make their interpretation
 easier.  All abstract traits and classes end in `Var`, while concrete
 classes end in `Variable`.  Almost all classes ending in `Variable`
 have an abstract `Var` counterpart that does not necessarily specify
@@ -226,28 +226,17 @@ if `v1` has integer values, we can set the value of `v1` to 3 by `v1
 
 The following is a selection of FACTORIE's most widely-used variable classes.
 
-`IntegerVariable`
-: has value with Scala type Int.
-`DoubleVariable`
-: has value with Scala type Double.
-`TensorVariable`
-: has value of type Tensor, which is defined in the FACTORIE linear algebra package `cc.factorie.la`.  This variable class makes no restrictions on the dimensionality of the tensor, nor the lengths of its dimensions.
-`VectorVariable`
-: has value of type Tensor1, which is a one-dimensional Tensor (also traditionally called a "vector").  In addition each `VectorVariable` is associated with a `DiscreteDomain` (further described below) whose size matches the length of the variable's vector value.
-`DiscreteVariable extends VectorVar`
-: has a value among N possible values, each of type `DiscreteValue`, and each associated with an integer 0 through N-1.  This `DiscreteValue` inherits from `Tensor1` and can also be interpreted as a "one-hot" vector with value 1.0 in one position and 0.0 everywhere else.  Given a `DiscreteValue dv1` its integer value can be obtained by `dv1.intValue`.  The length of the vector (in other words, the value of N) can be obtained by `dv1.length`.
-`CategoricalVariable[A] extends DiscreteVar`
-: has value among N possible values, each of type `CategoricalValue[A]` (which inherits from `DiscreteValue`), each associated with an integer 0 through N-1, and also associated with a "category" (often of type String).  These variables are often used for representing class labels and words, when a mapping from String category names to integer indices is desirable for efficiency (such as indexing into an array of parameters).  Given a `CategoricalValue[String] cv1` its integer value can be obtained by `cv1.intValue` and its categorical (String) value can be obtained by `cv1.categoryValue`.  Its value may be set with an integer: `cv1 := 2` or set by category string: `cv1 := "sports"`.  (The mapping between Strings and integers is stored in a `CategoricalDomain`, which is described below.)
-`CategoricalVectorVariable[A] extends VectorVar`
-: has value of type Tensor1, which is a one-dimensional Tensor.  In addition each `CategoricalVectorVariable` is associated with a `CategoricalDomain[A]`, which stores a mapping between values of type A (e.g. `String`) and integers.  Thus each position in the vector is associated with a category.  This variable type is useful for storing bag-of-words counts, for example.
-`BooleanVariable extends CategoricalVar[Boolean]`
-: has one of two possible values, each of type `BooleanValue` (which inherits from CategoricalValue[Boolean]), one of which is associated with integer 0 and boolean value false, the other of which is associated with integer value 1 and boolean value true.  Given a `BooleanValue bv1` its integer value can be obtained by `bv1.intValue` and its boolean value can be obtained by `bv1.booleanValue`.
-`MassesVariable extends TensorVar`
-: has value `Masses`, which are Tensors constrained to contain non-negative values.  `Masses` are useful as the parameters of Dirichlet distributions.
-`ProportionsVariable extends MassesVar`
-: has value `Proportions`, which are `Masses` constrained to sum to 1.0.  `Proportions` are useful as the parameters of discrete or multinomial distributions.
-`RealVariable extends VectorVar`
-: has a single real scalar value, stored in an object of type `RealValue` (which inherits from Tensor1).  This variable is similar to `DoubleValue` in that it stores a scalar value, however since its value type inherits from Tensor1, it can be used in dot products.
+* `IntegerVariable` has value with Scala type Int.
+*`DoubleVariable` has value with Scala type Double.
+*`TensorVariable` has value of type Tensor, which is defined in the FACTORIE linear algebra package `cc.factorie.la`.  This variable class makes no restrictions on the dimensionality of the tensor, nor the lengths of its dimensions.
+* `VectorVariable` has value of type Tensor1, which is a one-dimensional Tensor (also traditionally called a "vector").  In addition each `VectorVariable` is associated with a `DiscreteDomain` (further described below) whose size matches the length of the variable's vector value.
+* `DiscreteVariable extends VectorVar` has a value among N possible values, each of type `DiscreteValue`, and each associated with an integer 0 through N-1.  This `DiscreteValue` inherits from `Tensor1` and can also be interpreted as a "one-hot" vector with value 1.0 in one position and 0.0 everywhere else.  Given a `DiscreteValue dv1` its integer value can be obtained by `dv1.intValue`.  The length of the vector (in other words, the value of N) can be obtained by `dv1.length`.
+* `CategoricalVariable[A] extends DiscreteVar` has value among N possible values, each of type `CategoricalValue[A]` (which inherits from `DiscreteValue`), each associated with an integer 0 through N-1, and also associated with a "category" (often of type String).  These variables are often used for representing class labels and words, when a mapping from String category names to integer indices is desirable for efficiency (such as indexing into an array of parameters).  Given a `CategoricalValue[String] cv1` its integer value can be obtained by `cv1.intValue` and its categorical (String) value can be obtained by `cv1.categoryValue`.  Its value may be set with an integer: `cv1 := 2` or set by category string: `cv1 := "sports"`.  (The mapping between Strings and integers is stored in a `CategoricalDomain`, which is described below.)
+* `CategoricalVectorVariable[A] extends VectorVar` has value of type Tensor1, which is a one-dimensional Tensor.  In addition each `CategoricalVectorVariable` is associated with a `CategoricalDomain[A]`, which stores a mapping between values of type A (e.g. `String`) and integers.  Thus each position in the vector is associated with a category.  This variable type is useful for storing bag-of-words counts, for example.
+* `BooleanVariable extends CategoricalVar[Boolean]` has one of two possible values, each of type `BooleanValue` (which inherits from CategoricalValue[Boolean]), one of which is associated with integer 0 and boolean value false, the other of which is associated with integer value 1 and boolean value true.  Given a `BooleanValue bv1` its integer value can be obtained by `bv1.intValue` and its boolean value can be obtained by `bv1.booleanValue`.
+* `MassesVariable extends TensorVar` has value `Masses`, which are Tensors constrained to contain non-negative values.  `Masses` are useful as the parameters of Dirichlet distributions.
+* `ProportionsVariable extends MassesVar` has value `Proportions`, which are `Masses` constrained to sum to 1.0.  `Proportions` are useful as the parameters of discrete or multinomial distributions.
+* `RealVariable extends VectorVar` has a single real scalar value, stored in an object of type `RealValue` (which inherits from Tensor1).  This variable is similar to `DoubleVariable` in that it stores a scalar value, however since its value type inherits from Tensor1, it can be used in dot products.
 
 All of the above variable classes have constructors in which their
 initial value may be set.  For example, `new IntegerVariable(3)` will
@@ -296,8 +285,8 @@ are often useful in FACTORIE programs.
 : has value of type A.  In other words, it is a variable whose value is a pointer to a Scala object.
 `EdgeVariable[A,B]`
 : has value of type `Tuple[A,B]`, that is a pair of objects: a "source" of type `A` and a "destination" of type `B`.
-`ArrowVariable[A,B] extends EdgeVar[A,B]
-: like `EdgeVariable` has value of type `Tuple[A,B]`, but only the the "destination" is mutable, while the "source" is immutable.
+`ArrowVariable[A,B] extends EdgeVar[A,B]`
+: like `EdgeVariable` has value of type `Tuple[A,B]`, but only the "destination" is mutable, while the "source" is immutable.
 
 
 
@@ -419,7 +408,7 @@ that generated it, and occurs in the same sequence position).
 
 The standard HMM is "time invariant" (sometimes called "stationary"),
 meaning that the hidden state-transition probabilities and the
-observation-from-state generation probabilities do not dependent on
+observation-from-state generation probabilities do not depend on
 their position in the sequence.  Thus, although each transition needs
 its own factor in the factor graph (because each factor has different
 neighboring variables), each of these factors can share the same
@@ -452,7 +441,7 @@ implementation of numbered "unroll" methods.  For example `Template2`
 implements its `unroll` method in terms of two abstract methods:
 `unroll1` and `unroll2`.  The `unroll1` method takes as input a
 variable with type matching the first neighbor of the factor, and is
-responsible creating and returning a (possibly empty) collection of
+responsible for creating and returning a (possibly empty) collection of
 templated factors that touch this variable---finding the second
 neighbor in each case by traversing some relational structure among
 the variables.  
@@ -578,7 +567,7 @@ variables.  For example, a `DiscreteMarginal2` specifies two
 `DiscreteVar`s, and a `Proportions2` which contains their marginal
 distribution.  A `RealGaussianMarginal1` represents a univariate
 Gaussian distribution with a specified mean and variance.  Naturally a
-marginal that results from maximum aposteriori inference will simply
+marginal that results from maximum a posteriori inference will simply
 have a spike with all probability on the maximum-scoring values.  The
 most widely used marginals are those over a single variable,
 inheriting from `Marginal1` because marginals over multiple variables

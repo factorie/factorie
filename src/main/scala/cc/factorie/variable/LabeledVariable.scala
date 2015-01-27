@@ -16,6 +16,8 @@ package cc.factorie.variable
 import cc.factorie.util.Attr
 import cc.factorie._
 import cc.factorie.model.TupleTemplateWithStatistics2
+import scala.reflect._
+import scala.reflect.runtime.universe._
 
 // Naming explanation:
 // Variables in "aimer/target" pairs, used for labeled data for training.
@@ -166,7 +168,7 @@ trait CategoricalLabeling[C] extends CategoricalVariable[C] with LabeledMutableC
 /** A mutable categorical variable that has a true, target "labeled" value, separate from its current value.
     The only abstract method is "domain".    
     @author Andrew McCallum */
-abstract class LabeledCategoricalVariable[C](targetCategory:C) extends CategoricalVariable(targetCategory) with CategoricalLabeling[C]
+abstract class LabeledCategoricalVariable[C](targetCategory:C) extends CategoricalVariable[C](targetCategory) with CategoricalLabeling[C]
 
 
 // For Booleans
@@ -237,24 +239,24 @@ class LabeledStringVariable(targetValue:String) extends StringVariable(targetVal
 
 /** A source of factors whose score is the Hamming objective, with score 1.0 for each variable whose current global value is its target value, and 0 for all other variables.
     @author Andrew McCallum */
-class HammingTemplate[A<:LabeledVar]()(implicit ma: Manifest[A], mt: Manifest[A#TargetType]) extends TupleTemplateWithStatistics2[A,A#TargetType]() {
-  def unroll1(aimer:A) = Factor(aimer, aimer.target.asInstanceOf[A#TargetType])
-  def unroll2(target:A#TargetType) = throw new Error("Cannot unroll from the target variable.")
-  def score(value1:A#Value, value2:A#TargetType#Value) = if (value1 == value2) 1.0 else 0.0 // TODO
-  def accuracy(variables: Iterable[A]): Double = variables.map(v => Factor(v, v.target.asInstanceOf[A#TargetType]).currentScore).sum / variables.size
+class HammingTemplate[A<:LabeledVar:ClassTag, T <: TargetVar:ClassTag]() extends TupleTemplateWithStatistics2[A,T]() {
+  def unroll1(aimer:A) = Factor(aimer, aimer.target.asInstanceOf[T])
+  def unroll2(target:T) = throw new Error("Cannot unroll from the target variable.")
+  def score(value1:A#Value, value2:T#Value) = if (value1 == value2) 1.0 else 0.0 // TODO
+  def accuracy(variables: Iterable[A]): Double = variables.map(v => Factor(v, v.target.asInstanceOf[T]).currentScore).sum / variables.size
 }
 /** A source of factors whose score is the Hamming objective, with score 1.0 for each variable whose current global value is its target value, and 0 for all other variables.
     @author Andrew McCallum */
-object HammingObjective extends HammingTemplate[LabeledVar]()(scala.reflect.ManifestFactory.classType(classOf[LabeledVar]), scala.reflect.ManifestFactory.classType(classOf[TargetVar]))
+object HammingObjective extends HammingTemplate[LabeledVar, TargetVar]()
 
 /** A source of factors whose score is the Hamming loss, with score 0.0 for each variable whose current global value is its target value, and 1.0 for all other variables.
     @author Alexandre Passos */
-class HammingLossTemplate[A<:LabeledVar]()(implicit am:Manifest[A], tm:Manifest[A#TargetType]) extends TupleTemplateWithStatistics2[A,A#TargetType] {
+class HammingLossTemplate[A<:LabeledVar:ClassTag, T <: TargetVar:ClassTag]() extends TupleTemplateWithStatistics2[A,T] {
   import cc.factorie.la._
-  def unroll1(aimer:A) = Factor(aimer, aimer.target)
-  def unroll2(target:A#TargetType) = throw new Error("Cannot unroll from the target variable.")
-  def score(value1:A#Value, value2:A#TargetType#Value) = if (value1 == value2) 0.0 else 1.0
-  def accuracy(variables: Iterable[A]): Double = variables.map(v => Factor(v, v.target).currentScore).sum / variables.size
+  def unroll1(aimer:A) = Factor(aimer, aimer.target.asInstanceOf[T])
+  def unroll2(target:T) = throw new Error("Cannot unroll from the target variable.")
+  def score(value1:A#Value, value2:T#Value) = if (value1 == value2) 0.0 else 1.0
+  def accuracy(variables: Iterable[A]): Double = variables.map(v => Factor(v, v.target.asInstanceOf[T]).currentScore).sum / variables.size
   override def valuesScore(t: Tensor) = t match {
     case v: SingletonBinaryTensorLike2 => if (v.singleIndex1 == v.singleIndex2) 0.0 else 1.0
     case v: SingletonBinaryLayeredTensorLike2 => if (v.singleIndex1 == v.inner.maxIndex) 0.0 else 1.0
@@ -267,7 +269,7 @@ class HammingLossTemplate[A<:LabeledVar]()(implicit am:Manifest[A], tm:Manifest[
 }
 /** A source of factors whose score is the Hamming loss, with score 0.0 for each variable whose current global value is its target value, and 1.0 for all other variables.
     @author Alexandre Passos */
-object HammingLoss extends HammingLossTemplate[LabeledVar]()(scala.reflect.ManifestFactory.classType(classOf[LabeledVar]), scala.reflect.ManifestFactory.classType(classOf[TargetVar]))
+object HammingLoss extends HammingLossTemplate[LabeledVar, TargetVar]()
 
 
 // Evaluation

@@ -14,11 +14,18 @@ package cc.factorie.app.nlp.hcoref
 
 import cc.factorie.infer.Proposal
 
+class Logger(val log:(String => Unit))
+object Logger {
+  val default = new Logger({s:String => println(s)})
+}
+
 /**
  * @author John Sullivan
  */
 trait DebugCoref[Vars <: NodeVariables[Vars]]{
   this: CorefSampler[Vars] with PairGenerator[Vars] with MoveGenerator[Vars]=>
+
+  var log:Logger = Logger.default
 
   var printEvery:Int = 10000
 
@@ -33,6 +40,41 @@ trait DebugCoref[Vars <: NodeVariables[Vars]]{
     startTime = begin
   }
 
+  afterInferHooks += { _ =>
+    debugStatement()
+  }
+
+  private def debugStatement() {
+
+    stopTime = System.currentTimeMillis()
+    val elapsedSecs = (stopTime - startTime) / 1000.0
+    val elapsedFromBegin = (stopTime - begin) / 1000.0
+    val percentAccepted = (acceptedProps / totalProps)*100
+    val percentAcceptedThisRound = (acceptedThisRound / printEvery)*100
+    val propsPerSec = printEvery.toDouble / elapsedSecs
+    val totalPropsPerSec = totalProps.toDouble / elapsedFromBegin
+    val depths = mentions.map(_.depth)
+    val maxDepth = depths.max
+    val minDepth = depths.min
+    val aveDepth = depths.sum.toDouble / depths.size
+    val roots = mentions.map(_.root).toSet
+    val rootChildrens = roots.map(_.children.size)
+    val rootMentions = roots.map(_.mentionCountVar.value)
+    val maxChildren = rootChildrens.max
+    val minChildren = rootChildrens.min
+    val aveChildren = rootChildrens.sum.toDouble / rootChildrens.size
+    val maxMentions = rootMentions.max
+    val minMentions = rootMentions.min
+    val aveMentions = rootMentions.sum.toDouble / rootMentions.size
+    log.log(f"After $totalProps%d proposals $percentAccepted%.2f%% ($percentAcceptedThisRound%.2f%% this round) accepted in $elapsedFromBegin%.3f secs ($totalPropsPerSec%.2f proposals/sec). This round of $printEvery%d took $elapsedSecs%.3f secs ($propsPerSec%.2f proposals/sec)")
+    log.log(f"\t max depth: $maxDepth min depth: $minDepth ave depth: $aveDepth%.2f")
+    log.log(f"\t max children: $maxChildren min children: $minChildren ave children: $aveChildren%.2f")
+    log.log(f"\t max mentions: $maxMentions min mentions: $minMentions ave mentions: $aveMentions%.2f")
+    //println("%d non mention samples".format(multiSamples))
+    startTime = stopTime
+    acceptedThisRound = 0.0
+  }
+
   proposalHooks += {p:Proposal[(Node[Vars], Node[Vars])] =>
     totalProps +=1
     if(p.diff.size != 0) {
@@ -40,33 +82,7 @@ trait DebugCoref[Vars <: NodeVariables[Vars]]{
       acceptedThisRound += 1
     }
     if(totalProps % printEvery == 0) {
-      stopTime = System.currentTimeMillis()
-      val elapsedSecs = (stopTime - startTime) / 1000.0
-      val elapsedFromBegin = (stopTime - begin) / 1000.0
-      val percentAccepted = (acceptedProps / totalProps)*100
-      val percentAcceptedThisRound = (acceptedThisRound / printEvery)*100
-      val propsPerSec = printEvery.toDouble / elapsedSecs
-      val totalPropsPerSec = totalProps.toDouble / elapsedFromBegin
-      val depths = mentions.map(_.depth)
-      val maxDepth = depths.max
-      val minDepth = depths.min
-      val aveDepth = depths.sum.toDouble / depths.size
-      val roots = mentions.map(_.root).toSet
-      val rootChildrens = roots.map(_.children.size)
-      val rootMentions = roots.map(_.mentionCountVar.value)
-      val maxChildren = rootChildrens.max
-      val minChildren = rootChildrens.min
-      val aveChildren = rootChildrens.sum.toDouble / rootChildrens.size
-      val maxMentions = rootMentions.max
-      val minMentions = rootMentions.min
-      val aveMentions = rootMentions.sum.toDouble / rootMentions.size
-      println(f"After $totalProps%d proposals $percentAccepted%.2f%% ($percentAcceptedThisRound%.2f%% this round) accepted in $elapsedFromBegin%.3f secs ($totalPropsPerSec%.2f proposals/sec). This round of $printEvery%d took $elapsedSecs%.3f secs ($propsPerSec%.2f proposals/sec)")
-      println(f"\t max depth: $maxDepth min depth: $minDepth ave depth: $aveDepth%.2f")
-      println(f"\t max children: $maxChildren min children: $minChildren ave children: $aveChildren%.2f")
-      println(f"\t max mentions: $maxMentions min mentions: $minMentions ave mentions: $aveMentions%.2f")
-      //println("%d non mention samples".format(multiSamples))
-      startTime = stopTime
-      acceptedThisRound = 0.0
+      debugStatement()
     }
   }
 }

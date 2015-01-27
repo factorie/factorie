@@ -12,16 +12,13 @@
    limitations under the License. */
 package cc.factorie.app.classify.backend
 
-import cc.factorie.la._
-import cc.factorie._
-import scala.collection.mutable.ArrayBuffer
 import cc.factorie.maths.ArrayOps
 import cc.factorie.util.StoreFetchCubbie
 import cc.factorie.variable.{TensorVar, LabeledMutableDiscreteVar}
 import cc.factorie.model.Template2
-import cc.factorie.app.classify.backend._
 import cc.factorie.la.Tensor1
 import cc.factorie.la.DenseTensor1
+import scala.reflect.ClassTag
 
 class BoostedBinaryClassifier(val weakClassifiers: Seq[(BinaryClassifier[Tensor1], Double)]) extends BinaryClassifier[Tensor1] {
   def predict(features: Tensor1) = weakClassifiers.foldLeft(0.0)((acc, t) => acc + t._1.predict(features) * t._2)
@@ -31,7 +28,7 @@ class BoostedBinaryClassifier(val weakClassifiers: Seq[(BinaryClassifier[Tensor1
 class BoostedMulticlassClassifier(var weakClassifiers: Seq[(MulticlassClassifier[Tensor1], Double)], val numLabels: Int) extends MulticlassClassifier[Tensor1] {
   def predict(features: Tensor1) =
     weakClassifiers.foldLeft(new DenseTensor1(numLabels))((acc, t) => {acc += (t._1.predict(features), t._2); acc})
-  def asTemplate[T <: LabeledMutableDiscreteVar](l2f: T => TensorVar)(implicit ml: Manifest[T]): Template2[T, TensorVar] =
+  def asTemplate[T <: LabeledMutableDiscreteVar](l2f: T => TensorVar)(implicit ml: ClassTag[T]): Template2[T, TensorVar] =
     new ClassifierTemplate2[T](l2f, this)
 }
 

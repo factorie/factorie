@@ -14,7 +14,7 @@
 package cc.factorie.variable
 
 import cc.factorie.la._
-import scala.util.MurmurHash
+import scala.util.hashing.MurmurHash3
 
 /** A super trait for feature vectors, both (a) those based on CategoricalDomain[C] and
     (b) those without explicitly stored categories in their domains, such as HashFeatureVectorVariable.
@@ -57,7 +57,7 @@ object HashFeatureVectorVariable {
   val prime1 = 2113985147
   val prime2 = 1476131401
   @inline def getBits(c: Any) = c match {
-    case s: String => MurmurHash.stringHash(s)
+    case s: String => MurmurHash3.stringHash(s)
     case _ => c.hashCode()
   }
   @inline def hash(x: Int): Int = (x * prime1) % prime2

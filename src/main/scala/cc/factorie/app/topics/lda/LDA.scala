@@ -22,6 +22,8 @@ import cc.factorie.directed._
 import cc.factorie.optimize.TrainerHelpers
 import java.util.concurrent.Executors
 import cc.factorie.variable._
+import cc.factorie.util.DefaultCmdOptions
+import cc.factorie.app.topics.lda
 
 /** Typical recommended value for alpha1 is 50/numTopics. */
 class LDA(val wordSeqDomain: CategoricalSeqDomain[String], numTopics: Int = 10, alpha1:Double = 0.1, val beta1:Double = 0.01,
@@ -273,6 +275,32 @@ class LDA(val wordSeqDomain: CategoricalSeqDomain[String], numTopics: Int = 10, 
 
 object LDA extends LDACmd
 
+class LDAOpts extends DefaultCmdOptions {
+  val numTopics =     new CmdOption("num-topics", 10, "N", "Number of topics.", false, 't')
+  val alpha =         new CmdOption("alpha", 0.1, "N", "Dirichlet parameter for per-document topic proportions.")
+  val beta =          new CmdOption("beta", 0.01, "N", "Dirichlet parameter for per-topic word proportions.")
+  val numThreads =    new CmdOption("num-threads", 1, "N", "Number of threads for multithreaded topic inference.")
+  val numIterations = new CmdOption("num-iterations", 50, "N", "Number of iterations of inference.", false, 'i')
+  val diagnostic =    new CmdOption("diagnostic-interval", 10, "N", "Number of iterations between each diagnostic printing of intermediate results.", false , 'd')
+  val diagnosticPhrases= new CmdOption("diagnostic-phrases", false, "true|false", "If true diagnostic printing will include multi-word phrases.")
+  val fitAlpha =      new CmdOption("fit-alpha-interval", Int.MaxValue, "N", "Number of iterations between each re-estimation of prior on per-document topic distribution.")
+  val optimizeBurnIn =new CmdOption("optimize-burn-in", 100, "N", "Number of iterations to run before the first estimation of the alpha parameters")
+  val tokenRegex =    new CmdOption("token-regex", "\\p{Alpha}+", "REGEX", "Regular expression for segmenting tokens.")
+  val readDirs =      new CmdOption("read-dirs", List(""), "DIR...", "Space-(or comma)-separated list of directories containing plain text input files.")
+  val readLines =     new CmdOption("read-lines", "", "FILENAME", "File containing lines of text, one for each document.")
+  val readLinesRegex= new CmdOption("read-lines-regex", "", "REGEX", "Regular expression with parens around the portion of the line that should be read as the text of the document.")
+  val readLinesRegexGroups= new CmdOption("read-lines-regex-groups", List(1), "GROUPNUMS", "The --read-lines-regex group numbers from which to grab the text of the document.")
+  val readLinesRegexPrint = new CmdOption("read-lines-regex-print", false, "BOOL", "Print the --read-lines-regex match that will become the text of the document.")
+  val writeDocs =     new CmdOption("write-docs", "lda-docs.txt", "FILENAME", "Save LDA state, writing document names, words and z assignments")
+  val readDocs =      new CmdOption("read-docs", "lda-docs.txt", "FILENAME", "Add documents from filename, reading document names, words and z assignments; store documents; can then add more documents or do more inference.")
+  val readPhis =      new CmdOption("read-phis", "lda-docs.txt", "FILENAME", "Read documents from filename, but only use them to increment topic word counts; does not store documents (conserving memory); cannot do more inference, nor print phrases") { override def invoke = { numIterations.setValue(0)} }
+  val maxNumDocs =    new CmdOption("max-num-docs", Int.MaxValue, "N", "The maximum number of documents to read.")
+  val printTopics =   new CmdOption("print-topics", 20, "N", "Just before exiting print top N words for each topic.")
+  val printPhrases =  new CmdOption("print-topics-phrases", 20, "N", "Just before exiting print top N phrases for each topic.")
+  val thetaServer   = new CmdOption("theta-server", 50, "N", "Read from sdin newline-separated documents, and output a theta topic distribution for each, estimated by N iterations of sampling on the document.")
+  val verbose =       new CmdOption("verbose", false, "BOOLEAN", "Turn on verbose output")
+}
+
 class LDACmd {
   /*
   Potentail stop topics:
@@ -289,38 +317,10 @@ class LDACmd {
   def newDocument(domain:CategoricalSeqDomain[String], name:String, contents:Reader, segmenter:StringSegmenter): Doc = Document.fromReader(domain, name, contents, segmenter) 
 
   def main(args:Array[String]): Unit = {
-    object opts extends cc.factorie.util.DefaultCmdOptions {
-      val numTopics =     new CmdOption("num-topics", 't', 10, "N", "Number of topics.")
-      val alpha =         new CmdOption("alpha", 0.1, "N", "Dirichlet parameter for per-document topic proportions.")
-      val beta =          new CmdOption("beta", 0.01, "N", "Dirichlet parameter for per-topic word proportions.")
-      val numThreads =    new CmdOption("num-threads", 1, "N", "Number of threads for multithreaded topic inference.")
-      val numIterations = new CmdOption("num-iterations", 'i', 50, "N", "Number of iterations of inference.")
-      val diagnostic =    new CmdOption("diagnostic-interval", 'd', 10, "N", "Number of iterations between each diagnostic printing of intermediate results.")
-      val diagnosticPhrases= new CmdOption("diagnostic-phrases", false, "true|false", "If true diagnostic printing will include multi-word phrases.")
-      val fitAlpha =      new CmdOption("fit-alpha-interval", Int.MaxValue, "N", "Number of iterations between each re-estimation of prior on per-document topic distribution.")
-      val optimizeBurnIn =new CmdOption("optimize-burn-in", 100, "N", "Number of iterations to run before the first estimation of the alpha parameters")
-      val tokenRegex =    new CmdOption("token-regex", "\\p{Alpha}+", "REGEX", "Regular expression for segmenting tokens.")
-      val readDirs =      new CmdOption("read-dirs", List(""), "DIR...", "Space-(or comma)-separated list of directories containing plain text input files.")
-      val readLines =     new CmdOption("read-lines", "", "FILENAME", "File containing lines of text, one for each document.")
-      val readLinesRegex= new CmdOption("read-lines-regex", "", "REGEX", "Regular expression with parens around the portion of the line that should be read as the text of the document.")
-      val readLinesRegexGroups= new CmdOption("read-lines-regex-groups", List(1), "GROUPNUMS", "The --read-lines-regex group numbers from which to grab the text of the document.")
-      val readLinesRegexPrint = new CmdOption("read-lines-regex-print", false, "BOOL", "Print the --read-lines-regex match that will become the text of the document.")
-      val writeDocs =     new CmdOption("write-docs", "lda-docs.txt", "FILENAME", "Save LDA state, writing document names, words and z assignments") 
-      val readDocs =      new CmdOption("read-docs", "lda-docs.txt", "FILENAME", "Add documents from filename, reading document names, words and z assignments; store documents; can then add more documents or do more inference.") 
-      val readPhis =      new CmdOption("read-phis", "lda-docs.txt", "FILENAME", "Read documents from filename, but only use them to increment topic word counts; does not store documents (conserving memory); cannot do more inference, nor print phrases") { override def invoke = { numIterations.value = 0; numIterations.defaultValue = 0 } }
-      val maxNumDocs =    new CmdOption("max-num-docs", Int.MaxValue, "N", "The maximum number of documents to read.")
-      val printTopics =   new CmdOption("print-topics", 20, "N", "Just before exiting print top N words for each topic.")
-      val printPhrases =  new CmdOption("print-topics-phrases", 20, "N", "Just before exiting print top N phrases for each topic.")
-      val thetaServer   = new CmdOption("theta-server", 50, "N", "Read from sdin newline-separated documents, and output a theta topic distribution for each, estimated by N iterations of sampling on the document.")
-      val verbose =       new CmdOption("verbose", "Turn on verbose output") { override def invoke = LDACmd.this.verbose = true }
-      // TODO Add stopwords option
-      // TODO Add option to save alphas somewhere, perhaps first line of the writeDocs file, like a document containing only numbers (with extra newline at the end):
-      // alphas
-      // 0.23 0.15 0.62
-      // 
-    }
+    object opts extends LDAOpts
     implicit val random = new scala.util.Random(0)
     opts.parse(args)
+    verbose = opts.verbose.value
     /** The domain of the words in documents */
     object WordSeqDomain extends CategoricalSeqDomain[String]
     val model = DirectedModel()

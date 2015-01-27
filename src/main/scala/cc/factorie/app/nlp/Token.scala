@@ -16,6 +16,7 @@ import cc.factorie._
 import scala.collection.mutable.ArrayBuffer
 import cc.factorie.util.{Cubbie, Attr}
 import cc.factorie.variable.{StringVariable, ChainLink, CategoricalValue}
+import scala.collection.mutable
 
 // There are two ways to create Tokens and add them to Sentences and/or Documents:
 // Without String arguments, in which case the string is assumed to already be in the Document
@@ -30,6 +31,10 @@ import cc.factorie.variable.{StringVariable, ChainLink, CategoricalValue}
     @param stringEnd The offset into the Document string of the character immediately after the last character of the Token. */
 class Token(val stringStart:Int, val stringEnd:Int) extends cc.factorie.app.chain.Observation[Token] with ChainLink[Token,Section] with DocumentSubstring with Attr {
   assert(stringStart <= stringEnd)
+//  override def _setChainPosition(c:Section, p:Int): Unit = {
+//    super._setChainPosition(c, p)
+//    assert(stringStart < section.stringEnd && stringStart >= section.stringStart && stringEnd <= section.stringEnd)
+//  }
   /** Create a Token and also append it to the list of Tokens in the Section.
       There must not already be Tokens in the document with higher stringStart indices.
       Note that the start and end indices are character offsets into the Document string, not the Section string.
@@ -83,9 +88,29 @@ class Token(val stringStart:Int, val stringEnd:Int) extends cc.factorie.app.chai
   // TODO The ClearSegmenter should set Token._sentence, so the "sentence" method doesn't have to search for it. -akm
   /** Return the 0-start index of this token in its Sentence.  If not part of a sentence, return -1. */
   def positionInSentence = if (sentence eq null) -1 else position - sentence.start // TODO Consider throwing an Error here? -akm
+  // TODO this method is also defined on token span - centralize
+  /**  Returns an iterable over tokens before and after the token span without preserving order */
+  def contextBag(size:Int):Iterable[Token] = {
+    var idx = 0
+    var window = mutable.ArrayBuffer[Token]()
+    var t = Option(this)
+    while(idx < size && t.isDefined) {
+      t = t.flatMap(_.getPrev)
+      window ++= t
+      idx += 1
+    }
+    idx = 0
+    t = Option(this)
+    while(idx < size && t.isDefined) {
+      t = t.flatMap(_.getNext)
+      window ++= t
+      idx += 1
+    }
+    window
+  }
 
   // Common attributes, will return null if not present
-  def posTag = attr[cc.factorie.app.nlp.pos.PennPosTag]
+  def posTag = attr[cc.factorie.app.nlp.pos.PennPosTag] // Should we return the abstract PosTag here instead? -akm
   def nerTag = attr[cc.factorie.app.nlp.ner.NerTag]
   def lemma = attr[cc.factorie.app.nlp.lemma.TokenLemma]
   // Parse attributes, will throw exception if parse is not present
@@ -117,14 +142,14 @@ class Token(val stringStart:Int, val stringEnd:Int) extends cc.factorie.app.chai
   // Span methods.  Don't delete these yet.  Still small chance may have a canonical "SpanList" in Section.
 //  def inSpan: Boolean = chain.hasSpanContaining(position) 
 //  def inSpanOfClass[A<:TokenSpan](c:Class[A]): Boolean = chain.hasSpanOfClassContaining(c, position)
-//  def inSpanOfClass[A<:TokenSpan](implicit m:Manifest[A]): Boolean = chain.hasSpanOfClassContaining(m.erasure.asInstanceOf[Class[A]], position)
+//  def inSpanOfClass[A<:TokenSpan:ClassTag]: Boolean = chain.hasSpanOfClassContaining(m.erasure.asInstanceOf[Class[A]], position)
 //  def spans:Seq[TokenSpan] = chain.spansContaining(position) //.toList
 //  def spansOfClass[A<:TokenSpan](c:Class[A]) = chain.spansOfClassContaining(c, position)
-//  def spansOfClass[A<:TokenSpan](implicit m:Manifest[A]) = chain.spansOfClassContaining(m.erasure.asInstanceOf[Class[A]], position)
+//  def spansOfClass[A<:TokenSpan:ClassTag] = chain.spansOfClassContaining(m.erasure.asInstanceOf[Class[A]], position)
 //  def startsSpans: Iterable[TokenSpan] = chain.spansStartingAt(position)
-//  def startsSpansOfClass[A<:TokenSpan](implicit m:Manifest[A]): Iterable[A] = chain.spansOfClassStartingAt(position)
+//  def startsSpansOfClass[A<:TokenSpan:ClassTag]: Iterable[A] = chain.spansOfClassStartingAt(position)
 //  def endsSpans: Iterable[TokenSpan] = chain.spansEndingAt(position)
-//  def endsSpansOfClass[A<:TokenSpan](implicit m:Manifest[A]): Iterable[A] = chain.spansOfClassEndingAt(position)
+//  def endsSpansOfClass[A<:TokenSpan:ClassTag]: Iterable[A] = chain.spansOfClassEndingAt(position)
   
   // String feature help:
   def matches(t2:Token): Boolean = string == t2.string // TODO Consider renaming "stringMatches"

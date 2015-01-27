@@ -36,6 +36,9 @@ class EmbeddingOpts extends CmdOptions {
   val corpus = new CmdOption("train", "", "STRING", "train file")
   val output = new CmdOption("output", "", "STRING", "Use <file> to save the resulting word vectors")
   val binary = new CmdOption("binary", false, "BOOLEAN", "use true for storing .gz format and false for plain txt format. Both stores in ISO-8859-15 Encoding")
+  
+  // Reading embeddings and finding close neighbors.  (Not training embeddings.)
+  val explore = new CmdOption("explore", "embeddings.txt", "FILE", "Filename from which to read already-learned embeddings; the result of --output in a --train run.")
 
   // Vocabulary related
   // Maximum 14.3M * 0.7 = 10M words in the vocabulary (Don;t change if you understand how vocabBuilder works)
