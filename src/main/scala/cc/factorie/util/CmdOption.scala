@@ -132,6 +132,9 @@ class CmdOptions {
     other
   }
 
+  /** get options as a Seq[String] e.g. Seq("--l1=value", "--l2=value"...) **/
+  def unParse: Seq[String] = values.toSeq.map(_.unParse).flatten
+
   class CmdOption[T:TypeTag](val name:String, val defaultValue:T, val valueName:String, val helpMsg:String, val required:Boolean, val shortName:Char) extends cc.factorie.util.CmdOption[T] {
     def this(name:String, defaultValue:T, valueName:String, helpMsg:String) = this(name, defaultValue, valueName, helpMsg, false, name.head)
     def this(name:String, defaultValue:T, valueName:String, helpMsg:String, required:Boolean) = this(name, defaultValue, valueName, helpMsg, required, name.head)

@@ -162,7 +162,7 @@ class TriePhraseLexicon(val name: String, val tokenizer: StringSegmenter = cc.fa
     /** All a lines from the input Source to this lexicon.  Source is assumed to contain multiple newline-separated lexicon entries.
      * Overriden to call setTransitions after reading the file.
      */
-    override def ++=(source:Source): this.type = { for (line <- source.getLines()) { val phrase = line.trim; if (phrase.length > 0) TriePhraseLexicon.this.+=(phrase) }; trie.setTransitions(); source.close(); println("Loaded lexicon " + name); this }
+    override def ++=(source:Source): this.type = { for (line <- source.getLines()) { val phrase = line.trim; if (phrase.length > 0) TriePhraseLexicon.this.+=(phrase) }; trie.setTransitions(); source.close(); this }
 
     def setTransitions() : Unit = { trie.setTransitions() }
 

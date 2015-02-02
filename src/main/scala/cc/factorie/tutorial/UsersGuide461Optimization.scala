@@ -101,7 +101,7 @@ ThreadLocalBatchTrainer which keeps a per-thread gradient vector.
 ## Convenience methods
 
 Given a set of Examples, FACTORIE has convenience methods that include
-reasonable defaults for the ther components of a learning pipeline. Calling the methods
+reasonable defaults for the the components of a learning pipeline. Calling the methods
 Trainer.onlineTrain or Trainer.batchTrain provides a strong baseline learning method
 in most cases.
 
