@@ -176,7 +176,7 @@ class JobDistributor(cmds: CmdOptions,
                      executor: Array[String] => Future[Double],
                      secondsToSleep: Int = 60) {
   // the contract is that distribute will also set the appropriate values in cmds
-  def distribute: Int = {
+  def distribute: Seq[Double] = {
     val numParams = parameters.head.numSettings
     assert(parameters.map(_.numSettings).filterNot(_ == numParams).isEmpty, "All parameter lists must be of the same length")
 
@@ -186,15 +186,16 @@ class JobDistributor(cmds: CmdOptions,
     val futures = settings.map(s => (s,executor(s)))
     var finished = false
     var numSuccessfullyFinished = 0
+    var values = Seq[Double]()
     while (!finished) {
       Thread.sleep(secondsToSleep*1000)
-      val values = futures.filter(_._2.isCompleted).map(_._2.value.get.getOrElse(Double.NegativeInfinity))
+      values = futures.filter(_._2.isCompleted).map(_._2.value.get.getOrElse(Double.NegativeInfinity))
       numSuccessfullyFinished = values.count(!_.isInfinite)
       finished = values.length >= numParams
       println(s"Finished jobs: ${values.length} failed jobs: ${values.count(_.isInfinite)} remaining jobs: ${numParams-values.length}")
     }
     // return number of jobs successfully completed
-    numSuccessfullyFinished
+    values
   }
 }
 
@@ -237,6 +238,7 @@ abstract class JobQueueExecutor(memory: Int, className: String, cores: Int = 1) 
   def runJob(script: String, logFile: String)
   val date = new SimpleDateFormat("yyyy-MM-dd-HH-mm-ss").format(new java.util.Date())
   val prefix = s"hyper-search-$date"
+  new java.io.File(prefix).mkdirs()
   println(s"QSubExecutor saving logs in $prefix.")
   var id = 0
   def execute(args: Array[String]) = {
@@ -248,7 +250,6 @@ abstract class JobQueueExecutor(memory: Int, className: String, cores: Int = 1) 
       import sys.process._
       val thisPrefix = s"$prefix/job-$thisId"
       val outFile = thisPrefix+"-out"
-      new java.io.File(thisPrefix).getParentFile.mkdirs()
       val jvmCommand = s"java -Xmx${memory}g -classpath '$classpath' cc.factorie.util.QSubExecutor --className=$className  '--classArgs=$as' --outFile=$outFile"
       val cmdFile = thisPrefix+"-cmd.sh"
       val s = new OutputStreamWriter(new FileOutputStream(cmdFile))
