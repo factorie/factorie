@@ -27,6 +27,16 @@ class DBMatrix {
     col+=rowNr
   }
 
+  /**
+   * This is similar to an '==' method, however, we don't override it, since it relies on mutable fields (which may pose
+   * problems e.g. in hash maps)
+   *
+   *   @param m2
+   */
+  def hasSameContent(m2: DBMatrix ): Boolean = {
+    return m2.numRows() == _numRows && m2.numCols() == _numCols && m2.getRows() == __rows && m2.getCols() == __cols
+  }
+
   def getRow(rowNr: Int): mutable.HashMap[Int, Double] = {
     __rows.getOrElse(rowNr, new mutable.HashMap[Int, Double])
   }
@@ -38,6 +48,9 @@ class DBMatrix {
   def numRows() = _numRows
   def numCols() = _numCols
 
+  def getRows() = __rows
+  def getCols() = __cols
+
   /**
    * Filters the matrix depending on a column threshold t.
    *
@@ -45,14 +58,14 @@ class DBMatrix {
    *  1. remove columns with row frequency <= t
    *  2. find biggest connected component
    *  3. remove columns not in biggest connected component
-   *  4. remove rows without (valid) column entrys
+   *  4. remove rows without (valid) column entries
    *  5. re-assign column and row numbering
    *
    *  It returns the pruned matrix, as well as mappings from old to new row and column indices.
    *
    * @param t
    */
-  def prune(t: Int = 2): (DBMatrix, immutable.Map[Int, Int], immutable.Map[Int, Int]) = {
+  def prune(t: Int = 2): (DBMatrix, Map[Int, Int], Map[Int, Int]) = {
 
     val marks = Array.fill[Int](_numRows + _numCols)(0)
     var components = 0
@@ -66,7 +79,7 @@ class DBMatrix {
         components += 1
         compToSize(components) = 1
 
-        // Queue to hols all rows/columns to be marked.
+        // Queue to hold all rows/columns to be marked.
         val q = new mutable.Queue[Int]()
         marks(r) = components
         q.enqueue(r)
@@ -97,8 +110,8 @@ class DBMatrix {
 
     val maxComp = compToSize.maxBy(_._2)._1
 
-    println(marks.mkString(" "))
-    println(maxComp)
+    //println(marks.mkString(" "))
+    //println(maxComp)
 
     // Build new, smaller matrix
     val prunedMatrix = new DBMatrix()
