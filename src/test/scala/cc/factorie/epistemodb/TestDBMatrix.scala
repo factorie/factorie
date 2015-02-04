@@ -66,4 +66,38 @@ class TestDBMatrix extends JUnitSuite  with util.FastLogging {
     assertEquals(1, rowMap1(3))
   }
 
+  @Test def equalsTest() {
+    val m1 = new DBMatrix()
+    m1.set(0,0,1.0)
+    m1.set(0,1,1.0)
+    m1.set(0,2,1.0)
+    m1.set(0,3,1.0)
+    m1.set(4,2,3.0)
+    m1.set(1,3,1.0)
+    m1.set(4,2,2.0)
+
+    val m2 = new DBMatrix()
+    m2.set(4,2,2.0)
+    m2.set(1,3,1.0)
+    m2.set(0,3,1.0)
+    m2.set(0,2,1.0)
+    m2.set(0,1,1.0)
+    m2.set(0,0,1.0)
+
+    val m3 = new DBMatrix()
+    m3.set(4,2,2.0)
+    m3.set(1,3,1.0)
+    m3.set(0,0,1.0)
+
+    assertTrue(m1.hasSameContent(m2))
+    assertTrue(m2.hasSameContent(m1))
+    assertTrue(m3.hasSameContent(m3))
+    assertFalse(m1.hasSameContent(m3))
+    assertFalse(m3.hasSameContent(m1))
+  }
+
+  @Test def readWriteMongo() {
+
+  }
+
 }
