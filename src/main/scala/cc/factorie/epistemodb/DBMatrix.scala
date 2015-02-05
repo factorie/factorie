@@ -2,6 +2,8 @@ package cc.factorie.epistemodb
 
 import scala.collection.mutable
 import scala.collection.immutable
+import com.mongodb._
+import org.bson.types.BasicBSONList
 
 /**
  * Created by beroth on 1/30/15.
@@ -48,8 +50,8 @@ class DBMatrix {
   def numRows() = _numRows
   def numCols() = _numCols
 
-  def getRows() = __rows
-  def getCols() = __cols
+  protected def getRows() = __rows
+  protected def getCols() = __cols
 
   /**
    * Filters the matrix depending on a column threshold t.
@@ -110,9 +112,6 @@ class DBMatrix {
 
     val maxComp = compToSize.maxBy(_._2)._1
 
-    //println(marks.mkString(" "))
-    //println(maxComp)
-
     // Build new, smaller matrix
     val prunedMatrix = new DBMatrix()
 
@@ -135,7 +134,60 @@ class DBMatrix {
       }
       newRowIdx += 1
     }
-
     return (prunedMatrix, oldToNewRows.toMap, oldToNewCols.toMap)
+  }
+
+  /*
+  This writes the matrix content out so that it coresponds to the following schema:
+
+db.rows: {
+nr: <INT>
+cols: [<INT>]
+vals: [<DOUBLE>]
+}
+ */
+  def writeToMongo(mongoDb: DB) {
+    val collection: DBCollection = mongoDb.getCollection("rows")
+    for (row <- getRows) {
+      val rowNr = row._1
+      val colsCellVals : mutable.HashMap[Int, Double] = row._2
+
+      // TODO: here we a re using the java mongo drivers -- maybe we should go over to using the Scala Casbah drivers.
+      val mongoCols = new BasicBSONList
+      colsCellVals.map(_._1).zipWithIndex.foreach(c => mongoCols.put(c._2, c._1))
+      val mongoVals = new BasicBSONList
+      colsCellVals.map(_._2).zipWithIndex.foreach(c => mongoVals.put(c._2, c._1))
+
+      val rowObject = new BasicDBObject
+      rowObject.put("nr", rowNr)
+      rowObject.put("cols", mongoCols)
+      rowObject.put("vals", mongoVals)
+      collection.insert(rowObject)
+    }
+  }
+}
+
+object DBMatrix {
+  def fromMongo(mongoDb: DB) : DBMatrix = {
+    val collection: DBCollection = mongoDb.getCollection("rows")
+    val m = new DBMatrix()
+    val cursor: DBCursor = collection.find();
+    try {
+      while(cursor.hasNext()) {
+        val rowObject: DBObject = cursor.next()
+        val rowNr = rowObject.get("nr").asInstanceOf[Int]
+        val mongoCols: BasicDBList = rowObject.get("cols").asInstanceOf[BasicDBList]
+        val mongoVals: BasicDBList = rowObject.get("vals").asInstanceOf[BasicDBList]
+        assert(mongoCols.size() == mongoVals.size())
+        for (i <- 0 until mongoCols.size()) {
+          val colNr = mongoCols.get(i).asInstanceOf[Int]
+          val cellVal = mongoVals.get(i).asInstanceOf[Double]
+          m.set(rowNr, colNr, cellVal)
+        }
+      }
+    } finally {
+      cursor.close();
+    }
+    m
   }
 }

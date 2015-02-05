@@ -4,6 +4,9 @@ import cc.factorie.util
 import org.junit.Assert._
 import org.scalatest.junit.JUnitSuite
 import org.junit.Test
+import com.github.fakemongo.Fongo
+import com.mongodb.{DBCollection, BasicDBObject, DB}
+
 
 /**
  * Created by beroth on 1/30/15.
@@ -97,7 +100,27 @@ class TestDBMatrix extends JUnitSuite  with util.FastLogging {
   }
 
   @Test def readWriteMongo() {
+    // Fake in-memory mongo server.
+    val fongo = new Fongo("myserver");
+    val db : DB = fongo.getDB("mydb");
 
+    val m1 = new DBMatrix()
+    m1.set(0,0,1.0)
+    m1.set(0,1,1.0)
+    m1.set(0,2,1.0)
+    m1.set(0,3,1.0)
+    m1.set(4,2,3.0)
+    m1.set(1,3,1.0)
+    m1.set(4,2,2.0)
+
+    m1.writeToMongo(db)
+
+    val m2 = DBMatrix.fromMongo(db)
+    assertTrue(m1.hasSameContent(m2))
+
+
+    //val collection : DBCollection = db.getCollection("mycollection");
+    //collection.insert(new BasicDBObject("name", "jon"));
   }
 
 }
