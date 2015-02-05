@@ -100,8 +100,8 @@ abstract class TensorFactorWithStatistics4[N1<:TensorVar,N2<:TensorVar,N3<:Tenso
     Only "statistics" and "weightsSet" methods are abstract. 
     @author Andrew McCallum */
 abstract class DotFactor4[N1<:TensorVar,N2<:TensorVar,N3<:TensorVar,N4<:TensorVar](override val _1:N1, override val _2:N2, override val _3:N3, override val _4:N4) extends TensorFactor4[N1,N2,N3,N4](_1, _2, _3, _4) {
-  def weights: Tensor
-  def statisticsScore(t:Tensor): Double = weights dot t
+  def weights: Weights
+  def statisticsScore(t:Tensor): Double = weights.value dot t
 }
 
 /** A 4-neighbor Factor whose neighbors have Tensor values, 
@@ -110,7 +110,7 @@ abstract class DotFactor4[N1<:TensorVar,N2<:TensorVar,N3<:TensorVar,N4<:TensorVa
     Only "weightsSet" method is abstract. 
     @author Andrew McCallum */
 abstract class DotFactorWithStatistics4[N1<:TensorVar,N2<:TensorVar,N3<:TensorVar,N4<:TensorVar](override val _1:N1, override val _2:N2, override val _3:N3, override val _4:N4) extends DotFactor4[N1,N2,N3,N4](_1, _2, _3, _4) with TensorFactorStatistics4[N1,N2,N3,N4] {
-  override def valuesScore(valueTensor:Tensor) = weights dot valueTensor
+  override def valuesScore(valueTensor:Tensor) = weights.value dot valueTensor
 }
 
 
