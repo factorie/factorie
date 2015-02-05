@@ -133,8 +133,8 @@ abstract class TensorFactorWithStatistics1[N1<:TensorVar](override val _1:N1) ex
     Only "statistics" and "weightsSet" methods are abstract.  
     @author Andrew McCallum */
 abstract class DotFactor1[N1<:TensorVar](override val _1:N1) extends TensorFactor1[N1](_1) {
-  def weights: Tensor
-  def statisticsScore(t:Tensor): Double = weights dot t
+  def weights: Weights
+  def statisticsScore(t:Tensor): Double = weights.value dot t
 }
 
 /** A 1-neighbor Factor whose neighbor has Tensor values, 
@@ -143,7 +143,7 @@ abstract class DotFactor1[N1<:TensorVar](override val _1:N1) extends TensorFacto
     Only "weightsSet" method is abstract.  
     @author Andrew McCallum */
 abstract class DotFactorWithStatistics1[N1<:TensorVar](override val _1:N1) extends DotFactor1[N1](_1) with TensorFactorStatistics1[N1] {
-  override def valuesScore(valueTensor:Tensor) = valueTensor dot weights // Because valueTensor is the same as the statisticsTensor
+  override def valuesScore(valueTensor:Tensor) = valueTensor dot weights.value // Because valueTensor is the same as the statisticsTensor
 }
 
 
