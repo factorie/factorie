@@ -1,12 +1,15 @@
 package cc.factorie.epistemodb
 
 import scala.collection.mutable
-import scala.collection.immutable
 import com.mongodb._
 import org.bson.types.BasicBSONList
 
+
 /**
  * Created by beroth on 1/30/15.
+ */
+/**
+ * Holds a generic matrix that can be written to MongoDB.
  */
 class DBMatrix {
   protected def _initialRowMap = new mutable.HashMap[Int, mutable.HashMap[Int, Double]]
@@ -166,6 +169,7 @@ vals: [<DOUBLE>]
     }
   }
 }
+
 
 object DBMatrix {
   def fromMongo(mongoDb: DB) : DBMatrix = {
