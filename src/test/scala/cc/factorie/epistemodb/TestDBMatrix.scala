@@ -99,7 +99,7 @@ class TestDBMatrix extends JUnitSuite  with util.FastLogging {
     assertFalse(m3.hasSameContent(m1))
   }
 
-  @Test def readWriteMongo() {
+  @Test def writeReadMongo() {
     // Fake in-memory mongo server.
     val fongo = new Fongo("myserver");
     val db : DB = fongo.getDB("mydb");
@@ -117,10 +117,6 @@ class TestDBMatrix extends JUnitSuite  with util.FastLogging {
 
     val m2 = DBMatrix.fromMongo(db)
     assertTrue(m1.hasSameContent(m2))
-
-
-    //val collection : DBCollection = db.getCollection("mycollection");
-    //collection.insert(new BasicDBObject("name", "jon"));
   }
 
 }
