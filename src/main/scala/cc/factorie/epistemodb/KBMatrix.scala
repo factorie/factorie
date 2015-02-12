@@ -4,8 +4,6 @@ import scala.collection.mutable
 import com.google.common.collect._
 import scala.collection.JavaConverters._
 import com.mongodb._
-import org.bson.types.BasicBSONList
-import scala.Some
 import scala.Some
 
 /**
@@ -182,6 +180,10 @@ class KBMatrix(__matrix:DBMatrix = new DBMatrix,
     writeRowMap(mongoDb)
     writeColumnMap(mongoDb)
   }
+
+  def prune(t: Int = 2): KBMatrix = {
+    throw new UnsupportedOperationException
+  }
 }
 
 object KBMatrix {
@@ -232,7 +234,7 @@ object KBMatrix {
     entityMap
   }
 
-  private def readColMap(mongoDb: DB): HashBiMap[String, Int] =  {
+  private def readColMap(mongoDb: DB): HashBiMap[String, Int] = {
     val collection = mongoDb.getCollection(KBMatrix.COLMAP_COLLECTION)
     val colMap = HashBiMap.create[String, Int]()
     val cursor: DBCursor = collection.find();
@@ -256,5 +258,23 @@ object KBMatrix {
     val colMap = readColMap(mongoDb)
     val m = new KBMatrix(dbMatrix, entityMap, rowMap, colMap)
     m
+  }
+
+  private def entitiesAndRelFromLine(line: String, colsPerEnt:Int): (String, String, String, Double) = {
+    val parts = line.split("\t")
+    val e1 : String = parts.slice(0, colsPerEnt).mkString("\t")
+    val e2 : String = parts.slice(colsPerEnt, 2 * colsPerEnt).mkString("\t")
+    val rel : String = parts.slice(2 * colsPerEnt, parts.length - 1).mkString("\t")
+    val cellVal : Double = parts(parts.length - 1).toDouble
+    (e1, e2, rel, cellVal)
+  }
+  // Loads a matrix from a tab-separated file
+  def fromTsv(filename:String, colsPerEnt:Int = 2) : KBMatrix = {
+    val kb = new KBMatrix()
+    scala.io.Source.fromFile(filename).getLines.foreach(line => {
+      val (e1, e2, rel, cellVal) = entitiesAndRelFromLine(line, colsPerEnt)
+      kb.set(e1, e2, rel, cellVal)
+    })
+    kb
   }
 }
