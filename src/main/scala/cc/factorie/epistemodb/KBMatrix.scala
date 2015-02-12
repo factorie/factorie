@@ -136,9 +136,14 @@ class KBMatrix(__matrix:DBMatrix = new DBMatrix,
   }
 
 
-  private def writeEntityMap(mongoDb: DB) {
+  private def writeEntityMap(mongoDb: DB, dropCollection: Boolean = true) {
     // write entity map
     val entityCollection = mongoDb.getCollection(KBMatrix.ENTITY_COLLECTION)
+
+    if (dropCollection) {
+      entityCollection.drop()
+    }
+
     for((e,id) <- __entityMap.asScala) {
       //val id = __entityMap.get(e)
       val entityObject = new BasicDBObject
@@ -148,8 +153,13 @@ class KBMatrix(__matrix:DBMatrix = new DBMatrix,
     }
   }
 
-  private def writeRowMap(mongoDb: DB) {
+  private def writeRowMap(mongoDb: DB, dropCollection: Boolean = true) {
     val rowMapCollection = mongoDb.getCollection(KBMatrix.ROWMAP_COLLECTION)
+
+    if (dropCollection) {
+      rowMapCollection.drop()
+    }
+
     // write row map
     for((ep, id) <- __rowMap.asScala) {
       //val id = __rowMap.get(ep)
@@ -162,8 +172,13 @@ class KBMatrix(__matrix:DBMatrix = new DBMatrix,
     }
   }
 
-  private def writeColumnMap(mongoDb: DB) {
+  private def writeColumnMap(mongoDb: DB, dropCollection: Boolean = true) {
     val colMapCollection = mongoDb.getCollection(KBMatrix.COLMAP_COLLECTION)
+
+    if (dropCollection) {
+      colMapCollection.drop()
+    }
+
     // write column map
     for ((rel, id) <- __colMap.asScala) {
       //val id = __colMap.get(rel)
@@ -174,11 +189,11 @@ class KBMatrix(__matrix:DBMatrix = new DBMatrix,
     }
   }
 
-  def writeToMongo(mongoDb: DB) {
-    __matrix.writeToMongo(mongoDb)
-    writeEntityMap(mongoDb)
-    writeRowMap(mongoDb)
-    writeColumnMap(mongoDb)
+  def writeToMongo(mongoDb: DB, dropCollections: Boolean = true) {
+    __matrix.writeToMongo(mongoDb, dropCollections)
+    writeEntityMap(mongoDb, dropCollections)
+    writeRowMap(mongoDb, dropCollections)
+    writeColumnMap(mongoDb, dropCollections)
   }
 
   def prune(t: Int = 2): KBMatrix = {

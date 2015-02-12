@@ -149,8 +149,12 @@ cols: [<INT>]
 vals: [<DOUBLE>]
 }
  */
-  def writeToMongo(mongoDb: DB) {
+  def writeToMongo(mongoDb: DB, dropCollection: Boolean = true) {
     val collection: DBCollection = mongoDb.getCollection("rows")
+    if (dropCollection) {
+      collection.drop()
+    }
+
     for (row <- getRows) {
       val rowNr = row._1
       val colsCellVals : mutable.HashMap[Int, Double] = row._2
