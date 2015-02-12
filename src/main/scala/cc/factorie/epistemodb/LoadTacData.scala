@@ -19,9 +19,15 @@ object LoadTacDataIntoMongo {
 
   def main(args: Array[String]) : Unit = {
     opts.parse(args)
+
+    val tReadStart = System.currentTimeMillis
     val kb = KBMatrix.fromTsv(opts.tacData.value)
+    println("Reading took %0.2f s", (System.currentTimeMillis - tReadStart)/1000.0)
+
+    val tWriteStart = System.currentTimeMillis
     val mongoClient = new MongoClient( opts.mongoHost.value , opts.mongoPort.value )
     val db:DB = mongoClient.getDB( opts.dbname.value )
     kb.writeToMongo(db)
+    println("Writing took %0.2f s", (System.currentTimeMillis - tWriteStart)/1000.0)
   }
 }
