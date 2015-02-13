@@ -83,4 +83,28 @@ class TestKBMatrix extends JUnitSuite  with util.FastLogging  {
     assertTrue(m1.hasSameContent(m2))
   }
 
+  @Test def pruneMatrixTest() {
+    val m = new KBMatrix()
+    m.set("Barack Obama", "Michelle Obama", "is married to", 1.0)
+    m.set("Frank Sinatra", "Nancy Barbato", "per:spouse", 1.0)
+    m.set("Frank Sinatra", "Nancy Barbato", "and his wife", 1.0)
+    m.set("Nicola Sarcozy", "Carla Bruni", "and his wife", 1.0)
+
+    val m0 = m.prune(0)
+
+    val m0goal = new KBMatrix()
+    m0goal.set("Frank Sinatra", "Nancy Barbato", "per:spouse", 1.0)
+    m0goal.set("Frank Sinatra", "Nancy Barbato", "and his wife", 1.0)
+    m0goal.set("Nicola Sarcozy", "Carla Bruni", "and his wife", 1.0)
+
+    assertTrue(m0.hasSameContent(m0goal))
+
+    val m1 = m.prune(1)
+    val m1goal = new KBMatrix()
+    m1goal.set("Frank Sinatra", "Nancy Barbato", "and his wife", 1.0)
+    m1goal.set("Nicola Sarcozy", "Carla Bruni", "and his wife", 1.0)
+
+    assertTrue(m1.hasSameContent(m1goal))
+  }
+
 }

@@ -13,7 +13,7 @@ import scala.Some
  * Holds a knowledge-base with an underlying matrix.
  * I.e. additionally to matrix information, it also stores information about entities, relations etc.
  */
-class KBMatrix(__matrix:DBMatrix = new DBMatrix,
+class KBMatrix(__matrix:CoocMatrix = new CoocMatrix,
                __entityMap:HashBiMap[String, Int] = HashBiMap.create[String, Int](),
                __rowMap:HashBiMap[(Int, Int), Int] = HashBiMap.create[(Int, Int), Int](),
                __colMap:HashBiMap[String, Int] = HashBiMap.create[String, Int]() ) {
@@ -197,7 +197,25 @@ class KBMatrix(__matrix:DBMatrix = new DBMatrix,
   }
 
   def prune(t: Int = 2): KBMatrix = {
-    throw new UnsupportedOperationException
+    val (prunedMatrix, oldToNewRow, oldToNewCol) = __matrix.prune(t)
+    val newKb = new KBMatrix()
+
+    val newToOldCol = oldToNewCol.map(_ swap)
+    val newToOldRow = oldToNewRow.map(_ swap)
+
+    for (rowNr <- 0 until prunedMatrix.numRows()) {
+      for((colNr, cellVal) <- prunedMatrix.getRow(rowNr)) {
+        // Get the row from this matrix that corresponds to the new (filtered) row we are looking at.
+        val eIdxs = __rowMap.inverse().get(newToOldRow.get(rowNr).get)
+        // Get the corresponding entity strings.
+        val e1Str = __entityMap.inverse().get(eIdxs._1)
+        val e2Str = __entityMap.inverse().get(eIdxs._2)
+        // The the column (relation) that corresponds to the filtered cell we are looking at.
+        val relStr = __colMap.inverse().get(newToOldCol.get(colNr).get)
+        newKb.set(e1Str, e2Str, relStr, cellVal)
+      }
+    }
+    newKb
   }
 }
 
@@ -267,7 +285,7 @@ object KBMatrix {
   }
 
   def fromMongo(mongoDb: DB) : KBMatrix = {
-    val dbMatrix = DBMatrix.fromMongo(mongoDb)
+    val dbMatrix = CoocMatrix.fromMongo(mongoDb)
     val entityMap = readEntityMap(mongoDb)
     val rowMap = readRowMap(mongoDb)
     val colMap = readColMap(mongoDb)
