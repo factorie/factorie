@@ -100,6 +100,8 @@ class KBMatrix(__matrix:CoocMatrix = new CoocMatrix,
     __matrix.set(rowNr, colNr, cellVal)
   }
 
+  def nnz() = __matrix.nnz()
+
   def get(e1: String, e2: String, rel: String): Double = {
     val e1IdOption = getEid(e1)
     val e2IdOption = getEid(e2)
