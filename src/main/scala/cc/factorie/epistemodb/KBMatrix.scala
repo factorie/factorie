@@ -204,6 +204,7 @@ class KBMatrix(__matrix:CoocMatrix = new CoocMatrix,
   }
 
   def writeToMongo(mongoDb: DB, dropCollections: Boolean = true) {
+    // TODO: undo bulk writing
     __matrix.writeToMongo(mongoDb, dropCollections)
     writeEntityMap(mongoDb, dropCollections)
     writeRowMap(mongoDb, dropCollections)
