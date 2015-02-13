@@ -36,7 +36,7 @@ class TestCoocMatrix extends JUnitSuite  with util.FastLogging {
     m.set(2,3,1.0)
     m.set(3,3,1.0)
 
-    val (m0, rowMap0, colMap0) = m.prune(0)
+    val (m0, rowMap0, colMap0) = m.prune(0,0)
     // pruned matrix only contains biggest component, i.e. rows 2 and 3, and columns 2 and 3
     assertEquals(m0.numRows(), 2)
     assertEquals(m0.numCols(), 2)
@@ -56,7 +56,7 @@ class TestCoocMatrix extends JUnitSuite  with util.FastLogging {
     assertEquals(rowMap0(2), 0)
     assertEquals(rowMap0(3), 1)
 
-    val (m1, rowMap1, colMap1) = m.prune(1)
+    val (m1, rowMap1, colMap1) = m.prune(0,1)
     assertEquals(2, m1.numRows())
     assertEquals(1, m1.numCols())
     assertFalse(colMap1.contains(0))

@@ -90,7 +90,7 @@ class TestKBMatrix extends JUnitSuite  with util.FastLogging  {
     m.set("Frank Sinatra", "Nancy Barbato", "and his wife", 1.0)
     m.set("Nicola Sarcozy", "Carla Bruni", "and his wife", 1.0)
 
-    val m0 = m.prune(0)
+    val m0 = m.prune(0,0)
 
     val m0goal = new KBMatrix()
     m0goal.set("Frank Sinatra", "Nancy Barbato", "per:spouse", 1.0)
@@ -99,7 +99,7 @@ class TestKBMatrix extends JUnitSuite  with util.FastLogging  {
 
     assertTrue(m0.hasSameContent(m0goal))
 
-    val m1 = m.prune(1)
+    val m1 = m.prune(0,1)
     val m1goal = new KBMatrix()
     m1goal.set("Frank Sinatra", "Nancy Barbato", "and his wife", 1.0)
     m1goal.set("Nicola Sarcozy", "Carla Bruni", "and his wife", 1.0)
