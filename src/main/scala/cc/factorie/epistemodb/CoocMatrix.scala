@@ -26,9 +26,9 @@ class CoocMatrix {
 
   def set(rowNr: Int, colNr: Int, cellValue: Double) {
     if (cellValue == 0 && get(rowNr, colNr) != 0) {
-      nnz -= 1
+      __nnz -= 1
     } else if (cellValue != 0 && get(rowNr, colNr) == 0) {
-      nnz += 1
+      __nnz += 1
     }
 
     if (rowNr + 1 > _numRows) _numRows = rowNr + 1
