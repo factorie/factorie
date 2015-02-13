@@ -210,8 +210,8 @@ class KBMatrix(__matrix:CoocMatrix = new CoocMatrix,
     writeColumnMap(mongoDb, dropCollections)
   }
 
-  def prune(t: Int = 2): KBMatrix = {
-    val (prunedMatrix, oldToNewRow, oldToNewCol) = __matrix.prune(t)
+  def prune(tRow: Int = 2, tCol: Int = 2): KBMatrix = {
+    val (prunedMatrix, oldToNewRow, oldToNewCol) = __matrix.prune(tRow, tCol)
     val newKb = new KBMatrix()
 
     val newToOldCol = oldToNewCol.map(_ swap)

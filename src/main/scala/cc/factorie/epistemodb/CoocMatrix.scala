@@ -165,7 +165,7 @@ vals: [<DOUBLE>]
       collection.drop()
     }
 
-    //val builder = collection.initializeUnorderedBulkOperation();
+    val builder = collection.initializeUnorderedBulkOperation();
 
     for (row <- getRows) {
       val rowNr = row._1
