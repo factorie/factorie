@@ -146,13 +146,17 @@ class KBMatrix(__matrix:CoocMatrix = new CoocMatrix,
       entityCollection.drop()
     }
 
+    val builder = entityCollection.initializeUnorderedBulkOperation()
+
     for((e,id) <- __entityMap.asScala) {
       //val id = __entityMap.get(e)
       val entityObject = new BasicDBObject
       entityObject.put(KBMatrix.ENTITY_ID, id)
       entityObject.put(KBMatrix.ENTITY_SURFACE, e)
-      entityCollection.insert(entityObject)
+      //entityCollection.insert(entityObject)
+      builder.insert(entityObject)
     }
+    builder.execute()
   }
 
   private def writeRowMap(mongoDb: DB, dropCollection: Boolean = true) {
@@ -162,6 +166,8 @@ class KBMatrix(__matrix:CoocMatrix = new CoocMatrix,
       rowMapCollection.drop()
     }
 
+    val builder = rowMapCollection.initializeUnorderedBulkOperation()
+
     // write row map
     for((ep, id) <- __rowMap.asScala) {
       //val id = __rowMap.get(ep)
@@ -170,8 +176,10 @@ class KBMatrix(__matrix:CoocMatrix = new CoocMatrix,
       rowObject.put(KBMatrix.ENTITY2, ep._2)
 
       rowObject.put(KBMatrix.ROW_ID, id)
-      rowMapCollection.insert(rowObject)
+      //rowMapCollection.insert(rowObject)
+      builder.insert(rowObject)
     }
+    builder.execute()
   }
 
   private def writeColumnMap(mongoDb: DB, dropCollection: Boolean = true) {
@@ -181,14 +189,18 @@ class KBMatrix(__matrix:CoocMatrix = new CoocMatrix,
       colMapCollection.drop()
     }
 
+    val builder = colMapCollection.initializeUnorderedBulkOperation()
+
     // write column map
     for ((rel, id) <- __colMap.asScala) {
       //val id = __colMap.get(rel)
       val colObj = new BasicDBObject
       colObj.put(KBMatrix.COL_ID, id)
       colObj.put(KBMatrix.RELATION, rel)
-      colMapCollection.insert(colObj)
+      //colMapCollection.insert(colObj)
+      builder.insert(colObj)
     }
+    builder.execute()
   }
 
   def writeToMongo(mongoDb: DB, dropCollections: Boolean = true) {
