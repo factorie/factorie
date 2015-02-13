@@ -58,22 +58,40 @@ object LoadTacDataIntoMongo {
     }
 
     val tPrune0Start = System.currentTimeMillis
-    val prunedMatrix0 = kb.prune(0)
+    val prunedMatrix0 = kb.prune(0,0)
     val tPrune0 = (System.currentTimeMillis - tPrune0Start)/1000.0
-    println(f"pruning with threshold 0 took $tPrune0%.2f s")
+    println(f"pruning with threshold 0,0 took $tPrune0%.2f s")
     println("Stats of pruned matrix:")
     println("Num Rows:" + prunedMatrix0.numRows())
     println("Num Cols:" + prunedMatrix0.numCols())
     println("Num cells:" + prunedMatrix0.nnz())
 
     val tPrune1Start = System.currentTimeMillis
-    val prunedMatrix1 = kb.prune(1)
+    val prunedMatrix1 = kb.prune(1,1)
     val tPrune1 = (System.currentTimeMillis - tPrune1Start)/1000.0
-    println(f"pruning with threshold 0 took $tPrune1%.2f s")
+    println(f"pruning with threshold 1,1 took $tPrune1%.2f s")
     println("Stats of pruned matrix:")
     println("Num Rows:" + prunedMatrix1.numRows())
     println("Num Cols:" + prunedMatrix1.numCols())
     println("Num cells:" + prunedMatrix1.nnz())
+
+    val tPrune2Start = System.currentTimeMillis
+    val prunedMatrix2 = kb.prune(2,2)
+    val tPrune2 = (System.currentTimeMillis - tPrune2Start)/1000.0
+    println(f"pruning with threshold 2,2 took $tPrune2%.2f s")
+    println("Stats of pruned matrix:")
+    println("Num Rows:" + prunedMatrix2.numRows())
+    println("Num Cols:" + prunedMatrix2.numCols())
+    println("Num cells:" + prunedMatrix2.nnz())
+
+    val tPrune3Start = System.currentTimeMillis
+    val prunedMatrix3 = kb.prune(2,1)
+    val tPrune3 = (System.currentTimeMillis - tPrune3Start)/1000.0
+    println(f"pruning with threshold 2,1 took $tPrune3%.2f s")
+    println("Stats of pruned matrix:")
+    println("Num Rows:" + prunedMatrix3.numRows())
+    println("Num Cols:" + prunedMatrix3.numCols())
+    println("Num cells:" + prunedMatrix3.nnz())
 
   }
 }
