@@ -18,11 +18,19 @@ class CoocMatrix {
 
   private var __rows = _initialRowMap
   private var __cols = _initialColMap
+  // number of non-zero cells
+  private var __nnz = 0
 
   protected var _numRows = 0
   protected var _numCols = 0
 
   def set(rowNr: Int, colNr: Int, cellValue: Double) {
+    if (cellValue == 0 && get(rowNr, colNr) != 0) {
+      nnz -= 1
+    } else if (cellValue != 0 && get(rowNr, colNr) == 0) {
+      nnz += 1
+    }
+
     if (rowNr + 1 > _numRows) _numRows = rowNr + 1
     if (colNr + 1 > _numCols) _numCols = colNr + 1
     val row = __rows.getOrElseUpdate(rowNr, new mutable.HashMap[Int, Double]())
@@ -31,6 +39,8 @@ class CoocMatrix {
     val col = __cols.getOrElseUpdate(colNr, new mutable.HashSet[Int]())
     col+=rowNr
   }
+
+  def nnz() = __nnz
 
   /**
    * This is similar to an '==' method, however, we don't override it, since it relies on mutable fields (which may pose
