@@ -165,7 +165,7 @@ vals: [<DOUBLE>]
       collection.drop()
     }
 
-    val builder = collection.initializeUnorderedBulkOperation();
+    //val builder = collection.initializeUnorderedBulkOperation();
 
     for (row <- getRows) {
       val rowNr = row._1
@@ -181,10 +181,10 @@ vals: [<DOUBLE>]
       rowObject.put("nr", rowNr)
       rowObject.put("cols", mongoCols)
       rowObject.put("vals", mongoVals)
-      //collection.insert(rowObject)
-      builder.insert(rowObject);
+      collection.insert(rowObject)
+      //builder.insert(rowObject);
     }
-    builder.execute()
+    //builder.execute()
   }
 }
 
