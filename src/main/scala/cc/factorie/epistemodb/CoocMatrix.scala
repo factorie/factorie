@@ -70,7 +70,7 @@ class CoocMatrix {
    * Filters the matrix depending on a column threshold t.
    *
    * The filtering steps are:
-   *  1. remove columns with row frequency <= t
+   *  1. remove rows with number of cells < tRow and columns with number of cells <= tCol
    *  2. find biggest connected component
    *  3. remove columns not in biggest connected component
    *  4. remove rows without (valid) column entries
@@ -78,9 +78,10 @@ class CoocMatrix {
    *
    *  It returns the pruned matrix, as well as mappings from old to new row and column indices.
    *
-   * @param t
+   * @param tRow
+   * @param tCol
    */
-  def prune(t: Int = 2): (CoocMatrix, Map[Int, Int], Map[Int, Int]) = {
+  def prune(tRow: Int = 2, tCol: Int = 2): (CoocMatrix, Map[Int, Int], Map[Int, Int]) = {
 
     val marks = Array.fill[Int](_numRows + _numCols)(0)
     var components = 0
@@ -108,9 +109,9 @@ class CoocMatrix {
             val adj: Iterable[Int] = if (v < _numRows) {
               // get the columns; use offset
               offset = _numRows
-              __rows.get(v).get.keys.filter(c => __cols.get(c).get.size > t)
+              __rows.get(v).get.keys.filter(c => __cols.get(c).get.size > tCol)
             } else {
-              __cols.get(v - _numRows).get
+              __cols.get(v - _numRows).get.filter(r => __rows.get(r).get.size > tRow)
               // get the rows; no offset
             }
             for  (a <- adj; if marks(a + offset) == 0) {
@@ -181,10 +182,10 @@ vals: [<DOUBLE>]
       rowObject.put("nr", rowNr)
       rowObject.put("cols", mongoCols)
       rowObject.put("vals", mongoVals)
-      collection.insert(rowObject)
-      //builder.insert(rowObject);
+      //collection.insert(rowObject)
+      builder.insert(rowObject);
     }
-    //builder.execute()
+    builder.execute()
   }
 }
 
