@@ -11,12 +11,12 @@ import com.mongodb.{DBCollection, BasicDBObject, DB}
 /**
  * Created by beroth on 1/30/15.
  */
-class TestDBMatrix extends JUnitSuite  with util.FastLogging {
+class TestCoocMatrix extends JUnitSuite  with util.FastLogging {
 
   val eps = 1e-4
 
   @Test def getSetCellsTest() {
-    val m = new DBMatrix()
+    val m = new CoocMatrix()
     m.set(0,0,1.0)
     m.set(4,2,3.0)
     m.set(1,3,1.0)
@@ -30,7 +30,7 @@ class TestDBMatrix extends JUnitSuite  with util.FastLogging {
   }
 
   @Test def pruneMatrixTest() {
-    val m = new DBMatrix()
+    val m = new CoocMatrix()
     m.set(1,1,1.0)
     m.set(2,2,1.0)
     m.set(2,3,1.0)
@@ -70,7 +70,7 @@ class TestDBMatrix extends JUnitSuite  with util.FastLogging {
   }
 
   @Test def equalsTest() {
-    val m1 = new DBMatrix()
+    val m1 = new CoocMatrix()
     m1.set(0,0,1.0)
     m1.set(0,1,1.0)
     m1.set(0,2,1.0)
@@ -79,7 +79,7 @@ class TestDBMatrix extends JUnitSuite  with util.FastLogging {
     m1.set(1,3,1.0)
     m1.set(4,2,2.0)
 
-    val m2 = new DBMatrix()
+    val m2 = new CoocMatrix()
     m2.set(4,2,2.0)
     m2.set(1,3,1.0)
     m2.set(0,3,1.0)
@@ -87,7 +87,7 @@ class TestDBMatrix extends JUnitSuite  with util.FastLogging {
     m2.set(0,1,1.0)
     m2.set(0,0,1.0)
 
-    val m3 = new DBMatrix()
+    val m3 = new CoocMatrix()
     m3.set(4,2,2.0)
     m3.set(1,3,1.0)
     m3.set(0,0,1.0)
@@ -104,7 +104,7 @@ class TestDBMatrix extends JUnitSuite  with util.FastLogging {
     val fongo = new Fongo("myserver");
     val db : DB = fongo.getDB("mydb");
 
-    val m1 = new DBMatrix()
+    val m1 = new CoocMatrix()
     m1.set(0,0,1.0)
     m1.set(0,1,1.0)
     m1.set(0,2,1.0)
@@ -115,7 +115,7 @@ class TestDBMatrix extends JUnitSuite  with util.FastLogging {
 
     m1.writeToMongo(db)
 
-    val m2 = DBMatrix.fromMongo(db)
+    val m2 = CoocMatrix.fromMongo(db)
     assertTrue(m1.hasSameContent(m2))
   }
 

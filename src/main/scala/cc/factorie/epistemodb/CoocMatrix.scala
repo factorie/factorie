@@ -11,7 +11,7 @@ import org.bson.types.BasicBSONList
 /**
  * Holds a generic matrix that can be written to MongoDB.
  */
-class DBMatrix {
+class CoocMatrix {
   protected def _initialRowMap = new mutable.HashMap[Int, mutable.HashMap[Int, Double]]
   // Backpointers for efficiency
   protected def _initialColMap = new mutable.HashMap[Int, mutable.Set[Int]]
@@ -38,7 +38,7 @@ class DBMatrix {
    *
    *   @param m2
    */
-  def hasSameContent(m2: DBMatrix ): Boolean = {
+  def hasSameContent(m2: CoocMatrix ): Boolean = {
     return m2.numRows() == _numRows && m2.numCols() == _numCols && m2.getRows() == __rows && m2.getCols() == __cols
   }
 
@@ -70,7 +70,7 @@ class DBMatrix {
    *
    * @param t
    */
-  def prune(t: Int = 2): (DBMatrix, Map[Int, Int], Map[Int, Int]) = {
+  def prune(t: Int = 2): (CoocMatrix, Map[Int, Int], Map[Int, Int]) = {
 
     val marks = Array.fill[Int](_numRows + _numCols)(0)
     var components = 0
@@ -116,7 +116,7 @@ class DBMatrix {
     val maxComp = compToSize.maxBy(_._2)._1
 
     // Build new, smaller matrix
-    val prunedMatrix = new DBMatrix()
+    val prunedMatrix = new CoocMatrix()
 
     val oldToNewCols = mutable.Map[Int,Int]()
     var newColIdx = 0
@@ -175,10 +175,10 @@ vals: [<DOUBLE>]
 }
 
 
-object DBMatrix {
-  def fromMongo(mongoDb: DB) : DBMatrix = {
+object CoocMatrix {
+  def fromMongo(mongoDb: DB) : CoocMatrix = {
     val collection: DBCollection = mongoDb.getCollection("rows")
-    val m = new DBMatrix()
+    val m = new CoocMatrix()
     val cursor: DBCursor = collection.find();
     try {
       while(cursor.hasNext()) {
