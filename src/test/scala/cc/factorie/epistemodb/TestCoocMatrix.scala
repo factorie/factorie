@@ -6,6 +6,7 @@ import org.scalatest.junit.JUnitSuite
 import org.junit.Test
 import com.github.fakemongo.Fongo
 import com.mongodb.{DBCollection, BasicDBObject, DB}
+import cc.factorie.la.SparseIndexedTensor2
 
 
 /**
@@ -138,5 +139,16 @@ class TestCoocMatrix extends JUnitSuite  with util.FastLogging {
     val m2 = CoocMatrix.fromMongoCellBased(db)
     assertTrue(m1.hasSameContent(m2))
   }
-
+  @Test def readFromTensor2() {
+    val t2 = new SparseIndexedTensor2(10, 10)
+    t2.+=(0, 2, 3.0)
+    t2.+=(0,0, 5.0)
+    t2.+=(3, 0, 7.0)
+    t2.+=(5, 9, 10.0)
+    val m = CoocMatrix.fromTensor2(t2)
+    assert(m.get(0,2) == 3.0)
+    assert(m.get(0,0) == 5.0)
+    assert(m.get(3,0) == 7.0)
+    assert(m.get(5,9) == 10.0)
+  }
 }
