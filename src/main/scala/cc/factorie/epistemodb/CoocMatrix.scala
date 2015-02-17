@@ -187,10 +187,52 @@ vals: [<DOUBLE>]
     }
     builder.execute()
   }
+
+  /*
+This writes the matrix content out so that it coresponds to the following schema:
+
+db.cells: {
+row: <INT>
+col: <INT>
+val: <DOUBLE>
+}
+*/
+  def writeToMongoCellBased(mongoDb: DB, dropCollection: Boolean = true) {
+    val collection: DBCollection = mongoDb.getCollection(CoocMatrix.CELLS_COLLECTION)
+    if (dropCollection) {
+      collection.drop()
+    }
+
+    val builder = collection.initializeUnorderedBulkOperation();
+
+    for (row <- getRows) {
+      val rowNr = row._1
+      val colsCellVals : mutable.HashMap[Int, Double] = row._2
+
+      // TODO: here we a re using the java mongo drivers -- maybe we should go over to using the Scala Casbah drivers.
+      colsCellVals.foreach(colAndCellVal => {
+        val cellObject = new BasicDBObject
+        cellObject.put(CoocMatrix.ROW, rowNr)
+        cellObject.put(CoocMatrix.COL, colAndCellVal._1)
+        cellObject.put(CoocMatrix.CELL_VALL, colAndCellVal._2)
+        //collection.insert(cellObject)
+        builder.insert(cellObject);
+      })
+    }
+    builder.execute()
+  }
 }
 
 
+
+
 object CoocMatrix {
+  val CELLS_COLLECTION = "cells"
+  val ROW = "row"
+  val COL = "col"
+  val CELL_VALL = "val"
+
+  
   def fromMongo(mongoDb: DB) : CoocMatrix = {
     val collection: DBCollection = mongoDb.getCollection("rows")
     val m = new CoocMatrix()
@@ -207,6 +249,25 @@ object CoocMatrix {
           val cellVal = mongoVals.get(i).asInstanceOf[Double]
           m.set(rowNr, colNr, cellVal)
         }
+      }
+    } finally {
+      cursor.close();
+    }
+    m
+  }
+
+
+  def fromMongoCellBased(mongoDb: DB) : CoocMatrix = {
+    val collection: DBCollection = mongoDb.getCollection(CELLS_COLLECTION)
+    val m = new CoocMatrix()
+    val cursor: DBCursor = collection.find();
+    try {
+      while(cursor.hasNext()) {
+        val cellObject: DBObject = cursor.next()
+        val rowNr = cellObject.get(ROW).asInstanceOf[Int]
+        val colNr = cellObject.get(COL).asInstanceOf[Int]
+        val cellVal = cellObject.get(CELL_VALL).asInstanceOf[Double]
+        m.set(rowNr, colNr, cellVal)
       }
     } finally {
       cursor.close();
