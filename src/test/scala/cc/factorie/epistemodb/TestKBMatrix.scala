@@ -83,6 +83,24 @@ class TestKBMatrix extends JUnitSuite  with util.FastLogging  {
     assertTrue(m1.hasSameContent(m2))
   }
 
+
+  @Test def writeReadMongoCellBased() {
+    // Fake in-memory mongo server.
+    val fongo = new Fongo("myserver");
+    val db : DB = fongo.getDB("mydb");
+
+    val m1 = new KBMatrix()
+    m1.set("Frank Sinatra", "Nancy Barbato", "and his wife", 2.0)
+    m1.set("Frank Sinatra", "Nancy Barbato", "per:spouse", 1.0)
+    m1.set("Barack Obama", "Michelle Obama", "per:spouse", 1.0)
+    m1.set("Barack Obama", "Michelle Obama", "is married to", 10.0)
+
+    m1.writeToMongoCellBased(db)
+
+    val m2 = KBMatrix.fromMongoCellBased(db)
+    assertTrue(m1.hasSameContent(m2))
+  }
+
   @Test def pruneMatrixTest() {
     val m = new KBMatrix()
     m.set("Barack Obama", "Michelle Obama", "is married to", 1.0)

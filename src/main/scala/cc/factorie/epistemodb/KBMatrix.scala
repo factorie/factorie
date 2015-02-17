@@ -211,6 +211,14 @@ class KBMatrix(__matrix:CoocMatrix = new CoocMatrix,
     writeColumnMap(mongoDb, dropCollections)
   }
 
+  def writeToMongoCellBased(mongoDb: DB, dropCollections: Boolean = true) {
+    // TODO: undo bulk writing
+    __matrix.writeToMongoCellBased(mongoDb, dropCollections)
+    writeEntityMap(mongoDb, dropCollections)
+    writeRowMap(mongoDb, dropCollections)
+    writeColumnMap(mongoDb, dropCollections)
+  }
+
   def prune(tRow: Int = 2, tCol: Int = 2): KBMatrix = {
     val (prunedMatrix, oldToNewRow, oldToNewCol) = __matrix.prune(tRow, tCol)
     val newKb = new KBMatrix()
@@ -301,6 +309,15 @@ object KBMatrix {
 
   def fromMongo(mongoDb: DB) : KBMatrix = {
     val dbMatrix = CoocMatrix.fromMongo(mongoDb)
+    val entityMap = readEntityMap(mongoDb)
+    val rowMap = readRowMap(mongoDb)
+    val colMap = readColMap(mongoDb)
+    val m = new KBMatrix(dbMatrix, entityMap, rowMap, colMap)
+    m
+  }
+
+  def fromMongoCellBased(mongoDb: DB) : KBMatrix = {
+    val dbMatrix = CoocMatrix.fromMongoCellBased(mongoDb)
     val entityMap = readEntityMap(mongoDb)
     val rowMap = readRowMap(mongoDb)
     val colMap = readColMap(mongoDb)

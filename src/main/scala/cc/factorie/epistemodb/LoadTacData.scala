@@ -33,12 +33,12 @@ object LoadTacDataIntoMongo {
     val tWriteStart = System.currentTimeMillis
     val mongoClient = new MongoClient( opts.mongoHost.value , opts.mongoPort.value )
     val db:DB = mongoClient.getDB( opts.dbname.value )
-    kb.writeToMongo(db)
+    kb.writeToMongoCellBased(db)
     val tWrite = (System.currentTimeMillis - tWriteStart)/1000.0
     println(f"Writing to mongo took $tWrite%.2f s")
 
     val tReadMongoStart = System.currentTimeMillis
-    val kb2 = KBMatrix.fromMongo(db)
+    val kb2 = KBMatrix.fromMongoCellBased(db)
     val tReadMongo = (System.currentTimeMillis - tReadMongoStart)/1000.0
     println(f"Reading from mongo took $tReadMongo%.2f s")
 
