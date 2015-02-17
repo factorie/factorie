@@ -219,6 +219,9 @@ class KBMatrix(__matrix:CoocMatrix = new CoocMatrix,
     writeColumnMap(mongoDb, dropCollections)
   }
 
+  /* use prune(0,0) for no pruning
+   * use prune(2,1) for moderate pruning on kb matrices
+   */
   def prune(tRow: Int = 2, tCol: Int = 2): KBMatrix = {
     val (prunedMatrix, oldToNewRow, oldToNewCol) = __matrix.prune(tRow, tCol)
     val newKb = new KBMatrix()
