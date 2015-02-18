@@ -3,6 +3,7 @@ package cc.factorie.epistemodb
 import scala.collection.mutable
 import com.mongodb._
 import org.bson.types.BasicBSONList
+import scala.util.Random
 
 
 /**
@@ -24,20 +25,50 @@ class CoocMatrix {
   protected var _numRows = 0
   protected var _numCols = 0
 
+  def copy(): CoocMatrix = {
+    val m = new CoocMatrix
+    // set dimensionality
+    if (numRows() > 0 && numCols() > 0) {
+      m.set(numRows()-1, numCols()-1, 0)
+    }
+    getNnzCells().foreach(cell => {
+      val rowNr = cell._1
+      val colNr = cell._2
+      val cellVal = get(rowNr, colNr)
+      m.set(rowNr, colNr, cellVal)
+    })
+    m
+  }
+
   def set(rowNr: Int, colNr: Int, cellValue: Double) {
     if (cellValue == 0 && get(rowNr, colNr) != 0) {
+      // Keeping track of non-zero elements.
       __nnz -= 1
-    } else if (cellValue != 0 && get(rowNr, colNr) == 0) {
-      __nnz += 1
+      // Data structures are only keeping keys to rows and columns if they contain non-zero elements:
+      val row = __rows.get(rowNr).get
+      row.remove(colNr)
+      if (row.isEmpty) {
+        __rows.remove(rowNr)
+      }
+      val col = __cols.get(colNr).get
+      col-=rowNr
+      if (col.isEmpty) {
+        __cols.remove(colNr)
+      }
+    } else if (cellValue != 0) {
+      if (get(rowNr, colNr) == 0) {
+        __nnz += 1
+      }
+      val row = __rows.getOrElseUpdate(rowNr, new mutable.HashMap[Int, Double]())
+      row.update(colNr,cellValue)
+
+      val col = __cols.getOrElseUpdate(colNr, new mutable.HashSet[Int]())
+      col+=rowNr
     }
 
+    // In any case grow the dimensions if necessary.
     if (rowNr + 1 > _numRows) _numRows = rowNr + 1
     if (colNr + 1 > _numCols) _numCols = colNr + 1
-    val row = __rows.getOrElseUpdate(rowNr, new mutable.HashMap[Int, Double]())
-    row.update(colNr,cellValue)
-
-    val col = __cols.getOrElseUpdate(colNr, new mutable.HashSet[Int]())
-    col+=rowNr
   }
 
   def nnz() = __nnz
@@ -151,6 +182,56 @@ class CoocMatrix {
     return (prunedMatrix, oldToNewRows.toMap, oldToNewCols.toMap)
   }
 
+  /**
+   * This returns a training matrix, a development matrix and a test matrix.
+   * The three matrices build are partitioning of the non-zero cells of the original matrix.
+   *
+   * It is recommended to use this method on a pruned matrix, to increase connectedness/density of the matrix
+   * cells. (Be aware that indices change after pruning, and adapt testRows and testCols accordingly).
+   *
+   * The dev and test matrices are sampled by a scheme that ensures that after their removal their are still
+   * non-zero elements in the respective rows and columns.
+   *
+   * If there are not enough non-zero entries that satisfy this criterion the test matrix (or even the dev matrix) will
+   * be smaller than specified.
+   */
+  def randomTrainDevTestSplit(numDevNNZ: Int, numTestNNZ: Int, testRows: Option[Set[Int]] = None,
+                              testCols: Option[Set[Int]] = None, seed:Long = 0): (CoocMatrix, CoocMatrix, CoocMatrix) = {
+
+    val random = new Random(seed)
+    // first sort, then shuffle (wrt the seed) -- in order to reproduce exactly the same ordering, no matter what
+    // the underlying ordering of the data
+    val shuffledCells = random.shuffle(getNnzCells()
+      .filter(cell => (testRows == None || testRows.get.contains(cell._1)))
+      .filter(cell => (testCols == None || testCols.get.contains(cell._2))).sorted)
+
+    val trainMatrix = this.copy
+    // TODO: set dimensions
+    val devMatrix = new CoocMatrix
+    val testMatrix = new CoocMatrix
+
+    // Consume shuffled cells and build dev test matrices.
+    shuffledCells.takeWhile(_ => (devMatrix.nnz() < numDevNNZ || testMatrix.nnz() < numTestNNZ)).foreach(cell => {
+      val matrixToGrow = if (devMatrix.nnz() < numDevNNZ) {
+        devMatrix
+      } else {
+        testMatrix
+      }
+      val rowNr = cell._1
+      val colNr = cell._2
+      if (trainMatrix.__rows.get(rowNr).get.size > 1 && trainMatrix.__cols.get(colNr).get.size > 1) {
+        matrixToGrow.set(rowNr, colNr, get(rowNr, colNr))
+        trainMatrix.set(rowNr, colNr, 0)
+      }
+    })
+    (trainMatrix, devMatrix, testMatrix)
+  }
+
+
+  def getNnzCells(): Seq[(Int, Int)] = {
+    for((k1, v1) <- __rows.toSeq; k2 <- v1.keys) yield (k1, k2)
+  }
+
   /*
   This writes the matrix content out so that it coresponds to the following schema:
 
@@ -161,7 +242,7 @@ vals: [<DOUBLE>]
 }
  */
   def writeToMongo(mongoDb: DB, dropCollection: Boolean = true) {
-    val collection: DBCollection = mongoDb.getCollection("rows")
+    val collection: DBCollection = mongoDb.getCollection(CoocMatrix.ROWS_COLLECTION)
     if (dropCollection) {
       collection.drop()
     }
@@ -179,9 +260,9 @@ vals: [<DOUBLE>]
       colsCellVals.map(_._2).zipWithIndex.foreach(c => mongoVals.put(c._2, c._1))
 
       val rowObject = new BasicDBObject
-      rowObject.put("nr", rowNr)
-      rowObject.put("cols", mongoCols)
-      rowObject.put("vals", mongoVals)
+      rowObject.put(CoocMatrix.ROW_NR, rowNr)
+      rowObject.put(CoocMatrix.COL_LIST, mongoCols)
+      rowObject.put(CoocMatrix.CELL_VAL_LIST, mongoVals)
       //collection.insert(rowObject)
       builder.insert(rowObject);
     }
@@ -212,9 +293,9 @@ val: <DOUBLE>
       // TODO: here we a re using the java mongo drivers -- maybe we should go over to using the Scala Casbah drivers.
       colsCellVals.foreach(colAndCellVal => {
         val cellObject = new BasicDBObject
-        cellObject.put(CoocMatrix.ROW, rowNr)
-        cellObject.put(CoocMatrix.COL, colAndCellVal._1)
-        cellObject.put(CoocMatrix.CELL_VALL, colAndCellVal._2)
+        cellObject.put(CoocMatrix.ROW_NR, rowNr)
+        cellObject.put(CoocMatrix.COL_NR, colAndCellVal._1)
+        cellObject.put(CoocMatrix.CELL_VAL, colAndCellVal._2)
         //collection.insert(cellObject)
         builder.insert(cellObject);
       })
@@ -228,21 +309,24 @@ val: <DOUBLE>
 
 object CoocMatrix {
   val CELLS_COLLECTION = "cells"
-  val ROW = "row"
-  val COL = "col"
-  val CELL_VALL = "val"
+  val ROWS_COLLECTION = "rows"
+  val ROW_NR = "row_nr"
+  val COL_NR = "col_nr"
+  val CELL_VAL = "val"
+  val COL_LIST = "cols"
+  val CELL_VAL_LIST = "vals"
 
   
   def fromMongo(mongoDb: DB) : CoocMatrix = {
-    val collection: DBCollection = mongoDb.getCollection("rows")
+    val collection: DBCollection = mongoDb.getCollection(ROWS_COLLECTION)
     val m = new CoocMatrix()
     val cursor: DBCursor = collection.find();
     try {
       while(cursor.hasNext()) {
         val rowObject: DBObject = cursor.next()
-        val rowNr = rowObject.get("nr").asInstanceOf[Int]
-        val mongoCols: BasicDBList = rowObject.get("cols").asInstanceOf[BasicDBList]
-        val mongoVals: BasicDBList = rowObject.get("vals").asInstanceOf[BasicDBList]
+        val rowNr = rowObject.get(ROW_NR).asInstanceOf[Int]
+        val mongoCols: BasicDBList = rowObject.get(COL_LIST).asInstanceOf[BasicDBList]
+        val mongoVals: BasicDBList = rowObject.get(CELL_VAL_LIST).asInstanceOf[BasicDBList]
         assert(mongoCols.size() == mongoVals.size())
         for (i <- 0 until mongoCols.size()) {
           val colNr = mongoCols.get(i).asInstanceOf[Int]
@@ -264,9 +348,9 @@ object CoocMatrix {
     try {
       while(cursor.hasNext()) {
         val cellObject: DBObject = cursor.next()
-        val rowNr = cellObject.get(ROW).asInstanceOf[Int]
-        val colNr = cellObject.get(COL).asInstanceOf[Int]
-        val cellVal = cellObject.get(CELL_VALL).asInstanceOf[Double]
+        val rowNr = cellObject.get(ROW_NR).asInstanceOf[Int]
+        val colNr = cellObject.get(COL_NR).asInstanceOf[Int]
+        val cellVal = cellObject.get(CELL_VAL).asInstanceOf[Double]
         m.set(rowNr, colNr, cellVal)
       }
     } finally {

@@ -27,6 +27,28 @@ class TestCoocMatrix extends JUnitSuite  with util.FastLogging {
     assertEquals(m.get(4, 2),2.0, eps)
     assertEquals(m.get(2, 2),0.0, eps)
     assertEquals(m.get(5, 5),0.0, eps)
+    assertEquals(m.nnz(), 3)
+    m.set(1,3,0)
+    assertEquals(m.nnz(), 2)
+    m.set(1,3,0)
+    assertEquals(m.nnz(), 2)
+    m.set(5,4,0)
+    assertEquals(m.nnz(), 2)
+    assertEquals(m.numRows(),6)
+    assertEquals(m.numCols(),5)
+  }
+
+
+  @Test def copyTest() {
+    val m = new CoocMatrix()
+    m.set(0,0,1.0)
+    m.set(1,3,1.0)
+    m.set(4,2,2.0)
+    val m2 = m.copy()
+    assertTrue(m.hasSameContent(m2))
+    m2.set(1,3,0)
+    assertFalse(m.hasSameContent(m2))
+    assertFalse(m.getNnzCells().toSet == m2.getNnzCells().toSet)
   }
 
   @Test def pruneMatrixTest() {
@@ -99,7 +121,7 @@ class TestCoocMatrix extends JUnitSuite  with util.FastLogging {
     assertFalse(m3.hasSameContent(m1))
   }
 
-  @Test def writeReadMongo() {
+  @Test def writeReadMongoTest() {
     // Fake in-memory mongo server.
     val fongo = new Fongo("myserver");
     val db : DB = fongo.getDB("mydb");
@@ -119,7 +141,7 @@ class TestCoocMatrix extends JUnitSuite  with util.FastLogging {
     assertTrue(m1.hasSameContent(m2))
   }
 
-  @Test def writeReadMongoCellBased() {
+  @Test def writeReadMongoCellBasedTest() {
     // Fake in-memory mongo server.
     val fongo = new Fongo("myserver");
     val db : DB = fongo.getDB("mydb");
@@ -137,6 +159,41 @@ class TestCoocMatrix extends JUnitSuite  with util.FastLogging {
 
     val m2 = CoocMatrix.fromMongoCellBased(db)
     assertTrue(m1.hasSameContent(m2))
+  }
+
+  @Test def trainDevTestSplitTest() {
+    //0101
+    //1101
+    //0010
+    //1101
+    val m = new CoocMatrix()
+    m.set(0,1,1.0)
+    m.set(0,3,1.0)
+    m.set(1,0,1.0)
+    m.set(1,1,1.0)
+    m.set(1,3,1.0)
+    m.set(2,2,1.0)
+    m.set(3,0,1.0)
+    m.set(3,1,1.0)
+    m.set(3,3,1.0)
+    // Just use rows and cols 1,2,3 for testing purposes
+    val testRows = Set(1,2,3)
+    val testCols = Set(1,2,3)
+
+    // Make sure that test passes for different random initialiaztions
+    for (seed <- 0 until 10) {
+      val (mtrain, mdev, mtest) = m.randomTrainDevTestSplit(2,3,Some(testRows), Some(testCols), seed)
+      // Cell 2,2 is not elegible, so there are only 2 cells left for test set
+      assertFalse(mtest.getNnzCells().toSet.contains((2,2)))
+      assertFalse(mdev.getNnzCells().toSet.contains((2,2)))
+      assertEquals(2,mdev.nnz())
+      assertEquals(2,mtest.nnz())
+      assertEquals(5,mtrain.nnz())
+      // the 3 matrices are a partitoning of m:
+      // 1. their size is 2+2+5 = 9
+      // 2. they contain all elements
+      assertEquals(m.getNnzCells().toSet, mtrain.getNnzCells().toSet ++ mtest.getNnzCells().toSet ++ mdev.getNnzCells().toSet)
+    }
   }
 
 }
