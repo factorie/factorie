@@ -3,6 +3,7 @@ package cc.factorie.epistemodb
 import scala.collection.mutable
 import com.mongodb._
 import org.bson.types.BasicBSONList
+import cc.factorie.la.{Tensor2, SparseTensor}
 
 
 /**
@@ -274,4 +275,16 @@ object CoocMatrix {
     }
     m
   }
+
+  def fromTensor2(t:Tensor2 with SparseTensor):CoocMatrix = {
+    t._makeReadable()
+    val m = new CoocMatrix
+    t.foreachActiveElement{ case(i, value) =>
+      val col = i%t.dim1
+      val row = i/t.dim2
+      m.set(row, col, value)
+    }
+    m
+  }
 }
+
