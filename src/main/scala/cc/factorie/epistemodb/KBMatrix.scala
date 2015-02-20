@@ -13,7 +13,7 @@ import scala.Some
  * Holds a knowledge-base with an underlying matrix.
  * I.e. additionally to matrix information, it also stores information about entities, relations etc.
  */
-class KBMatrix(__matrix:CoocMatrix = new CoocMatrix,
+class KBMatrix(__matrix:CoocMatrix = new CoocMatrix(0,0),
                __entityMap:HashBiMap[String, Int] = HashBiMap.create[String, Int](),
                __rowMap:HashBiMap[(Int, Int), Int] = HashBiMap.create[(Int, Int), Int](),
                __colMap:HashBiMap[String, Int] = HashBiMap.create[String, Int]() ) {
