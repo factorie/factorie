@@ -12,25 +12,15 @@ import cc.factorie.la.{Tensor2, SparseTensor}
 /**
  * Holds a generic matrix that can be written to MongoDB.
  */
-class CoocMatrix {
-  protected def _initialRowMap = new mutable.HashMap[Int, mutable.HashMap[Int, Double]]
+class CoocMatrix(var _numRows: Int, var _numCols:Int) {
+  val rows = new mutable.HashMap[Int, mutable.HashMap[Int, Double]]
   // Backpointers for efficiency
-  protected def _initialColMap = new mutable.HashMap[Int, mutable.Set[Int]]
-
-  private var __rows = _initialRowMap
-  private var __cols = _initialColMap
+  private var __cols = new mutable.HashMap[Int, mutable.Set[Int]]
   // number of non-zero cells
   private var __nnz = 0
 
-  protected var _numRows = 0
-  protected var _numCols = 0
-
   def copy(): CoocMatrix = {
-    val m = new CoocMatrix
-    // set dimensionality
-    if (numRows() > 0 && numCols() > 0) {
-      m.set(numRows()-1, numCols()-1, 0)
-    }
+    val m = new CoocMatrix(numRows(), numCols())
     getNnzCells().foreach(cell => {
       val rowNr = cell._1
       val colNr = cell._2
@@ -45,10 +35,10 @@ class CoocMatrix {
       // Keeping track of non-zero elements.
       __nnz -= 1
       // Data structures are only keeping keys to rows and columns if they contain non-zero elements:
-      val row = __rows.get(rowNr).get
+      val row = rows.get(rowNr).get
       row.remove(colNr)
       if (row.isEmpty) {
-        __rows.remove(rowNr)
+        rows.remove(rowNr)
       }
       val col = __cols.get(colNr).get
       col-=rowNr
@@ -59,7 +49,7 @@ class CoocMatrix {
       if (get(rowNr, colNr) == 0) {
         __nnz += 1
       }
-      val row = __rows.getOrElseUpdate(rowNr, new mutable.HashMap[Int, Double]())
+      val row = rows.getOrElseUpdate(rowNr, new mutable.HashMap[Int, Double]())
       row.update(colNr,cellValue)
 
       val col = __cols.getOrElseUpdate(colNr, new mutable.HashSet[Int]())
@@ -80,11 +70,11 @@ class CoocMatrix {
    *   @param m2
    */
   def hasSameContent(m2: CoocMatrix ): Boolean = {
-    return m2.numRows() == _numRows && m2.numCols() == _numCols && m2.getRows() == __rows && m2.getCols() == __cols
+    return m2.numRows() == _numRows && m2.numCols() == _numCols && m2.getRows() == rows && m2.getCols() == __cols
   }
 
   def getRow(rowNr: Int): mutable.HashMap[Int, Double] = {
-    __rows.getOrElse(rowNr, new mutable.HashMap[Int, Double])
+    rows.getOrElse(rowNr, new mutable.HashMap[Int, Double])
   }
 
   def get(rowNr: Int, colNr: Int) = {
@@ -94,7 +84,7 @@ class CoocMatrix {
   def numRows() = _numRows
   def numCols() = _numCols
 
-  protected def getRows() = __rows
+  protected def getRows() = rows
   protected def getCols() = __cols
 
   /**
@@ -133,16 +123,16 @@ class CoocMatrix {
 
         while (!q.isEmpty) {
           val v : Int = q.dequeue()
-          if (__rows.contains(v) ||
+          if (rows.contains(v) ||
               __cols.contains(v - _numRows) ){
             var offset = 0
             // Current row/column has outgoing pointers.
             val adj: Iterable[Int] = if (v < _numRows) {
               // get the columns; use offset
               offset = _numRows
-              __rows.get(v).get.keys.filter(c => __cols.get(c).get.size > tCol)
+              rows.get(v).get.keys.filter(c => __cols.get(c).get.size > tCol)
             } else {
-              __cols.get(v - _numRows).get.filter(r => __rows.get(r).get.size > tRow)
+              __cols.get(v - _numRows).get.filter(r => rows.get(r).get.size > tRow)
               // get the rows; no offset
             }
             for  (a <- adj; if marks(a + offset) == 0) {
@@ -158,7 +148,7 @@ class CoocMatrix {
     val maxComp = compToSize.maxBy(_._2)._1
 
     // Build new, smaller matrix
-    val prunedMatrix = new CoocMatrix()
+    val prunedMatrix = new CoocMatrix(0,0) // grow on the fly
 
     val oldToNewCols = mutable.Map[Int,Int]()
     var newColIdx = 0
@@ -195,10 +185,10 @@ class CoocMatrix {
    * If there are not enough non-zero entries that satisfy this criterion the test matrix (or even the dev matrix) will
    * be smaller than specified.
    */
-  def randomTrainDevTestSplit(numDevNNZ: Int, numTestNNZ: Int, testRows: Option[Set[Int]] = None,
-                              testCols: Option[Set[Int]] = None, seed:Long = 0): (CoocMatrix, CoocMatrix, CoocMatrix) = {
+  def randomTestSplit(numDevNNZ: Int, numTestNNZ: Int, testRows: Option[Set[Int]] = None,
+                              testCols: Option[Set[Int]] = None, random:Random = new Random(0)): (CoocMatrix, CoocMatrix, CoocMatrix) = {
 
-    val random = new Random(seed)
+
     // first sort, then shuffle (wrt the seed) -- in order to reproduce exactly the same ordering, no matter what
     // the underlying ordering of the data
     val shuffledCells = random.shuffle(getNnzCells()
@@ -207,11 +197,11 @@ class CoocMatrix {
 
     val trainMatrix = this.copy
     // TODO: set dimensions
-    val devMatrix = new CoocMatrix
-    val testMatrix = new CoocMatrix
+    val devMatrix = new CoocMatrix(numRows(), numCols())
+    val testMatrix = new CoocMatrix(numRows(), numCols())
 
     // Consume shuffled cells and build dev test matrices.
-    shuffledCells.takeWhile(_ => (devMatrix.nnz() < numDevNNZ || testMatrix.nnz() < numTestNNZ)).foreach(cell => {
+    shuffledCells.toStream.takeWhile(_ => (devMatrix.nnz() < numDevNNZ || testMatrix.nnz() < numTestNNZ)).foreach(cell => {
       val matrixToGrow = if (devMatrix.nnz() < numDevNNZ) {
         devMatrix
       } else {
@@ -219,7 +209,7 @@ class CoocMatrix {
       }
       val rowNr = cell._1
       val colNr = cell._2
-      if (trainMatrix.__rows.get(rowNr).get.size > 1 && trainMatrix.__cols.get(colNr).get.size > 1) {
+      if (trainMatrix.rows.get(rowNr).get.size > 1 && trainMatrix.__cols.get(colNr).get.size > 1) {
         matrixToGrow.set(rowNr, colNr, get(rowNr, colNr))
         trainMatrix.set(rowNr, colNr, 0)
       }
@@ -229,7 +219,7 @@ class CoocMatrix {
 
 
   def getNnzCells(): Seq[(Int, Int)] = {
-    for((k1, v1) <- __rows.toSeq; k2 <- v1.keys) yield (k1, k2)
+    for((k1, v1) <- rows.toSeq; k2 <- v1.keys) yield (k1, k2)
   }
 
   /*
@@ -319,7 +309,7 @@ object CoocMatrix {
   
   def fromMongo(mongoDb: DB) : CoocMatrix = {
     val collection: DBCollection = mongoDb.getCollection(ROWS_COLLECTION)
-    val m = new CoocMatrix()
+    val m = new CoocMatrix(0, 0) // grow on the fly
     val cursor: DBCursor = collection.find();
     try {
       while(cursor.hasNext()) {
@@ -343,7 +333,7 @@ object CoocMatrix {
 
   def fromMongoCellBased(mongoDb: DB) : CoocMatrix = {
     val collection: DBCollection = mongoDb.getCollection(CELLS_COLLECTION)
-    val m = new CoocMatrix()
+    val m = new CoocMatrix(0, 0) // grow on the fly
     val cursor: DBCursor = collection.find();
     try {
       while(cursor.hasNext()) {
@@ -361,12 +351,35 @@ object CoocMatrix {
 
   def fromTensor2(t:Tensor2 with SparseTensor):CoocMatrix = {
     t._makeReadable()
-    val m = new CoocMatrix
+    val m = new CoocMatrix(0, 0) // grow on the fly
     t.foreachActiveElement{ case(i, value) =>
       val col = i%t.dim1
       val row = i/t.dim2
       m.set(row, col, value)
     }
+    m
+  }
+
+  def randomOneZeroMatrix(numRows: Int, numCols: Int, maxNnz:Int, random:Random = new Random(0), underlyingTopics: Int = 1, noiseRatio: Double = 0.1): CoocMatrix = {
+    val m = new CoocMatrix(numRows, numCols)
+    (1 to maxNnz).foreach( _ => {
+      val rowNr = random.nextInt(numRows)
+      // rows and columns belong to classes according to their modulo value.
+      val rowClass = rowNr % underlyingTopics
+
+      // sample the class for the column: with probability (1-noiseRatio) it is the same as for the row
+      val colClass = if (random.nextDouble() > noiseRatio || underlyingTopics == 1) {
+        rowClass
+      } else {
+        // sample from other classes
+        (rowClass + 1 + random.nextInt(underlyingTopics - 1)) % underlyingTopics
+      }
+      // shift column indices, so that column falls into equivalence class 0, and pick random index
+      val randomMultiple = random.nextInt((numCols - colClass - 1) / underlyingTopics + 1)
+      val colNr = randomMultiple * underlyingTopics + colClass
+      assert(colNr < numCols)
+      m.set(rowNr, colNr, 1.0)
+    })
     m
   }
 }
