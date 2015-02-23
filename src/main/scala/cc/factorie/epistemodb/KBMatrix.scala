@@ -14,7 +14,7 @@ import scala.util.Random
  * Holds a knowledge-base with an underlying matrix.
  * I.e. additionally to matrix information, it also stores information about entities, relations etc.
  */
-class KBMatrix(__matrix:CoocMatrix = new CoocMatrix(0,0),
+class KBMatrix(val matrix:CoocMatrix = new CoocMatrix(0,0),
                __entityMap:HashBiMap[String, Int] = HashBiMap.create[String, Int](),
                __rowMap:HashBiMap[(Int, Int), Int] = HashBiMap.create[(Int, Int), Int](),
                __colMap:HashBiMap[String, Int] = HashBiMap.create[String, Int]() ) {
@@ -87,7 +87,7 @@ class KBMatrix(__matrix:CoocMatrix = new CoocMatrix(0,0),
     eids match {
       case (Some(e1Id), Some(e2Id)) => {
         val rowNr = __rowMap.get((e1Id, e2Id))
-        __matrix.getRow(rowNr).map(cell => __colMap.inverse().get(cell._1))
+        matrix.getRow(rowNr).map(cell => __colMap.inverse().get(cell._1))
       }
       case _ => List()
     }
@@ -98,10 +98,10 @@ class KBMatrix(__matrix:CoocMatrix = new CoocMatrix(0,0),
     val e2Id = getEidOrCreate(e2)
     val rowNr = getRowNrOrCreate((e1Id, e2Id))
     val colNr = getColNrOrCreate(rel)
-    __matrix.set(rowNr, colNr, cellVal)
+    matrix.set(rowNr, colNr, cellVal)
   }
 
-  def nnz() = __matrix.nnz()
+  def nnz() = matrix.nnz()
 
   def get(e1: String, e2: String, rel: String): Double = {
     val e1IdOption = getEid(e1)
@@ -115,7 +115,7 @@ class KBMatrix(__matrix:CoocMatrix = new CoocMatrix(0,0),
             val colIdOption = getColNr(rel)
             colIdOption match {
               case Some(colId) => {
-                __matrix.get(rowId, colId)
+                matrix.get(rowId, colId)
               }
               case None => 0.0
             }
@@ -127,8 +127,8 @@ class KBMatrix(__matrix:CoocMatrix = new CoocMatrix(0,0),
     }
   }
 
-  def numRows(): Int = __matrix.numRows()
-  def numCols(): Int = __matrix.numCols()
+  def numRows(): Int = matrix.numRows()
+  def numCols(): Int = matrix.numCols()
 
   def hasSameContent(m2: KBMatrix ): Boolean = {
     m2.numRows() == numRows() &&
@@ -206,7 +206,7 @@ class KBMatrix(__matrix:CoocMatrix = new CoocMatrix(0,0),
 
   def writeToMongo(mongoDb: DB, dropCollections: Boolean = true) {
     // TODO: undo bulk writing
-    __matrix.writeToMongo(mongoDb, dropCollections)
+    matrix.writeToMongo(mongoDb, dropCollections)
     writeEntityMap(mongoDb, dropCollections)
     writeRowMap(mongoDb, dropCollections)
     writeColumnMap(mongoDb, dropCollections)
@@ -214,7 +214,7 @@ class KBMatrix(__matrix:CoocMatrix = new CoocMatrix(0,0),
 
   def writeToMongoCellBased(mongoDb: DB, dropCollections: Boolean = true) {
     // TODO: undo bulk writing
-    __matrix.writeToMongoCellBased(mongoDb, dropCollections)
+    matrix.writeToMongoCellBased(mongoDb, dropCollections)
     writeEntityMap(mongoDb, dropCollections)
     writeRowMap(mongoDb, dropCollections)
     writeColumnMap(mongoDb, dropCollections)
@@ -224,7 +224,7 @@ class KBMatrix(__matrix:CoocMatrix = new CoocMatrix(0,0),
    * use prune(2,1) for moderate pruning on kb matrices
    */
   def prune(tRow: Int = 2, tCol: Int = 2): KBMatrix = {
-    val (prunedMatrix, oldToNewRow, oldToNewCol) = __matrix.prune(tRow, tCol)
+    val (prunedMatrix, oldToNewRow, oldToNewCol) = matrix.prune(tRow, tCol)
     val newKb = new KBMatrix()
 
     val newToOldCol = oldToNewCol.map(_ swap)
@@ -249,19 +249,19 @@ class KBMatrix(__matrix:CoocMatrix = new CoocMatrix(0,0),
   def randomTestSplit(numDevNNZ: Int, numTestNNZ: Int, testRows: Option[Set[(String, String)]] = None,
                       testCols: Option[Set[String]] = None, random:Random = new Random(0)): (KBMatrix, KBMatrix, KBMatrix) = {
 
-    val testRowIndices: Option[Set[Int]] = testRows match {
+    val testRowIndices = testRows match {
       case Some(entityNamePairs) => Some( entityNamePairs.map(pairStr =>
         (__entityMap.get(pairStr._1), __entityMap.get(pairStr._2))).map(pairInt => __rowMap.get(pairInt)).toSet )
       case None => None
     }
 
-    val testColIndices: Option[Set[Int]] = testCols match {
+    val testColIndices = testCols match {
       case Some(colNames) => Some( colNames.map(name => __colMap.get(name)).toSet )
       case None => None
     }
 
     val (trainCooc, devCooc, testCooc) =
-      __matrix.randomTestSplit(numDevNNZ, numTestNNZ, testRowIndices, testColIndices, random)
+      matrix.randomTestSplit(numDevNNZ, numTestNNZ, testRowIndices, testColIndices, random)
 
     val trainKB = new KBMatrix(trainCooc, __entityMap, __rowMap, __colMap)
     val devKB = new KBMatrix(devCooc, __entityMap, __rowMap, __colMap)

@@ -57,14 +57,13 @@ class TestUniversalSchemaTrainer extends JUnitSuite  with util.FastLogging {
       val model5 = UniversalSchemaModel.randomModel(numRows, numCols, dim, random)
       val trainer5 = new BprUniversalSchemaTrainer(regularizer, stepsize, dim, mTrain, model5, random)
       trainer5.train(5)
+      println("--")
       val model10 = UniversalSchemaModel.randomModel(numRows, numCols, dim, random)
       val trainer10 = new BprUniversalSchemaTrainer(regularizer, stepsize, dim, mTrain, model10, random)
       trainer10.train(10)
 
       val result0 = model0.similaritiesAndLabels(mTrain, mTest)
-      println("--")
       val result5 = model5.similaritiesAndLabels(mTrain, mTest)
-      println("--")
       val result10 = model10.similaritiesAndLabels(mTrain, mTest)
 
       println("0 iters map: " + Evaluator.meanAveragePrecision(result0))
