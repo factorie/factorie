@@ -5,6 +5,7 @@ import com.google.common.collect._
 import scala.collection.JavaConverters._
 import com.mongodb._
 import scala.Some
+import scala.util.Random
 
 /**
  * Created by beroth on 2/6/15.
@@ -243,7 +244,34 @@ class KBMatrix(__matrix:CoocMatrix = new CoocMatrix(0,0),
     }
     newKb
   }
+
+
+  def randomTestSplit(numDevNNZ: Int, numTestNNZ: Int, testRows: Option[Set[(String, String)]] = None,
+                      testCols: Option[Set[String]] = None, random:Random = new Random(0)): (KBMatrix, KBMatrix, KBMatrix) = {
+
+    val testRowIndices: Option[Set[Int]] = testRows match {
+      case Some(entityNamePairs) => Some( entityNamePairs.map(pairStr =>
+        (__entityMap.get(pairStr._1), __entityMap.get(pairStr._2))).map(pairInt => __rowMap.get(pairInt)).toSet )
+      case None => None
+    }
+
+    val testColIndices: Option[Set[Int]] = testCols match {
+      case Some(colNames) => Some( colNames.map(name => __colMap.get(name)).toSet )
+      case None => None
+    }
+
+    val (trainCooc, devCooc, testCooc) =
+      __matrix.randomTestSplit(numDevNNZ, numTestNNZ, testRowIndices, testColIndices, random)
+
+    val trainKB = new KBMatrix(trainCooc, __entityMap, __rowMap, __colMap)
+    val devKB = new KBMatrix(devCooc, __entityMap, __rowMap, __colMap)
+    val testKB = new KBMatrix(testCooc, __entityMap, __rowMap, __colMap)
+
+    (trainKB, devKB, testKB)
+  }
 }
+
+
 
 object KBMatrix {
 
