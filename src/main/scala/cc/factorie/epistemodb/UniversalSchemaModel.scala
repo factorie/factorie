@@ -40,7 +40,8 @@ class UniversalSchemaModel(val rowVectors: IndexedSeq[DenseTensor1], val colVect
     }
 
     {for (col <- columns) yield {
-      val scores = {for (row <- (0 until testMatrix.numRows())) yield {
+      val scores = {for (row <- (0 until testMatrix.numRows());
+      if trainDevMatrix.get(row, col) == 0) yield {
         val sim = similarity01(rowVectors(row), colVectors(col))
         val isTrueTest = testMatrix.get(row, col) != 0
         (sim, isTrueTest)

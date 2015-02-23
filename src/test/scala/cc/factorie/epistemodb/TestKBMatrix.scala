@@ -6,6 +6,7 @@ import org.junit.Test
 import org.junit.Assert._
 import com.github.fakemongo.Fongo
 import com.mongodb.DB
+import scala.util.Random
 
 /**
  * Created by beroth on 2/6/15.
@@ -129,6 +130,46 @@ class TestKBMatrix extends JUnitSuite  with util.FastLogging  {
     m2goal.set("Frank Sinatra", "Nancy Barbato", "per:spouse", 1.0)
     m2goal.set("Frank Sinatra", "Nancy Barbato", "and his wife", 1.0)
     assertTrue(m2.hasSameContent(m2goal))
+  }
+
+  @Test def testSplitTest() {
+    //0101
+    //1101
+    //0010
+    //1101
+    val m = new KBMatrix()
+    m.set("A", "A", "1",1.0)
+    m.set("A", "A", "3",1.0)
+
+    m.set("B", "B", "0",1.0)
+    m.set("B", "B", "1",1.0)
+    m.set("B", "B", "3",1.0)
+
+    m.set("C", "C", "2",1.0)
+
+    m.set("D", "D", "0",1.0)
+    m.set("D", "D", "1",1.0)
+    m.set("D", "D", "3",1.0)
+    // Just use rows and cols 1,2,3 for testing purposes
+    val testRows = Set(("B", "B"), ("C", "C"), ("D", "D"))
+    val testCols = Set("1", "2", "3")
+
+    // Make sure that test passes for different random initialiaztions
+    for (seed <- 0 until 10) {
+      val random = new Random(seed)
+      val (mtrain, mdev, mtest) = m.randomTestSplit(2,3,Some(testRows), Some(testCols), random)
+      // Cell 2,2 is not elegible, so there are only 2 cells left for test set
+      assertEquals(1.0, mtrain.get("C", "C","2"), eps)
+      assertEquals(0, mtest.get("C", "C","2"), eps)
+      assertEquals(0, mdev.get("C", "C","2"), eps)
+      assertEquals(2,mdev.nnz())
+      assertEquals(2,mtest.nnz())
+      assertEquals(5,mtrain.nnz())
+      // the 3 matrices are a partitoning of m:
+      // 1. their size is 2+2+5 = 9
+      // 2. they contain all elements
+      //assertEquals(m.getNnzCells().toSet, mtrain.getNnzCells().toSet ++ mtest.getNnzCells().toSet ++ mdev.getNnzCells().toSet)
+    }
   }
 
 }
