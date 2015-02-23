@@ -15,8 +15,9 @@ class UniversalSchemaModel(val rowVectors: IndexedSeq[DenseTensor1], val colVect
   //val linkFunction: UnivariateLinkFunction = OptimizableObjectives.logisticLinkFunction
   //def predict(rowIdx: Int, colIdx: Int) = linkFunction(score(i,j))
 
-  // TODO:? (1 + relVec.cosineSimilarity(patVec)) / 2.0
   def similarity(vec1: DenseTensor1, vec2: DenseTensor1): Double = vec1.cosineSimilarity(vec2)
+  // cosine similarity normalized to lie between 0 and one
+  def similarity01(vec1: DenseTensor1, vec2: DenseTensor1): Double = (1.0 + vec1.cosineSimilarity(vec2)) / 2.0
   def score(rowIdx: Int, colIdx: Int): Double = rowVectors(rowIdx).dot(colVectors(colIdx))
 
   /**
@@ -31,37 +32,26 @@ class UniversalSchemaModel(val rowVectors: IndexedSeq[DenseTensor1], val colVect
    *
    * The method returns a mapping from column
    */
-  def scoresAndLabels(trainDevMatrix: CoocMatrix, testMatrix: CoocMatrix, testCols: Option[Set[Int]] = None):
+  def similaritiesAndLabels(trainDevMatrix: CoocMatrix, testMatrix: CoocMatrix, testCols: Option[Set[Int]] = None):
     Map[Int, Seq[(Double, Boolean)]] = {
-    throw new UnsupportedOperationException
+    val columns = testCols match {
+      case Some(cols) => cols
+      case None => testMatrix.nonZeroCols()
+    }
+
+    {for (col <- columns) yield {
+      val scores = {for (row <- (0 until testMatrix.numRows())) yield {
+        val sim = similarity01(rowVectors(row), colVectors(col))
+        val isTrueTest = testMatrix.get(row, col) != 0
+        (sim, isTrueTest)
+      }}.toSeq
+      (col, scores)
+    }}.toMap
   }
 
   def writeToMongo(mongoDb: DB, dropCollections: Boolean = true) {
     throw new UnsupportedOperationException
   }
-
-/*
-  def updateBprOnRows(exTrue: LightweightUniversalSchemaIntRelations, isTrain: Boolean,
-                      exFalse: LightweightUniversalSchemaIntRelations, stepsize: Double,
-                      model: UniversalSchemaModel): Double = {
-    val rowTrueIdx = exTrue.epi
-    val rowFalseIdx = exFalse.epi
-
-    val colIndices1 = if (isTrain)
-      exTrue.rels
-    else
-      exTrue.rels.filterNot(exTrue.schemaRels.contains(_))
-
-    val colIndices2 = exFalse.rels
-    // for only updating those were ranking is incorrect, check: model.score(rowTrueIdx, ci) < model.score(rowFalseIdx, ci)
-    val data: Seq[Int] = colIndices1.filter(!colIndices2.contains(_))
-    //    colIndices1.filter(!colIndices2.contains(_)).flatMap(ci => List((rowTrueIdx, rowFalseIdx, ci)))
-
-    val shuffled = random.shuffle(data)
-    val objectives = shuffled.map(ci => updateBprCells(model, rowTrueIdx, rowFalseIdx, ci, stepsize))
-    //println("positive indices: " + colIndices1.length + "\n updates: " + data.length + "\n objective: " + objectives.sum)
-    objectives.sum
-  }*/
 
 }
 

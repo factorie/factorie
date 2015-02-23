@@ -63,6 +63,8 @@ class CoocMatrix(var _numRows: Int, var _numCols:Int) {
 
   def nnz() = __nnz
 
+  def nonZeroCols() = __cols.keySet
+
   /**
    * This is similar to an '==' method, however, we don't override it, since it relies on mutable fields (which may pose
    * problems e.g. in hash maps)
