@@ -13,40 +13,66 @@ import scala.Some
 class TestUniversalSchemaTrainer extends JUnitSuite  with util.FastLogging {
 
   @Test def testSplitRandomizedTest() {
-    val numRows = 10000
-    val numCols = 1000
+    val numRows = 1000
+    val numCols = 10000
     val nnz = 100000
-    val numDevNNZ = 100
-    val numTestNNZ = 150
 
     val numTopics = 100
-    val noise1 = 0.9
+    val noise1 = 0.1
 
-    for (seed <- 0 until 10) {
+    // Test whether objective function goes up
+    for (seed <- 0 until 2) {
       val random = new Random(seed)
       val m = CoocMatrix.randomOneZeroMatrix(numRows, numCols, nnz, random, numTopics, noise1).prune(1,1)._1
       println("nnz: " + m.nnz())
-      //val (mTrain,mDev,mTest) = m.randomTestSplit(numDevNNZ, numTestNNZ, None, Some(Set(0,1,2,3,4,5,6,7,8,9)), random)
 
-      val stepsize = 0.001
-      val regularizer = 1.0
-      val dim = 100
+      val stepsize = 0.1
+      val regularizer = 0.01
+      val dim = 10
       val iters = 10
 
       val model = UniversalSchemaModel.randomModel(numRows, numCols, dim, random)
       val trainer = new BprUniversalSchemaTrainer(regularizer, stepsize, dim, m, model, random)
       val objectiveValues = trainer.train(iters)
       assertTrue(objectiveValues(0) < objectiveValues(9))
-      assertTrue(objectiveValues(0) < objectiveValues(5))
-      assertTrue(objectiveValues(5) < objectiveValues(9))
+      assertTrue(objectiveValues(0) < objectiveValues(4))
+      assertTrue(objectiveValues(4) < objectiveValues(9))
+    }
 
+    val numDevNNZ = 0
+    val numTestNNZ = 150
 
+    for (seed <- 0 until 2) {
+      val random = new Random(seed)
+      val m = CoocMatrix.randomOneZeroMatrix(numRows, numCols, nnz, random, numTopics, noise1).prune(1,1)._1
+      println("nnz: " + m.nnz())
+      val (mTrain,mDev,mTest) = m.randomTestSplit(numDevNNZ, numTestNNZ, None, Some(Set(0,1,2,3,4,5,6,7,8,9)), random)
 
-/*
-      assertEquals(numDevNNZ, mDev.nnz())
-      assertEquals(numTestNNZ, mTest.nnz())
-      assertEquals(m.nnz(), mTrain.nnz() + mDev.nnz() + mTest.nnz())
-      */
+      val stepsize = 0.1
+      val regularizer = 0.01
+      val dim = 10
+
+      // Train model for different number of iterations
+      val model0 = UniversalSchemaModel.randomModel(numRows, numCols, dim, random)
+      val model5 = UniversalSchemaModel.randomModel(numRows, numCols, dim, random)
+      val trainer5 = new BprUniversalSchemaTrainer(regularizer, stepsize, dim, mTrain, model5, random)
+      trainer5.train(5)
+      val model10 = UniversalSchemaModel.randomModel(numRows, numCols, dim, random)
+      val trainer10 = new BprUniversalSchemaTrainer(regularizer, stepsize, dim, mTrain, model10, random)
+      trainer10.train(10)
+
+      val result0 = model0.similaritiesAndLabels(mTrain, mTest)
+      println("--")
+      val result5 = model5.similaritiesAndLabels(mTrain, mTest)
+      println("--")
+      val result10 = model10.similaritiesAndLabels(mTrain, mTest)
+
+      println("0 iters map: " + Evaluator.meanAveragePrecision(result0))
+      println("5 iters map: " + Evaluator.meanAveragePrecision(result5))
+      println("10 iters map: " + Evaluator.meanAveragePrecision(result10))
+
+      assertTrue(Evaluator.meanAveragePrecision(result5) > Evaluator.meanAveragePrecision(result0))
+      assertTrue(Evaluator.meanAveragePrecision(result10) > Evaluator.meanAveragePrecision(result5))
     }
   }
 
