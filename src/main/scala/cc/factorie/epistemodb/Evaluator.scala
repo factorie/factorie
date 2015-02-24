@@ -11,8 +11,8 @@ object Evaluator {
 
   def averagePrecision(predictionAndLabel: Seq[(Double, Boolean)]): Double = {
     val judgements = predictionAndLabel.sortBy(-_._1).map(_._2)
-    // This foldleft aggregates (#true, #false, averagePrecision)
-    // #true and #false are simply counted up
+    // This foldleft aggregates (#true, #false, averagePrecision).
+    // #true and #false are simply counted up.
     // averagePrecision (ap) is updated for true items:
     // ap_new = (#true_new - 1) * ap_old / #true_new + 1 / (#true_new + #false_new)
     //        = (#true_old) * ap_old / (#true_old + 1) + 1 / (#true_old + #false_old + 1)

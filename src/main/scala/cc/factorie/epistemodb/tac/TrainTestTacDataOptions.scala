@@ -1,6 +1,7 @@
-package cc.factorie.epistemodb
+package cc.factorie.epistemodb.tac
 
 import scala.util.Random
+import cc.factorie.epistemodb._
 
 /**
  * Created by beroth on 2/23/15.
