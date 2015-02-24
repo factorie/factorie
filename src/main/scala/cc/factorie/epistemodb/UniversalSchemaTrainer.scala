@@ -32,19 +32,6 @@ class BprUniversalSchemaTrainer(val regularizer: Double, val stepsize: Double,
     val step = stepsize * (1 - prob)
     val colVec = model.colVectors(colIndex).copy
 
-/*
-    println("===")
-    println("before update:")
-    println("score true cell: " + scoreTrueCell)
-    println("score false cell: " + scoreFalseCell)
-    println("theta: " + theta)
-    println("prob: " + prob)
-    println("step: " + step)
-    println("col vec: " + model.colVectors(colIndex).mkString(" "))
-    println("row true vec: " + model.rowVectors(rowIndexTrue).mkString(" "))
-    println("row false vec: " + model.rowVectors(rowIndexFalse).mkString(" "))
-*/
-
     model.colVectors(colIndex).*=((1 - stepsize * colRegularizer))
     model.colVectors(colIndex).+=(model.rowVectors(rowIndexTrue) - model.rowVectors(rowIndexFalse), step)
 
@@ -53,27 +40,6 @@ class BprUniversalSchemaTrainer(val regularizer: Double, val stepsize: Double,
 
     model.rowVectors(rowIndexFalse).*=((1 - stepsize * rowRegularizer))
     model.rowVectors(rowIndexFalse).+=(colVec, -step)
-
-/*
-    val scoreTrueCellNew = model.score(rowIndexTrue, colIndex)
-    val scoreFalseCellNew = model.score(rowIndexFalse, colIndex)
-    val thetaNew = scoreTrueCellNew - scoreFalseCellNew
-
-    if (colRegularizer == 0 && rowRegularizer == 0) {
-      // Without regularization, scores should go up
-
-      assert(thetaNew > theta)
-    }
-
-    println("===")
-    println("after update:")
-    println("score true cell: " + scoreTrueCellNew)
-    println("score false cell: " + scoreFalseCellNew)
-    println("theta: " + thetaNew)
-    println("col vec: " + model.colVectors(colIndex).mkString(" "))
-    println("row true vec: " + model.rowVectors(rowIndexTrue).mkString(" "))
-    println("row false vec: " + model.rowVectors(rowIndexFalse).mkString(" "))
-*/
 
     thisObjective
   }

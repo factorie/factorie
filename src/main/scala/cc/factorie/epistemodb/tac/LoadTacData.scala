@@ -1,6 +1,7 @@
-package cc.factorie.epistemodb
+package cc.factorie.epistemodb.tac
 
 import com.mongodb.{DB, MongoClient}
+import cc.factorie.epistemodb._
 
 /**
  * Created by beroth on 2/11/15.
