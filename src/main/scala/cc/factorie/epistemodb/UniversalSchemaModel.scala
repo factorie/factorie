@@ -22,15 +22,14 @@ class UniversalSchemaModel(val rowVectors: IndexedSeq[DenseTensor1], val colVect
 
   /**
    * Compute test scores for all cells that are not positive entries in the train and development sets.
-   * These cells form the basis for evaluation.
+   * These cells form the basis for evaluation. Additionally to this score, a indicator whether the scored cell is
+   * positive in the test data is output.
    *
-   * Indicate which cells are positive cells in the test matrix.
-   * The positive test matrix cells, and all negative cells form the basis for the evaluation scores, such as mean
-   * average precision and f1 score.
+   * The positive test matrix cells, and all negative cells (from both training and test matrix) form the basis for the
+   * test scores.
    *
-   * All columns with at least one positive entry in the test matrix
-   *
-   * The method returns a mapping from column
+   * The test scores can be passed to the Evaluator object, to compute evaluation measures such as mean average
+   * precision and f1 score.
    */
   def similaritiesAndLabels(trainDevMatrix: CoocMatrix, testMatrix: CoocMatrix, testCols: Option[Set[Int]] = None):
     Map[Int, Seq[(Double, Boolean)]] = {

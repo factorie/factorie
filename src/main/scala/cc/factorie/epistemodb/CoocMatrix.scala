@@ -90,7 +90,7 @@ class CoocMatrix(var _numRows: Int, var _numCols:Int) {
   protected def getCols() = __cols
 
   /**
-   * Filters the matrix depending on a column threshold t.
+   * Filters the matrix depending on row and column thresholds for the minimum number of non-zero cells.
    *
    * The filtering steps are:
    *  1. remove rows with number of cells < tRow and columns with number of cells <= tCol
