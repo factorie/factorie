@@ -10,7 +10,7 @@ class TrainTestTacDataOptions extends cc.factorie.util.DefaultCmdOptions {
   val tacData = new CmdOption("tac-data", "", "FILE", "tab separated file with TAC training data")
   val dim = new CmdOption("dim", 100, "INT", "dimensionality of data")
   val stepsize = new CmdOption("stepsize", 0.1, "DOUBLE", "step size")
-  val regularizer = new CmdOption("regularizer ", 0.01, "DOUBLE", "regularizer")
+  val regularizer = new CmdOption("regularizer", 0.01, "DOUBLE", "regularizer")
 }
 
 
