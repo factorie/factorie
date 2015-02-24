@@ -11,7 +11,7 @@ class TrainTestTacDataOptions extends cc.factorie.util.DefaultCmdOptions {
 }
 
 
-object TrainTestTacDataOptions {
+object TrainTestTacData {
 
   val opts = new TrainTestTacDataOptions
 
