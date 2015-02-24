@@ -9,6 +9,8 @@ import scala.util.Random
 class TrainTestTacDataOptions extends cc.factorie.util.DefaultCmdOptions {
   val tacData = new CmdOption("tac-data", "", "FILE", "tab separated file with TAC training data")
   val dim = new CmdOption("dim", 100, "INT", "dimensionality of data")
+  val stepsize = new CmdOption("stepsize", 0.1, "DOUBLE", "step size")
+  val regularizer = new CmdOption("regularizer ", 0.01, "DOUBLE", "regularizer")
 }
 
 
@@ -78,9 +80,8 @@ object TrainTestTacData {
 
       val model = UniversalSchemaModel.randomModel(kb.numRows(), kb.numCols(), opts.dim.value, random)
 
-      val stepsize = 0.1
-      val regularizer = 0.01
-      val trainer = new BprUniversalSchemaTrainer(regularizer, stepsize, opts.dim.value, trainKb.matrix, model, random)
+      val trainer = new BprUniversalSchemaTrainer(opts.regularizer.value, opts.stepsize.value, opts.dim.value,
+        trainKb.matrix, model, random)
 
       var result = model.similaritiesAndLabels(trainKb.matrix, testKb.matrix)
       println("Initial MAP: " + Evaluator.meanAveragePrecision(result))
