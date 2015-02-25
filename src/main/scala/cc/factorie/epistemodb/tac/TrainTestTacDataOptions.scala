@@ -11,8 +11,8 @@ class TrainTestTacDataOptions extends cc.factorie.util.DefaultCmdOptions {
   val tacData = new CmdOption("tac-data", "", "FILE", "tab separated file with TAC training data")
   val dim = new CmdOption("dim", 100, "INT", "dimensionality of data")
   val stepsize = new CmdOption("stepsize", 0.1, "DOUBLE", "step size")
-  val maxNorm =  new CmdOption("", 1.0, "DOUBLE", "maximum l2-norm for vectors")
-  val useMaxNorm =  new CmdOption("", true, "BOOLEAN", "whether to use maximum l2-norm for vectors")
+  val maxNorm =  new CmdOption("max-norm", 1.0, "DOUBLE", "maximum l2-norm for vectors")
+  val useMaxNorm =  new CmdOption("use-max-norm", true, "BOOLEAN", "whether to use maximum l2-norm for vectors")
   val regularizer = new CmdOption("regularizer", 0.01, "DOUBLE", "regularizer")
 }
 
