@@ -11,6 +11,8 @@ class TrainTestTacDataOptions extends cc.factorie.util.DefaultCmdOptions {
   val tacData = new CmdOption("tac-data", "", "FILE", "tab separated file with TAC training data")
   val dim = new CmdOption("dim", 100, "INT", "dimensionality of data")
   val stepsize = new CmdOption("stepsize", 0.1, "DOUBLE", "step size")
+  val maxNorm =  new CmdOption("", 1.0, "DOUBLE", "maximum l2-norm for vectors")
+  val useMaxNorm =  new CmdOption("", true, "BOOLEAN", "whether to use maximum l2-norm for vectors")
   val regularizer = new CmdOption("regularizer", 0.01, "DOUBLE", "regularizer")
 }
 
@@ -81,9 +83,15 @@ object TrainTestTacData {
 
       val model = UniversalSchemaModel.randomModel(kb.numRows(), kb.numCols(), opts.dim.value, random)
 
-      val trainer = new BprUniversalSchemaTrainer(opts.regularizer.value, opts.stepsize.value, opts.dim.value,
-        trainKb.matrix, model, random)
-
+      val trainer = if(opts.useMaxNorm.value) {
+        println("use norm constraint")
+        new NormConstrainedBprUniversalSchemaTrainer(opts.maxNorm.value, opts.stepsize.value, opts.dim.value,
+          trainKb.matrix, model, random)
+      } else {
+        println("use regularization")
+        new RegularizedBprUniversalSchemaTrainer(opts.regularizer.value, opts.stepsize.value, opts.dim.value,
+          trainKb.matrix, model, random)
+      }
       var result = model.similaritiesAndLabels(trainKb.matrix, testKb.matrix)
       println("Initial MAP: " + Evaluator.meanAveragePrecision(result))
 
