@@ -49,6 +49,14 @@ class UniversalSchemaModel(val rowVectors: IndexedSeq[DenseTensor1], val colVect
     }}.toMap
   }
 
+  def getScoredColumns(v: DenseTensor1): Iterable[(Int, Double)] = {
+    throw new UnsupportedOperationException
+  }
+
+  def getScoredRows(v: DenseTensor1): Iterable[(Int, Double)] = {
+    throw new UnsupportedOperationException
+  }
+
   def writeToMongo(mongoDb: DB, dropCollections: Boolean = true) {
     throw new UnsupportedOperationException
   }

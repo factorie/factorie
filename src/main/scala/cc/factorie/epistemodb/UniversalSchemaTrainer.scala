@@ -3,46 +3,19 @@ package cc.factorie.epistemodb
 import cc.factorie.util.Threading
 import scala.util.Random
 import scala.collection._
+import cc.factorie.la.DenseTensor1
 
 /**
  * Created by beroth on 2/19/15.
  */
-class BprUniversalSchemaTrainer(val regularizer: Double, val stepsize: Double,
-                                val dim: Int, val matrix: CoocMatrix, val model: UniversalSchemaModel, random: Random) {
+abstract class BprUniversalSchemaTrainer {
+  def stepsize: Double
+  def dim: Int
+  def matrix: CoocMatrix
+  def model: UniversalSchemaModel
+  def random: Random
 
-  val rowRegularizer = regularizer
-  val colRegularizer = regularizer
-
-  def this(regularizer: Double, stepsize: Double, dim: Int, matrix: CoocMatrix, random: Random = new Random(0)) = {
-    this(regularizer, stepsize, dim, matrix,
-      UniversalSchemaModel.randomModel(matrix.numRows(), matrix.numCols(), dim, random), random)
-  }
-
-  def updateBprCells(rowIndexTrue: Int, rowIndexFalse: Int, colIndex: Int): Double = {
-    val scoreTrueCell = model.score(rowIndexTrue, colIndex)
-    val scoreFalseCell = model.score(rowIndexFalse, colIndex)
-    val theta = scoreTrueCell - scoreFalseCell
-    val prob = UniversalSchemaModel.calculateProb(theta)
-
-    // TODO: include reguarizer into objective logged to output:
-    // - sq(rowVectors) * model.rowRegularizer / 2
-    // - sq(colVectors) * model.colRegularizer
-    var thisObjective = math.log(prob)
-
-    val step = stepsize * (1 - prob)
-    val colVec = model.colVectors(colIndex).copy
-
-    model.colVectors(colIndex).*=((1 - stepsize * colRegularizer))
-    model.colVectors(colIndex).+=(model.rowVectors(rowIndexTrue) - model.rowVectors(rowIndexFalse), step)
-
-    model.rowVectors(rowIndexTrue).*=((1 - stepsize * rowRegularizer))
-    model.rowVectors(rowIndexTrue).+=(colVec, step)
-
-    model.rowVectors(rowIndexFalse).*=((1 - stepsize * rowRegularizer))
-    model.rowVectors(rowIndexFalse).+=(colVec, -step)
-
-    thisObjective
-  }
+  def updateBprCells(rowIndexTrue: Int, rowIndexFalse: Int, colIndex: Int): Double
 
   def updateBprOnRows(rowTrue: UniversalSchemaModel.Row, rowFalse: UniversalSchemaModel.Row): Double = {
     val rowIdxTrue = rowTrue._1
@@ -88,6 +61,77 @@ class BprUniversalSchemaTrainer(val regularizer: Double, val stepsize: Double,
     }
     pool.shutdown()
     objSeq
+  }
+}
+
+class RegularizedBprUniversalSchemaTrainer(val regularizer: Double, val stepsize: Double, val dim: Int,
+                                            val matrix: CoocMatrix, val model: UniversalSchemaModel, val random: Random) extends
+      BprUniversalSchemaTrainer {
+  val rowRegularizer = regularizer
+  val colRegularizer = regularizer
+
+  override def updateBprCells(rowIndexTrue: Int, rowIndexFalse: Int, colIndex: Int): Double = {
+    val scoreTrueCell = model.score(rowIndexTrue, colIndex)
+    val scoreFalseCell = model.score(rowIndexFalse, colIndex)
+    val theta = scoreTrueCell - scoreFalseCell
+    val prob = UniversalSchemaModel.calculateProb(theta)
+
+    // TODO: include reguarizer into objective logged to output:
+    // - sq(rowVectors) * model.rowRegularizer / 2
+    // - sq(colVectors) * model.colRegularizer
+    var thisObjective = math.log(prob)
+
+    val step = stepsize * (1 - prob)
+    val colVec = model.colVectors(colIndex).copy
+
+    model.colVectors(colIndex).*=((1 - stepsize * colRegularizer))
+    model.colVectors(colIndex).+=(model.rowVectors(rowIndexTrue) - model.rowVectors(rowIndexFalse), step)
+
+    model.rowVectors(rowIndexTrue).*=((1 - stepsize * rowRegularizer))
+    model.rowVectors(rowIndexTrue).+=(colVec, step)
+
+    model.rowVectors(rowIndexFalse).*=((1 - stepsize * rowRegularizer))
+    model.rowVectors(rowIndexFalse).+=(colVec, -step)
+
+    thisObjective
+  }
+}
+
+class NormConstrainedBprUniversalSchemaTrainer(val maxNorm: Double, val stepsize: Double, val dim: Int,
+                                           val matrix: CoocMatrix, val model: UniversalSchemaModel, val random: Random) extends
+    BprUniversalSchemaTrainer {
+
+  val rowNormConstraint = maxNorm
+  val colNormConstraint = maxNorm
+
+  def constrain(vector: DenseTensor1, maxNorm: Double) {
+    val norm = vector.twoNorm
+    if (norm > maxNorm) {
+      vector *= (maxNorm / norm)
+    }
+  }
+
+  override def updateBprCells(rowIndexTrue: Int, rowIndexFalse: Int, colIndex: Int): Double = {
+    val scoreTrueCell = model.score(rowIndexTrue, colIndex)
+    val scoreFalseCell = model.score(rowIndexFalse, colIndex)
+    val theta = scoreTrueCell - scoreFalseCell
+    val prob = UniversalSchemaModel.calculateProb(theta)
+
+    var thisObjective = math.log(prob)
+
+    val step = stepsize * (1 - prob)
+    val colVec = model.colVectors(colIndex).copy
+
+    model.colVectors(colIndex).+=(model.rowVectors(rowIndexTrue) - model.rowVectors(rowIndexFalse), step)
+    constrain(model.colVectors(colIndex), colNormConstraint)
+
+    model.rowVectors(rowIndexTrue).+=(colVec, step)
+    constrain(model.rowVectors(rowIndexTrue), rowNormConstraint)
+
+    model.rowVectors(rowIndexFalse).+=(colVec, -step)
+    constrain(model.rowVectors(rowIndexFalse), rowNormConstraint)
+
+    thisObjective
   }
 }
 
