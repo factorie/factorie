@@ -6,6 +6,9 @@ import scala.collection.JavaConverters._
 import com.mongodb._
 import scala.Some
 import scala.util.Random
+import cc.factorie.app.nlp.DocumentAnnotator
+import cc.factorie.app.nlp.relation.RelationMentionList
+import cc.factorie.app.nlp.{Document=>FactorieDocument}
 
 /**
  * Created by beroth on 2/6/15.
@@ -14,10 +17,81 @@ import scala.util.Random
  * Holds a knowledge-base with an underlying matrix.
  * I.e. additionally to matrix information, it also stores information about entities, relations etc.
  */
+
+// TODO: get trait and implementations for memory- and mongo-backed entity map
+//trait EntityMap extends ... {...}
+
+trait XDocCorefSystem {
+  // TODO
+}
+
+trait KbDocuments {
+  type EntityMap = HashBiMap[String, Int]
+  // - build the doc table
+  // - build xDocMentions table
+  def addDoc(doc: FactorieDocument)
+
+  def documents: Iterator[FactorieDocument]
+
+  // - use xDocMentions table (and maybe doc table)
+  // - populates __entityMap
+  def doXDocCoref(em: EntityMap, xcs: XDocCorefSystem)
+}
+
+class MongoDocuments extends KbDocuments {
+  def addDoc(doc: FactorieDocument) {
+    throw new UnsupportedOperationException
+  }
+
+  def documents: Iterator[FactorieDocument] = {
+    throw new UnsupportedOperationException
+  }
+
+  def doXDocCoref(em: EntityMap, xcs: XDocCorefSystem) {
+    throw new UnsupportedOperationException
+  }
+}
+
+class MemoryDocuments extends KbDocuments {
+  def addDoc(doc: FactorieDocument) {
+    throw new UnsupportedOperationException
+  }
+
+  def documents: Iterator[FactorieDocument] = {
+    throw new UnsupportedOperationException
+  }
+
+  def doXDocCoref(em: EntityMap, xcs: XDocCorefSystem) {
+    throw new UnsupportedOperationException
+  }
+}
+
+
+trait RelationDocumentAnnotator extends DocumentAnnotator {
+  def postAttrs = Seq(classOf[RelationMentionList])
+//  def process(doc:Document)
+}
+
+/*
+trait relationMentionExtractor {
+  getRelationMentions(doc): List[RelationMention]
+}*/
+
+
 class KBMatrix(val matrix:CoocMatrix = new CoocMatrix(0,0),
-               __entityMap:HashBiMap[String, Int] = HashBiMap.create[String, Int](),
+               __entityMap: HashBiMap[String, Int] = HashBiMap.create[String, Int](),
                __rowMap:HashBiMap[(Int, Int), Int] = HashBiMap.create[(Int, Int), Int](),
-               __colMap:HashBiMap[String, Int] = HashBiMap.create[String, Int]() ) {
+               __colMap:HashBiMap[String, Int] = HashBiMap.create[String, Int](),
+               __docs: KbDocuments = new MemoryDocuments) {
+  // TODO: make maps either memory-backed or mongo backed.
+
+  def populateRelationMentions(relAnnotator: RelationDocumentAnnotator) {
+    new UnsupportedOperationException
+  }
+
+  def doXDocCoref(xcs: XDocCorefSystem) {
+    __docs.doXDocCoref(__entityMap, xcs)
+  }
 
   // entity pair -> row nr
   //protected def _initialRowMap = HashBiMap.create[(Int, Int), Int]()
@@ -30,6 +104,10 @@ class KBMatrix(val matrix:CoocMatrix = new CoocMatrix(0,0),
   // entity -> entity number
   //protected def _initialEntityMap = HashBiMap.create[String, Int]()
   //   val __entityMap = _initialEntityMap
+
+  def addDocs(doc: FactorieDocument) {
+    __docs.addDoc(doc)
+  }
 
   // kb relations (belonging to a preset schema)
   protected def _initialKbRels = mutable.HashSet[Int]()
