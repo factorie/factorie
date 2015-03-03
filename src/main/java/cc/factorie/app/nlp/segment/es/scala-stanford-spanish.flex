@@ -195,7 +195,7 @@ import java.util.Properties;
     return s1;
   }
 //
-  def String asciiDash(String in) : String =  {
+  def asciiDash(String in) : String =  {
     return in.replaceAll("[_\u058A\u2010\u2011]","-");
   }
 //
