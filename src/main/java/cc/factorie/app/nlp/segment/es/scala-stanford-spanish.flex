@@ -188,14 +188,14 @@ import java.util.Properties;
 //    return result.length() == 0 ? "-" : result;
 //  }
 //
-  def asciiQuotes(String in) : String =  {
+  def asciiQuotes( in : String) : String =  {
     var s1 = in;
     s1 = s1.replaceAll("&apos;|[\u0091\u2018\u0092\u2019\u201A\u201B\u2039\u203A']", "'");
     s1 = s1.replaceAll("''|&quot;|[\u0093\u201C\u0094\u201D\u201E\u00AB\u00BB\"]", "\"");
     return s1;
   }
 //
-  def asciiDash(String in) : String =  {
+  def asciiDash( in : String) : String =  {
     return in.replaceAll("[_\u058A\u2010\u2011]","-");
   }
 //
@@ -212,7 +212,7 @@ import java.util.Properties;
 //  /** This quotes a character with a backslash, but doesn't do it
 //   *  if the character is already preceded by a backslash.
 //   */
-  def delimit(String s, char c) : String =  {
+  def delimit( s : String, c : Char) : String =  {
     val i = s.indexOf(c);
     while (i != -1) {
       if (i == 0 || s.charAt(i - 1) != '\\') {
@@ -249,11 +249,11 @@ import java.util.Properties;
    *  @param txt What the token should be
    *  @param originalText The original String that got transformed into txt
    */
-  def getNext(String txt, String originalText) :Object = {
+  def getNext( txt : String, originalText : String ) :Object = {
     return getNext(txt, originalText, null)
   }
 
-  def getNext(String txt, String originalText, String annotation) : Object = {
+  def getNext( txt : String, originalText : String , annotation : String ) : Object = {
     return Array[Int](yychar, yylength())
   }
 
