@@ -188,16 +188,16 @@ import java.util.Properties;
 //    return result.length() == 0 ? "-" : result;
 //  }
 //
-//  private static String asciiQuotes(String in) {
-//    String s1 = in;
-//    s1 = s1.replaceAll("&apos;|[\u0091\u2018\u0092\u2019\u201A\u201B\u2039\u203A']", "'");
-//    s1 = s1.replaceAll("''|&quot;|[\u0093\u201C\u0094\u201D\u201E\u00AB\u00BB\"]", "\"");
-//    return s1;
-//  }
+  def asciiQuotes(String in) : String =  {
+    var s1 = in;
+    s1 = s1.replaceAll("&apos;|[\u0091\u2018\u0092\u2019\u201A\u201B\u2039\u203A']", "'");
+    s1 = s1.replaceAll("''|&quot;|[\u0093\u201C\u0094\u201D\u201E\u00AB\u00BB\"]", "\"");
+    return s1;
+  }
 //
-//  private static String asciiDash(String in) {
-//    return in.replaceAll("[_\u058A\u2010\u2011]","-");
-//  }
+  def String asciiDash(String in) : String =  {
+    return in.replaceAll("[_\u058A\u2010\u2011]","-");
+  }
 //
 //  private Object handleEllipsis(final String tok) {
 //    if (ptb3Ellipsis) {
@@ -212,18 +212,18 @@ import java.util.Properties;
 //  /** This quotes a character with a backslash, but doesn't do it
 //   *  if the character is already preceded by a backslash.
 //   */
-//  private static String delimit(String s, char c) {
-//    int i = s.indexOf(c);
-//    while (i != -1) {
-//      if (i == 0 || s.charAt(i - 1) != '\\') {
-//        s = s.substring(0, i) + '\\' + s.substring(i);
-//        i = s.indexOf(c, i + 2);
-//      } else {
-//        i = s.indexOf(c, i + 1);
-//      }
-//    }
-//    return s;
-//  }
+  def delimit(String s, char c) : String =  {
+    val i = s.indexOf(c);
+    while (i != -1) {
+      if (i == 0 || s.charAt(i - 1) != '\\') {
+        s = s.substring(0, i) + '\\' + s.substring(i);
+        i = s.indexOf(c, i + 2);
+      } else {
+        i = s.indexOf(c, i + 1);
+      }
+    }
+    return s;
+  }
 //
 //  private static String normalizeAmp(final String in) {
 //    return in.replaceAll("(?i:&amp;)", "&");
