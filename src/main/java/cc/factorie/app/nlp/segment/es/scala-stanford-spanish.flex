@@ -457,30 +457,30 @@ cannot			{ yypushback(3) ; return getNext(); }
             }
 
 {ORDINAL}/{SPACE}       { return getNext(); }
-{SPAMP}			            { return getNormalizedAmpNext(); }
+{SPAMP}			            {// return getNormalizedAmpNext(); }
 {SPPUNC} |
 {TIMEXP}                { return getNext(); }
 
-{CONTRACTION}           { final String origTxt = yytext();
+{CONTRACTION}           { val origTxt = yytext();
 					        return getNext(origTxt, origTxt, CONTR_ANNOTATION);
 												}
 
 {VB_ATTACHED_PRON} |
-{VB_2PP_PRON}           { final String origTxt = yytext();
+{VB_2PP_PRON}           { val origTxt = yytext();
                           return getNext(origTxt, origTxt, VB_PRON_ANNOTATION);
 												}
 
-{COMPOUND_NOSPLIT}      { final String origTxt = yytext();
+{COMPOUND_NOSPLIT}      { val origTxt = yytext();
 												  return getNext(asciiQuotes(asciiDash(origTxt)), origTxt);
 											  }
 
-{COMPOUND}              { final String origTxt = yytext();
+{COMPOUND}              { val origTxt = yytext();
                           return getNext(asciiQuotes(asciiDash(origTxt)), origTxt, COMPOUND_ANNOTATION);
 												}
 
 {NUM}/{UNIT}            { return getNext(); }
 
-{WORD2}|{WORD3}         { final String origTxt = yytext();
+{WORD2}|{WORD3}         { val origTxt = yytext();
 										      return getNext (asciiQuotes(origTxt), origTxt);
 											  }
 
@@ -508,7 +508,7 @@ cannot			{ yypushback(3) ; return getNext(); }
 
 {FRAC} |
 {FRACSTB3} |
-{FRAC2}			{ return normalizeFractions(yytext()); }
+{FRAC2}			{// return normalizeFractions(yytext()); }
 
 {ABBREV1}/{SENTEND}	{
                           var s = "";
@@ -536,7 +536,7 @@ cannot			{ yypushback(3) ; return getNext(); }
 {ABBREV4}/{SPACE}	{ return getNext(); }
 {ACRO}/{SPACENL}	{ return getNext(); }
 {DBLQUOT} |
-{QUOTES}		{ final val origTxt = yytext();
+{QUOTES}		{ val origTxt = yytext();
                           return getNext(asciiQuotes(origTxt), origTxt);
 			}
 
