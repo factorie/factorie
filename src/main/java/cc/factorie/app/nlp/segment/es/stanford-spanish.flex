@@ -10,8 +10,8 @@ import java.util.Properties;
 //import edu.stanford.nlp.process.CoreLabelTokenFactory;
 //import edu.stanford.nlp.process.LexedTokenFactory;
 
-import cc.factorie.app.nlp.Document;
-import cc.factorie.app.nlp.Token;
+//import cc.factorie.app.nlp.Document;
+//import cc.factorie.app.nlp.Token;
 
 
 /**
