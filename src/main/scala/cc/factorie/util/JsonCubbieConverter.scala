@@ -41,9 +41,9 @@ object JsonCubbieConverter {
         }
         m
       case JArray(vals) => if(vals.forall(_.isInstanceOf[JInt])) { // we assume this was an IntSeq
-        new ArrayIntSeq(vals.map{case JInt(i) => i.toInt}.toArray)
+        new ArrayIntSeq(vals.collect{case JInt(i) => i.toInt}.toArray)
       } else if(vals.forall(_.isInstanceOf[JDouble])) {
-        new ArrayDoubleSeq(vals.map{case JDouble(d) => d.toDouble}.toArray)
+        new ArrayDoubleSeq(vals.collect{case JDouble(d) => d.toDouble}.toArray)
       } else {
         vals map toCubbieImpl
       }
