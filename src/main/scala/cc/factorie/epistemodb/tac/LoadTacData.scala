@@ -22,7 +22,7 @@ object LoadTacDataIntoMongo {
     opts.parse(args)
 
     val tReadStart = System.currentTimeMillis
-    val kb = KBMatrix.fromTsv(opts.tacData.value)
+    val kb = EntityRelationKBMatrix.fromTsv(opts.tacData.value)
     val tRead = (System.currentTimeMillis - tReadStart)/1000.0
     println(f"Reading from file took $tRead%.2f s")
 
@@ -41,7 +41,7 @@ object LoadTacDataIntoMongo {
 
     val tReadMongoStart = System.currentTimeMillis
     //val kb2 = KBMatrix.fromMongoCellBased(db)
-    val kb2 = KBMatrix.fromMongo(db)
+    val kb2 = EntityRelationKBMatrix.fromMongo(db)
     val tReadMongo = (System.currentTimeMillis - tReadMongoStart)/1000.0
     println(f"Reading from mongo took $tReadMongo%.2f s")
 
