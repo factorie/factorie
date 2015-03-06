@@ -1,0 +1,13 @@
+El hardware inalámbrico no autorizado se puede introducir fácilmente. Los puntos de
+acceso inalámbricos son relativamente poco costosos y se implementan fácilmente. Un
+equipo de asesores bienintencionado que trabaja en una sala de conferencias podría
+instalar un punto de acceso inalámbrico para compartir un solo puerto cableado en la sala.
+Un hacker malicioso puede sentarse en un café con un ordenador portátil habilitado para
+uso inalámbrico buscando tráfico no cifrado o cifrado con WEP. En ambos casos, se
+presentan riesgos inaceptables. Independientemente de si hay un intento malicioso, la
+introducción de hardware no autorizado puede comprometer la confidencialidad e
+integridad del tráfico de red. Los dispositivos inalámbricos no autorizados pueden
+detectarse al examinar físicamente las instalaciones (práctica conocida como “guerra
+móvil”), al utilizar escáneres de radiofrecuencia (RF) para determinar la ubicación de los
+dispositivos inalámbricos o al usar sistemas diseñados para analizar el tráfico de red para
+detectar dispositivos no autorizados. 
