@@ -23,7 +23,7 @@ import java.util.Properties;
 
 %%
 
-%class ScalaSpanishLexer
+%class FullStanfordSpanishJava
 %unicode
 %function next
 %type Object
@@ -102,33 +102,99 @@ import java.util.Properties;
    * @param props Options to the tokenizer (see constructor Javadoc)
    */
 //  public SpanishLexer(Reader r, LexedTokenFactory<?> tf, Properties props) {
-  object SpanishLexer(r : Reader ,  props:Properties) {
+  public FullStanfordSpanishJava(Reader r, Properties props) {
     this(r);
+//    this.tokenFactory = tf;
+    for (String key : props.stringPropertyNames()) {
+      String value = props.getProperty(key);
+      boolean val = Boolean.valueOf(value);
+      if ("".equals(key)) {
+        // allow an empty item
+      } else if ("noSGML".equals(key)) {
+        noSGML = val;
+      } else if ("invertible".equals(key)) {
+        invertible = val;
+      } else if ("tokenizeNLs".equals(key)) {
+        tokenizeNLs = val;
+      } else if ("ptb3Escaping".equals(key)) {
+        normalizeAmpersandEntity = val;
+        normalizeFractions = val;
+        normalizeParentheses = val;
+        normalizeOtherBrackets = val;
+        ptb3Ellipsis = val;
+        unicodeEllipsis = val;
+        ptb3Dashes = val;
+      } else if ("normalizeAmpersandEntity".equals(key)) {
+        normalizeAmpersandEntity = val;
+      } else if ("normalizeFractions".equals(key)) {
+        normalizeFractions = val;
+      } else if ("normalizeParentheses".equals(key)) {
+        normalizeParentheses = val;
+      } else if ("normalizeOtherBrackets".equals(key)) {
+        normalizeOtherBrackets = val;
+      } else if ("ptb3Ellipsis".equals(key)) {
+        ptb3Ellipsis = val;
+      } else if ("unicodeEllipsis".equals(key)) {
+        unicodeEllipsis = val;
+      } else if ("ptb3Dashes".equals(key)) {
+        ptb3Dashes = val;
+      } else if ("escapeForwardSlashAsterisk".equals(key)) {
+        escapeForwardSlashAsterisk = val;
+      } else if ("untokenizable".equals(key)) {
+	if (value.equals("noneDelete")) {
+	  untokenizable = UntokenizableOptions.NONE_DELETE;
+	} else if (value.equals("firstDelete")) {
+	  untokenizable = UntokenizableOptions.FIRST_DELETE;
+	} else if (value.equals("allDelete")) {
+	  untokenizable = UntokenizableOptions.ALL_DELETE;
+	} else if (value.equals("noneKeep")) {
+	  untokenizable = UntokenizableOptions.NONE_KEEP;
+	} else if (value.equals("firstKeep")) {
+	  untokenizable = UntokenizableOptions.FIRST_KEEP;
+	} else if (value.equals("allKeep")) {
+	  untokenizable = UntokenizableOptions.ALL_KEEP;
+	} else {
+        throw new IllegalArgumentException("FrenchLexer: Invalid option value in constructor: " + key + ": " + value);
+	}
+      } else if ("strictTreebank3".equals(key)) {
+        strictTreebank3 = val;
+      } else {
+        System.err.printf("%s: Invalid options key in constructor: %s%n", this.getClass().getName(), key);
+      }
+    }
+    // this.seenUntokenizableCharacter = false; // unnecessary, it's default initialized
+//    if (invertible) {
+//      if ( ! (tf instanceof CoreLabelTokenFactory)) {
+//        throw new IllegalArgumentException("FrenchLexer: the invertible option requires a CoreLabelTokenFactory");
+//      }
+//      prevWord = (CoreLabel) tf.makeToken("", 0, 0);
+//      prevWordAfter = new StringBuilder();
+//    }
   }
 
 
-//  private static final Logger LOGGER = Logger.getLogger(SpanishLexer.class.getName());
-//
-////  private LexedTokenFactory<?> tokenFactory;
-////  private CoreLabel prevWord;
-//  private StringBuilder prevWordAfter;
-//  private boolean seenUntokenizableCharacter;
-//  private enum UntokenizableOptions { NONE_DELETE, FIRST_DELETE, ALL_DELETE, NONE_KEEP, FIRST_KEEP, ALL_KEEP }
-//  private UntokenizableOptions untokenizable = UntokenizableOptions.FIRST_DELETE;
-//
-//  /* Flags begin with historical ptb3Escaping behavior */
-  val invertible = false;
-  val tokenizeNLs = false;
-  val noSGML = false;
-  val normalizeAmpersandEntity = false;
-  val normalizeFractions = false;
-  val normalizeParentheses = false;
-  val normalizeOtherBrackets = false;
-  val ptb3Ellipsis = false;
-  val unicodeEllipsis = false;
-  val ptb3Dashes = false;
-  val escapeForwardSlashAsterisk = false;
-  val strictTreebank3 = false;
+  private static final Logger LOGGER = Logger.getLogger(FullStanfordSpanishJava.class.getName());
+
+//  private LexedTokenFactory<?> tokenFactory;
+//  private CoreLabel prevWord;
+  private StringBuilder prevWordAfter;
+  private boolean seenUntokenizableCharacter;
+  private enum UntokenizableOptions { NONE_DELETE, FIRST_DELETE, ALL_DELETE, NONE_KEEP, FIRST_KEEP, ALL_KEEP }
+  private UntokenizableOptions untokenizable = UntokenizableOptions.FIRST_DELETE;
+
+  /* Flags begin with historical ptb3Escaping behavior */
+  private boolean invertible;
+  private boolean tokenizeNLs;
+  private boolean noSGML;
+  private boolean normalizeAmpersandEntity = true;
+  private boolean normalizeFractions = true;
+  private boolean normalizeParentheses;
+  private boolean normalizeOtherBrackets;
+  private boolean ptb3Ellipsis = true;
+  private boolean unicodeEllipsis;
+  private boolean ptb3Dashes;
+  private boolean escapeForwardSlashAsterisk = false;
+  private boolean strictTreebank3;
 
 
   /*
@@ -146,74 +212,74 @@ import java.util.Properties;
    */
 
   /* Using Ancora style brackets and parens */
-  val openparen = "=LRB=";
-  val closeparen = "=RRB=";
-  val openbrace = "=LCB=";
-  val closebrace = "=RCB=";
+  public static final String openparen = "=LRB=";
+  public static final String closeparen = "=RRB=";
+  public static final String openbrace = "=LCB=";
+  public static final String closebrace = "=RCB=";
 
-  val ptbmdash = "--";
-  val ptb3EllipsisStr = "...";
-  val unicodeEllipsisStr = "\u2026";
-  val NEWLINE_TOKEN = "*NL*";
-  val COMPOUND_ANNOTATION = "comp";
-  val VB_PRON_ANNOTATION = "vb_pn_attached";
-  val CONTR_ANNOTATION = "contraction";
+  public static final String ptbmdash = "--";
+  public static final String ptb3EllipsisStr = "...";
+  public static final String unicodeEllipsisStr = "\u2026";
+  public static final String NEWLINE_TOKEN = "*NL*";
+  public static final String COMPOUND_ANNOTATION = "comp";
+  public static final String VB_PRON_ANNOTATION = "vb_pn_attached";
+  public static final String CONTR_ANNOTATION = "contraction";
 
-//  private Object normalizeFractions(final String in) {
-//    // Strip non-breaking space
-//    String out = in.replaceAll("\u00A0", "");
-//    if (normalizeFractions) {
-//      if (escapeForwardSlashAsterisk) {
-//        out = out.replaceAll("\u00BC", "1\\\\/4");
-//        out = out.replaceAll("\u00BD", "1\\\\/2");
-//        out = out.replaceAll("\u00BE", "3\\\\/4");
-//        out = out.replaceAll("\u2153", "1\\\\/3");
-//        out = out.replaceAll("\u2153", "2\\\\/3");
-//     } else {
-//        out = out.replaceAll("\u00BC", "1/4");
-//        out = out.replaceAll("\u00BD", "1/2");
-//        out = out.replaceAll("\u00BE", "3/4");
-//        out = out.replaceAll("\u2153", "1/3");
-//        out = out.replaceAll("\u2153", "2/3");
-//      }
-//    }
-//    return getNext(out, in);
-//  }
+  private Object normalizeFractions(final String in) {
+    // Strip non-breaking space
+    String out = in.replaceAll("\u00A0", "");
+    if (normalizeFractions) {
+      if (escapeForwardSlashAsterisk) {
+        out = out.replaceAll("\u00BC", "1\\\\/4");
+        out = out.replaceAll("\u00BD", "1\\\\/2");
+        out = out.replaceAll("\u00BE", "3\\\\/4");
+        out = out.replaceAll("\u2153", "1\\\\/3");
+        out = out.replaceAll("\u2153", "2\\\\/3");
+     } else {
+        out = out.replaceAll("\u00BC", "1/4");
+        out = out.replaceAll("\u00BD", "1/2");
+        out = out.replaceAll("\u00BE", "3/4");
+        out = out.replaceAll("\u2153", "1/3");
+        out = out.replaceAll("\u2153", "2/3");
+      }
+    }
+    return getNext(out, in);
+  }
 
   /* Soft hyphens are used to indicate line breaks in
    * typesetting.
    */
-//  private static String removeSoftHyphens(String in) {
-//    String result = in.replaceAll("\u00AD", "");
-//    return result.length() == 0 ? "-" : result;
-//  }
-//
-  def asciiQuotes( in : String) : String =  {
-    var s1 = in;
+  private static String removeSoftHyphens(String in) {
+    String result = in.replaceAll("\u00AD", "");
+    return result.length() == 0 ? "-" : result;
+  }
+
+  private static String asciiQuotes(String in) {
+    String s1 = in;
     s1 = s1.replaceAll("&apos;|[\u0091\u2018\u0092\u2019\u201A\u201B\u2039\u203A']", "'");
     s1 = s1.replaceAll("''|&quot;|[\u0093\u201C\u0094\u201D\u201E\u00AB\u00BB\"]", "\"");
     return s1;
   }
-//
-  def asciiDash( in : String) : String =  {
+
+  private static String asciiDash(String in) {
     return in.replaceAll("[_\u058A\u2010\u2011]","-");
   }
-//
-//  private Object handleEllipsis(final String tok) {
-//    if (ptb3Ellipsis) {
-//      return getNext(ptb3EllipsisStr, tok);
-//    } else if (unicodeEllipsis) {
-//      return getNext(unicodeEllipsisStr, tok);
-//    } else {
-//      return getNext(tok, tok);
-//    }
-//  }
-//
-//  /** This quotes a character with a backslash, but doesn't do it
-//   *  if the character is already preceded by a backslash.
-//   */
-  def delimit( s : String, c : Char) : String =  {
-    val i = s.indexOf(c);
+
+  private Object handleEllipsis(final String tok) {
+    if (ptb3Ellipsis) {
+      return getNext(ptb3EllipsisStr, tok);
+    } else if (unicodeEllipsis) {
+      return getNext(unicodeEllipsisStr, tok);
+    } else {
+      return getNext(tok, tok);
+    }
+  }
+
+  /** This quotes a character with a backslash, but doesn't do it
+   *  if the character is already preceded by a backslash.
+   */
+  private static String delimit(String s, char c) {
+    int i = s.indexOf(c);
     while (i != -1) {
       if (i == 0 || s.charAt(i - 1) != '\\') {
         s = s.substring(0, i) + '\\' + s.substring(i);
@@ -224,21 +290,21 @@ import java.util.Properties;
     }
     return s;
   }
-//
-//  private static String normalizeAmp(final String in) {
-//    return in.replaceAll("(?i:&amp;)", "&");
-//  }
-//
-//  private static String convertToEl(String l) {
-//    if(Character.isLowerCase(l.charAt(0)))
-//	return "e" + l;
-//    else
-//        return "E" + l;
-//  }
 
-  def getNext() : Object = {
-    val txt = yytext()
-    return getNext(txt, txt)
+  private static String normalizeAmp(final String in) {
+    return in.replaceAll("(?i:&amp;)", "&");
+  }
+
+  private static String convertToEl(String l) {	
+    if(Character.isLowerCase(l.charAt(0)))
+	return "e" + l;
+    else
+        return "E" + l;
+  }
+
+  private Object getNext() {
+    final String txt = yytext();
+    return getNext(txt, txt);
   }
 
 
@@ -249,19 +315,36 @@ import java.util.Properties;
    *  @param txt What the token should be
    *  @param originalText The original String that got transformed into txt
    */
-  def getNext( txt : String, originalText : String ) :Object = {
-    return getNext(txt, originalText, null)
+  private Object getNext(String txt, String originalText) {
+    return getNext(txt, originalText, null);
   }
 
-  def getNext( txt : String, originalText : String , annotation : String ) : Object = {
-    return Array[Int](yychar, yylength())
+  private Object getNext(String txt, String originalText, String annotation) {
+    txt = removeSoftHyphens(txt);
+//    Label w = (Label) tokenFactory.makeToken(txt, yychar, yylength());
+//    if (invertible || annotation != null) {
+//      CoreLabel word = (CoreLabel) w;
+//      if (invertible) {
+//        String str = prevWordAfter.toString();
+//        prevWordAfter.setLength(0);
+//        word.set(CoreAnnotations.OriginalTextAnnotation.class, originalText);
+//        word.set(CoreAnnotations.BeforeAnnotation.class, str);
+//        prevWord.set(CoreAnnotations.AfterAnnotation.class, str);
+//        prevWord = word;
+//      }
+//      if (annotation != null) {
+//        word.set(CoreAnnotations.ParentAnnotation.class, annotation);
+//      }
+//    }
+//    return w;
+    return new int[]{yychar, yylength()};
   }
 
-//  private Object getNormalizedAmpNext() {
-//    final String txt = yytext();
-//    return normalizeAmpersandEntity ?
-//      getNext(normalizeAmp(txt), txt) : getNext();
-//  }
+  private Object getNormalizedAmpNext() {
+    final String txt = yytext();
+    return normalizeAmpersandEntity ?
+      getNext(normalizeAmp(txt), txt) : getNext();
+  }
 
 %}
 
@@ -341,7 +424,7 @@ COMPOUND = {WORD}({HYPHEN}{WORD})+
 
 /* Spanish enclitic pronouns attached at the end of infinitive, gerund,
  * and imperative verbs should be split:
- *
+ * 
  * cómpremelos => cómpre + me + los (buy + me + it)
  * házmelo => ház + me + lo (do it (for) me)
  * Escribámosela => Escribámo + se + la (write her it)
@@ -356,7 +439,7 @@ VB_REG = {WORD}([aeiáéí]r|[áé]ndo|[aeáé]n?|[aeáé]mos?)
 VB_PREF = {VB_IRREG}|({VB_REG})
 
 /* Handles second person plural imperatives:
- *
+ * 
  * Sentaos => Senta + os (seat + yourselves)
  * Vestíos => Vestí + os (dress + yourselves)
  */
@@ -457,37 +540,37 @@ cannot			{ yypushback(3) ; return getNext(); }
             }
 
 {ORDINAL}/{SPACE}       { return getNext(); }
-{SPAMP}			            {// return getNormalizedAmpNext(); }
+{SPAMP}			            { return getNormalizedAmpNext(); }
 {SPPUNC} |
 {TIMEXP}                { return getNext(); }
 
-{CONTRACTION}           { val origTxt = yytext();
-					        return getNext(origTxt, origTxt, CONTR_ANNOTATION);
+{CONTRACTION}           { final String origTxt = yytext();
+												  return getNext(origTxt, origTxt, CONTR_ANNOTATION);
 												}
 
 {VB_ATTACHED_PRON} |
-{VB_2PP_PRON}           { val origTxt = yytext();
-                          return getNext(origTxt, origTxt, VB_PRON_ANNOTATION);
+{VB_2PP_PRON}           { final String origTxt = yytext();
+                          return getNext(origTxt, origTxt, VB_PRON_ANNOTATION); 
 												}
 
-{COMPOUND_NOSPLIT}      { val origTxt = yytext();
-												  return getNext(asciiQuotes(asciiDash(origTxt)), origTxt);
+{COMPOUND_NOSPLIT}      { final String origTxt = yytext(); 
+												  return getNext(asciiQuotes(asciiDash(origTxt)), origTxt); 
 											  }
 
-{COMPOUND}              { val origTxt = yytext();
+{COMPOUND}              { final String origTxt = yytext();
                           return getNext(asciiQuotes(asciiDash(origTxt)), origTxt, COMPOUND_ANNOTATION);
 												}
 
 {NUM}/{UNIT}            { return getNext(); }
 
-{WORD2}|{WORD3}         { val origTxt = yytext();
+{WORD2}|{WORD3}         { final String origTxt = yytext();
 										      return getNext (asciiQuotes(origTxt), origTxt);
 											  }
 
 {WORD}			{ return getNext(); }
 
 {FULLURL} |
-{LIKELYURL}		{ val txt = yytext();
+{LIKELYURL}		{ String txt = yytext();
                           if (escapeForwardSlashAsterisk) {
                             txt = delimit(txt, '/');
                             txt = delimit(txt, '*');
@@ -496,7 +579,7 @@ cannot			{ yypushback(3) ; return getNext(); }
 {EMAIL}	|
 {TWITTER}               { return getNext(); }
 
-{DATE}			{ val txt = yytext();
+{DATE}			{ String txt = yytext();
                           if (escapeForwardSlashAsterisk) {
                             txt = delimit(txt, '/');
                           }
@@ -508,10 +591,10 @@ cannot			{ yypushback(3) ; return getNext(); }
 
 {FRAC} |
 {FRACSTB3} |
-{FRAC2}			{// return normalizeFractions(yytext()); }
+{FRAC2}			{ return normalizeFractions(yytext()); }
 
 {ABBREV1}/{SENTEND}	{
-                          var s = "";
+                          String s;
                           if (strictTreebank3 && ! "U.S.".equals(yytext())) {
                             yypushback(1); // return a period for next time
                             s = yytext();
@@ -523,7 +606,7 @@ cannot			{ yypushback(3) ; return getNext(); }
 {ABBREV1}/[^][^]	{ return getNext(); }
 {ABBREV1}		{ // this one should only match if we're basically at the end of file
 			  // since the last one matches two things, even newlines
-                          var s = "";
+                          String s;
                           if (strictTreebank3 && ! "U.S.".equals(yytext())) {
                             yypushback(1); // return a period for next time
                             s = yytext();
@@ -536,11 +619,11 @@ cannot			{ yypushback(3) ; return getNext(); }
 {ABBREV4}/{SPACE}	{ return getNext(); }
 {ACRO}/{SPACENL}	{ return getNext(); }
 {DBLQUOT} |
-{QUOTES}		{ val origTxt = yytext();
+{QUOTES}		{ final String origTxt = yytext();
                           return getNext(asciiQuotes(origTxt), origTxt);
 			}
 
-{PHONE}                 { val txt = yytext();
+{PHONE}                 { String txt = yytext();
 			  if (normalizeParentheses) {
 			    txt = txt.replaceAll("\\(", openparen);
 			    txt = txt.replaceAll("\\)", closeparen);
@@ -589,7 +672,7 @@ cannot			{ yypushback(3) ; return getNext(); }
 {HYPHENS}	{ if (yylength() >= 3 && yylength() <= 4 && ptb3Dashes) {
 	            return getNext(ptbmdash, yytext());
                   } else {
-		    val origTxt = yytext();
+		    String origTxt = yytext();
                     return getNext(asciiDash(origTxt), origTxt);
 		  }
 		}
@@ -629,14 +712,16 @@ cannot			{ yypushback(3) ; return getNext(); }
                      prevWordAfter.append(yytext());
                   }
                 }
-.       { val str = yytext();
-          val first = str.charAt(0);
-          val msg = String.format("Untokenizable: %s (U+%s, decimal: %s)", yytext(), Integer.toHexString(first).toUpperCase(), Integer.toString(first));
-          untokenizable match {
-            case NONE_DELETE => if (invertible) {
+.       { String str = yytext();
+          int first = str.charAt(0);
+          String msg = String.format("Untokenizable: %s (U+%s, decimal: %s)", yytext(), Integer.toHexString(first).toUpperCase(), Integer.toString(first));
+          switch (untokenizable) {
+            case NONE_DELETE:
+              if (invertible) {
                 prevWordAfter.append(str);
               }
-            case FIRST_DELETE =>
+              break;
+            case FIRST_DELETE:
               if (invertible) {
                 prevWordAfter.append(str);
               }
@@ -644,21 +729,23 @@ cannot			{ yypushback(3) ; return getNext(); }
                 LOGGER.warning(msg);
                 this.seenUntokenizableCharacter = true;
               }
-            case ALL_DELETE =>
+              break;
+            case ALL_DELETE:
               if (invertible) {
                 prevWordAfter.append(str);
               }
               LOGGER.warning(msg);
               this.seenUntokenizableCharacter = true;
-            case NONE_KEEP =>
+              break;
+            case NONE_KEEP:
               return getNext();
-            case FIRST_KEEP =>
+            case FIRST_KEEP:
               if ( ! this.seenUntokenizableCharacter) {
                 LOGGER.warning(msg);
                 this.seenUntokenizableCharacter = true;
               }
               return getNext();
-            case ALL_KEEP =>
+            case ALL_KEEP:
               LOGGER.warning(msg);
               this.seenUntokenizableCharacter = true;
               return getNext();

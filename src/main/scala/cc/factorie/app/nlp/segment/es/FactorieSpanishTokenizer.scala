@@ -30,31 +30,13 @@ class FactorieSpanishTokenizer(caseSensitive:Boolean = false, tokenizeSgml:Boole
 
   def process(document: Document): Document = {
     for (section <- document.sections) {
-      val lexer = new SpanishLexer(new StringReader(section.string))
+      val lexer = new SmallLexer(new StringReader(section.string))
+//      val lexer = new SmallJavaLexer(new StringReader(section.string))
+//      val lexer = new FullStanfordSpanishJava(new StringReader(section.string))
       var next = lexer.next().asInstanceOf[Array[Int]]
       while (next != null){
         new Token(section, next(0), next(0) + next(1))
         next = lexer.next().asInstanceOf[Array[Int]]
-
-
-        //        if (abbrevPreceedsLowercase && prevTokenPeriod && java.lang.Character.isLowerCase(string(0)) && section.length > 1 && section.tokens(section.length-2).stringEnd == section.tokens(section.length-1).stringStart) {
-//          // If we have a pattern like "Abbrev. has" (where "has" is any lowercase word) with token strings "Abbrev", ".", "is" (currently looking at "is")
-//          // then assume that the previous-previous word is actually an abbreviation; patch it up to become "Abbrev.", "has".
-//          val lastTwoTokens = section.takeRight(2).toIndexedSeq
-//          section.remove(section.length-1); section.remove(section.length-1)
-//          new Token(section, lastTwoTokens(0).stringStart, lastTwoTokens(1).stringEnd)
-//          new Token(section, section.stringStart + tokenIterator.start, section.stringStart + tokenIterator.end)
-//        } else if (tokenizeNewline && string == "\n") {
-//          new Token(section, section.stringStart + tokenIterator.start, section.stringStart + tokenIterator.end)
-//        } else if (tokenizeSgml ||
-//          !((string(0) == '<' && string(string.length-1) == '>') // We have an SGML tag
-//            || (string(0) == '&' && string(string.length-1) == ';') // We have an odd escaped SGML tag &gt;...&lt;
-//            || string.toLowerCase == "&nbsp;" // Don't make token from space
-//            )
-//        ) {
-//          new Token(section, section.stringStart + tokenIterator.start, section.stringStart + tokenIterator.end)
-//        }
-//        if (string == ".") prevTokenPeriod = true else prevTokenPeriod = false
       }
     }
     if (!document.annotators.contains(classOf[Token]))
