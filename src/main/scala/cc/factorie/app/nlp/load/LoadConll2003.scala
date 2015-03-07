@@ -14,7 +14,6 @@
 package cc.factorie.app.nlp.load
 import cc.factorie.app.nlp._
 
-import cc.factorie._
 import cc.factorie.app.nlp.ner._
 import collection.mutable.ArrayBuffer
 import cc.factorie.util.FastLogging
@@ -22,19 +21,19 @@ import cc.factorie.app.nlp.Document
 import cc.factorie.app.nlp.Sentence
 import cc.factorie.app.nlp.Token
 import cc.factorie.app.nlp.UnknownDocumentAnnotator
-import cc.factorie.app.nlp.pos.PennPosTag
 
 // Usage:
 // Either LoadConll2003.fromFilename("foo")
 // or LoadConll2003(BILOU = true).fromFilename("foo")
+// or LoadConll2003(BILOU = true, verbose = true).fromFilename("foo")
 
-object LoadConll2003 extends LoadConll2003(false)
+object LoadConll2003 extends LoadConll2003(false, false)
 
-case class LoadConll2003(BILOU:Boolean = false) extends Load with FastLogging {
+case class LoadConll2003(BILOU:Boolean = false, verbose:Boolean = false) extends Load with FastLogging {
+
   val conllToPennMap = Map("\"" -> "''", "(" -> "-LRB-", ")" -> "-RRB-", "NN|SYM" -> "NN")
 
   def fromSource(source:io.Source): Seq[Document] = {
-    import scala.io.Source
     import scala.collection.mutable.ArrayBuffer
     def newDocument(name:String): Document = {
       val document = new Document("").setName(name)
@@ -43,20 +42,17 @@ case class LoadConll2003(BILOU:Boolean = false) extends Load with FastLogging {
       document.annotators(classOf[pos.PennPosTag]) = UnknownDocumentAnnotator.getClass // register that we have POS tags
       document
     }
-
     val documents = new ArrayBuffer[Document]
     var document = newDocument("CoNLL2003-"+documents.length)
     documents += document
     var sentence = new Sentence(document)
     for (line <- source.getLines()) {
       if (line.length < 2) { // Sentence boundary
-        //sentence.stringLength = document.stringLength - sentence.stringStart
-        //document += sentence
         document.appendString("\n")
         sentence = new Sentence(document)
       } else if (line.startsWith("-DOCSTART-")) {
         // Skip document boundaries
-        document.asSection.chainFreeze
+        document.asSection.chainFreeze()
         document = new Document().setName("CoNLL2003-"+documents.length)
         document.annotators(classOf[Token]) = UnknownDocumentAnnotator.getClass // register that we have token boundaries
         document.annotators(classOf[Sentence]) = UnknownDocumentAnnotator.getClass // register that we have sentence boundaries
@@ -74,36 +70,19 @@ case class LoadConll2003(BILOU:Boolean = false) extends Load with FastLogging {
       }
     }
     if (BILOU) convertToBILOU(documents)
-    //sentence.stringLength = document.stringLength - sentence.stringStart
-    logger.info("Loaded "+documents.length+" documents with "+documents.map(_.sentences.size).sum+" sentences with "+documents.map(_.tokens.size).sum+" tokens total")
+    if (verbose) logger.info("Loaded "+documents.length+" documents with "+documents.map(_.sentences.size).sum+" sentences with "+documents.map(_.tokens.size).sum+" tokens total")
     documents
   }
+
   def convertToBILOU(documents : ArrayBuffer[Document]) {
     for(doc <- documents) {
-      for(sentence <- doc.sentences) {
-        for(token <- sentence.tokens) {
-          //println("=======")
-          val ner = token.nerTag
-          var prev : Token = null
-          var next : Token = null
-          //println(token + " -> " + ner.categoryValue);
-          if(token.sentenceHasPrev) prev = token.sentencePrev
-          if(token.sentenceHasNext) next = token.sentenceNext
-          token.sentenceNext
-          /*
-          if(prev != null)
-            println(prev + " -> " + prev.nerLabel.categoryValue);
-          if(next != null)
-            println(next + " -> " + next.nerLabel.categoryValue); */
-          val newLabel : String = IOBtoBILOU(prev, token, next)
-          /*if(token.string == "Peter")
-            println(newLabel)
-          if(token.prev != null && token.prev.string == "Peter") {
-            println("Peter Prev")
-            println(token.string)
-            println(newLabel)
-          }*/
-          // token.attr.remove[IobConllNerLabel]
+      for (sentence <- doc.sentences) {
+        for (token <- sentence.tokens) {
+          var prev: Token = null
+          var next: Token = null
+          if (token.sentenceHasPrev) prev = token.sentencePrev
+          if (token.sentenceHasNext) next = token.sentenceNext
+          val newLabel: String = IOBtoBILOU(prev, token, next)
           token.attr += new LabeledBilouConllNerTag(token, newLabel)
         }
       }
@@ -122,22 +101,22 @@ case class LoadConll2003(BILOU:Boolean = false) extends Load with FastLogging {
       ns = splitLabel(next)
 
     if(token.nerTag.categoryValue.contains("B-")) {
-    if(next == null || ns(1) != ts(1) || ns(0) == "B")
+      if(next == null || ns(1) != ts(1) || ns(0) == "B")
         return "U-" + ts(1)
-    else
+      else
         return token.nerTag.categoryValue
     }
 
     if(prev == null || ps(1) != ts(1)) {
       if(next == null || ns(1) != ts(1) || ns(0) == "B")
         return "U-" + ts(1)
-      return "B-" + ts(1)     
+      return "B-" + ts(1)
     }
     if(next == null || ns(1) != ts(1) || ns(0) == "B")
       return "L-" + ts(1)
     "I-" + ts(1)
   }
-  
+
   private def splitLabel(token : Token) : Array[String] = {
     if(token.nerTag.categoryValue.contains("-"))
       token.nerTag.categoryValue.split("-")
