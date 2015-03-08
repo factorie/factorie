@@ -30,9 +30,9 @@ class FactorieSpanishTokenizer(caseSensitive:Boolean = false, tokenizeSgml:Boole
 
   def process(document: Document): Document = {
     for (section <- document.sections) {
-      val lexer = new SmallLexer(new StringReader(section.string))
+//      val lexer = new SmallLexer(new StringReader(section.string))
 //      val lexer = new SmallJavaLexer(new StringReader(section.string))
-//      val lexer = new FullStanfordSpanish2(new StringReader(section.string))
+      val lexer = new FullStanfordSpanish2(new StringReader(section.string))
       var next = lexer.next().asInstanceOf[Array[Int]]
       while (next != null){
         new Token(section, next(0), next(0) + next(1))
