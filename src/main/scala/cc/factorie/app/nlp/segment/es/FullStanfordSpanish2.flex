@@ -4,15 +4,6 @@ import java.io.Reader;
 import java.util.logging.Logger;
 import java.util.Properties;
 
-//import edu.stanford.nlp.ling.CoreLabel;
-//import edu.stanford.nlp.ling.Label;
-//import edu.stanford.nlp.ling.CoreAnnotations;
-//import edu.stanford.nlp.process.CoreLabelTokenFactory;
-//import edu.stanford.nlp.process.LexedTokenFactory;
-
-//import cc.factorie.app.nlp.Document;
-//import cc.factorie.app.nlp.Token;
-
 
 /**
  *  A tokenizer for Spanish. Adapted from PTBTokenizer and
@@ -553,6 +544,8 @@ cannot			{ yypushback(3) ; return getNext(); }
 {SGML}			{ if (!noSGML) {
              	 return getNext();
 					    }
+					    else null
+
             }
 {SPMDASH}		{ if (ptb3Dashes) {
                 return getNext(ptbmdash, yytext()); }
@@ -654,7 +647,9 @@ cannot			{ yypushback(3) ; return getNext(); }
 			}
 0x7f		{ if (invertible) {
                      prevWordAfter.append(yytext());
-                  } }
+                  }
+                  null
+                   }
 {OPBRAC}	{ if (normalizeOtherBrackets) {
                     return getNext(openparen, yytext()); }
                   else {
@@ -723,16 +718,19 @@ cannot			{ yypushback(3) ; return getNext(); }
 \0|{SPACES}|[\u200B\u200E-\u200F\uFEFF]	{ if (invertible) {
                      prevWordAfter.append(yytext());
                   }
+                  null
                 }
 {NEWLINE}	{ if (tokenizeNLs) {
                       return getNext(NEWLINE_TOKEN, yytext()); // js: for tokenizing carriage returns
                   } else if (invertible) {
                       prevWordAfter.append(yytext());
+                      null
                   }
                 }
 &nbsp;		{ if (invertible) {
                      prevWordAfter.append(yytext());
                   }
+                 null
                 }
 .       { var str = yytext();
           val first = str.charAt(0);
@@ -742,6 +740,7 @@ cannot			{ yypushback(3) ; return getNext(); }
               if (invertible) {
                 prevWordAfter.append(str);
               }
+              null
             case UntokenizableOptions.FIRST_DELETE =>
               if (invertible) {
                 prevWordAfter.append(str);
@@ -750,12 +749,14 @@ cannot			{ yypushback(3) ; return getNext(); }
                 LOGGER.warning(msg);
                 seenUntokenizableCharacter = true;
               }
+              null
             case UntokenizableOptions.ALL_DELETE =>
               if (invertible) {
                 prevWordAfter.append(str);
               }
               LOGGER.warning(msg);
               seenUntokenizableCharacter = true;
+              null
             case UntokenizableOptions.NONE_KEEP =>
               return getNext();
             case UntokenizableOptions.FIRST_KEEP =>
