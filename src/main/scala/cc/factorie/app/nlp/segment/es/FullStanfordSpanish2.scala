@@ -266,19 +266,19 @@ class FullStanfordSpanish2(in: Reader)  {
     "\12\7\7\0\1\14\3\0\6\4\1\0\1\14\2\4"+
     "\3\0\1\14\6\0\4\4\1\14\3\4\1\0\1\14"+
     "\2\4\4\0\7\7\1\0\1\7\6\0\2\12\13\0"+
-    "\1\11\10\0\10\36\15\0\2\4\2\0\17\36\3\0"+
-    "\1\33\1\0\1\33\12\0\1\30\30\0\2\7\2\40"+
-    "\2\7\6\0\1\41\1\14\3\0\3\4\2\0\1\4"+
-    "\1\41\2\0\1\41\1\14\6\0\2\4\1\41\1\0"+
+    "\1\40\10\0\10\36\15\0\2\4\2\0\17\36\3\0"+
+    "\1\33\1\0\1\33\12\0\1\30\30\0\2\7\2\41"+
+    "\2\7\6\0\1\42\1\14\3\0\3\4\2\0\1\4"+
+    "\1\42\2\0\1\42\1\14\6\0\2\4\1\42\1\0"+
     "\1\4\3\0\1\21\2\7\6\0\1\4\75\0\1\24"+
-    "\2\0\1\41\2\0\1\4\1\0\1\4\1\0\2\41"+
-    "\2\0\1\41\1\4\12\0\1\34\1\12\2\0\1\34"+
-    "\3\0\3\34\1\4\42\0\1\41\1\4\1\0\1\41"+
-    "\1\0\3\41\2\4\3\0\1\34\4\0\1\34\1\4"+
-    "\35\0\1\4\1\0\1\41\1\42\1\4\2\0\1\34"+
-    "\4\0\2\34\17\0\1\4\1\42\1\41\1\42\1\4"+
-    "\5\0\1\34\1\4\1\34\5\0\1\4\2\42\1\4"+
-    "\2\0\1\34\1\0\2\42\1\0";
+    "\2\0\1\42\2\0\1\4\1\0\1\4\1\0\2\42"+
+    "\2\0\1\42\1\4\12\0\1\34\1\12\2\0\1\34"+
+    "\3\0\3\34\1\4\42\0\1\42\1\4\1\0\1\42"+
+    "\1\0\3\42\2\4\3\0\1\34\4\0\1\34\1\4"+
+    "\35\0\1\4\1\0\1\42\1\43\1\4\2\0\1\34"+
+    "\4\0\2\34\17\0\1\4\1\43\1\42\1\43\1\4"+
+    "\5\0\1\34\1\4\1\34\5\0\1\4\2\43\1\4"+
+    "\2\0\1\34\1\0\2\43\1\0";
 
   def zzUnpackAction(): Array[Int] = {
     val result = new Array[Int](1981)
@@ -11298,7 +11298,7 @@ class FullStanfordSpanish2(in: Reader)  {
    * Closes the input stream.
    */
   @throws[java.io.IOException]
-  def yyclose() = {
+  def yyclose(): Unit = {
     zzAtEOF = true            /* indicate end of file */
     zzEndRead = zzStartRead  /* invalidate buffer    */
 
@@ -11319,7 +11319,7 @@ class FullStanfordSpanish2(in: Reader)  {
    *
    * @param reader   the new input stream 
    */
-  def yyreset(reader: java.io.Reader) = {
+  def yyreset(reader: java.io.Reader): Unit = {
     zzReader = reader
     zzAtBOL  = true
     zzAtEOF  = false
@@ -11349,7 +11349,7 @@ class FullStanfordSpanish2(in: Reader)  {
    *
    * @param newState the new lexical state
    */
-  def yybegin(newState: Int) = {
+  def yybegin(newState: Int): Unit = {
     zzLexicalState = newState
   }
 
@@ -11357,7 +11357,7 @@ class FullStanfordSpanish2(in: Reader)  {
   /**
    * Returns the text matched by the current regular expression.
    */
-  def yytext(): String = new String( zzBuffer, zzStartRead, zzMarkedPos-zzStartRead )
+  def yytext(): String = new String(zzBuffer, zzStartRead, zzMarkedPos-zzStartRead)
 
 
   /**
@@ -11394,7 +11394,7 @@ class FullStanfordSpanish2(in: Reader)  {
    *
    * @param   errorCode  the code of the errormessage to display
    */
-  def zzScanError(errorCode: Int) = {
+  def zzScanError(errorCode: Int): Unit = {
     var message = ""
     try {
       message = ZZ_ERROR_MSG(errorCode)
@@ -11415,7 +11415,7 @@ class FullStanfordSpanish2(in: Reader)  {
    * @param number  the number of characters to be read again.
    *                This number must not be greater than yylength()!
    */
- def yypushback(number: Int) = {
+ def yypushback(number: Int): Unit = {
     if ( number > yylength() )
       zzScanError(ZZ_PUSHBACK_2BIG)
 
@@ -11534,6 +11534,7 @@ class FullStanfordSpanish2(in: Reader)  {
               if (invertible) {
                 prevWordAfter.append(str);
               }
+              null
             case UntokenizableOptions.FIRST_DELETE =>
               if (invertible) {
                 prevWordAfter.append(str);
@@ -11542,12 +11543,14 @@ class FullStanfordSpanish2(in: Reader)  {
                 LOGGER.warning(msg);
                 seenUntokenizableCharacter = true;
               }
+              null
             case UntokenizableOptions.ALL_DELETE =>
               if (invertible) {
                 prevWordAfter.append(str);
               }
               LOGGER.warning(msg);
               seenUntokenizableCharacter = true;
+              null
             case UntokenizableOptions.NONE_KEEP =>
               return getNext();
             case UntokenizableOptions.FIRST_KEEP =>
@@ -11561,57 +11564,59 @@ class FullStanfordSpanish2(in: Reader)  {
               seenUntokenizableCharacter = true;
               return getNext();
           }
-          case 35 => null // noop
+          case 36 => null // noop
           case 2 => 
                if (normalizeOtherBrackets) {
                     return getNext(openparen, yytext()); }
                   else {
                     return getNext();
                   }
-          case 36 => null // noop
+          case 37 => null // noop
           case 3 => 
                if (escapeForwardSlashAsterisk) {
                     return getNext(delimit(yytext(), '/'), yytext()); }
                   else {
                     return getNext();
                   }
-          case 37 => null // noop
+          case 38 => null // noop
           case 4 => 
                return getNext();
-          case 38 => null // noop
+          case 39 => null // noop
           case 5 => 
                if (tokenizeNLs) {
                       return getNext(NEWLINE_TOKEN, yytext()); // js: for tokenizing carriage returns
                   } else if (invertible) {
                       prevWordAfter.append(yytext());
+                      null
                   }
-          case 39 => null // noop
+          case 40 => null // noop
           case 6 => 
                if (normalizeOtherBrackets) {
                     return getNext(closeparen, yytext()); }
                   else {
                     return getNext();
                   }
-          case 40 => null // noop
+          case 41 => null // noop
           case 7 => 
                val origTxt = yytext();
 										      return getNext (asciiQuotes(origTxt), origTxt);
-          case 41 => null // noop
+          case 42 => null // noop
           case 8 => 
                if (ptb3Dashes) {
                 return getNext(ptbmdash, yytext()); }
               else {
                 return getNext();
               }
-          case 42 => null // noop
+          case 43 => null // noop
           case 9 => 
                if (invertible) {
                      prevWordAfter.append(yytext());
                   }
-          case 43 => null // noop
+                  null
+          case 44 => null // noop
           case 10 => 
                return handleEllipsis(yytext());
-          case 44 => null // noop
+          case 45 => null // noop
           case 11 => 
                if (yylength() >= 3 && yylength() <= 4 && ptb3Dashes) {
 	            return getNext(ptbmdash, yytext());
@@ -11619,62 +11624,62 @@ class FullStanfordSpanish2(in: Reader)  {
 		    var origTxt = yytext();
                     return getNext(asciiDash(origTxt), origTxt);
 		  }
-          case 45 => null // noop
+          case 46 => null // noop
           case 12 => 
                return normalizeFractions(yytext());
-          case 46 => null // noop
+          case 47 => null // noop
           case 13 => 
                val origTxt = yytext();
                           return getNext(asciiQuotes(origTxt), origTxt);
-          case 47 => null // noop
+          case 48 => null // noop
           case 14 => 
                if (normalizeOtherBrackets) {
                     return getNext(closebrace, yytext()); }
                   else {
                     return getNext();
                   }
-          case 48 => null // noop
+          case 49 => null // noop
           case 15 => 
                if (normalizeParentheses) {
                     return getNext(openparen, yytext()); }
                   else {
                     return getNext();
                   }
-          case 49 => null // noop
+          case 50 => null // noop
           case 16 => 
                if (normalizeParentheses) {
                     return getNext(closeparen, yytext()); }
                   else {
                     return getNext();
                   }
-          case 50 => null // noop
+          case 51 => null // noop
           case 17 => 
                if (escapeForwardSlashAsterisk) {
                     return getNext(delimit(yytext(), '*'), yytext()); }
                   else {
                     return getNext();
                   }
-          case 51 => null // noop
+          case 52 => null // noop
           case 18 => 
                if (normalizeOtherBrackets) {
                     return getNext(openbrace, yytext()); }
                   else {
                     return getNext();
                   }
-          case 52 => null // noop
+          case 53 => null // noop
           case 19 => 
             // lookahead expression with fixed lookahead length
-            zzMarkedPos = Character.offsetByCodePoints                (zzBufferL, zzStartRead, zzEndRead - zzStartRead, zzMarkedPos, -1)
+            zzMarkedPos = Character.offsetByCodePoints(zzBufferL, zzStartRead, zzEndRead - zzStartRead, zzMarkedPos, -1)
                return getNext();
-          case 53 => null // noop
+          case 54 => null // noop
           case 20 => 
                val origTxt = yytext();
 												  return getNext(origTxt, origTxt, CONTR_ANNOTATION);
-          case 54 => null // noop
+          case 55 => null // noop
           case 21 => 
                val origTxt = yytext();
                           return getNext(origTxt, origTxt, VB_PRON_ANNOTATION);
-          case 55 => null // noop
+          case 56 => null // noop
           case 22 => 
             // general lookahead, find correct zzMarkedPos
             { var zzFState = 1
@@ -11704,16 +11709,17 @@ class FullStanfordSpanish2(in: Reader)  {
               zzMarkedPos = zzFPos
             }
                return getNext();
-          case 56 => null // noop
+          case 57 => null // noop
           case 23 => 
                if (!noSGML) {
              	 return getNext();
 					    }
-          case 57 => null // noop
+					    else null
+          case 58 => null // noop
           case 24 => 
                val origTxt = yytext();
                           return getNext(asciiQuotes(asciiDash(origTxt)), origTxt, COMPOUND_ANNOTATION);
-          case 58 => null // noop
+          case 59 => null // noop
           case 25 => 
                // this one should only match if we're basically at the end of file
 			  // since the last one matches two things, even newlines
@@ -11726,7 +11732,7 @@ class FullStanfordSpanish2(in: Reader)  {
                             yypushback(1); // return a period for next time
                           }
 	                  return getNext(s, yytext());
-          case 59 => null // noop
+          case 60 => null // noop
           case 26 => 
             // general lookahead, find correct zzMarkedPos
             { var zzFState = 5
@@ -11756,11 +11762,11 @@ class FullStanfordSpanish2(in: Reader)  {
               zzMarkedPos = zzFPos
             }
                return getNext();
-          case 60 => null // noop
+          case 61 => null // noop
           case 27 => 
                val origTxt = yytext();
 												  return getNext(asciiQuotes(asciiDash(origTxt)), origTxt);
-          case 61 => null // noop
+          case 62 => null // noop
           case 28 => 
                var txt = yytext();
                           if (escapeForwardSlashAsterisk) {
@@ -11768,15 +11774,15 @@ class FullStanfordSpanish2(in: Reader)  {
                             txt = delimit(txt, '*');
                           }
                           return getNext(txt, yytext());
-          case 62 => null // noop
+          case 63 => null // noop
           case 29 => 
                return getNormalizedAmpNext();
-          case 63 => null // noop
+          case 64 => null // noop
           case 30 => 
             // lookahead expression with fixed lookahead length
-            zzMarkedPos = Character.offsetByCodePoints                (zzBufferL, zzStartRead, zzEndRead - zzStartRead, zzMarkedPos, -2)
+            zzMarkedPos = Character.offsetByCodePoints(zzBufferL, zzStartRead, zzEndRead - zzStartRead, zzMarkedPos, -2)
                return getNext();
-          case 64 => null // noop
+          case 65 => null // noop
           case 31 => 
             // general lookahead, find correct zzMarkedPos
             { var zzFState = 3
@@ -11814,25 +11820,31 @@ class FullStanfordSpanish2(in: Reader)  {
                             yypushback(1); // return a period for next time
                           }
 	                  return getNext(s, yytext());
-          case 65 => null // noop
-          case 32 => 
-               yypushback(3) ; return getNext();
           case 66 => null // noop
+          case 32 => 
+               if (invertible) {
+                     prevWordAfter.append(yytext());
+                  }
+                 null
+          case 67 => null // noop
           case 33 => 
+               yypushback(3) ; return getNext();
+          case 68 => null // noop
+          case 34 => 
                var txt = yytext();
                           if (escapeForwardSlashAsterisk) {
                             txt = delimit(txt, '/');
                           }
                           return getNext(txt, yytext());
-          case 67 => null // noop
-          case 34 => 
+          case 69 => null // noop
+          case 35 => 
                var txt = yytext();
 			  if (normalizeParentheses) {
 			    txt = txt.replaceAll("\\(", openparen);
 			    txt = txt.replaceAll("\\)", closeparen);
 			  }
 			  return getNext(txt, yytext());
-          case 68 => null // noop
+          case 70 => null // noop
           case _ =>
             zzScanError(ZZ_NO_MATCH)
         }
