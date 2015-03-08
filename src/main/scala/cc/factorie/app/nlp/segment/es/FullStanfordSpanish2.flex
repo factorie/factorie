@@ -724,8 +724,8 @@ cannot			{ yypushback(3) ; return getNext(); }
                       return getNext(NEWLINE_TOKEN, yytext()); // js: for tokenizing carriage returns
                   } else if (invertible) {
                       prevWordAfter.append(yytext());
-                      null
                   }
+                  null
                 }
 &nbsp;		{ if (invertible) {
                      prevWordAfter.append(yytext());

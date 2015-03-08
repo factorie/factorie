@@ -1114,8 +1114,8 @@ class FullStanfordSpanish2(in: Reader)  {
                       return getNext(NEWLINE_TOKEN, yytext()); // js: for tokenizing carriage returns
                   } else if (invertible) {
                       prevWordAfter.append(yytext());
-                      null
                   }
+                  null
           case 40 => null // noop
           case 6 => 
                if (normalizeOtherBrackets) {
@@ -1373,7 +1373,7 @@ class FullStanfordSpanish2(in: Reader)  {
 			  return getNext(txt, yytext());
           case 70 => null // noop
           case _ =>
-            zzScanError(ZZ_NO_MATCH)
+            zzScanError(ZZ_NO_MATCH); null
         }
       }
     }
