@@ -6,15 +6,6 @@ import java.io.Reader;
 import java.util.logging.Logger;
 import java.util.Properties;
 
-//import edu.stanford.nlp.ling.CoreLabel;
-//import edu.stanford.nlp.ling.Label;
-//import edu.stanford.nlp.ling.CoreAnnotations;
-//import edu.stanford.nlp.process.CoreLabelTokenFactory;
-//import edu.stanford.nlp.process.LexedTokenFactory;
-
-//import cc.factorie.app.nlp.Document;
-//import cc.factorie.app.nlp.Token;
-
 
 /**
  *  A tokenizer for Spanish. Adapted from PTBTokenizer and
