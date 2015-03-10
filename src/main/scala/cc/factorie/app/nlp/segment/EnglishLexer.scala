@@ -269,6 +269,9 @@ class EnglishLexer(in: Reader)  {
 
   /* user code: */
 
+  val tokenizeNewline = false
+  val tokenizeAllDashedWords = false
+
   def getNext(): Object = {
     val txt = yytext()
     getNext(txt, txt)
