@@ -15,8 +15,12 @@ package cc.factorie.app.nlp.segment;
 
 %{
 
+  val tokenizeNewline = false
+  val tokenizeAllDashedWords = false
+
   def getNext(): Object = {
     val txt = yytext()
+    println(s"Token: $txt")
     getNext(txt, txt)
   }
 
