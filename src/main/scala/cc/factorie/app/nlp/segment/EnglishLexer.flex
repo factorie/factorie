@@ -69,6 +69,7 @@ HASHTAG = #[A-Za-z][A-Za-z0-9]+
 ATUSER = @[A-Za-z][A-Za-z0-9]+
 
 /* Optional hat, eyes, optional repeated nose, mouth{1,5}, optional beard.  Or horizontal eyes '.' */
+// [#<%\*]?[:;!#\$%@=\|][-\+\*=o^<]{0,4}[\(\)oODPQX\*3{}\[\]]{1,5}[#><\)\(]?(?!\S)|'\.'
 EMOTICON = [#<%\*]?[:;!#\$%@=\|][-\+\*=o\^<]{0,4}[\(\)oODPQX\*3{}\[\]]{1,5}[#><\)\(]?
 FILENAME = \S+\.(3gp|7z|ace|ai(f){0,2}|amr|asf|asp(x)?|asx|avi|bat|bin|bmp|bup|cab|cbr|cd(a|l|r)|chm|dat|divx|dll|dmg|doc|dss|dvf|dwg|eml|eps|exe|fl(a|v)|gif|gz|hqx|(s)?htm(l)?|ifo|indd|iso|jar|jsp|jp(e)?g|key|lnk|log|m4(a|b|p|v)|mcd|mdb|mid|mov|mp(2|3|4)|mp(e)?g|ms(i|wmm)|numbers|ogg|pages|pdf|php|png|pps|ppt|ps(d|t)?|Penn|pub|qb(b|w)|qxd|ra(m|r)|rm(vb)?|rtf|se(a|s)|sit(x)?|sql|ss|swf|tgz|tif|torrent|ttf|txt|vcd|vob|wav|wm(a|v)|wp(d|s)|xls|xml|xtm|zip)
 
@@ -218,8 +219,10 @@ NEWLINE = \r|\r?\n
 {HASHTAG} { printDebug("HASHTAG"); getNext() }
 {ATUSER} { printDebug("ATUSER"); getNext() }
 
+// [#<%\*]?[:;!#\$%@=\|][-\+\*=o^<]{0,4}[\(\)oODPQX\*3{}\[\]]{1,5}[#><\)\(]?(?!\S)|'\.'
 '\.' |
-{EMOTICON} / [\p{Z}\t\r\n\v\f] { printDebug("EMOTICON"); getNext() }
+{EMOTICON} / [^\S] { printDebug("EMOTICON"); getNext() }
+//{EMOTICON} / [\p{Z}\t\r\n\v\f] { printDebug("EMOTICON"); getNext() }
 
 {FILENAME} { printDebug("FILENAME"); getNext() }
 
