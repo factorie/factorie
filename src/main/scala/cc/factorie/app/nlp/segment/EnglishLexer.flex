@@ -221,6 +221,7 @@ NEWLINE = \r|\r?\n
 
 // [#<%\*]?[:;!#\$%@=\|][-\+\*=o^<]{0,4}[\(\)oODPQX\*3{}\[\]]{1,5}[#><\)\(]?(?!\S)|'\.'
 '\.' |
+{EMOTICON}$ { printDebug("EMOTICON"); getNext() }
 {EMOTICON} / [^\S] { printDebug("EMOTICON"); getNext() }
 //{EMOTICON} / [\p{Z}\t\r\n\v\f] { printDebug("EMOTICON"); getNext() }
 
