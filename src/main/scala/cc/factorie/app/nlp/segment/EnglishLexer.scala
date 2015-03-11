@@ -283,7 +283,6 @@ class EnglishLexer(in: Reader)  {
 
   def getNext(): Object = {
     val txt = yytext()
-    println(s"Token: |$txt|")
     getNext(txt, txt)
   }
 
