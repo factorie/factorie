@@ -4,47 +4,11 @@ import scala.util.Random
 import com.google.common.collect.HashBiMap
 import scala.Predef._
 import scala.Some
+import scala.collection.JavaConverters._
 
 /**
  * Created by beroth on 3/4/15.
  */
-
-// TODO: this assumes that the key contains all the information that is necessary. Maybe distinguish between key
-// information and additional information.
-// TODO: get trait and implementations for memory- and mongo-backed entity map
-trait MatrixIndexMap[T] {
-  def keyToIndex(key: T): Int
-  def indexToKey(index: Int): T
-  def size: Int
-  def containsKey(key: T): Boolean
-  def put(key: T, value: Int)
-  def add(key: T): Int
-}
-
-class MemoryIndexMap[T] extends  MatrixIndexMap[T] {
-  private val _bimap: HashBiMap[T, Int] = HashBiMap.create[T, Int]()
-  private var _size: Int = 0
-
-  def keyToIndex(key: T): Int = _bimap.get(key)
-
-  def indexToKey(index: Int): T = _bimap.inverse.get(index)
-
-  def size: Int = _size
-
-  def containsKey(key: T): Boolean = _bimap.containsKey(key)
-
-  def put(key: T, value: Int) = _bimap.forcePut(key, value)
-
-  def add(key: T): Int = {
-    if (containsKey(key)) {
-      keyToIndex(key)
-    } else {
-      put(key, _size)
-      _size += 1
-      _size - 1
-    }
-  }
-}
 
 class StringStringMatrix(val __rowMap: MatrixIndexMap[String]  = new MemoryIndexMap[String],
                           val __colMap: MatrixIndexMap[String] = new MemoryIndexMap[String],
@@ -68,6 +32,38 @@ trait KBMatrix[KBMatrixT <: KBMatrix[KBMatrixT, RowT, ColT], RowT, ColT] {
     val rowNr = __rowMap.add(rowKey)
     val colNr = __colMap.add(colKey)
     matrix.set(rowNr, colNr, cellVal)
+  }
+
+  def get(rowKey: RowT, colKey: ColT): Double = {
+    if (__rowMap.containsKey(rowKey) && __colMap.containsKey(colKey)) {
+      val rowNr = __rowMap.keyToIndex(rowKey)
+      val colNr = __colMap.keyToIndex(colKey)
+      matrix.get(rowNr, colNr)
+    } else {
+      0.0
+    }
+  }
+
+  def nnz() = matrix.nnz()
+  def numRows(): Int = matrix.numRows()
+  def numCols(): Int = matrix.numCols()
+
+  def getColsForRow(rowKey: RowT): Iterable[ColT] = {
+    if (__rowMap.containsKey(rowKey)) {
+      val rowNr = __rowMap.keyToIndex(rowKey)
+      matrix.getRow(rowNr).map(cell => __colMap.indexToKey(cell._1))
+    } else {
+      List()
+    }
+  }
+
+  def hasSameContent(m2: KBMatrixT): Boolean = {
+    m2.numRows() == numRows() &&
+      m2.numCols() == numCols() &&
+      m2.nnz() == nnz() &&
+      __rowMap.keyIterator.forall(rowKey => {
+        getColsForRow(rowKey).forall(colKey => get(rowKey, colKey) == m2.get(rowKey, colKey))
+      })
   }
 
   /**

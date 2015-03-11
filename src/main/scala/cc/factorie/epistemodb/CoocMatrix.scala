@@ -12,7 +12,7 @@ import cc.factorie.la.{Tensor2, SparseTensor}
 /**
  * Holds a generic matrix that can be written to MongoDB.
  */
-class CoocMatrix(var _numRows: Int, var _numCols:Int) {
+class CoocMatrix(var _numRows: Int, var _numCols:Int) extends MongoWritable {
   val rows = new mutable.HashMap[Int, mutable.HashMap[Int, Double]]
   // Backpointers for efficiency
   private var __cols = new mutable.HashMap[Int, mutable.Set[Int]]
@@ -93,7 +93,7 @@ class CoocMatrix(var _numRows: Int, var _numCols:Int) {
    * Filters the matrix depending on row and column thresholds for the minimum number of non-zero cells.
    *
    * The filtering steps are:
-   *  1. remove rows with number of cells < tRow and columns with number of cells <= tCol
+   *  1. remove rows with number of cells <= tRow and columns with number of cells <= tCol
    *  2. find biggest connected component
    *  3. remove columns not in biggest connected component
    *  4. remove rows without (valid) column entries
@@ -233,11 +233,19 @@ cols: [<INT>]
 vals: [<DOUBLE>]
 }
  */
-  def writeToMongo(mongoDb: DB, dropCollection: Boolean = true) {
-    val collection: DBCollection = mongoDb.getCollection(CoocMatrix.ROWS_COLLECTION)
-    if (dropCollection) {
-      collection.drop()
-    }
+  override def collectionPrefix: Option[String] = Some(MongoWritable.COOC_MATRIX_PREFIX)
+
+  def writeToMongo(mongoDb: Option[DB], collectionPrefix: Option[String] = collectionPrefix) {
+    if (collectionPrefix == None)
+      throw new IllegalArgumentException("collection prefix cannot be None - use default initialization instead")
+
+    if (mongoDb == None)
+      throw new IllegalArgumentException("mongo db cannot be None - use default initialization instead")
+
+    val collection: DBCollection = mongoDb.get.getCollection(collectionPrefix.get)
+
+    // TODO: always drop collection?
+    collection.drop()
 
     val builder = collection.initializeUnorderedBulkOperation();
 
@@ -269,9 +277,9 @@ row: <INT>
 col: <INT>
 val: <DOUBLE>
 }
-*/
+
   def writeToMongoCellBased(mongoDb: DB, dropCollection: Boolean = true) {
-    val collection: DBCollection = mongoDb.getCollection(CoocMatrix.CELLS_COLLECTION)
+    val collection: DBCollection = mongoDb.getCollection(MongoWritable.COOC_MATRIX_PREFIX)
     if (dropCollection) {
       collection.drop()
     }
@@ -294,14 +302,14 @@ val: <DOUBLE>
     }
     builder.execute()
   }
+  */
 }
 
 
 
 
 object CoocMatrix {
-  val CELLS_COLLECTION = "cells"
-  val ROWS_COLLECTION = "rows"
+  //val CELLS_COLLECTION = "cells"
   val ROW_NR = "row_nr"
   val COL_NR = "col_nr"
   val CELL_VAL = "val"
@@ -309,8 +317,8 @@ object CoocMatrix {
   val CELL_VAL_LIST = "vals"
 
   
-  def fromMongo(mongoDb: DB) : CoocMatrix = {
-    val collection: DBCollection = mongoDb.getCollection(ROWS_COLLECTION)
+  def fromMongo(mongoDb: DB, collectionName: String = MongoWritable.COOC_MATRIX_PREFIX) : CoocMatrix = {
+    val collection: DBCollection = mongoDb.getCollection(collectionName)
     val m = new CoocMatrix(0, 0) // grow on the fly
     val cursor: DBCursor = collection.find();
     try {
@@ -332,7 +340,7 @@ object CoocMatrix {
     m
   }
 
-
+/*
   def fromMongoCellBased(mongoDb: DB) : CoocMatrix = {
     val collection: DBCollection = mongoDb.getCollection(CELLS_COLLECTION)
     val m = new CoocMatrix(0, 0) // grow on the fly
@@ -350,6 +358,8 @@ object CoocMatrix {
     }
     m
   }
+
+  */
 
   def fromTensor2(t:Tensor2 with SparseTensor):CoocMatrix = {
     t._makeReadable()

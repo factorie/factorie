@@ -35,7 +35,7 @@ object LoadTacDataIntoMongo {
     val mongoClient = new MongoClient( opts.mongoHost.value , opts.mongoPort.value )
     val db:DB = mongoClient.getDB( opts.dbname.value )
     //kb.writeToMongoCellBased(db)
-    kb.writeToMongo(db)
+    kb.writeToMongo(Some(db))
     val tWrite = (System.currentTimeMillis - tWriteStart)/1000.0
     println(f"Writing to mongo took $tWrite%.2f s")
 

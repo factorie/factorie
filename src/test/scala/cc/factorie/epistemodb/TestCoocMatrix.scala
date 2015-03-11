@@ -137,12 +137,13 @@ class TestCoocMatrix extends JUnitSuite  with util.FastLogging {
     m1.set(1,3,1.0)
     m1.set(4,2,2.0)
 
-    m1.writeToMongo(db)
+    m1.writeToMongo(Some(db))
 
     val m2 = CoocMatrix.fromMongo(db)
     assertTrue(m1.hasSameContent(m2))
   }
 
+  /*
   @Test def writeReadMongoCellBasedTest() {
     // Fake in-memory mongo server.
     val fongo = new Fongo("myserver");
@@ -162,6 +163,7 @@ class TestCoocMatrix extends JUnitSuite  with util.FastLogging {
     val m2 = CoocMatrix.fromMongoCellBased(db)
     assertTrue(m1.hasSameContent(m2))
   }
+  */
 
   @Test def testSplitTest() {
     //0101
