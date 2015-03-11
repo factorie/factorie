@@ -289,6 +289,8 @@ class EnglishLexer(in: Reader)  {
 
   def getNext(txt: String, originalText: String): Object = Array(yychar, yylength())
 
+  def printDebug(tok: String) = println(s"$tok: |${yytext()}|")
+
 
 
 
@@ -596,69 +598,69 @@ class EnglishLexer(in: Reader)  {
       else {
         (if (zzAction < 0) zzAction else ZZ_ACTION(zzAction)) match {
           case 1 => 
-               println("CATCHALL"); getNext()
+               printDebug("CATCHALL"); getNext()
           case 48 => null // noop
           case 2 => 
-               println("WHITESPACE"); if(tokenizeWhitespace) getNext() else null
+               printDebug("WHITESPACE"); if(tokenizeWhitespace) getNext() else null
           case 49 => null // noop
           case 3 => 
-               println("PUNC"); getNext()
+               printDebug("PUNC"); getNext()
           case 50 => null // noop
           case 4 => 
-               println("WORD"); getNext()
+               printDebug("WORD"); getNext()
           case 51 => null // noop
           case 5 => 
-               println("SYMBOL"); getNext()
+               printDebug("SYMBOL"); getNext()
           case 52 => null // noop
           case 6 => 
-               println("REPEATED_PUNC"); getNext()
+               printDebug("REPEATED_PUNC"); getNext()
           case 53 => null // noop
           case 7 => 
-               println("NEWLINE"); if (tokenizeNewline) getNext() else null
+               printDebug("NEWLINE"); if (tokenizeNewline) getNext() else null
           case 54 => null // noop
           case 8 => 
             // lookahead expression with fixed lookahead length
             zzMarkedPos = Character.offsetByCodePoints(zzBufferL, zzStartRead, zzEndRead - zzStartRead, zzMarkedPos, -1)
-               println("ELLIPSIS"); getNext()
+               printDebug("ELLIPSIS"); getNext()
           case 55 => null // noop
           case 9 => 
-               println("NUMBER"); getNext()
+               printDebug("NUMBER"); getNext()
           case 56 => null // noop
           case 10 => 
-               println("QUOTE"); getNext()
+               printDebug("QUOTE"); getNext()
           case 57 => null // noop
           case 11 => 
-               println("DASH"); getNext()
+               printDebug("DASH"); getNext()
           case 58 => null // noop
           case 12 => 
-               println("AP2"); getNext()
+               printDebug("AP2"); getNext()
           case 59 => null // noop
           case 13 => 
-               println("FRACTION"); getNext()
+               printDebug("FRACTION"); getNext()
           case 60 => null // noop
           case 14 => 
-               println("MDASH"); getNext()
+               printDebug("MDASH"); getNext()
           case 61 => null // noop
           case 15 => 
-               println("ABBREVS"); getNext()
+               printDebug("ABBREVS"); getNext()
           case 62 => null // noop
           case 16 => 
-               println("APWORD"); getNext()
+               printDebug("APWORD"); getNext()
           case 63 => null // noop
           case 17 => 
             // lookahead expression with fixed lookahead length
             zzMarkedPos = Character.offsetByCodePoints(zzBufferL, zzStartRead, zzEndRead - zzStartRead, zzMarkedPos, -1)
-               println("CURRENCY"); getNext()
+               printDebug("CURRENCY"); getNext()
           case 64 => null // noop
           case 18 => 
             // lookahead expression with fixed lookahead length
             zzMarkedPos = Character.offsetByCodePoints(zzBufferL, zzStartRead, zzEndRead - zzStartRead, zzMarkedPos, -1)
-               println("CONSONANT_NON_ABBREVS"); getNext()
+               printDebug("CONSONANT_NON_ABBREVS"); getNext()
           case 65 => null // noop
           case 19 => 
             // lookahead expression with fixed lookahead length
             zzMarkedPos = Character.offsetByCodePoints(zzBufferL, zzStartRead, zzEndRead - zzStartRead, zzMarkedPos, -1)
-               println("INITIALS");
+               printDebug("INITIALS");
   val matched = yytext()
   if(matched.endsWith("..")) yypushback(1)
   getNext()
@@ -691,108 +693,108 @@ class EnglishLexer(in: Reader)  {
               }
               zzMarkedPos = zzFPos
             }
-               println("CONTRACTED_WORD"); getNext()
+               printDebug("CONTRACTED_WORD"); getNext()
           case 67 => null // noop
           case 21 => 
-               println("EMAIL"); getNext()
+               printDebug("EMAIL"); getNext()
           case 68 => null // noop
           case 22 => 
             // lookahead expression with fixed lookahead length
             zzMarkedPos = Character.offsetByCodePoints(zzBufferL, zzStartRead, zzEndRead - zzStartRead, zzMarkedPos, -1)
-               println("EMOTICON"); getNext()
+               printDebug("EMOTICON"); getNext()
           case 69 => null // noop
           case 23 => 
-               println("DASHED_PREFIX_WORD"); getNext()
+               printDebug("DASHED_PREFIX_WORD"); getNext()
           case 70 => null // noop
           case 24 => 
-               println("HASHTAG"); getNext()
+               printDebug("HASHTAG"); getNext()
           case 71 => null // noop
           case 25 => 
-               println("ORDINALS"); getNext()
+               printDebug("ORDINALS"); getNext()
           case 72 => null // noop
           case 26 => 
-               println("DECADE"); getNext()
+               printDebug("DECADE"); getNext()
           case 73 => null // noop
           case 27 => 
             // lookahead expression with fixed lookahead length
             zzMarkedPos = Character.offsetByCodePoints(zzBufferL, zzStartRead, zzEndRead - zzStartRead, zzMarkedPos, -1)
-               println("CONTRACTION"); getNext()
+               printDebug("CONTRACTION"); getNext()
           case 74 => null // noop
           case 28 => 
-               println("NUMBER2"); getNext()
+               printDebug("NUMBER2"); getNext()
           case 75 => null // noop
           case 29 => 
-               println("ATUSER"); getNext()
+               printDebug("ATUSER"); getNext()
           case 76 => null // noop
           case 30 => 
-               println("FILENAME"); getNext()
+               printDebug("FILENAME"); getNext()
           case 77 => null // noop
           case 31 => 
-               println("URL2"); getNext()
+               printDebug("URL2"); getNext()
           case 78 => null // noop
           case 32 => 
-               println("HTML_SYMBOL"); getNext()
+               printDebug("HTML_SYMBOL"); getNext()
           case 79 => null // noop
           case 33 => 
             // lookahead expression with fixed lookahead length
             zzMarkedPos = Character.offsetByCodePoints(zzBufferL, zzStartRead, zzEndRead - zzStartRead, zzMarkedPos, -1)
-               println("CAPS"); getNext()
+               printDebug("CAPS"); getNext()
           case 80 => null // noop
           case 34 => 
             // lookahead expression with fixed base length
             zzMarkedPos = Character.offsetByCodePoints(zzBufferL, zzStartRead, zzEndRead - zzStartRead, zzStartRead, 3)
-               println("NOABBREV"); getNext()
+               printDebug("NOABBREV"); getNext()
           case 81 => null // noop
           case 35 => 
             // lookahead expression with fixed lookahead length
             zzMarkedPos = Character.offsetByCodePoints(zzBufferL, zzStartRead, zzEndRead - zzStartRead, zzMarkedPos, -1)
-               println("INITIALS2"); getNext()
+               printDebug("INITIALS2"); getNext()
           case 82 => null // noop
           case 36 => 
-               println("SGML"); getNext()
+               printDebug("SGML"); getNext()
           case 83 => null // noop
           case 37 => 
             // lookahead expression with fixed base length
             zzMarkedPos = Character.offsetByCodePoints(zzBufferL, zzStartRead, zzEndRead - zzStartRead, zzStartRead, 3)
-               println("LATIN2"); getNext()
+               printDebug("LATIN2"); getNext()
           case 84 => null // noop
           case 38 => 
-               println("URL3"); getNext()
+               printDebug("URL3"); getNext()
           case 85 => null // noop
           case 39 => 
-               println("HTMLCHAR"); getNext()
+               printDebug("HTMLCHAR"); getNext()
           case 86 => null // noop
           case 40 => 
             // lookahead expression with fixed lookahead length
             zzMarkedPos = Character.offsetByCodePoints(zzBufferL, zzStartRead, zzEndRead - zzStartRead, zzMarkedPos, -1)
-               println("DASHED_SUFFIX_WORD"); getNext()
+               printDebug("DASHED_SUFFIX_WORD"); getNext()
           case 87 => null // noop
           case 41 => 
             // lookahead expression with fixed base length
             zzMarkedPos = Character.offsetByCodePoints(zzBufferL, zzStartRead, zzEndRead - zzStartRead, zzStartRead, 3)
-               println("wanna"); getNext()
+               printDebug("wanna"); getNext()
           case 88 => null // noop
           case 42 => 
-               println("HTML_ACCENTED_LETTER"); getNext()
+               printDebug("HTML_ACCENTED_LETTER"); getNext()
           case 89 => null // noop
           case 43 => 
             // lookahead expression with fixed lookahead length
             zzMarkedPos = Character.offsetByCodePoints(zzBufferL, zzStartRead, zzEndRead - zzStartRead, zzMarkedPos, -1)
-               println("DATE"); getNext()
+               printDebug("DATE"); getNext()
           case 90 => null // noop
           case 44 => 
             // lookahead expression with fixed base length
             zzMarkedPos = Character.offsetByCodePoints(zzBufferL, zzStartRead, zzEndRead - zzStartRead, zzStartRead, 4)
-               println("whatcha"); getNext()
+               printDebug("whatcha"); getNext()
           case 91 => null // noop
           case 45 => 
-               println("URL"); getNext()
+               printDebug("URL"); getNext()
           case 92 => null // noop
           case 46 => 
-               println("FRPHONE");  getNext()
+               printDebug("FRPHONE");  getNext()
           case 93 => null // noop
           case 47 => 
-               println("USPHONE"); getNext()
+               printDebug("USPHONE"); getNext()
           case 94 => null // noop
           case _ =>
             zzScanError(ZZ_NO_MATCH); null

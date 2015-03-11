@@ -27,6 +27,8 @@ package cc.factorie.app.nlp.segment;
 
   def getNext(txt: String, originalText: String): Object = Array(yychar, yylength())
 
+  def printDebug(tok: String) = println(s"$tok: |${yytext()}|")
+
 %}
 
 WHITESPACE = ([\p{Z}\t\v\f]|&nbsp;)+
@@ -197,32 +199,32 @@ NEWLINE = \r|\r?\n
 
 //{SGML2} { getNext() }
 
-{SGML} { println("SGML"); getNext() }
+{SGML} { printDebug("SGML"); getNext() }
 
-{HTML_SYMBOL} { println("HTML_SYMBOL"); getNext() }
+{HTML_SYMBOL} { printDebug("HTML_SYMBOL"); getNext() }
 
-{URL} { println("URL"); getNext() }
-{URL2} { println("URL2"); getNext() }
-{URL3} { println("URL3"); getNext() }
+{URL} { printDebug("URL"); getNext() }
+{URL2} { printDebug("URL2"); getNext() }
+{URL3} { printDebug("URL3"); getNext() }
 
-{EMAIL} { println("EMAIL"); getNext() }
-{USPHONE} { println("USPHONE"); getNext() }
-{FRPHONE} {println("FRPHONE");  getNext() }
+{EMAIL} { printDebug("EMAIL"); getNext() }
+{USPHONE} { printDebug("USPHONE"); getNext() }
+{FRPHONE} {printDebug("FRPHONE");  getNext() }
 
-{DATE} / [^0-9] { println("DATE"); getNext() }
-{DECADE} { println("DECADE"); getNext() }
+{DATE} / [^0-9] { printDebug("DATE"); getNext() }
+{DECADE} { printDebug("DECADE"); getNext() }
 
-{CURRENCY} / [^A-Z] { println("CURRENCY"); getNext() }
+{CURRENCY} / [^A-Z] { printDebug("CURRENCY"); getNext() }
 
-{HASHTAG} { println("HASHTAG"); getNext() }
-{ATUSER} { println("ATUSER"); getNext() }
+{HASHTAG} { printDebug("HASHTAG"); getNext() }
+{ATUSER} { printDebug("ATUSER"); getNext() }
 
 '\.' |
-{EMOTICON} / [\p{Z}\t\r\n\v\f] { println("EMOTICON"); getNext() }
+{EMOTICON} / [\p{Z}\t\r\n\v\f] { printDebug("EMOTICON"); getNext() }
 
-{FILENAME} { println("FILENAME"); getNext() }
+{FILENAME} { printDebug("FILENAME"); getNext() }
 
-{CONSONANT_NON_ABBREVS} / \. { println("CONSONANT_NON_ABBREVS"); getNext() }
+{CONSONANT_NON_ABBREVS} / \. { printDebug("CONSONANT_NON_ABBREVS"); getNext() }
 
 {MONTH}     |
 {DAY}       |
@@ -234,75 +236,75 @@ NEWLINE = \r|\r?\n
 {UNITS}     |
 {ORG}       |
 {LATIN}     |
-{ABBREV}      { println("ABBREVS"); getNext() }
+{ABBREV}      { printDebug("ABBREVS"); getNext() }
 
-{NOABBREV} / \p{Z}*\p{Nd} { println("NOABBREV"); getNext() }
-{LATIN2} / [^\p{L}] { println("LATIN2"); getNext() }
+{NOABBREV} / \p{Z}*\p{Nd} { printDebug("NOABBREV"); getNext() }
+{LATIN2} / [^\p{L}] { printDebug("LATIN2"); getNext() }
 
-{HTML_ACCENTED_LETTER} { println("HTML_ACCENTED_LETTER"); getNext() }
+{HTML_ACCENTED_LETTER} { printDebug("HTML_ACCENTED_LETTER"); getNext() }
 
 /* contractions without apostrophes */
-what / cha { println("whatcha"); getNext() }
-wan / na { println("wanna"); getNext() }
+what / cha { printDebug("whatcha"); getNext() }
+wan / na { printDebug("wanna"); getNext() }
 
-{CONTRACTION} / [^\p{L}] { println("CONTRACTION"); getNext() }
+{CONTRACTION} / [^\p{L}] { printDebug("CONTRACTION"); getNext() }
 
-{APWORD} { println("APWORD"); getNext() }
+{APWORD} { printDebug("APWORD"); getNext() }
 
 /* [^\p{P}\p{S}] should be non-punctuation */
-{INITIALS2} / [^\p{P}\p{S}] { println("INITIALS2"); getNext() }
+{INITIALS2} / [^\p{P}\p{S}] { printDebug("INITIALS2"); getNext() }
 
 {INITIALS} / [^.\p{L}] {
-  println("INITIALS");
+  printDebug("INITIALS");
   val matched = yytext()
   if(matched.endsWith("..")) yypushback(1)
   getNext()
 }
 
-{ORDINALS} { println("ORDINALS"); getNext() }
+{ORDINALS} { printDebug("ORDINALS"); getNext() }
 
-{QUOTE} { println("QUOTE"); getNext() }
+{QUOTE} { printDebug("QUOTE"); getNext() }
 
 // TODO deal with this: if this is here then we will never match following {DASHED_PREFIX_WORD}
-//{DASHEDWORD} { println("DASHEDWORD"); if (tokenizeAllDashedWords) getNext() else null }
+//{DASHEDWORD} { printDebug("DASHEDWORD"); if (tokenizeAllDashedWords) getNext() else null }
 
-{DASHED_PREFIX_WORD} { println("DASHED_PREFIX_WORD"); getNext() }
-{DASHED_SUFFIX_WORD} / [^\p{L}\p{M}&] { println("DASHED_SUFFIX_WORD"); getNext() }
+{DASHED_PREFIX_WORD} { printDebug("DASHED_PREFIX_WORD"); getNext() }
+{DASHED_SUFFIX_WORD} / [^\p{L}\p{M}&] { printDebug("DASHED_SUFFIX_WORD"); getNext() }
 
-{FRACTION} { println("FRACTION"); getNext() }
+{FRACTION} { printDebug("FRACTION"); getNext() }
 
-{CONTRACTED_WORD} / {CONTRACTION} { println("CONTRACTED_WORD"); getNext() }
+{CONTRACTED_WORD} / {CONTRACTION} { printDebug("CONTRACTED_WORD"); getNext() }
 //{WORD} / {CONTRACTION} { getNext() }
 
-{CAPS} / [^\p{Ll}] { println("CAPS"); getNext() }
+{CAPS} / [^\p{Ll}] { printDebug("CAPS"); getNext() }
 
-{WORD} { println("WORD"); getNext() }
+{WORD} { printDebug("WORD"); getNext() }
 
-{NUMBER} { println("NUMBER"); getNext() }
+{NUMBER} { printDebug("NUMBER"); getNext() }
 
-{NUMBER2} { println("NUMBER2"); getNext() }
+{NUMBER2} { printDebug("NUMBER2"); getNext() }
 
-{AP2} { println("AP2"); getNext() }
+{AP2} { printDebug("AP2"); getNext() }
 
 {ELLIPSIS} |
-\.{2,5} / [^!?] { println("ELLIPSIS"); getNext() }
+\.{2,5} / [^!?] { printDebug("ELLIPSIS"); getNext() }
 
-{REPEATED_PUNC} { println("REPEATED_PUNC"); getNext() }
+{REPEATED_PUNC} { printDebug("REPEATED_PUNC"); getNext() }
 
-{MDASH} { println("MDASH"); getNext() }
+{MDASH} { printDebug("MDASH"); getNext() }
 
-{DASH} { println("DASH"); getNext() }
+{DASH} { printDebug("DASH"); getNext() }
 
-{PUNC} { println("PUNC"); getNext() }
+{PUNC} { printDebug("PUNC"); getNext() }
 
-{SYMBOL} { println("SYMBOL"); getNext() }
+{SYMBOL} { printDebug("SYMBOL"); getNext() }
 
-{HTMLCHAR} { println("HTMLCHAR"); getNext() }
+{HTMLCHAR} { printDebug("HTMLCHAR"); getNext() }
 
-{CATCHALL} { println("CATCHALL"); getNext() }
+{CATCHALL} { printDebug("CATCHALL"); getNext() }
 
-{NEWLINE} { println("NEWLINE"); if (tokenizeNewline) getNext() else null }
+{NEWLINE} { printDebug("NEWLINE"); if (tokenizeNewline) getNext() else null }
 
-{WHITESPACE} { println("WHITESPACE"); if(tokenizeWhitespace) getNext() else null}
+{WHITESPACE} { printDebug("WHITESPACE"); if(tokenizeWhitespace) getNext() else null}
 
 <<EOF>> { null }
