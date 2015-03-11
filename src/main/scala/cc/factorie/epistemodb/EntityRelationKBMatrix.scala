@@ -32,6 +32,7 @@ class EntityRelationKBMatrix(val matrix:CoocMatrix = new CoocMatrix(0,0),
   }
 }
 
+
 object EntityRelationKBMatrix {
   def fromMongo(mongoDb: DB): EntityRelationKBMatrix = {
     val dbMatrix = CoocMatrix.fromMongo(mongoDb) // MongoWritable.COOC_MATRIX_PREFIX as default argument
