@@ -51,7 +51,9 @@ class DeterministicLexerTokenizer(caseSensitive:Boolean = false, tokenizeSgml:Bo
 
 object DeterministicLexerTokenizer extends DeterministicLexerTokenizer(false, false, false, false, false) {
   def main(args: Array[String]): Unit = {
-    val string = io.Source.fromFile("/iesl/canvas/strubell/data/tackbp/source/2013/LDC2013E45_TAC_2013_KBP_Source_Corpus_disc_2/data/English/discussion_forums/bolt-eng-DF-200").mkString
+    val fname = "/iesl/canvas/strubell/data/tackbp/source/2013/LDC2013E45_TAC_2013_KBP_Source_Corpus_disc_2/data/English/discussion_forums/bolt-eng-DF-200"
+    println(s"Loading $fname")
+    val string = io.Source.fromFile(fname).mkString
 //    val string = "A.  A.A.A.I.  and U.S. in U.S.. etc., but not A... or A..B iPhone 3G in Washington D.C...."
 //    val string = "Washington D.C.... A..B!!C??D.!?E.!?.!?F..!!?? U.S.." // want: [A, .., B, !!, C, ??, D, .!?, E, .!?.!?, F, ..!!??]
 //    val string = "AT&T but don't grab LAT&Eacute; and be sure not to grab PE&gym AT&T"
@@ -63,6 +65,7 @@ object DeterministicLexerTokenizer extends DeterministicLexerTokenizer(false, fa
 //    val string = " 1. Buy a new Chevrolet (37%-owned in the U.S..) . 15%"
 //    val string = "blah blah Abbrev. has blah"
 
+    println("Tokenizing...")
     val doc = new Document(string)
     val t0 = System.currentTimeMillis()
     DeterministicLexerTokenizer.process(doc)
