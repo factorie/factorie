@@ -57,7 +57,7 @@ object DeterministicLexerTokenizer extends DeterministicLexerTokenizer(false, fa
 //    val fname = "/Users/strubell/Documents/research/tunisia.txt"
     println(s"Loading $fname")
     val string = io.Source.fromFile(fname, "utf-8").mkString
-    println(string.mkString("/"))
+//    println(string.mkString("/"))
 //    val string = "A.  A.A.A.I.  and U.S. in U.S.. etc., but not A... or A..B iPhone 3G in Washington D.C...."
 //    val string = "Washington D.C.... A..B!!C??D.!?E.!?.!?F..!!?? U.S.." // want: [A, .., B, !!, C, ??, D, .!?, E, .!?.!?, F, ..!!??]
 //    val string = "AT&T but don't grab LAT&Eacute; and be sure not to grab PE&gym AT&T"
