@@ -117,12 +117,15 @@ CONTRACTION = [nN]{AP}[tT]|{AP}([dDsSmM]|re|RE|ve|VE|ll|LL)
 /* words that include an apostrophe, like O'Reilly, C'mon, 'n', Shi'ite, 20's, N'goma */
 APWORD = {AP}nt|{AP}n({AP})?|{AP2}em|[OoDdLl]{AP}{LETTER}+|[Oo]{AP2}clock|ma{AP2}am|add{AP2}l|[Cc]{AP2}mon|{AP2}cause|{AP}till?|ol{AP}|Dunkin{AP}|{AP}[1-9]0s|N{AP}|\p{L}\p{Ll}*[aeiou]{AP}[aeiou]\p{Ll}*
 
-/* A.B  This must come before 'initials' or else 'initials' will capture the prefix. */
+/* Poorly formed initials, as in "A.B". This must come before 'initials' or else 'initials' will capture the prefix. */
 INITIALS2 = \p{L}(\.\p{L})+
+
+SINGLE_INITIAL = (\p{L}\.)
 
 /* A.  A.A.A.I.  and U.S. in "U.S..", etc., but not A... or A..B */
 //INITIALS = (\p{L}\.)+(?![\.!\?]{2}|\.\p{L})
-INITIALS = (\p{L}\.)+\.?
+//INITIALS = (\p{L}\.)+\.?
+INITIALS = {SINGLE_INITIAL}{SINGLE_INITIAL}+
 
 /* like 1st and 22nd */
 ORDINALS = [0-9]{1,4}(st|nd|rd|th)
@@ -250,14 +253,19 @@ wan / na { printDebug("wanna"); getNext() }
 
 /* [^\p{P}\p{S}] should be non-punctuation */
 /* A.B  This must come before 'initials' or else 'initials' will capture the prefix. */
+/* \P{P} is non-punctuation */
 {INITIALS2} / \P{P} { printDebug("INITIALS2"); getNext() }
 
-{INITIALS} / [^.\p{L}] {
-  printDebug("INITIALS");
-  val matched = yytext()
-  if(matched.endsWith("..")) yypushback(1)
-  getNext()
-}
+{INITIALS} { printDebug("INITIALS"); getNext() }
+
+{SINGLE_INITIAL} / {WHITESPACE} { printDebug("SINGLE_INITIAL"); getNext() }
+
+//{INITIALS} / [^.\p{L}] {
+//  printDebug("INITIALS");
+//  val matched = yytext()
+//  if(matched.endsWith("..")) yypushback(1)
+//  getNext()
+//}
 
 {ORDINALS} { printDebug("ORDINALS"); getNext() }
 
