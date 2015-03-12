@@ -26,7 +26,7 @@ package cc.factorie.app.nlp.segment;
 
   def getNext(txt: String, originalText: String): Object = Array(yychar, yylength())
 
-  def printDebug(tok: String) = println(s"$tok: |${yytext()}|")
+  def printDebug(tok: String) = {}//println(s"$tok: |${yytext()}|")
 
 %}
 
@@ -237,7 +237,7 @@ CATCHALL = \P{C}
 {ATUSER} { printDebug("ATUSER"); getNext() }
 
 // [#<%\*]?[:;!#\$%@=\|][-\+\*=o^<]{0,4}[\(\)oODPQX\*3{}\[\]]{1,5}[#><\)\(]?(?!\S)|'\.'
-'\.' |
+//'\.' | // get rid of this emoticon, probably more important that we correctly tokenize ''blah blah'.', which is a real thing
 {EMOTICON} / {WHITESPACE}|{NEWLINE} { printDebug("EMOTICON"); getNext() }
 
 {FILENAME} { printDebug("FILENAME"); getNext() }
