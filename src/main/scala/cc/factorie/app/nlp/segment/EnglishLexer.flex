@@ -232,7 +232,7 @@ WHITESPACE = ([\p{Z}\t\v\f]|&nbsp;)+
 
 // [#<%\*]?[:;!#\$%@=\|][-\+\*=o^<]{0,4}[\(\)oODPQX\*3{}\[\]]{1,5}[#><\)\(]?(?!\S)|'\.'
 '\.' |
-{EMOTICON} / {WHITESPACE} { printDebug("EMOTICON"); getNext() }
+{EMOTICON} / {WHITESPACE}|{NEWLINE} { printDebug("EMOTICON"); getNext() }
 
 
 {FILENAME} { printDebug("FILENAME"); getNext() }
