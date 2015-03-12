@@ -180,10 +180,10 @@ NUMBER2 = {AP}\p{Nd}{2}
 ELLIPSIS = (\.[ \u00A0]){2,4}\.|[\u0085\u2026]
 
 /* This matches any kind of punctuation as a single character, so any special handling of multiple punc together must be above, e.g. ``, --- */
-PUNC = [\p{P}\p{S}]
+PUNC = \p{P}
 
 /* probably used as ASCII art */
-REPEATED_PUNC = [,~\*=\+\.\?!#_]+|(----+)
+REPEATED_PUNC = [,~\*=\+\.\?!#]+|(----+)
 //REPEATED_PUNC = {PUNC}+|(----+)
 MDASH = -{2,3}|&(mdash|MD);|[\u2014\u2015]
 
