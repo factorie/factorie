@@ -30,7 +30,7 @@ class DeterministicLexerTokenizer(caseSensitive:Boolean = false, tokenizeSgml:Bo
 
   def process(document: Document): Document = {
     for (section <- document.sections) {
-      val lexer = new EnglishLexer(new StringReader(section.string))
+      val lexer = new EnglishLexer(new StringReader(section.string + "\n"))
       var next = lexer.next().asInstanceOf[Array[Int]]
       while (next != null){
         new Token(section, next(0), next(0) + next(1))
@@ -52,15 +52,19 @@ class DeterministicLexerTokenizer(caseSensitive:Boolean = false, tokenizeSgml:Bo
 object DeterministicLexerTokenizer extends DeterministicLexerTokenizer(false, false, false, false, false) {
   def main(args: Array[String]): Unit = {
 //    val string = io.Source.fromFile("test.file").mkString
-    val string = "A.  A.A.A.I.  and U.S. in U.S.. etc., but not A... or A..B iPhone 3G in Washington D.C...."
+//    val string = "A.  A.A.A.I.  and U.S. in U.S.. etc., but not A... or A..B iPhone 3G in Washington D.C...."
+//    val string = "Washington D.C.... A..B!!C??D.!?E.!?.!?F..!!?? U.S.." // want: [A, .., B, !!, C, ??, D, .!?, E, .!?.!?, F, ..!!??]
 //    val string = "AT&T but don't grab LAT&Eacute; and be sure not to grab PE&gym AT&T"
 //    val string = "2012-04-05"
 //    val string = "poop-centric"
 //    val string = "he'll go to hell we're"
 //    val string = "I paid $50 USD"
+//    val string =  "$1 E2 L3 USD1 2KPW ||$1 USD1.." // want: "[$, 1, E2, L3, USD, 1, 2, KPW, |, |, $, 1, USD, 1, ..]"
+    val string = " 1. Buy a new Chevrolet (37%-owned in the U.S..) . 15%"
 
     val doc = new Document(string)
     DeterministicLexerTokenizer.process(doc)
+    println(string)
     println(doc.tokens.map(_.string).mkString("\n"))
   }
 }
