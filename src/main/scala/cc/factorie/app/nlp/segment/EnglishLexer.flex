@@ -60,6 +60,8 @@ FRPHONE = (\+33)?(\s[012345][-\. ])?[0-9]([-\. ][0-9]{2}){3}
 /* e.g. 3/4/1992 or 2012-04-05, but don't match just the first 8 chars of 12-25-1112 */
 DATE = (((19|20)?[0-9]{2}[\-\/][0-3]?[0-9][\-\/][0-3]?[0-9])|([0-3]?[0-9][\-\/][0-3]?[0-9][\-\/](19|20)?[0-9]{2}))
 DECADE = (19|20)?[0-9]0s
+
+// (?:US|AU|NZ|C|CA|FJ|JY|HK|JM|KY|LR|NA|SB|SG|NT|BB|XC|BM|BN|BS|BZ|ZB|B)?\\$|&(?:euro|cent|pound);|\\p{Sc}|(?:USD|EUR|JPY|GBP|CHF|CAD|KPW|RMB|CNY|AD|GMT)(?![A-Z])
 CURRENCY1 = ((US|AU|NZ|C|CA|FJ|JY|HK|JM|KY|LR|NA|SB|SG|NT|BB|XC|BM|BN|BS|BZ|ZB|B)?\$)|(&(euro|cent|pound);)|\p{Sc}
 CURRENCY2 = (USD|EUR|JPY|GBP|CHF|CAD|KPW|RMB|CNY|AD|GMT)
 
@@ -159,7 +161,8 @@ CAPS = [\p{Lu}]+[&+][\p{Lu}]+
 
 /* Includes any combination of letters, accent characters, numbers and underscores, dash-followed-by-numbers (as in "G-20" but not "NYT-03-04-2012").  It may include a & as long as it is followed by a letter but not an HTML symbol encoding */
 /* TODO Not sure why the pattern below is not getting the last character of a word ending in \u00e9 -akm */
-WORD = (\p{Nd}|{LETTER})([\p{L}\p{M}\p{Nd}_]|{LETTER})*+
+//WORD = (\p{Nd}{LETTER}|{LETTER})([\p{L}\p{M}\p{Nd}_]|{LETTER})*+
+WORD = {LETTER}([\p{L}\p{M}\p{Nd}_]|{LETTER})*+
 
 /* begin with an optional [+-.,] and a number, followed by numbers or .:, punc, ending in number.  Avoid matching dates inside "NYT-03-04-2012".  Cannot be preceded by number (or letter? why?  do we need "USD32"?), in order to separate "1989-1990" into three tokens. */
 /* Ok, breaking this not matching dates inside NYT-03-04-2012 thing for simplicity -- do we even need to not match that? */
