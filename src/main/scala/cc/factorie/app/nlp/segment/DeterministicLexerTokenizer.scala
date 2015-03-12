@@ -53,7 +53,8 @@ class DeterministicLexerTokenizer(caseSensitive:Boolean = false, tokenizeSgml:Bo
 object DeterministicLexerTokenizer extends DeterministicLexerTokenizer(false, false, false, false, false) {
   def main(args: Array[String]): Unit = {
 //    val fname = "/iesl/canvas/strubell/data/tackbp/source/2013/LDC2013E45_TAC_2013_KBP_Source_Corpus_disc_2/data/English/discussion_forums/bolt-eng-DF-200"
-    val fname = "/iesl/canvas/strubell/arabic.txt"
+//    val fname = "/iesl/canvas/strubell/arabic.txt"
+    val fname = "/Users/strubell/Documents/research/arabic.txt"
     println(s"Loading $fname")
     val string = io.Source.fromFile(fname).mkString
 //    val string = "A.  A.A.A.I.  and U.S. in U.S.. etc., but not A... or A..B iPhone 3G in Washington D.C...."
@@ -72,7 +73,7 @@ object DeterministicLexerTokenizer extends DeterministicLexerTokenizer(false, fa
     val t0 = System.currentTimeMillis()
     DeterministicLexerTokenizer.process(doc)
     val time = System.currentTimeMillis()-t0
-    println(s"Processed ${doc.tokenCount} tokens in ${time}ms (${doc.tokenCount.toDouble/time} tokens/second)")
+    println(s"Processed ${doc.tokenCount} tokens in ${time}ms (${doc.tokenCount.toDouble/time*1000} tokens/second)")
 //    println(string)
 //    println(doc.tokens.map(_.string).mkString("\n"))
   }

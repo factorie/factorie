@@ -192,12 +192,13 @@ SYMBOL = \p{S}|&(degree|plusmn|times|divide|infin);
 /* Catch-all, after the more specific cases above, including htmlSymbol */
 HTMLCHAR = &[a-z]{3,6};
 
-/* Any non-space character. Sometimes, due to contextual restrictions above, some printed characters can slip through.
-   It will probably be an error, but at least users will see them with this pattern. */
-CATCHALL = \P{C}
 NEWLINE = \R
 
 WHITESPACE = ([\p{Z}\t\v\f]|&nbsp;)+
+
+/* Any non-space character. Sometimes, due to contextual restrictions above, some printed characters can slip through.
+   It will probably be an error, but at least users will see them with this pattern. */
+CATCHALL = \P{C}
 
 %%
 
@@ -309,11 +310,11 @@ wan / na { printDebug("wanna"); getNext() }
 
 {HTMLCHAR} { printDebug("HTMLCHAR"); getNext() }
 
-{CATCHALL} { printDebug("CATCHALL"); getNext() }
-
 {NEWLINE} { printDebug("NEWLINE"); if (tokenizeNewline) getNext() else null }
 
 {WHITESPACE} { printDebug("WHITESPACE"); if(tokenizeWhitespace) getNext() else null}
+
+{CATCHALL} { printDebug("CATCHALL"); getNext() }
 
 /* The below rules are duplicated here (without lookahead) in order to match these patterns
    when they occur right at the end of the file (nothing to look ahead to so originals never match) */
