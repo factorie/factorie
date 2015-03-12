@@ -30,11 +30,10 @@ class DeterministicLexerTokenizer(caseSensitive:Boolean = false, tokenizeSgml:Bo
 
   def process(document: Document): Document = {
     for (section <- document.sections) {
-      val lexer = new EnglishLexer(new StringReader(section.string + "\n"))
+      val lexer = new EnglishLexer(new StringReader(section.string))// + "\n"))
       var next = lexer.next().asInstanceOf[Array[Int]]
       while (next != null){
         val tok = new Token(section, next(0), next(0) + next(1))
-//        println(tok.string)
         next = lexer.next().asInstanceOf[Array[Int]]
       }
     }
@@ -56,9 +55,9 @@ object DeterministicLexerTokenizer extends DeterministicLexerTokenizer(false, fa
 //    val fname = "/iesl/canvas/strubell/weird_character.txt"
 //    val fname = "/Users/strubell/Documents/research/tunisia.txt"
     println(s"Loading $fname")
-    val string = io.Source.fromFile(fname, "utf-8").mkString
+//    val string = io.Source.fromFile(fname, "utf-8").mkString
 //    println(string.mkString("/"))
-//    val string = "A.  A.A.A.I.  and U.S. in U.S.. etc., but not A... or A..B iPhone 3G in Washington D.C...."
+    val string = "A.  A.A.A.I.  and U.S. in U.S.. etc., but not A... or A..B iPhone 3G in Washington D. C."
 //    val string = "Washington D.C.... A..B!!C??D.!?E.!?.!?F..!!?? U.S.." // want: [A, .., B, !!, C, ??, D, .!?, E, .!?.!?, F, ..!!??]
 //    val string = "AT&T but don't grab LAT&Eacute; and be sure not to grab PE&gym AT&T"
 //    val string = "2012-04-05"

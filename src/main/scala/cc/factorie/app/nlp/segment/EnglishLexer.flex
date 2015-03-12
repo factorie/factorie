@@ -38,7 +38,6 @@ package cc.factorie.app.nlp.segment;
 //SGML2 = <%([^\u0000](?!%>))*[^\u0000]?%>
 
 /* Closing with "%>" doesn't count */
-//SGML = <\/?[A-Za-z!].*?(?<!%)>
 // this requires at least one character inside the tag...
 SGML = <\/?[A-Za-z!].*?[^%]>
 
