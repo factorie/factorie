@@ -33,7 +33,8 @@ class DeterministicLexerTokenizer(caseSensitive:Boolean = false, tokenizeSgml:Bo
       val lexer = new EnglishLexer(new StringReader(section.string + "\n"))
       var next = lexer.next().asInstanceOf[Array[Int]]
       while (next != null){
-        new Token(section, next(0), next(0) + next(1))
+        val tok = new Token(section, next(0), next(0) + next(1))
+        println(tok.string)
         next = lexer.next().asInstanceOf[Array[Int]]
       }
     }
