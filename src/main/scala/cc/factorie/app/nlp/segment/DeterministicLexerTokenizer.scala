@@ -52,7 +52,8 @@ class DeterministicLexerTokenizer(caseSensitive:Boolean = false, tokenizeSgml:Bo
 
 object DeterministicLexerTokenizer extends DeterministicLexerTokenizer(false, false, false, false, false) {
   def main(args: Array[String]): Unit = {
-    val fname = "/iesl/canvas/strubell/data/tackbp/source/2013/LDC2013E45_TAC_2013_KBP_Source_Corpus_disc_2/data/English/discussion_forums/bolt-eng-DF-200"
+//    val fname = "/iesl/canvas/strubell/data/tackbp/source/2013/LDC2013E45_TAC_2013_KBP_Source_Corpus_disc_2/data/English/discussion_forums/bolt-eng-DF-200"
+    val fname = "/iesl/canvas/strubell/arabic.txt"
     println(s"Loading $fname")
     val string = io.Source.fromFile(fname).mkString
 //    val string = "A.  A.A.A.I.  and U.S. in U.S.. etc., but not A... or A..B iPhone 3G in Washington D.C...."

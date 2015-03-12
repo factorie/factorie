@@ -194,7 +194,7 @@ HTMLCHAR = &[a-z]{3,6};
 
 /* Any non-space character. Sometimes, due to contextual restrictions above, some printed characters can slip through.
    It will probably be an error, but at least users will see them with this pattern. */
-CATCHALL = \S
+CATCHALL = \P{C}
 NEWLINE = \R
 
 WHITESPACE = ([\p{Z}\t\v\f]|&nbsp;)+
