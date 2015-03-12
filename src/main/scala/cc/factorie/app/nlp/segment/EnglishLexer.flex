@@ -180,7 +180,8 @@ NUMBER2 = {AP}\p{Nd}{2}
 ELLIPSIS = (\.[ \u00A0]){2,4}\.|[\u0085\u2026]
 
 /* probably used as ASCII art */
-REPEATED_PUNC = [,~\*=\+\.\?!#]+|(----+)
+//REPEATED_PUNC = [,~\*=\+\.\?!#]+|(----+)
+REPEATED_PUNC = \p{P}+|(----+)
 MDASH = -{2,3}|&(mdash|MD);|[\u2014\u2015]
 
 /* I think \p{Pd} should include \u2013\u2014\u2015 */
@@ -306,7 +307,7 @@ wan / na { printDebug("wanna"); getNext() }
 
 {DASH} { printDebug("DASH"); getNext() }
 
-{PUNC} { printDebug("PUNC"); getNext() }
+//{PUNC} { printDebug("PUNC"); getNext() }
 
 {SYMBOL} { printDebug("SYMBOL"); getNext() }
 
