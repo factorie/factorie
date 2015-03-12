@@ -162,7 +162,9 @@ CAPS = [\p{Lu}]+[&+][\p{Lu}]+
 /* Includes any combination of letters, accent characters, numbers and underscores, dash-followed-by-numbers (as in "G-20" but not "NYT-03-04-2012").  It may include a & as long as it is followed by a letter but not an HTML symbol encoding */
 /* TODO Not sure why the pattern below is not getting the last character of a word ending in \u00e9 -akm */
 //WORD = (\p{Nd}{LETTER}|{LETTER})([\p{L}\p{M}\p{Nd}_]|{LETTER})*+
-WORD = {LETTER}([\p{L}\p{M}\p{Nd}_]|{LETTER})*+
+//WORD = {LETTER}([\p{L}\p{M}\p{Nd}_]|{LETTER})*+
+//WORD = {LETTER}([\p{Nd}_]|{LETTER})*
+WORD = [\p{M}\p{L}][\p{Nd}_\p{M}\p{L}]*
 
 /* begin with an optional [+-.,] and a number, followed by numbers or .:, punc, ending in number.  Avoid matching dates inside "NYT-03-04-2012".  Cannot be preceded by number (or letter? why?  do we need "USD32"?), in order to separate "1989-1990" into three tokens. */
 /* Ok, breaking this not matching dates inside NYT-03-04-2012 thing for simplicity -- do we even need to not match that? */
@@ -330,5 +332,7 @@ wan / na { printDebug("wanna"); getNext() }
 //{DASHED_SUFFIX_WORD} { printDebug("DASHED_SUFFIX_WORD"); getNext() }
 //{CAPS} { printDebug("CAPS"); getNext() }
 
+/* The only crap left here should be control characters, god forbid */
+. { printDebug("GARB"); null }
 
 <<EOF>> { null }
