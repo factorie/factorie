@@ -26,7 +26,7 @@ package cc.factorie.app.nlp.segment;
 
   def getNext(txt: String, originalText: String): Object = Array(yychar, yylength())
 
-  def printDebug(tok: String) = {}//println(s"$tok: |${yytext()}|")
+  def printDebug(tok: String) = println(s"$tok: |${yytext()}|")
 
 %}
 
@@ -194,7 +194,7 @@ HTMLCHAR = &[a-z]{3,6};
 
 NEWLINE = \R
 
-WHITESPACE = ([\p{Z}\t\v\f]|&nbsp;)+
+WHITESPACE = ([\p{Z}\t\f]|&nbsp;)+
 
 /* Any non-space character. Sometimes, due to contextual restrictions above, some printed characters can slip through.
    It will probably be an error, but at least users will see them with this pattern. */
@@ -295,7 +295,7 @@ wan / na { printDebug("wanna"); getNext() }
 
 {AP2} { printDebug("AP2"); getNext() }
 
-{ELLIPSIS} |
+{ELLIPSIS} { printDebug("ELLIPSIS"); getNext() }
 \.{2,5} / [^!?] { printDebug("ELLIPSIS"); getNext() }
 
 {REPEATED_PUNC} { printDebug("REPEATED_PUNC"); getNext() }
