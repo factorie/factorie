@@ -292,7 +292,7 @@ class EnglishLexer(in: Reader)  {
 
   def getNext(txt: String, originalText: String): Object = Array(yychar, yylength())
 
-  def printDebug(tok: String) = {//noop}//println(s"$tok: |${yytext()}|")
+  def printDebug(tok: String) = {}//println(s"$tok: |${yytext()}|")
 
 
 
