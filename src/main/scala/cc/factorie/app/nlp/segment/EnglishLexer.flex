@@ -30,8 +30,6 @@ package cc.factorie.app.nlp.segment;
 
 %}
 
-WHITESPACE = ([\p{Z}\t\v\f]|&nbsp;)+
-
 /* The [^\u0000] ensures we match newline also */
 //HTML = (<script[^>]*>([^\u0000](?!<\/script>))*[^\u0000]?<\/script>)|(<style[^>]*>([^\u0000](?!<\/style>))*[^\u0000]?<\/style>)
 //HTML_COMMENT = (<|&lt;)!--([^\u0000](?!-->))*[^\u0000]?--(>|&gt;)
@@ -62,7 +60,8 @@ FRPHONE = (\+33)?(\s[012345][-\. ])?[0-9]([-\. ][0-9]{2}){3}
 /* e.g. 3/4/1992 or 2012-04-05, but don't match just the first 8 chars of 12-25-1112 */
 DATE = (((19|20)?[0-9]{2}[\-\/][0-3]?[0-9][\-\/][0-3]?[0-9])|([0-3]?[0-9][\-\/][0-3]?[0-9][\-\/](19|20)?[0-9]{2}))
 DECADE = (19|20)?[0-9]0s
-CURRENCY = (US|AU|NZ|C|CA|FJ|JY|HK|JM|KY|LR|NA|SB|SG|NT|BB|XC|BM|BN|BS|BZ|ZB|B)?\$|&(euro|cent|pound);|\p{Sc}|(USD|EUR|JPY|GBP|CHF|CAD|KPW|RMB|CNY|AD|GMT)
+CURRENCY1 = ((US|AU|NZ|C|CA|FJ|JY|HK|JM|KY|LR|NA|SB|SG|NT|BB|XC|BM|BN|BS|BZ|ZB|B)?\$)|(&(euro|cent|pound);)|\p{Sc}
+CURRENCY2 = (USD|EUR|JPY|GBP|CHF|CAD|KPW|RMB|CNY|AD|GMT)
 
 /* For Twitter */
 HASHTAG = #[A-Za-z][A-Za-z0-9]+
@@ -125,7 +124,6 @@ INITIALS2 = \p{L}(\.\p{L})+
 //INITIALS = (\p{L}\.)+(?![\.!\?]{2}|\.\p{L})
 INITIALS = (\p{L}\.)+\.?
 
-
 /* like 1st and 22nd */
 ORDINALS = [0-9]{1,4}(st|nd|rd|th)
 
@@ -152,8 +150,9 @@ FRACTION = [\u00BC\u00BD\u00BE\u2153\u2154]|&(frac14|frac12|frac34);|(\p{N}{1,4}
 CONTRACTED_WORD = [\p{L}\p{M}]+
 
 /* For "AT&T" but don't grab "LAT&Eacute;" and be sure not to grab "PE&gym" */
+/* Unicode character classes are inside [] character classes to make sure case is not ignored in this case (ha) */
 //CAPS = \p{Lu}+([&+](?!({HTML_SYMBOL}|{HTML_ACCENTED_LETTER}))(\p{Lu}(?!\p{Ll}))+)+
-CAPS = \p{Lu}+[&+]\p{Lu}+
+CAPS = [\p{Lu}]+[&+][\p{Lu}]+
 
 /* Includes any combination of letters, accent characters, numbers and underscores, dash-followed-by-numbers (as in "G-20" but not "NYT-03-04-2012").  It may include a & as long as it is followed by a letter but not an HTML symbol encoding */
 /* TODO Not sure why the pattern below is not getting the last character of a word ending in \u00e9 -akm */
@@ -168,7 +167,8 @@ NUMBER = [-\+\.,]?\p{Nd}+([\.:,]\p{Nd}+)*
 /* For years, like '91 */
 NUMBER2 = {AP}\p{Nd}{2}
 
-/* catch the ellipsis not captured in repeatedPunc, such as ". . ." and unicode ellipsis.  Include \.{2,5} for use in TokenNormalizer1  Don't capture "...?!"; let repeatedPunc do that. */
+/* catch the ellipsis not captured in repeatedPunc, such as ". . ." and unicode ellipsis.  Include \.{2,5} for use in TokenNormalizer1
+   Don't capture "...?!"; let repeatedPunc do that. */
 ELLIPSIS = (\.[ \u00A0]){2,4}\.|[\u0085\u2026]
 
 /* probably used as ASCII art */
@@ -186,11 +186,12 @@ SYMBOL = \p{S}|&(degree|plusmn|times|divide|infin);
 /* Catch-all, after the more specific cases above, including htmlSymbol */
 HTMLCHAR = &[a-z]{3,6};
 
-/* Any non-space character. Sometimes, due to contextual restrictions above, some printed characters can slip through.  It will probably be an error, but at least the users will see them with this pattern. */
+/* Any non-space character. Sometimes, due to contextual restrictions above, some printed characters can slip through.
+   It will probably be an error, but at least users will see them with this pattern. */
 CATCHALL = \S
-NEWLINE = \r|\r?\n
+NEWLINE = \R
 
-
+WHITESPACE = ([\p{Z}\t\v\f]|&nbsp;)+
 
 %%
 
@@ -215,7 +216,10 @@ NEWLINE = \r|\r?\n
 {DATE} / [^0-9] { printDebug("DATE"); getNext() }
 {DECADE} { printDebug("DECADE"); getNext() }
 
-{CURRENCY} / [^A-Z] { printDebug("CURRENCY"); getNext() }
+/* For some reason combining these using | makes the lexer go into an infinite loop */
+/* CURRENCY2 will be matched as word and not currency if it occurs at the end of the file, not sure how to fix */
+{CURRENCY1} { printDebug("CURRENCY"); getNext() }
+{CURRENCY2} / [^A-Z] { printDebug("CURRENCY"); getNext() }
 
 {HASHTAG} { printDebug("HASHTAG"); getNext() }
 {ATUSER} { printDebug("ATUSER"); getNext() }
@@ -229,10 +233,10 @@ NEWLINE = \r|\r?\n
 
 {CONSONANT_NON_ABBREVS} / \. { printDebug("CONSONANT_NON_ABBREVS"); getNext() }
 
-({MONTH}|{DAY}|{STATE}|{STATE2}|{HONORIFIC}|{SUFFIX}|{PLACE}|{UNITS}|{ORG}|{LATIN}|{ABBREV})\.      { printDebug("ABBREVS"); getNext() }
+({MONTH}|{DAY}|{STATE}|{STATE2}|{HONORIFIC}|{SUFFIX}|{PLACE}|{UNITS}|{ORG}|{LATIN}|{ABBREV})\. { printDebug("ABBREVS"); getNext() }
 
 {NOABBREV} / \p{Z}*\p{Nd} { printDebug("NOABBREV"); getNext() }
-{LATIN2} / [^\p{L}] { printDebug("LATIN2"); getNext() }
+{LATIN2} / \P{L} { printDebug("LATIN2"); getNext() }
 
 {HTML_ACCENTED_LETTER} { printDebug("HTML_ACCENTED_LETTER"); getNext() }
 
@@ -240,12 +244,13 @@ NEWLINE = \r|\r?\n
 what / cha { printDebug("whatcha"); getNext() }
 wan / na { printDebug("wanna"); getNext() }
 
-{CONTRACTION} / [^\p{L}] { printDebug("CONTRACTION"); getNext() }
+{CONTRACTION} / \P{L} { printDebug("CONTRACTION"); getNext() }
 
 {APWORD} { printDebug("APWORD"); getNext() }
 
 /* [^\p{P}\p{S}] should be non-punctuation */
-{INITIALS2} / [^\p{P}\p{S}] { printDebug("INITIALS2"); getNext() }
+/* A.B  This must come before 'initials' or else 'initials' will capture the prefix. */
+{INITIALS2} / \P{P} { printDebug("INITIALS2"); getNext() }
 
 {INITIALS} / [^.\p{L}] {
   printDebug("INITIALS");
@@ -267,7 +272,6 @@ wan / na { printDebug("wanna"); getNext() }
 {FRACTION} { printDebug("FRACTION"); getNext() }
 
 {CONTRACTED_WORD} / {CONTRACTION} { printDebug("CONTRACTED_WORD"); getNext() }
-//{WORD} / {CONTRACTION} { getNext() }
 
 {CAPS} / [^\p{Ll}] { printDebug("CAPS"); getNext() }
 
@@ -299,5 +303,20 @@ wan / na { printDebug("wanna"); getNext() }
 {NEWLINE} { printDebug("NEWLINE"); if (tokenizeNewline) getNext() else null }
 
 {WHITESPACE} { printDebug("WHITESPACE"); if(tokenizeWhitespace) getNext() else null}
+
+/* The below rules are duplicated here (without lookahead) in order to match these patterns
+   when they occur right at the end of the file (nothing to look ahead to so originals never match) */
+{DATE} { printDebug("DATE"); getNext() }
+{LATIN2} { printDebug("LATIN2"); getNext() }
+{CONTRACTION} { printDebug("CONTRACTION"); getNext() }
+{INITIALS} {
+  printDebug("INITIALS");
+  val matched = yytext()
+  if(matched.endsWith("..")) yypushback(1)
+  getNext()
+}
+{DASHED_SUFFIX_WORD} { printDebug("DASHED_SUFFIX_WORD"); getNext() }
+{CAPS} { printDebug("CAPS"); getNext() }
+
 
 <<EOF>> { null }

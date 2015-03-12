@@ -51,7 +51,14 @@ class DeterministicLexerTokenizer(caseSensitive:Boolean = false, tokenizeSgml:Bo
 
 object DeterministicLexerTokenizer extends DeterministicLexerTokenizer(false, false, false, false, false) {
   def main(args: Array[String]): Unit = {
-    val string = io.Source.fromFile("test.file").mkString
+//    val string = io.Source.fromFile("test.file").mkString
+    val string = "A.  A.A.A.I.  and U.S. in U.S.. etc., but not A... or A..B iPhone 3G in Washington D.C...."
+//    val string = "AT&T but don't grab LAT&Eacute; and be sure not to grab PE&gym AT&T"
+//    val string = "2012-04-05"
+//    val string = "poop-centric"
+//    val string = "he'll go to hell we're"
+//    val string = "I paid $50 USD"
+
     val doc = new Document(string)
     DeterministicLexerTokenizer.process(doc)
     println(doc.tokens.map(_.string).mkString("\n"))
