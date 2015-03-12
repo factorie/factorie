@@ -179,16 +179,18 @@ NUMBER2 = {AP}\p{Nd}{2}
    Don't capture "...?!"; let repeatedPunc do that. */
 ELLIPSIS = (\.[ \u00A0]){2,4}\.|[\u0085\u2026]
 
+/* This matches any kind of punctuation as a single character, so any special handling of multiple punc together must be above, e.g. ``, --- */
+PUNC = [\p{P}\p{S}]
+
 /* probably used as ASCII art */
 //REPEATED_PUNC = [,~\*=\+\.\?!#]+|(----+)
-REPEATED_PUNC = \p{P}+|(----+)
+REPEATED_PUNC = {PUNC}+|(----+)
 MDASH = -{2,3}|&(mdash|MD);|[\u2014\u2015]
 
 /* I think \p{Pd} should include \u2013\u2014\u2015 */
 DASH = &(ndash);|[-\u0096\u0097\p{Pd}]
 
-/* This matches any kind of punctuation as a single character, so any special handling of multiple punc together must be above, e.g. ``, --- */
-PUNC = \p{P}
+
 
 SYMBOL = \p{S}|&(degree|plusmn|times|divide|infin);
 
@@ -237,7 +239,6 @@ CATCHALL = \P{C}
 // [#<%\*]?[:;!#\$%@=\|][-\+\*=o^<]{0,4}[\(\)oODPQX\*3{}\[\]]{1,5}[#><\)\(]?(?!\S)|'\.'
 '\.' |
 {EMOTICON} / {WHITESPACE}|{NEWLINE} { printDebug("EMOTICON"); getNext() }
-
 
 {FILENAME} { printDebug("FILENAME"); getNext() }
 
@@ -333,7 +334,7 @@ wan / na { printDebug("wanna"); getNext() }
 //{DASHED_SUFFIX_WORD} { printDebug("DASHED_SUFFIX_WORD"); getNext() }
 //{CAPS} { printDebug("CAPS"); getNext() }
 
-/* The only crap left here should be control characters, god forbid */
+/* The only crap left here should be control characters, god forbid... throw them away */
 . { printDebug("GARB"); null }
 
 <<EOF>> { null }
