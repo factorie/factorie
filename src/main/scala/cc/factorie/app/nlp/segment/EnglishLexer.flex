@@ -156,7 +156,7 @@ CAPS = [\p{Lu}]+[&+][\p{Lu}]+
 
 /* Includes any combination of letters, accent characters, numbers and underscores, dash-followed-by-numbers (as in "G-20" but not "NYT-03-04-2012").  It may include a & as long as it is followed by a letter but not an HTML symbol encoding */
 /* TODO Not sure why the pattern below is not getting the last character of a word ending in \u00e9 -akm */
-WORD = {LETTER}([\p{L}\p{M}\p{Nd}_]|{LETTER})*+
+WORD = (\p{Nd}|{LETTER})([\p{L}\p{M}\p{Nd}_]|{LETTER})*+
 
 /* begin with an optional [+-.,] and a number, followed by numbers or .:, punc, ending in number.  Avoid matching dates inside "NYT-03-04-2012".  Cannot be preceded by number (or letter? why?  do we need "USD32"?), in order to separate "1989-1990" into three tokens. */
 /* Ok, breaking this not matching dates inside NYT-03-04-2012 thing for simplicity -- do we even need to not match that? */
@@ -306,17 +306,17 @@ wan / na { printDebug("wanna"); getNext() }
 
 /* The below rules are duplicated here (without lookahead) in order to match these patterns
    when they occur right at the end of the file (nothing to look ahead to so originals never match) */
-{DATE} { printDebug("DATE"); getNext() }
-{LATIN2} { printDebug("LATIN2"); getNext() }
-{CONTRACTION} { printDebug("CONTRACTION"); getNext() }
-{INITIALS} {
-  printDebug("INITIALS");
-  val matched = yytext()
-  if(matched.endsWith("..")) yypushback(1)
-  getNext()
-}
-{DASHED_SUFFIX_WORD} { printDebug("DASHED_SUFFIX_WORD"); getNext() }
-{CAPS} { printDebug("CAPS"); getNext() }
+//{DATE} { printDebug("DATE"); getNext() }
+//{LATIN2} { printDebug("LATIN2"); getNext() }
+//{CONTRACTION} { printDebug("CONTRACTION"); getNext() }
+//{INITIALS} {
+//  printDebug("INITIALS");
+//  val matched = yytext()
+//  if(matched.endsWith("..")) yypushback(1)
+//  getNext()
+//}
+//{DASHED_SUFFIX_WORD} { printDebug("DASHED_SUFFIX_WORD"); getNext() }
+//{CAPS} { printDebug("CAPS"); getNext() }
 
 
 <<EOF>> { null }
