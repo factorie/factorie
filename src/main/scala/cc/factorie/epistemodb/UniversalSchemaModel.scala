@@ -49,6 +49,18 @@ class UniversalSchemaModel(val rowVectors: IndexedSeq[DenseTensor1], val colVect
     }}.toMap
   }
 
+  def similaritiesAndLables(testMatrix: CoocMatrix, cells: Map[Int, Seq[Int]]):
+    Map[Int, Seq[(Double, Boolean)]] = {
+    {for (col <- cells.keys) yield {
+      val scores = {for (row <- cells.get(col).get) yield {
+        val sim = similarity01(rowVectors(row), colVectors(col))
+        val isTrueTest = testMatrix.get(row, col) != 0
+        (sim, isTrueTest)
+      }}.toSeq
+      (col, scores)
+    }}.toMap
+  }
+
   def getScoredColumns(v: DenseTensor1): Iterable[(Int, Double)] = {
     throw new UnsupportedOperationException
   }
