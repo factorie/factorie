@@ -22,7 +22,7 @@ import cc.factorie.app.nlp.{Document, DocumentAnnotator, Token}
     (Although our the DeterministicSentenceSegmenter does make a few adjustments beyond this tokenizer.)
     @author Andrew McCallum
   */
-class DeterministicLexerTokenizer(caseSensitive:Boolean = false, tokenizeSgml:Boolean = false, tokenizeNewline:Boolean = false, tokenizeAllDashedWords:Boolean = false, abbrevPreceedsLowercase:Boolean = false) extends DocumentAnnotator {
+class DeterministicLexerTokenizer(tokenizeSgml:Boolean = false, tokenizeNewline:Boolean = false, tokenizeWhitespace:Boolean = false, tokenizeAllDashedWords:Boolean = false, abbrevPrecedesLowercase:Boolean = false) extends DocumentAnnotator {
 
   /** How the annotation of this DocumentAnnotator should be printed in one-word-per-line (OWPL) format.
       If there is no per-token annotation, return null.  Used in Document.owplString. */
@@ -30,12 +30,17 @@ class DeterministicLexerTokenizer(caseSensitive:Boolean = false, tokenizeSgml:Bo
 
   def process(document: Document): Document = {
     for (section <- document.sections) {
-      val lexer = new EnglishLexer(new StringReader(section.string))// + "\n"))
+      /* Add this newline to avoid JFlex issue where we can't match EOF with lookahead */
+      val lexer = new EnglishLexer(new StringReader(section.string + "\n"),
+        tokenizeSgml, tokenizeNewline, tokenizeWhitespace, tokenizeAllDashedWords, abbrevPrecedesLowercase)
       var next = lexer.next().asInstanceOf[Array[Int]]
       while (next != null){
         val tok = new Token(section, next(0), next(0) + next(1))
+        println(tok.string)
         next = lexer.next().asInstanceOf[Array[Int]]
       }
+      /* If tokenizing newlines, remove the trailing newline we added */
+      if(tokenizeNewline) section.remove(section.tokens.length - 1)
     }
     if (!document.annotators.contains(classOf[Token]))
       document.annotators(classOf[Token]) = this.getClass
@@ -57,11 +62,11 @@ object DeterministicLexerTokenizer extends DeterministicLexerTokenizer(false, fa
     println(s"Loading $fname")
 //    val string = io.Source.fromFile(fname, "utf-8").mkString
 //    println(string.mkString("/"))
-    val string = "A.  A.A.A.I.  and U.S. in U.S.. etc., but not A... or A..B iPhone 3G in Washington D. C."
+//    val string = "A.  A.A.A.I.  and U.S. in U.S.. etc., but not A... or A..B iPhone 3G in Washington D.C.\n"
 //    val string = "Washington D.C.... A..B!!C??D.!?E.!?.!?F..!!?? U.S.." // want: [A, .., B, !!, C, ??, D, .!?, E, .!?.!?, F, ..!!??]
 //    val string = "AT&T but don't grab LAT&Eacute; and be sure not to grab PE&gym AT&T"
 //    val string = "2012-04-05"
-//    val string = "poop-centric"
+    val string = "ethno-centric art-o-torium"
 //    val string = "he'll go to hell we're"
 //    val string = "I paid $50 USD"
 //    val string =  "$1 E2 L3 USD1 2KPW ||$1 USD1.." // want: "[$, 1, E2, L3, USD, 1, 2, KPW, |, |, $, 1, USD, 1, ..]"
@@ -75,6 +80,6 @@ object DeterministicLexerTokenizer extends DeterministicLexerTokenizer(false, fa
     val time = System.currentTimeMillis()-t0
     println(s"Processed ${doc.tokenCount} tokens in ${time}ms (${doc.tokenCount.toDouble/time*1000} tokens/second)")
 //    println(string)
-//    println(doc.tokens.map(_.string).mkString("\n"))
+    println(doc.tokens.map(_.string).mkString("\n"))
   }
 }

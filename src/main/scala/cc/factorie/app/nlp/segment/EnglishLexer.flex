@@ -15,9 +15,22 @@ package cc.factorie.app.nlp.segment;
 
 %{
 
-  val tokenizeNewline = false
-  val tokenizeWhitespace = false
-  val tokenizeAllDashedWords = false
+  var tokenizeSgml = false
+  var tokenizeNewline = false
+  var tokenizeWhitespace = false
+  var tokenizeAllDashedWords = false
+  var abbrevPrecedesLowercase = false
+
+  def this(in: Reader, tokSgml: Boolean = false, tokNewline: Boolean = false,
+            tokWhitespace: Boolean = false, tokDashed: Boolean = false, abbrevPrecedes: Boolean = false) = {
+    this(in)
+    tokenizeSgml = tokSgml
+    tokenizeNewline = tokNewline
+    tokenizeWhitespace = tokWhitespace
+    tokenizeAllDashedWords = tokDashed
+    abbrevPrecedesLowercase = abbrevPrecedes
+  }
+
 
   def getNext(): Object = {
     val txt = yytext()
@@ -26,7 +39,7 @@ package cc.factorie.app.nlp.segment;
 
   def getNext(txt: String, originalText: String): Object = Array(yychar, yylength())
 
-  def printDebug(tok: String) = {}//println(s"$tok: |${yytext()}|")
+  def printDebug(tok: String) = println(s"$tok: |${yytext()}|")
 
 %}
 
@@ -132,7 +145,7 @@ INITIALS = {SINGLE_INITIAL}{SINGLE_INITIAL}+
 ORDINALS = [0-9]{1,4}(st|nd|rd|th)
 
 QUOTE = ''|``|[\u2018\u2019\u201A\u201B\u201C\u201D\u0091\u0092\u0093\u0094\u201A\u201E\u201F\u2039\u203A\u00AB\u00BB]{1,2}|[\"\u201C\u201D\p{Pf}]|&(quot|[rl][ad]quo);|{AP2}{2}
-DASHEDWORD = ({LETTER})([\p{L}\p{M}\p{Nd}_]*(-[\p{L}\p{M}\p{Nd}_]*)*)
+//DASHEDWORD = ({LETTER})([\p{L}\p{M}\p{Nd}_]*(-[\p{L}\p{M}\p{Nd}_]*)*)
 
 /* List of prefixes taken from http://en.wikipedia.org/wiki/English_prefixes with the addition of "e", "uh" and "x" from Ontonotes examples. */
 /* TODO these should be case-insensitive */
@@ -189,8 +202,6 @@ MDASH = -{2,3}|&(mdash|MD);|[\u2014\u2015]
 /* I think \p{Pd} should include \u2013\u2014\u2015 */
 DASH = &(ndash);|[-\u0096\u0097\p{Pd}]
 
-
-
 SYMBOL = \p{S}|&(degree|plusmn|times|divide|infin);
 
 /* Catch-all, after the more specific cases above, including htmlSymbol */
@@ -206,13 +217,13 @@ CATCHALL = \P{C}
 
 %%
 
-//{HTML} { if(!tokenizeSgml) getNext() else null }
+//{HTML} { if(tokenizeSgml) getNext() else null }
 
-//{HTML_COMMENT} { getNext() }
+//{HTML_COMMENT} { if(tokenizeSgml) getNext() else null }
 
-//{SGML2} { getNext() }
+//{SGML2} { if(tokenizeSgml) getNext() else null }
 
-{SGML} { printDebug("SGML"); getNext() }
+{SGML} { printDebug("SGML"); if(tokenizeSgml) getNext() else null}
 
 {HTML_SYMBOL} { printDebug("HTML_SYMBOL"); getNext() }
 
@@ -265,14 +276,7 @@ wan / na { printDebug("wanna"); getNext() }
 
 {INITIALS} { printDebug("INITIALS"); getNext() }
 
-{SINGLE_INITIAL} / {WHITESPACE} { printDebug("SINGLE_INITIAL"); getNext() }
-
-//{INITIALS} / [^.\p{L}] {
-//  printDebug("INITIALS");
-//  val matched = yytext()
-//  if(matched.endsWith("..")) yypushback(1)
-//  getNext()
-//}
+{SINGLE_INITIAL} / {WHITESPACE}|{NEWLINE} { printDebug("SINGLE_INITIAL"); getNext() }
 
 {ORDINALS} { printDebug("ORDINALS"); getNext() }
 
@@ -281,8 +285,22 @@ wan / na { printDebug("wanna"); getNext() }
 // TODO deal with this: if this is here then we will never match following {DASHED_PREFIX_WORD}
 //{DASHEDWORD} { printDebug("DASHEDWORD"); if (tokenizeAllDashedWords) getNext() else null }
 
-{DASHED_PREFIX_WORD} { printDebug("DASHED_PREFIX_WORD"); getNext() }
-{DASHED_SUFFIX_WORD} / [^\p{L}\p{M}&] { printDebug("DASHED_SUFFIX_WORD"); getNext() }
+{DASHED_PREFIX_WORD} {
+  printDebug("DASHED_PREFIX_WORD")
+  if(tokenizeAllDashedWords){
+    val word = yytext()
+    yypushback(word.length - word.indexOf("-"))
+  }
+  getNext()
+}
+{DASHED_SUFFIX_WORD} / [^\p{L}\p{M}&] {
+  printDebug("DASHED_PREFIX_WORD")
+  if(tokenizeAllDashedWords){
+    val word = yytext()
+    yypushback(word.length - word.indexOf("-"))
+  }
+  getNext()
+}
 
 {FRACTION} { printDebug("FRACTION"); getNext() }
 
@@ -313,7 +331,7 @@ wan / na { printDebug("wanna"); getNext() }
 
 {HTMLCHAR} { printDebug("HTMLCHAR"); getNext() }
 
-{NEWLINE} { printDebug("NEWLINE"); if (tokenizeNewline) getNext() else null }
+{NEWLINE} { printDebug("NEWLINE"); if (tokenizeWhitespace || tokenizeNewline) getNext() else null }
 
 {WHITESPACE} { printDebug("WHITESPACE"); if(tokenizeWhitespace) getNext() else null}
 
