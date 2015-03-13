@@ -297,13 +297,9 @@ class EnglishLexer(in: Reader)  {
     abbrevPrecedesLowercase = abbrevPrecedes
   }
 
+  def tok(): Object = tok(yytext())
 
-  def getNext(): Object = {
-    val txt = yytext()
-    getNext(txt, txt)
-  }
-
-  def getNext(txt: String, originalText: String): Object = Array(yychar, yylength())
+  def tok(txt: String): Object = (txt, yychar, yylength)
 
   def printDebug(tok: String) = println(s"$tok: |${yytext()}|")
 
@@ -524,7 +520,7 @@ class EnglishLexer(in: Reader)  {
    * @return      the next token
    */
  @throws[java.io.IOException]("if any I/O-Error occurs")
- def next(): Object = {
+ def yylex(): Object = {
     var zzInput = -1
     var zzAction = -1
 
@@ -540,6 +536,7 @@ class EnglishLexer(in: Reader)  {
     val zzAttrL: Array[Int] = ZZ_ATTRIBUTE
 
     var ret: Object = null
+
     while ((ret == null) && !zzAtEOF) {
       zzMarkedPosL = zzMarkedPos
 
@@ -614,55 +611,55 @@ class EnglishLexer(in: Reader)  {
       else {
         (if (zzAction < 0) zzAction else ZZ_ACTION(zzAction)) match {
           case 1 => 
-               printDebug("CATCHALL"); getNext()
+               printDebug("CATCHALL"); tok()
           case 52 => null // noop
           case 2 => 
-               printDebug("SYMBOL"); getNext()
+               printDebug("SYMBOL"); tok()
           case 53 => null // noop
           case 3 => 
-               printDebug("PUNC"); getNext()
+               printDebug("PUNC"); tok()
           case 54 => null // noop
           case 4 => 
-               printDebug("REPEATED_PUNC"); getNext()
+               printDebug("REPEATED_PUNC"); tok()
           case 55 => null // noop
           case 5 => 
-               printDebug("NEWLINE"); if (tokenizeWhitespace || tokenizeNewline) getNext() else null
+               printDebug("NEWLINE"); if (tokenizeWhitespace || tokenizeNewline) tok() else null
           case 56 => null // noop
           case 6 => 
-               printDebug("ELLIPSIS"); getNext()
+               printDebug("ELLIPSIS"); tok()
           case 57 => null // noop
           case 7 => 
-               printDebug("WORD"); getNext()
+               printDebug("WORD"); tok()
           case 58 => null // noop
           case 8 => 
-               printDebug("NUMBER"); getNext()
+               printDebug("NUMBER"); tok()
           case 59 => null // noop
           case 9 => 
-               printDebug("QUOTE"); getNext()
+               printDebug("QUOTE"); tok()
           case 60 => null // noop
           case 10 => 
-               printDebug("DASH"); getNext()
+               printDebug("DASH"); tok()
           case 61 => null // noop
           case 11 => 
-               printDebug("AP2"); getNext()
+               printDebug("AP2"); tok()
           case 62 => null // noop
           case 12 => 
-               printDebug("WHITESPACE"); if(tokenizeWhitespace) getNext() else null
+               printDebug("WHITESPACE"); if(tokenizeWhitespace) tok() else null
           case 63 => null // noop
           case 13 => 
-               printDebug("CURRENCY"); getNext()
+               printDebug("CURRENCY"); tok()
           case 64 => null // noop
           case 14 => 
-               printDebug("FRACTION"); getNext()
+               printDebug("FRACTION"); tok()
           case 65 => null // noop
           case 15 => 
-               printDebug("MDASH"); getNext()
+               printDebug("MDASH"); tok()
           case 66 => null // noop
           case 16 => 
                printDebug("GARB"); null
           case 67 => null // noop
           case 17 => 
-               printDebug("APWORD"); getNext()
+               printDebug("APWORD"); tok()
           case 68 => null // noop
           case 18 => 
             // general lookahead, find correct zzMarkedPos
@@ -692,15 +689,15 @@ class EnglishLexer(in: Reader)  {
               }
               zzMarkedPos = zzFPos
             }
-               printDebug("EMOTICON"); getNext()
+               printDebug("EMOTICON"); tok()
           case 69 => null // noop
           case 19 => 
             // lookahead expression with fixed base length
             zzMarkedPos = Character.offsetByCodePoints(zzBufferL, zzStartRead, zzEndRead - zzStartRead, zzStartRead, 2)
-               printDebug("SINGLE_INITIAL"); getNext()
+               printDebug("SINGLE_INITIAL"); tok()
           case 70 => null // noop
           case 20 => 
-               printDebug("ABBREVS"); getNext()
+               printDebug("ABBREVS"); tok()
           case 71 => null // noop
           case 21 => 
             // general lookahead, find correct zzMarkedPos
@@ -730,94 +727,94 @@ class EnglishLexer(in: Reader)  {
               }
               zzMarkedPos = zzFPos
             }
-               printDebug("CONTRACTED_WORD"); getNext()
+               printDebug("CONTRACTED_WORD"); tok()
           case 72 => null // noop
           case 22 => 
-               printDebug("EMAIL"); getNext()
+               printDebug("EMAIL"); tok()
           case 73 => null // noop
           case 23 => 
                printDebug("DASHED_PREFIX_WORD")
   if(tokenizeAllDashedWords){
     val word = yytext()
-    yypushback(word.length - word.indexOf("-"))
+    yypushback(yylength() - word.indexOf("-"))
   }
-  getNext()
+  tok()
           case 74 => null // noop
           case 24 => 
             // lookahead expression with fixed lookahead length
             zzMarkedPos = Character.offsetByCodePoints(zzBufferL, zzStartRead, zzEndRead - zzStartRead, zzMarkedPos, -1)
-               printDebug("CURRENCY"); getNext()
+               printDebug("CURRENCY"); tok()
           case 75 => null // noop
           case 25 => 
             // lookahead expression with fixed lookahead length
             zzMarkedPos = Character.offsetByCodePoints(zzBufferL, zzStartRead, zzEndRead - zzStartRead, zzMarkedPos, -1)
-               printDebug("CONSONANT_NON_ABBREVS"); getNext()
+               printDebug("CONSONANT_NON_ABBREVS"); tok()
           case 76 => null // noop
           case 26 => 
-               printDebug("HASHTAG"); getNext()
+               printDebug("HASHTAG"); tok()
           case 77 => null // noop
           case 27 => 
-               printDebug("ORDINALS"); getNext()
+               printDebug("ORDINALS"); tok()
           case 78 => null // noop
           case 28 => 
-               printDebug("DECADE"); getNext()
+               printDebug("DECADE"); tok()
           case 79 => null // noop
           case 29 => 
             // lookahead expression with fixed lookahead length
             zzMarkedPos = Character.offsetByCodePoints(zzBufferL, zzStartRead, zzEndRead - zzStartRead, zzMarkedPos, -1)
-               printDebug("ELLIPSIS"); getNext()
+               printDebug("ELLIPSIS"); tok()
           case 80 => null // noop
           case 30 => 
             // lookahead expression with fixed lookahead length
             zzMarkedPos = Character.offsetByCodePoints(zzBufferL, zzStartRead, zzEndRead - zzStartRead, zzMarkedPos, -1)
-               printDebug("CONTRACTION"); getNext()
+               printDebug("CONTRACTION"); tok()
           case 81 => null // noop
           case 31 => 
-               printDebug("NUMBER2"); getNext()
+               printDebug("NUMBER2"); tok()
           case 82 => null // noop
           case 32 => 
-               printDebug("ATUSER"); getNext()
+               printDebug("ATUSER"); tok()
           case 83 => null // noop
           case 33 => 
-               printDebug("URL2"); getNext()
+               printDebug("URL2"); tok()
           case 84 => null // noop
           case 34 => 
-               printDebug("FILENAME"); getNext()
+               printDebug("FILENAME"); tok()
           case 85 => null // noop
           case 35 => 
-               printDebug("SGML"); if(tokenizeSgml) getNext() else null
+               printDebug("SGML"); if(tokenizeSgml) tok() else null
           case 86 => null // noop
           case 36 => 
-               printDebug("HTML_SYMBOL"); getNext()
+               printDebug("HTML_SYMBOL"); tok()
           case 87 => null // noop
           case 37 => 
             // lookahead expression with fixed lookahead length
             zzMarkedPos = Character.offsetByCodePoints(zzBufferL, zzStartRead, zzEndRead - zzStartRead, zzMarkedPos, -1)
-               printDebug("INITIALS2"); getNext()
+               printDebug("INITIALS2"); tok()
           case 88 => null // noop
           case 38 => 
-               printDebug("INITIALS"); getNext()
+               printDebug("INITIALS"); tok()
           case 89 => null // noop
           case 39 => 
             // lookahead expression with fixed base length
             zzMarkedPos = Character.offsetByCodePoints(zzBufferL, zzStartRead, zzEndRead - zzStartRead, zzStartRead, 3)
-               printDebug("LATIN2"); getNext()
+               printDebug("LATIN2"); tok()
           case 90 => null // noop
           case 40 => 
             // lookahead expression with fixed base length
             zzMarkedPos = Character.offsetByCodePoints(zzBufferL, zzStartRead, zzEndRead - zzStartRead, zzStartRead, 3)
-               printDebug("NOABBREV"); getNext()
+               printDebug("NOABBREV"); tok()
           case 91 => null // noop
           case 41 => 
-               printDebug("URL3"); getNext()
+               printDebug("URL3"); tok()
           case 92 => null // noop
           case 42 => 
             // lookahead expression with fixed lookahead length
             zzMarkedPos = Character.offsetByCodePoints(zzBufferL, zzStartRead, zzEndRead - zzStartRead, zzMarkedPos, -1)
-               printDebug("CAPS"); getNext()
+               printDebug("CAPS"); tok()
           case 93 => null // noop
           case 43 => 
-               printDebug("HTMLCHAR"); getNext()
+               printDebug("HTMLCHAR"); tok()
           case 94 => null // noop
           case 44 => 
             // lookahead expression with fixed lookahead length
@@ -825,36 +822,36 @@ class EnglishLexer(in: Reader)  {
                printDebug("DASHED_PREFIX_WORD")
   if(tokenizeAllDashedWords){
     val word = yytext()
-    yypushback(word.length - word.indexOf("-"))
+    yypushback(yylength() - word.indexOf("-"))
   }
-  getNext()
+  tok()
           case 95 => null // noop
           case 45 => 
             // lookahead expression with fixed base length
             zzMarkedPos = Character.offsetByCodePoints(zzBufferL, zzStartRead, zzEndRead - zzStartRead, zzStartRead, 3)
-               printDebug("wanna"); getNext()
+               printDebug("wanna"); tok()
           case 96 => null // noop
           case 46 => 
-               printDebug("HTML_ACCENTED_LETTER"); getNext()
+               printDebug("HTML_ACCENTED_LETTER"); tok()
           case 97 => null // noop
           case 47 => 
             // lookahead expression with fixed lookahead length
             zzMarkedPos = Character.offsetByCodePoints(zzBufferL, zzStartRead, zzEndRead - zzStartRead, zzMarkedPos, -1)
-               printDebug("DATE"); getNext()
+               printDebug("DATE"); tok()
           case 98 => null // noop
           case 48 => 
             // lookahead expression with fixed base length
             zzMarkedPos = Character.offsetByCodePoints(zzBufferL, zzStartRead, zzEndRead - zzStartRead, zzStartRead, 4)
-               printDebug("whatcha"); getNext()
+               printDebug("whatcha"); tok()
           case 99 => null // noop
           case 49 => 
-               printDebug("URL"); getNext()
+               printDebug("URL"); tok()
           case 100 => null // noop
           case 50 => 
-               printDebug("FRPHONE");  getNext()
+               printDebug("FRPHONE");  tok()
           case 101 => null // noop
           case 51 => 
-               printDebug("USPHONE"); getNext()
+               printDebug("USPHONE"); tok()
           case 102 => null // noop
           case _ =>
             zzScanError(ZZ_NO_MATCH); null

@@ -14,7 +14,7 @@ package cc.factorie.app.nlp.segment
 
 import java.io.StringReader
 
-import cc.factorie.app.nlp.{Document, DocumentAnnotator, Token}
+import cc.factorie.app.nlp.{TokenString, Document, DocumentAnnotator, Token}
 
 /** Split a String into a sequence of Tokens.  Aims to adhere to tokenization rules used in Ontonotes and Penn Treebank.
     Note that CoNLL tokenization would use tokenizeAllDashedWords=true.
@@ -22,7 +22,9 @@ import cc.factorie.app.nlp.{Document, DocumentAnnotator, Token}
     (Although our the DeterministicSentenceSegmenter does make a few adjustments beyond this tokenizer.)
     @author Andrew McCallum
   */
-class DeterministicLexerTokenizer(tokenizeSgml:Boolean = false, tokenizeNewline:Boolean = false, tokenizeWhitespace:Boolean = false, tokenizeAllDashedWords:Boolean = false, abbrevPrecedesLowercase:Boolean = false) extends DocumentAnnotator {
+class DeterministicLexerTokenizer(normalize: Boolean = true, tokenizeSgml:Boolean = false, tokenizeNewline:Boolean = false,
+                                  tokenizeWhitespace:Boolean = false, tokenizeAllDashedWords:Boolean = false,
+                                  abbrevPrecedesLowercase:Boolean = false) extends DocumentAnnotator {
 
   /** How the annotation of this DocumentAnnotator should be printed in one-word-per-line (OWPL) format.
       If there is no per-token annotation, return null.  Used in Document.owplString. */
@@ -33,11 +35,19 @@ class DeterministicLexerTokenizer(tokenizeSgml:Boolean = false, tokenizeNewline:
       /* Add this newline to avoid JFlex issue where we can't match EOF with lookahead */
       val lexer = new EnglishLexer(new StringReader(section.string + "\n"),
         tokenizeSgml, tokenizeNewline, tokenizeWhitespace, tokenizeAllDashedWords, abbrevPrecedesLowercase)
-      var next = lexer.next().asInstanceOf[Array[Int]]
-      while (next != null){
-        val tok = new Token(section, next(0), next(0) + next(1))
-        println(tok.string)
-        next = lexer.next().asInstanceOf[Array[Int]]
+      var currentToken = lexer.yylex().asInstanceOf[(String, Int, Int)]
+      while (currentToken != null){
+        if (abbrevPrecedesLowercase && section.length > 1 && section.tokens.last.string == "." && java.lang.Character.isLowerCase(currentToken._1(0)) && section.tokens(section.length-2).stringEnd == section.tokens(section.length-1).stringStart) {
+          // If we have a pattern like "Abbrev. has" (where "has" is any lowercase word) with token strings "Abbrev", ".", "is" (currently looking at "is")
+          // then assume that the previous-previous word is actually an abbreviation; patch it up to become "Abbrev.", "has".
+          val lastTwoTokens = section.takeRight(2).toIndexedSeq
+          section.remove(section.length - 1); section.remove(section.length - 1)
+          new Token(section, lastTwoTokens(0).stringStart, lastTwoTokens(1).stringEnd)
+        }
+        val tok = new Token(section, currentToken._2, currentToken._2 + currentToken._3)
+        if(normalize && tok.string != currentToken._1) tok.attr += new TokenString(tok, currentToken._1)
+//        println(tok.string)
+        currentToken = lexer.yylex().asInstanceOf[(String, Int, Int)]
       }
       /* If tokenizing newlines, remove the trailing newline we added */
       if(tokenizeNewline) section.remove(section.tokens.length - 1)
@@ -54,19 +64,19 @@ class DeterministicLexerTokenizer(tokenizeSgml:Boolean = false, tokenizeNewline:
   def apply(s:String): Seq[String] = process(new Document(s)).tokens.toSeq.map(_.string)
 }
 
-object DeterministicLexerTokenizer extends DeterministicLexerTokenizer(false, false, false, false, false) {
+object DeterministicLexerTokenizer extends DeterministicLexerTokenizer(true, false, false, false, false, true) {
   def main(args: Array[String]): Unit = {
     val fname = "/iesl/canvas/strubell/data/tackbp/source/2013/LDC2013E45_TAC_2013_KBP_Source_Corpus_disc_2/data/English/discussion_forums/bolt-eng-DF-200"
 //    val fname = "/iesl/canvas/strubell/weird_character.txt"
 //    val fname = "/Users/strubell/Documents/research/tunisia.txt"
     println(s"Loading $fname")
-//    val string = io.Source.fromFile(fname, "utf-8").mkString
-//    println(string.mkString("/"))
+    val string = io.Source.fromFile(fname, "utf-8").mkString
+
 //    val string = "A.  A.A.A.I.  and U.S. in U.S.. etc., but not A... or A..B iPhone 3G in Washington D.C.\n"
 //    val string = "Washington D.C.... A..B!!C??D.!?E.!?.!?F..!!?? U.S.." // want: [A, .., B, !!, C, ??, D, .!?, E, .!?.!?, F, ..!!??]
 //    val string = "AT&T but don't grab LAT&Eacute; and be sure not to grab PE&gym AT&T"
 //    val string = "2012-04-05"
-    val string = "ethno-centric art-o-torium"
+//    val string = "ethno-centric art-o-torium sure. thing"
 //    val string = "he'll go to hell we're"
 //    val string = "I paid $50 USD"
 //    val string =  "$1 E2 L3 USD1 2KPW ||$1 USD1.." // want: "[$, 1, E2, L3, USD, 1, 2, KPW, |, |, $, 1, USD, 1, ..]"

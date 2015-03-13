@@ -8,7 +8,6 @@ package cc.factorie.app.nlp.segment;
 
 %class EnglishLexer
 %unicode
-%function next
 %type Object
 %char
 %caseless
@@ -31,15 +30,11 @@ package cc.factorie.app.nlp.segment;
     abbrevPrecedesLowercase = abbrevPrecedes
   }
 
+  def tok(): Object = tok(yytext())
 
-  def getNext(): Object = {
-    val txt = yytext()
-    getNext(txt, txt)
-  }
+  def tok(txt: String): Object = (txt, yychar, yylength)
 
-  def getNext(txt: String, originalText: String): Object = Array(yychar, yylength())
-
-  def printDebug(tok: String) = println(s"$tok: |${yytext()}|")
+  def printDebug(tok: String) = {}//println(s"$tok: |${yytext()}|")
 
 %}
 
@@ -217,139 +212,139 @@ CATCHALL = \P{C}
 
 %%
 
-//{HTML} { if(tokenizeSgml) getNext() else null }
+//{HTML} { if(tokenizeSgml) tok() else null }
 
-//{HTML_COMMENT} { if(tokenizeSgml) getNext() else null }
+//{HTML_COMMENT} { if(tokenizeSgml) tok() else null }
 
-//{SGML2} { if(tokenizeSgml) getNext() else null }
+//{SGML2} { if(tokenizeSgml) tok() else null }
 
-{SGML} { printDebug("SGML"); if(tokenizeSgml) getNext() else null}
+{SGML} { printDebug("SGML"); if(tokenizeSgml) tok() else null}
 
-{HTML_SYMBOL} { printDebug("HTML_SYMBOL"); getNext() }
+{HTML_SYMBOL} { printDebug("HTML_SYMBOL"); tok() }
 
-{URL} { printDebug("URL"); getNext() }
-{URL2} { printDebug("URL2"); getNext() }
-{URL3} { printDebug("URL3"); getNext() }
+{URL} { printDebug("URL"); tok() }
+{URL2} { printDebug("URL2"); tok() }
+{URL3} { printDebug("URL3"); tok() }
 
-{EMAIL} { printDebug("EMAIL"); getNext() }
-{USPHONE} { printDebug("USPHONE"); getNext() }
-{FRPHONE} {printDebug("FRPHONE");  getNext() }
+{EMAIL} { printDebug("EMAIL"); tok() }
+{USPHONE} { printDebug("USPHONE"); tok() }
+{FRPHONE} {printDebug("FRPHONE");  tok() }
 
-{DATE} / [^0-9] { printDebug("DATE"); getNext() }
-{DECADE} { printDebug("DECADE"); getNext() }
+{DATE} / [^0-9] { printDebug("DATE"); tok() }
+{DECADE} { printDebug("DECADE"); tok() }
 
 /* For some reason combining these using | makes the lexer go into an infinite loop */
 /* CURRENCY2 will be matched as word and not currency if it occurs at the end of the file, not sure how to fix */
-{CURRENCY1} { printDebug("CURRENCY"); getNext() }
-{CURRENCY2} / [^A-Z] { printDebug("CURRENCY"); getNext() }
+{CURRENCY1} { printDebug("CURRENCY"); tok() }
+{CURRENCY2} / [^A-Z] { printDebug("CURRENCY"); tok() }
 
-{HASHTAG} { printDebug("HASHTAG"); getNext() }
-{ATUSER} { printDebug("ATUSER"); getNext() }
+{HASHTAG} { printDebug("HASHTAG"); tok() }
+{ATUSER} { printDebug("ATUSER"); tok() }
 
 // [#<%\*]?[:;!#\$%@=\|][-\+\*=o^<]{0,4}[\(\)oODPQX\*3{}\[\]]{1,5}[#><\)\(]?(?!\S)|'\.'
 //'\.' | // get rid of this emoticon, probably more important that we correctly tokenize ''blah blah'.', which is a real thing
-{EMOTICON} / {WHITESPACE}|{NEWLINE} { printDebug("EMOTICON"); getNext() }
+{EMOTICON} / {WHITESPACE}|{NEWLINE} { printDebug("EMOTICON"); tok() }
 
-{FILENAME} { printDebug("FILENAME"); getNext() }
+{FILENAME} { printDebug("FILENAME"); tok() }
 
-{CONSONANT_NON_ABBREVS} / \. { printDebug("CONSONANT_NON_ABBREVS"); getNext() }
+{CONSONANT_NON_ABBREVS} / \. { printDebug("CONSONANT_NON_ABBREVS"); tok() }
 
-({MONTH}|{DAY}|{STATE}|{STATE2}|{HONORIFIC}|{SUFFIX}|{PLACE}|{UNITS}|{ORG}|{LATIN}|{ABBREV})\. { printDebug("ABBREVS"); getNext() }
+({MONTH}|{DAY}|{STATE}|{STATE2}|{HONORIFIC}|{SUFFIX}|{PLACE}|{UNITS}|{ORG}|{LATIN}|{ABBREV})\. { printDebug("ABBREVS"); tok() }
 
-{NOABBREV} / \p{Z}*\p{Nd} { printDebug("NOABBREV"); getNext() }
-{LATIN2} / \P{L} { printDebug("LATIN2"); getNext() }
+{NOABBREV} / \p{Z}*\p{Nd} { printDebug("NOABBREV"); tok() }
+{LATIN2} / \P{L} { printDebug("LATIN2"); tok() }
 
-{HTML_ACCENTED_LETTER} { printDebug("HTML_ACCENTED_LETTER"); getNext() }
+{HTML_ACCENTED_LETTER} { printDebug("HTML_ACCENTED_LETTER"); tok() }
 
 /* contractions without apostrophes */
-what / cha { printDebug("whatcha"); getNext() }
-wan / na { printDebug("wanna"); getNext() }
+what / cha { printDebug("whatcha"); tok() }
+wan / na { printDebug("wanna"); tok() }
 
-{CONTRACTION} / \P{L} { printDebug("CONTRACTION"); getNext() }
+{CONTRACTION} / \P{L} { printDebug("CONTRACTION"); tok() }
 
-{APWORD} { printDebug("APWORD"); getNext() }
+{APWORD} { printDebug("APWORD"); tok() }
 
 /* [^\p{P}\p{S}] should be non-punctuation */
 /* A.B  This must come before 'initials' or else 'initials' will capture the prefix. */
 /* \P{P} is non-punctuation */
-{INITIALS2} / \P{P} { printDebug("INITIALS2"); getNext() }
+{INITIALS2} / \P{P} { printDebug("INITIALS2"); tok() }
 
-{INITIALS} { printDebug("INITIALS"); getNext() }
+{INITIALS} { printDebug("INITIALS"); tok() }
 
-{SINGLE_INITIAL} / {WHITESPACE}|{NEWLINE} { printDebug("SINGLE_INITIAL"); getNext() }
+{SINGLE_INITIAL} / {WHITESPACE}|{NEWLINE} { printDebug("SINGLE_INITIAL"); tok() }
 
-{ORDINALS} { printDebug("ORDINALS"); getNext() }
+{ORDINALS} { printDebug("ORDINALS"); tok() }
 
-{QUOTE} { printDebug("QUOTE"); getNext() }
+{QUOTE} { printDebug("QUOTE"); tok() }
 
 // TODO deal with this: if this is here then we will never match following {DASHED_PREFIX_WORD}
-//{DASHEDWORD} { printDebug("DASHEDWORD"); if (tokenizeAllDashedWords) getNext() else null }
+//{DASHEDWORD} { printDebug("DASHEDWORD"); if (tokenizeAllDashedWords) tok() else null }
 
 {DASHED_PREFIX_WORD} {
   printDebug("DASHED_PREFIX_WORD")
   if(tokenizeAllDashedWords){
     val word = yytext()
-    yypushback(word.length - word.indexOf("-"))
+    yypushback(yylength() - word.indexOf("-"))
   }
-  getNext()
+  tok()
 }
 {DASHED_SUFFIX_WORD} / [^\p{L}\p{M}&] {
   printDebug("DASHED_PREFIX_WORD")
   if(tokenizeAllDashedWords){
     val word = yytext()
-    yypushback(word.length - word.indexOf("-"))
+    yypushback(yylength() - word.indexOf("-"))
   }
-  getNext()
+  tok()
 }
 
-{FRACTION} { printDebug("FRACTION"); getNext() }
+{FRACTION} { printDebug("FRACTION"); tok() }
 
-{CONTRACTED_WORD} / {CONTRACTION} { printDebug("CONTRACTED_WORD"); getNext() }
+{CONTRACTED_WORD} / {CONTRACTION} { printDebug("CONTRACTED_WORD"); tok() }
 
-{CAPS} / [^\p{Ll}] { printDebug("CAPS"); getNext() }
+{CAPS} / [^\p{Ll}] { printDebug("CAPS"); tok() }
 
-{WORD} { printDebug("WORD"); getNext() }
+{WORD} { printDebug("WORD"); tok() }
 
-{NUMBER} { printDebug("NUMBER"); getNext() }
+{NUMBER} { printDebug("NUMBER"); tok() }
 
-{NUMBER2} { printDebug("NUMBER2"); getNext() }
+{NUMBER2} { printDebug("NUMBER2"); tok() }
 
-{AP2} { printDebug("AP2"); getNext() }
+{AP2} { printDebug("AP2"); tok() }
 
-{ELLIPSIS} { printDebug("ELLIPSIS"); getNext() }
-\.{2,5} / [^!?] { printDebug("ELLIPSIS"); getNext() }
+{ELLIPSIS} { printDebug("ELLIPSIS"); tok() }
+\.{2,5} / [^!?] { printDebug("ELLIPSIS"); tok() }
 
-{REPEATED_PUNC} { printDebug("REPEATED_PUNC"); getNext() }
+{REPEATED_PUNC} { printDebug("REPEATED_PUNC"); tok() }
 
-{MDASH} { printDebug("MDASH"); getNext() }
+{MDASH} { printDebug("MDASH"); tok() }
 
-{DASH} { printDebug("DASH"); getNext() }
+{DASH} { printDebug("DASH"); tok() }
 
-{PUNC} { printDebug("PUNC"); getNext() }
+{PUNC} { printDebug("PUNC"); tok() }
 
-{SYMBOL} { printDebug("SYMBOL"); getNext() }
+{SYMBOL} { printDebug("SYMBOL"); tok() }
 
-{HTMLCHAR} { printDebug("HTMLCHAR"); getNext() }
+{HTMLCHAR} { printDebug("HTMLCHAR"); tok() }
 
-{NEWLINE} { printDebug("NEWLINE"); if (tokenizeWhitespace || tokenizeNewline) getNext() else null }
+{NEWLINE} { printDebug("NEWLINE"); if (tokenizeWhitespace || tokenizeNewline) tok() else null }
 
-{WHITESPACE} { printDebug("WHITESPACE"); if(tokenizeWhitespace) getNext() else null}
+{WHITESPACE} { printDebug("WHITESPACE"); if(tokenizeWhitespace) tok() else null}
 
-{CATCHALL} { printDebug("CATCHALL"); getNext() }
+{CATCHALL} { printDebug("CATCHALL"); tok() }
 
 /* The below rules are duplicated here (without lookahead) in order to match these patterns
    when they occur right at the end of the file (nothing to look ahead to so originals never match) */
-//{DATE} { printDebug("DATE"); getNext() }
-//{LATIN2} { printDebug("LATIN2"); getNext() }
-//{CONTRACTION} { printDebug("CONTRACTION"); getNext() }
+//{DATE} { printDebug("DATE"); tok() }
+//{LATIN2} { printDebug("LATIN2"); tok() }
+//{CONTRACTION} { printDebug("CONTRACTION"); tok() }
 //{INITIALS} {
 //  printDebug("INITIALS");
 //  val matched = yytext()
 //  if(matched.endsWith("..")) yypushback(1)
-//  getNext()
+//  tok()
 //}
-//{DASHED_SUFFIX_WORD} { printDebug("DASHED_SUFFIX_WORD"); getNext() }
-//{CAPS} { printDebug("CAPS"); getNext() }
+//{DASHED_SUFFIX_WORD} { printDebug("DASHED_SUFFIX_WORD"); tok() }
+//{CAPS} { printDebug("CAPS"); tok() }
 
 /* The only crap left here should be control characters, god forbid... throw them away */
 . { printDebug("GARB"); null }
