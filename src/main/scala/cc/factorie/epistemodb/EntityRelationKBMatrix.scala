@@ -11,11 +11,10 @@ import scala.Some
  * I.e. additionally to matrix information, it also stores information about entities, relations etc.
  */
 
-
 class EntityRelationKBMatrix(val matrix:CoocMatrix = new CoocMatrix(0,0),
-               val __rowMap: EntityPairMemoryMap = new EntityPairMemoryMap,
-               val __colMap: StringMemoryIndexMap = new StringMemoryIndexMap,
-               __docs: KbDocuments = new MemoryDocuments) extends KBMatrix[EntityRelationKBMatrix, EntityPair, String] with MongoWritable {
+               val __rowMap: EntityPairMemoryMap = new EntityPairMemoryMap(collectionPrefix = MongoWritable.ENTITY_ROW_MAP_PREFIX),
+               val __colMap: StringMemoryIndexMap = new StringMemoryIndexMap(collectionPrefix = MongoWritable.ENTITY_COL_MAP_PREFIX)
+                              ) extends KBMatrix[EntityRelationKBMatrix, EntityPair, String] with MongoWritable {
 
   def cloneWithNewCells(cells: CoocMatrix): EntityRelationKBMatrix = {
     new EntityRelationKBMatrix(matrix = cells, __rowMap = this.__rowMap, __colMap = this.__colMap)
@@ -25,22 +24,21 @@ class EntityRelationKBMatrix(val matrix:CoocMatrix = new CoocMatrix(0,0),
     new EntityRelationKBMatrix()
   }
 
-  def writeToMongo(mongoDb: Option[DB], collectionPrefix: Option[String] = None) {
+  def writeToMongo(mongoDb: DB) {
     matrix.writeToMongo(mongoDb)
-    __rowMap.writeToMongo(mongoDb, Some(MongoWritable.ENTITY_ROW_MAP_PREFIX))
-    __colMap.writeToMongo(mongoDb, Some(MongoWritable.ENTITY_COL_MAP_PREFIX))
+    __rowMap.writeToMongo(mongoDb)
+    __colMap.writeToMongo(mongoDb)
+  }
+
+  def populateFromMongo(mongoDb: DB) {
+    matrix.populateFromMongo(mongoDb)
+    __rowMap.populateFromMongo(mongoDb)
+    __colMap.populateFromMongo(mongoDb)
   }
 }
 
 
 object EntityRelationKBMatrix {
-  def fromMongo(mongoDb: DB): EntityRelationKBMatrix = {
-    val dbMatrix = CoocMatrix.fromMongo(mongoDb) // MongoWritable.COOC_MATRIX_PREFIX as default argument
-    val rowMap = EntityPairMemoryMap.fromMongo(mongoDb, MongoWritable.ENTITY_ROW_MAP_PREFIX)
-    val colMap = StringMemoryIndexMap.fromMongo(mongoDb, MongoWritable.ENTITY_COL_MAP_PREFIX)
-    val m = new EntityRelationKBMatrix(dbMatrix, rowMap, colMap)
-    m
-  }
 
   private def entitiesAndRelFromLine(line: String, colsPerEnt:Int): (EntityPair, String, Double) = {
     val parts = line.split("\t")

@@ -78,9 +78,10 @@ class TestEntityRelationKBMatrix extends JUnitSuite  with util.FastLogging  {
     m1.set(EntityPair("Barack Obama", "Michelle Obama"), "per:spouse", 1.0)
     m1.set(EntityPair("Barack Obama", "Michelle Obama"), "is married to", 10.0)
 
-    m1.writeToMongo(Some(db))
+    m1.writeToMongo(db)
 
-    val m2 = EntityRelationKBMatrix.fromMongo(db)
+    val m2 = new EntityRelationKBMatrix
+    m2.populateFromMongo(db)
     assertTrue(m1.hasSameContent(m2))
   }
 

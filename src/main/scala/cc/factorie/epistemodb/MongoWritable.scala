@@ -6,8 +6,9 @@ import com.mongodb.DB
  * Created by beroth on 3/9/15.
  */
 trait MongoWritable {
-  def collectionPrefix: Option[String] = None
-  def writeToMongo(db: Option[DB] = None, collectionPrefix: Option[String] = None)
+  def writeToMongo(db: DB)
+  def populateFromMongo(db: DB)
+  // Usage: new mongoW; mongoW.populateFromMongo(db)
 }
 
 object MongoWritable {
