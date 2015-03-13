@@ -64,7 +64,7 @@ class DeterministicLexerTokenizer(normalize: Boolean = true, tokenizeSgml:Boolea
   def apply(s:String): Seq[String] = process(new Document(s)).tokens.toSeq.map(_.string)
 }
 
-object DeterministicLexerTokenizer extends DeterministicLexerTokenizer(true, false, false, false, false, true) {
+object DeterministicLexerTokenizer extends DeterministicLexerTokenizer(true, false, false, false, false, false) {
   def main(args: Array[String]): Unit = {
     val fname = "/iesl/canvas/strubell/data/tackbp/source/2013/LDC2013E45_TAC_2013_KBP_Source_Corpus_disc_2/data/English/discussion_forums/bolt-eng-DF-200"
 //    val fname = "/iesl/canvas/strubell/weird_character.txt"
@@ -77,6 +77,7 @@ object DeterministicLexerTokenizer extends DeterministicLexerTokenizer(true, fal
 //    val string = "AT&T but don't grab LAT&Eacute; and be sure not to grab PE&gym AT&T"
 //    val string = "2012-04-05"
 //    val string = "ethno-centric art-o-torium sure. thing"
+//    val string = "prof. ph.d. a. a.b. a.b a.b.c. men.cd ab.cd"
 //    val string = "he'll go to hell we're"
 //    val string = "I paid $50 USD"
 //    val string =  "$1 E2 L3 USD1 2KPW ||$1 USD1.." // want: "[$, 1, E2, L3, USD, 1, 2, KPW, |, |, $, 1, USD, 1, ..]"

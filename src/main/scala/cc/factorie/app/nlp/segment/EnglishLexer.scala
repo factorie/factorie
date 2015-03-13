@@ -301,7 +301,7 @@ class EnglishLexer(in: Reader)  {
 
   def tok(txt: String): Object = (txt, yychar, yylength)
 
-  def printDebug(tok: String) = println(s"$tok: |${yytext()}|")
+  def printDebug(tok: String) = {}//println(s"$tok: |${yytext()}|")
 
 
 
