@@ -233,22 +233,12 @@ cols: [<INT>]
 vals: [<DOUBLE>]
 }
  */
-  override def collectionPrefix: Option[String] = Some(MongoWritable.COOC_MATRIX_PREFIX)
+  def collectionName: String = MongoWritable.COOC_MATRIX_PREFIX
 
-  def writeToMongo(mongoDb: Option[DB], collectionPrefix: Option[String] = collectionPrefix) {
-    if (collectionPrefix == None)
-      throw new IllegalArgumentException("collection prefix cannot be None - use default initialization instead")
-
-    if (mongoDb == None)
-      throw new IllegalArgumentException("mongo db cannot be None - use default initialization instead")
-
-    val collection: DBCollection = mongoDb.get.getCollection(collectionPrefix.get)
-
-    // TODO: always drop collection?
+  def writeToMongo(mongoDb: DB) {
+    val collection: DBCollection = mongoDb.getCollection(collectionName)
     collection.drop()
-
     val builder = collection.initializeUnorderedBulkOperation();
-
     for (row <- getRows) {
       val rowNr = row._1
       val colsCellVals : mutable.HashMap[Int, Double] = row._2
@@ -267,6 +257,27 @@ vals: [<DOUBLE>]
       builder.insert(rowObject);
     }
     builder.execute()
+  }
+
+  def populateFromMongo(mongoDb: DB) {
+    val collection: DBCollection = mongoDb.getCollection(collectionName)
+    val cursor: DBCursor = collection.find();
+    try {
+      while(cursor.hasNext()) {
+        val rowObject: DBObject = cursor.next()
+        val rowNr = rowObject.get(CoocMatrix.ROW_NR).asInstanceOf[Int]
+        val mongoCols: BasicDBList = rowObject.get(CoocMatrix.COL_LIST).asInstanceOf[BasicDBList]
+        val mongoVals: BasicDBList = rowObject.get(CoocMatrix.CELL_VAL_LIST).asInstanceOf[BasicDBList]
+        assert(mongoCols.size() == mongoVals.size())
+        for (i <- 0 until mongoCols.size()) {
+          val colNr = mongoCols.get(i).asInstanceOf[Int]
+          val cellVal = mongoVals.get(i).asInstanceOf[Double]
+          this.set(rowNr, colNr, cellVal)
+        }
+      }
+    } finally {
+      cursor.close();
+    }
   }
 
   /*
@@ -315,31 +326,6 @@ object CoocMatrix {
   val CELL_VAL = "val"
   val COL_LIST = "cols"
   val CELL_VAL_LIST = "vals"
-
-  
-  def fromMongo(mongoDb: DB, collectionName: String = MongoWritable.COOC_MATRIX_PREFIX) : CoocMatrix = {
-    val collection: DBCollection = mongoDb.getCollection(collectionName)
-    val m = new CoocMatrix(0, 0) // grow on the fly
-    val cursor: DBCursor = collection.find();
-    try {
-      while(cursor.hasNext()) {
-        val rowObject: DBObject = cursor.next()
-        val rowNr = rowObject.get(ROW_NR).asInstanceOf[Int]
-        val mongoCols: BasicDBList = rowObject.get(COL_LIST).asInstanceOf[BasicDBList]
-        val mongoVals: BasicDBList = rowObject.get(CELL_VAL_LIST).asInstanceOf[BasicDBList]
-        assert(mongoCols.size() == mongoVals.size())
-        for (i <- 0 until mongoCols.size()) {
-          val colNr = mongoCols.get(i).asInstanceOf[Int]
-          val cellVal = mongoVals.get(i).asInstanceOf[Double]
-          m.set(rowNr, colNr, cellVal)
-        }
-      }
-    } finally {
-      cursor.close();
-    }
-    m
-  }
-
 /*
   def fromMongoCellBased(mongoDb: DB) : CoocMatrix = {
     val collection: DBCollection = mongoDb.getCollection(CELLS_COLLECTION)

@@ -9,6 +9,7 @@ trait XDocMention[T] {
   // identifies the document from which this mention came
   def docPointer:String
   // some representation of the entity used to do XDoc coref
+  // This stores of the necessary features.
   def entity:T
   // unique string for this mention
   def id:String
@@ -23,6 +24,9 @@ trait XDocCorefSystem[T] {
   def performCoref(mention:Iterator[XDocMention[T]]):Iterable[XDocMention[T]]
 }
 
+// TODO:
+// do we need this?
+// how do the relationmentions interact with the documents and the matrix?
 trait KbDocuments {
   type EntityMap = HashBiMap[String, Int]
   // - build the doc table

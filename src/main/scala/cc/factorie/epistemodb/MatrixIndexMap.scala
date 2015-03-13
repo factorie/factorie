@@ -51,23 +51,27 @@ class MemoryIndexMap[T] extends  MatrixIndexMap[T] {
   }
 }
 
-class StringMemoryIndexMap extends MemoryIndexMap[String] with MongoWritable {
 
-  override def collectionPrefix: Option[String] = None
+// TODO:
+// have collectionPrefix be a field
+// Either:
+// (*) pass as constructor argument
+// OR:
+// implement/set it as val
+// OR:
+// set it in different traits for rows vs columns
+class StringMemoryIndexMap(val collectionPrefix: String) extends MemoryIndexMap[String] with MongoWritable {
 
-  def writeToMongo(mongoDb: Option[DB], collectionPrefix: Option[String] = collectionPrefix) {
-    if (collectionPrefix == None)
-      throw new IllegalArgumentException("Collection prefix cannot be None, must be explicitely set.")
-    if (mongoDb == None)
-      throw new IllegalArgumentException("Mongo DB cannot be None, must be explicitely set.")
-
-    val colMapCollection = mongoDb.get.getCollection(collectionPrefix.get)
-
+  // TODO:
+  // - not have it as an option
+  // - for already mongo-backed:
+  // => if argument mongoDb is different that current: rewrite to mongoDb
+  // => (have mongoDb default to current for mongo-backed)
+  def writeToMongo(mongoDb: DB) {
+    val colMapCollection = mongoDb.getCollection(collectionPrefix)
     // TODO: drop collections by default?
     colMapCollection.drop()
-
     val builder = colMapCollection.initializeUnorderedBulkOperation()
-
     // write column map
     for (rel <- this.keyIterator) {
       val id = this.keyToIndex(rel)
@@ -80,33 +84,33 @@ class StringMemoryIndexMap extends MemoryIndexMap[String] with MongoWritable {
     }
     builder.execute()
   }
-}
 
-object StringMemoryIndexMap {
-  val COL_ID = "colid"
-  val RELATION = "rel"
-  def fromMongo(mongoDb: DB, collectionPrefix: String): StringMemoryIndexMap = {
+  def populateFromMongo(mongoDb: DB) {
     val collection = mongoDb.getCollection(collectionPrefix)
-    val m = new StringMemoryIndexMap
     val cursor: DBCursor = collection.find();
     try {
       while(cursor.hasNext()) {
         val colObject: DBObject = cursor.next()
         val id: Int = colObject.get(StringMemoryIndexMap.COL_ID).asInstanceOf[Int]
         val rel: String = colObject.get(StringMemoryIndexMap.RELATION).asInstanceOf[String]
-        m.put(rel, id)
+        this.put(rel, id)
       }
     } finally {
       cursor.close();
     }
-    m
   }
+}
+
+object StringMemoryIndexMap {
+  val COL_ID = "colid"
+  val RELATION = "rel"
 }
 
 case class EntityPair(val e1: String, val e2: String)
 
-class EntityPairMemoryMap(private val _bimap: HashBiMap[(Int, Int), Int] = HashBiMap.create[(Int, Int), Int](),
-                          val _entityMap: HashBiMap[String, Int] = HashBiMap.create[String, Int]() ) extends  MatrixIndexMap[EntityPair] with MongoWritable {
+class EntityPairMemoryMap(private var _bimap: HashBiMap[(Int, Int), Int] = HashBiMap.create[(Int, Int), Int](),
+                          var _entityMap: HashBiMap[String, Int] = HashBiMap.create[String, Int](),
+                          val collectionPrefix: String) extends  MatrixIndexMap[EntityPair] with MongoWritable {
 
   def _size = _bimap.size()
 
@@ -166,17 +170,15 @@ class EntityPairMemoryMap(private val _bimap: HashBiMap[(Int, Int), Int] = HashB
     }
   }
 
-  override def collectionPrefix: Option[String] = None
-
-  def writeToMongo(mongoDb: Option[DB], collectionPrefix: Option[String] = collectionPrefix) {
-    if (collectionPrefix == None)
-      throw new IllegalArgumentException("Collection prefix cannot be None, must be explicitely set.")
-    if (mongoDb == None)
-      throw new IllegalArgumentException("Mongo DB cannot be None, must be explicitely set.")
-
+  def writeToMongo(mongoDb: DB) {
     //println("writing to: " + collectionPrefix + "_" + EntityRelationKBMatrix.ROWMAP_COLLECTION)
-    writeRowMap(mongoDb.get.getCollection(collectionPrefix.get + "_" + EntityPairMemoryMap.ROWMAP_COLLECTION))
-    writeEntityMap(mongoDb.get.getCollection(collectionPrefix.get + "_" + EntityPairMemoryMap.ENTITY_COLLECTION))
+    writeRowMap(mongoDb.getCollection(collectionPrefix + "_" + EntityPairMemoryMap.ROWMAP_COLLECTION))
+    writeEntityMap(mongoDb.getCollection(collectionPrefix + "_" + EntityPairMemoryMap.ENTITY_COLLECTION))
+  }
+
+  def populateFromMongo(mongoDb: DB) {
+    this._bimap = EntityPairMemoryMap.readRowMap(mongoDb, collectionPrefix + "_" + EntityPairMemoryMap.ROWMAP_COLLECTION)
+    this._entityMap = EntityPairMemoryMap.readEntityMap(mongoDb, collectionPrefix + "_" + EntityPairMemoryMap.ENTITY_COLLECTION)
   }
 
   private def writeEntityMap(entityCollection: DBCollection) {
@@ -228,13 +230,6 @@ object EntityPairMemoryMap {
   val ENTITY_ID = "entid"
   val ENTITY_SURFACE = "entsurface"
 
-
-  def fromMongo(mongoDb: DB, collectionPrefix: String): EntityPairMemoryMap = {
-    val bimap = readRowMap(mongoDb, collectionPrefix + "_" + EntityPairMemoryMap.ROWMAP_COLLECTION)
-    val entityMap = readEntityMap(mongoDb, collectionPrefix + "_" + EntityPairMemoryMap.ENTITY_COLLECTION)
-    new EntityPairMemoryMap(bimap, entityMap)
-  }
-
   private def readRowMap(mongoDb: DB, collectionName: String): HashBiMap[(Int, Int), Int] = {
     //println("reading from: " + collectionName)
     val collection = mongoDb.getCollection(collectionName)
@@ -247,8 +242,6 @@ object EntityPairMemoryMap {
         val e1: Int = rowObject.get(EntityPairMemoryMap.ENTITY1).asInstanceOf[Int]
         val e2: Int = rowObject.get(EntityPairMemoryMap.ENTITY2).asInstanceOf[Int]
         rowMap.put((e1, e2), rowNr)
-
-        //println("read " + (e1, e2) + " -> " + rowNr)
       }
     } finally {
       cursor.close();

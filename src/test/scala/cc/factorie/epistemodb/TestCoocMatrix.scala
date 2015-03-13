@@ -137,9 +137,10 @@ class TestCoocMatrix extends JUnitSuite  with util.FastLogging {
     m1.set(1,3,1.0)
     m1.set(4,2,2.0)
 
-    m1.writeToMongo(Some(db))
+    m1.writeToMongo(db)
 
-    val m2 = CoocMatrix.fromMongo(db)
+    val m2 = new CoocMatrix(0,0)
+    m2.populateFromMongo(db)
     assertTrue(m1.hasSameContent(m2))
   }
 

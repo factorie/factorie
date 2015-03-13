@@ -17,6 +17,12 @@ class StringStringMatrix(val __rowMap: MatrixIndexMap[String]  = new MemoryIndex
   def createEmptyMatrix: StringStringMatrix = new StringStringMatrix()
 }
 
+// TODO:
+// do we need this?
+// how do the relationmentions interact with the documents and the matrix?
+trait MatrixWithDocs {
+}
+
 trait KBMatrix[KBMatrixT <: KBMatrix[KBMatrixT, RowT, ColT], RowT, ColT] {
   //http://docs.scala-lang.org/tutorials/tour/variances.html
   val __rowMap: MatrixIndexMap[RowT]

@@ -13,7 +13,7 @@ import scala.Some
  */
 class TestMatrixIndexMap extends JUnitSuite  with util.FastLogging {
   @Test def readWriteMongoStringMapTest() {
-    val smap = new StringMemoryIndexMap
+    val smap = new StringMemoryIndexMap(collectionPrefix = MongoWritable.ENTITY_ROW_MAP_PREFIX)
     smap.add("b")
     smap.add("C")
     smap.add("d")
@@ -23,9 +23,10 @@ class TestMatrixIndexMap extends JUnitSuite  with util.FastLogging {
     val fongo = new Fongo("myserver")
     val db : DB = fongo.getDB("mydb")
 
-    smap.writeToMongo(Some(db), Some(MongoWritable.ENTITY_ROW_MAP_PREFIX))
+    smap.writeToMongo(db)
 
-    val smap2 = StringMemoryIndexMap.fromMongo(db, MongoWritable.ENTITY_ROW_MAP_PREFIX)
+    val smap2 = new StringMemoryIndexMap(collectionPrefix = MongoWritable.ENTITY_ROW_MAP_PREFIX)
+    smap2.populateFromMongo(db)
 
     assertEquals(smap.size, smap2.size)
 
@@ -37,7 +38,7 @@ class TestMatrixIndexMap extends JUnitSuite  with util.FastLogging {
 
 
   @Test def readWriteMongoEntityPairMapTest() {
-    val emap = new EntityPairMemoryMap()
+    val emap = new EntityPairMemoryMap(collectionPrefix = MongoWritable.ENTITY_ROW_MAP_PREFIX)
     emap.add(new EntityPair("a","b"))
     emap.add(new EntityPair("A","B"))
     emap.add(new EntityPair("c","b"))
@@ -47,8 +48,9 @@ class TestMatrixIndexMap extends JUnitSuite  with util.FastLogging {
     val fongo = new Fongo("myserver")
     val db : DB = fongo.getDB("mydb2")
 
-    emap.writeToMongo(Some(db), Some(MongoWritable.ENTITY_ROW_MAP_PREFIX))
-    val emap2 = EntityPairMemoryMap.fromMongo(db, MongoWritable.ENTITY_ROW_MAP_PREFIX)
+    emap.writeToMongo(db)
+    val emap2 = new EntityPairMemoryMap(collectionPrefix = MongoWritable.ENTITY_ROW_MAP_PREFIX)
+    emap2.populateFromMongo(db)
 
     assertEquals(emap.size, emap2.size)
 
