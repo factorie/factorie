@@ -134,6 +134,6 @@ def main(args: Array[String]): Unit = {
     val time = System.currentTimeMillis()-t0
     println(s"Processed ${doc.tokenCount} tokens in ${time}ms (${doc.tokenCount.toDouble/time*1000} tokens/second)")
 //    println(string)
-    println(doc.tokens.map(_.string).mkString("\n"))
+//    println(doc.tokens.map(_.string).mkString("\n"))
   }
 }
