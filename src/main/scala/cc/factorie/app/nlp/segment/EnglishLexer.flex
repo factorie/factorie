@@ -1,4 +1,6 @@
-package cc.factorie.app.nlp.segment;
+package cc.factorie.app.nlp.segment
+
+import cc.factorie.util.JavaHashMap
 
 /**
  *  A tokenizer for English
@@ -14,20 +16,80 @@ package cc.factorie.app.nlp.segment;
 
 %{
 
+  final val NORMALIZED_LRB = "("
+  final val NORMALIZED_RRB = ")"
+  final val NORMALIZED_LCB = "{"
+  final val NORMALIZED_RCB = "}"
+  final val NORMALIZED_LSB = "["
+  final val NORMALIZED_RSB = "]"
+
+  final val NORMALIZED_ONE_QUARTER = "1/4"
+  final val NORMALIZED_ONE_HALF = "1/2"
+  final val NORMALIZED_THREE_QUARTERS = "3/4"
+  final val NORMALIZED_ONE_THIRD = "1/3"
+  final val NORMALIZED_TWO_THIRDS = "2/3"
+
+  final val NORMALIZED_ELLIPSIS = "..."
+  final val NORMALIZED_AMPERSAND = "&"
+  final val NORMALIZED_CENTS = "cents"
+  final val NORMALIZED_DOLLAR = "$"
+  final val NORMALIZED_MDASH = "--"
+  final val NORMALIZED_DASH = "-"
+  final val NORMALIZED_QUOTE = "\""
+  final val NORMALIZED_APOSTROPHE = "'"
+
+  final val UNESCAPED_SLASH = "/"
+  final val UNESCAPED_ASTERISK = "*"
+  final val UNESCAPED_ASTERISK2 = "**"
+
+  val htmlSymbolMap = JavaHashMap[String,String]()
+  htmlSymbolMap ++= List("&lt;" -> "<", "&gt;" -> ">", "&amp;" -> "&", "&copy;" -> "(c)", "&reg;" -> "(r)", "&trade;" -> "(TM)", "&rsquo;" -> "'", "&lsquo;" -> "'") // TODO complete this collection
+
   var tokenizeSgml = false
   var tokenizeNewline = false
   var tokenizeWhitespace = false
   var tokenizeAllDashedWords = false
   var abbrevPrecedesLowercase = false
+  var normalizeQuotes = true // Convert all double quotes to "
+  var normalizeApostrophe = true // Convert all apostrophes to ', even within token strings
+  var normalizeCurrency = true // Convert all currency symbols to "$", except cents symbol to "cents"
+  var normalizeAmpersand = true // Convert all ampersand symbols (including "&amp;" to "&"
+  var normalizeFractions = true // Convert unicode fraction characters to their spelled out analogues, like "3/4"
+  var normalizeEllipsis = true // Convert unicode ellipsis character to spelled out analogue, "..."
+  var undoPennParens = true // Change -LRB- etc to "(" etc.
+  var unescapeSlash = true // Change \/ to /
+  var unescapeAsterisk = true // Change \* to *
+  var normalizeMDash = true // Convert all em-dashes to double dash --
+  var normalizeDash = true // Convert all other dashes to single dash -
+  var normalizeHtmlSymbol = true // Convert &lt; to <, etc
+  var normalizeHtmlAccent = true // Convert Beyonc&eacute; to Beyonce
 
   def this(in: Reader, tokSgml: Boolean = false, tokNewline: Boolean = false,
-            tokWhitespace: Boolean = false, tokDashed: Boolean = false, abbrevPrecedes: Boolean = false) = {
+            tokWhitespace: Boolean = false, tokDashed: Boolean = false, abbrevPrecedes: Boolean = false,
+            normQuote: Boolean = true, normApostrophe: Boolean = true, normCurrency: Boolean = true,
+            normAmpersand: Boolean = true, normFractions: Boolean = true,
+            normEllipsis: Boolean = true, pennParens: Boolean = true, unescSlash: Boolean = true,
+            unescAsterisk: Boolean = true, normMDash: Boolean = true, normDash: Boolean = true,
+            normHtmlSymbol: Boolean = true, normHtmlAccent: Boolean = true) = {
     this(in)
     tokenizeSgml = tokSgml
     tokenizeNewline = tokNewline
     tokenizeWhitespace = tokWhitespace
     tokenizeAllDashedWords = tokDashed
     abbrevPrecedesLowercase = abbrevPrecedes
+    normalizeQuotes = normQuote
+    normalizeApostrophe = normApostrophe
+    normalizeCurrency = normCurrency
+    normalizeAmpersand = normAmpersand
+    normalizeFractions = normFractions
+    normalizeEllipsis = normEllipsis
+    undoPennParens = pennParens
+    unescapeSlash = unescSlash
+    unescapeAsterisk = unescAsterisk
+    normalizeMDash = normMDash
+    normalizeDash = normDash
+    normalizeHtmlSymbol = normHtmlSymbol
+    normalizeHtmlAccent = normHtmlAccent
   }
 
   def tok(): Object = tok(yytext())
@@ -140,7 +202,6 @@ INITIALS = {SINGLE_INITIAL}{SINGLE_INITIAL}+
 ORDINALS = [0-9]{1,4}(st|nd|rd|th)
 
 QUOTE = ''|``|[\u2018\u2019\u201A\u201B\u201C\u201D\u0091\u0092\u0093\u0094\u201A\u201E\u201F\u2039\u203A\u00AB\u00BB]{1,2}|[\"\u201C\u201D\p{Pf}]|&(quot|[rl][ad]quo);|{AP2}{2}
-//DASHEDWORD = ({LETTER})([\p{L}\p{M}\p{Nd}_]*(-[\p{L}\p{M}\p{Nd}_]*)*)
 
 /* List of prefixes taken from http://en.wikipedia.org/wiki/English_prefixes with the addition of "e", "uh" and "x" from Ontonotes examples. */
 /* TODO these should be case-insensitive */
@@ -189,13 +250,17 @@ ELLIPSIS = (\.[ \u00A0]){2,4}\.|[\u0085\u2026]
 /* This matches any kind of punctuation as a single character, so any special handling of multiple punc together must be above, e.g. ``, --- */
 PUNC = \p{P}
 
+/* This should match an escaped forward slash: \/ */
+ESCAPED_SLASH = \\\/
+ESCAPED_ASTERISK = \\\*
+ESCAPED_ASTERISK2 = {ESCAPED_ASTERISK}{ESCAPED_ASTERISK}
+
 /* probably used as ASCII art */
 REPEATED_PUNC = [,~\*=\+\.\?!#]+|(----+)
-//REPEATED_PUNC = {PUNC}+|(----+)
-MDASH = -{2,3}|&(mdash|MD);|[\u2014\u2015]
 
 /* I think \p{Pd} should include \u2013\u2014\u2015 */
 DASH = &(ndash);|[-\u0096\u0097\p{Pd}]
+MDASH = -{2,3}|&(mdash|MD);|[\u2014\u2015]
 
 SYMBOL = \p{S}|&(degree|plusmn|times|divide|infin);
 
@@ -220,7 +285,16 @@ CATCHALL = \P{C}
 
 {SGML} { printDebug("SGML"); if(tokenizeSgml) tok() else null}
 
-{HTML_SYMBOL} { printDebug("HTML_SYMBOL"); tok() }
+&amp; { printDebug("AMPERSAND"); if(normalizeAmpersand || normalizeHtmlSymbol) tok(NORMALIZED_AMPERSAND) else tok() }
+
+{HTML_SYMBOL} {
+  printDebug("HTML_SYMBOL")
+  if(normalizeHtmlSymbol){
+    val matched = yytext()
+    tok(htmlSymbolMap.getOrElse(matched, matched))
+  }
+  else tok()
+}
 
 {URL} { printDebug("URL"); tok() }
 {URL2} { printDebug("URL2"); tok() }
@@ -234,9 +308,17 @@ CATCHALL = \P{C}
 {DECADE} { printDebug("DECADE"); tok() }
 
 /* For some reason combining these using | makes the lexer go into an infinite loop */
-/* CURRENCY2 will be matched as word and not currency if it occurs at the end of the file, not sure how to fix */
-{CURRENCY1} { printDebug("CURRENCY"); tok() }
-{CURRENCY2} / [^A-Z] { printDebug("CURRENCY"); tok() }
+{CURRENCY1} {
+  printDebug("CURRENCY")
+  if(normalizeCurrency){
+    yytext() match{
+      case "\u00A2" => tok(NORMALIZED_CENTS)
+      case _ => tok(NORMALIZED_DOLLAR)
+    }
+  }
+  else tok()
+}
+{CURRENCY2} / [^A-Z] { printDebug("CURRENCY"); if(normalizeCurrency) tok(NORMALIZED_DOLLAR) else tok() }
 
 {HASHTAG} { printDebug("HASHTAG"); tok() }
 {ATUSER} { printDebug("ATUSER"); tok() }
@@ -275,7 +357,7 @@ wan / na { printDebug("wanna"); tok() }
 
 {ORDINALS} { printDebug("ORDINALS"); tok() }
 
-{QUOTE} { printDebug("QUOTE"); tok() }
+{QUOTE} { printDebug("QUOTE"); if(normalizeQuotes) tok(NORMALIZED_QUOTE) else tok() }
 
 // TODO deal with this: if this is here then we will never match following {DASHED_PREFIX_WORD}
 //{DASHEDWORD} { printDebug("DASHEDWORD"); if (tokenizeAllDashedWords) tok() else null }
@@ -297,7 +379,27 @@ wan / na { printDebug("wanna"); tok() }
   tok()
 }
 
-{FRACTION} { printDebug("FRACTION"); tok() }
+{FRACTION} {
+  printDebug("FRACTION")
+  if(normalizeFractions){
+    yytext() match{
+      case "\u00BC" => tok(NORMALIZED_ONE_QUARTER)
+      case "\u00BD" => tok(NORMALIZED_ONE_HALF)
+      case "\u00BE" => tok(NORMALIZED_THREE_QUARTERS)
+      case "\u2153" => tok(NORMALIZED_ONE_THIRD)
+      case "\u2154" => tok(NORMALIZED_TWO_THIRDS)
+      case _ => tok()
+    }
+  }
+  else tok()
+}
+
+-LRB- { printDebug("-LRB-"); if(undoPennParens) tok(NORMALIZED_LRB) else tok() }
+-RRB- { printDebug("-RRB-"); if(undoPennParens) tok(NORMALIZED_RRB) else tok() }
+-LCB- { printDebug("-LCB-"); if(undoPennParens) tok(NORMALIZED_LCB) else tok() }
+-RCB- { printDebug("-RCB-"); if(undoPennParens) tok(NORMALIZED_RCB) else tok() }
+-LSB- { printDebug("-LSB-"); if(undoPennParens) tok(NORMALIZED_LSB) else tok() }
+-RSB- { printDebug("-RSB-"); if(undoPennParens) tok(NORMALIZED_RSB) else tok() }
 
 {CONTRACTED_WORD} / {CONTRACTION} { printDebug("CONTRACTED_WORD"); tok() }
 
@@ -309,16 +411,20 @@ wan / na { printDebug("wanna"); tok() }
 
 {NUMBER2} { printDebug("NUMBER2"); tok() }
 
-{AP2} { printDebug("AP2"); tok() }
+{AP2} { printDebug("AP2"); if(normalizeApostrophe) tok(NORMALIZED_APOSTROPHE) else tok() }
 
-{ELLIPSIS} { printDebug("ELLIPSIS"); tok() }
-\.{2,5} / [^!?] { printDebug("ELLIPSIS"); tok() }
+{ELLIPSIS} { printDebug("ELLIPSIS"); if(normalizeEllipsis) tok(NORMALIZED_ELLIPSIS) else tok() }
+\.{2,5} / [^!?] { printDebug("ELLIPSIS"); if(normalizeEllipsis) tok(NORMALIZED_ELLIPSIS) else tok() }
+
+{ESCAPED_SLASH} {printDebug("ESCAPED_SLASH"); if(unescapeSlash) tok(UNESCAPED_SLASH) else tok()}
+{ESCAPED_ASTERISK} {printDebug("ESCAPED_ASTERISK"); if(unescapeAsterisk) tok(UNESCAPED_ASTERISK) else tok()}
+{ESCAPED_ASTERISK2} {printDebug("ESCAPED_ASTERISK2"); if(unescapeAsterisk) tok(UNESCAPED_ASTERISK2) else tok()}
 
 {REPEATED_PUNC} { printDebug("REPEATED_PUNC"); tok() }
 
-{MDASH} { printDebug("MDASH"); tok() }
+{MDASH} { printDebug("MDASH"); if(normalizeMDash) tok(NORMALIZED_MDASH) else tok() }
 
-{DASH} { printDebug("DASH"); tok() }
+{DASH} { printDebug("DASH"); if(normalizeDash) tok(NORMALIZED_DASH) else tok() }
 
 {PUNC} { printDebug("PUNC"); tok() }
 
@@ -331,20 +437,6 @@ wan / na { printDebug("wanna"); tok() }
 {WHITESPACE} { printDebug("WHITESPACE"); if(tokenizeWhitespace) tok() else null}
 
 {CATCHALL} { printDebug("CATCHALL"); tok() }
-
-/* The below rules are duplicated here (without lookahead) in order to match these patterns
-   when they occur right at the end of the file (nothing to look ahead to so originals never match) */
-//{DATE} { printDebug("DATE"); tok() }
-//{LATIN2} { printDebug("LATIN2"); tok() }
-//{CONTRACTION} { printDebug("CONTRACTION"); tok() }
-//{INITIALS} {
-//  printDebug("INITIALS");
-//  val matched = yytext()
-//  if(matched.endsWith("..")) yypushback(1)
-//  tok()
-//}
-//{DASHED_SUFFIX_WORD} { printDebug("DASHED_SUFFIX_WORD"); tok() }
-//{CAPS} { printDebug("CAPS"); tok() }
 
 /* The only crap left here should be control characters, god forbid... throw them away */
 . { printDebug("GARB"); null }
