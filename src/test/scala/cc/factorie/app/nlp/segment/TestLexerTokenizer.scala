@@ -129,7 +129,7 @@ class TestLexerTokenizer extends JUnitSuite with FastLogging {
 
     check(
       src = "$1 E2 L3 USD1 2KPW ||$1 USD1..",
-      trg = "[$, 1, E2, L3, USD, 1, 2, KPW, |, |, $, 1, USD, 1, ..]")
+      trg = "[$, 1, E2, L3, USD, 1, 2, KPW, |, |, $, 1, USD, 1, ...]")
     
     check(
       src = "1m 2mm 3kg 4oz",
