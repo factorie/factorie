@@ -199,8 +199,8 @@ class TestLexerTokenizer extends JUnitSuite with FastLogging {
 
     /* A useful string for checking various options to the tokenizer (but not checked here) */
     checkNoNormalize(
-      src = "NYT-2012-04-05 ethno-centric art-o-torium sure. thing",
-      trg = "[NYT, -, 2012-04-05, ethno-centric, art-o-torium, sure, ., thing]"
+      src = "2012-04-05 ethno-centric art-o-torium sure. thing",
+      trg = "[2012-04-05, ethno-centric, art-o-torium, sure, ., thing]"
     )
   }
 
