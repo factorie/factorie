@@ -96,6 +96,7 @@ import cc.factorie.util.JavaHashMap
 
   def tok(txt: String): Object = (txt, yychar, yylength)
 
+  /* Uncomment below for useful debugging output */
   def printDebug(tok: String) = {}//println(s"$tok: |${yytext()}|")
 
 %}
@@ -130,7 +131,6 @@ FRPHONE = (\+33)?(\s[012345][-\. ])?[0-9]([-\. ][0-9]{2}){3}
 DATE = (((19|20)?[0-9]{2}[\-\/][0-3]?[0-9][\-\/][0-3]?[0-9])|([0-3]?[0-9][\-\/][0-3]?[0-9][\-\/](19|20)?[0-9]{2}))
 DECADE = (19|20)?[0-9]0s
 
-// (?:US|AU|NZ|C|CA|FJ|JY|HK|JM|KY|LR|NA|SB|SG|NT|BB|XC|BM|BN|BS|BZ|ZB|B)?\\$|&(?:euro|cent|pound);|\\p{Sc}|(?:USD|EUR|JPY|GBP|CHF|CAD|KPW|RMB|CNY|AD|GMT)(?![A-Z])
 CURRENCY1 = ((US|AU|NZ|C|CA|FJ|JY|HK|JM|KY|LR|NA|SB|SG|NT|BB|XC|BM|BN|BS|BZ|ZB|B)?\$)|(&(euro|cent|pound);)|\p{Sc}
 CURRENCY2 = (USD|EUR|JPY|GBP|CHF|CAD|KPW|RMB|CNY|AD|GMT)
 
@@ -139,7 +139,6 @@ HASHTAG = #[A-Za-z][A-Za-z0-9]+
 ATUSER = @[A-Za-z][A-Za-z0-9]+
 
 /* Optional hat, eyes, optional repeated nose, mouth{1,5}, optional beard.  Or horizontal eyes '.' */
-// [#<%\*]?[:;!#\$%@=\|][-\+\*=o^<]{0,4}[\(\)oODPQX\*3{}\[\]]{1,5}[#><\)\(]?(?!\S)|'\.'
 EMOTICON = [#<%\*]?[:;!#\$%@=\|][-\+\*=o\^<]{0,4}[\(\)oODPQX\*3{}\[\]]{1,5}[#><\)\(]?
 
 FILENAME = \S+\.(3gp|7z|ace|ai(f){0,2}|amr|asf|asp(x)?|asx|avi|bat|bin|bmp|bup|cab|cbr|cd(a|l|r)|chm|dat|divx|dll|dmg|doc|dss|dvf|dwg|eml|eps|exe|fl(a|v)|gif|gz|hqx|(s)?htm(l)?|ifo|indd|iso|jar|jsp|jp(e)?g|key|lnk|log|m4(a|b|p|v)|mcd|mdb|mid|mov|mp(2|3|4)|mp(e)?g|ms(i|wmm)|numbers|ogg|pages|pdf|php|png|pps|ppt|ps(d|t)?|Penn|pub|qb(b|w)|qxd|ra(m|r)|rm(vb)?|rtf|se(a|s)|sit(x)?|sql|ss|swf|tgz|tif|torrent|ttf|txt|vcd|vob|wav|wm(a|v)|wp(d|s)|xls|xml|xtm|zip)
@@ -195,7 +194,6 @@ SINGLE_INITIAL = (\p{L}\.)
 
 /* A.  A.A.A.I.  and U.S. in "U.S..", etc., but not A... or A..B */
 //INITIALS = (\p{L}\.)+(?![\.!\?]{2}|\.\p{L})
-//INITIALS = (\p{L}\.)+\.?
 INITIALS = {SINGLE_INITIAL}{SINGLE_INITIAL}+
 
 /* like 1st and 22nd */
@@ -224,15 +222,11 @@ CONTRACTED_WORD = [\p{L}\p{M}]+
 
 /* For "AT&T" but don't grab "LAT&Eacute;" and be sure not to grab "PE&gym" */
 /* Unicode character classes are inside [] character classes to make sure case is not ignored in this case (ha) */
-//CAPS = \p{Lu}+([&+](?!({HTML_SYMBOL}|{HTML_ACCENTED_LETTER}))(\p{Lu}(?!\p{Ll}))+)+
 CAPS = [\p{Lu}]+[&+][\p{Lu}]+
 
 /* Includes any combination of letters, accent characters, numbers and underscores, dash-followed-by-numbers (as in "G-20" but not "NYT-03-04-2012").  It may include a & as long as it is followed by a letter but not an HTML symbol encoding */
 /* TODO Not sure why the pattern below is not getting the last character of a word ending in \u00e9 -akm */
-//WORD = (\p{Nd}{LETTER}|{LETTER})([\p{L}\p{M}\p{Nd}_]|{LETTER})*+
-//WORD = {LETTER}([\p{L}\p{M}\p{Nd}_]|{LETTER})*+
 WORD = {LETTER}([\p{Nd}_]|{LETTER})*
-//WORD = [\p{M}\p{L}][\p{Nd}_\p{M}\p{L}]*
 
 /* begin with an optional [+-.,] and a number, followed by numbers or .:, punc, ending in number.  Avoid matching dates inside "NYT-03-04-2012".  Cannot be preceded by number (or letter? why?  do we need "USD32"?), in order to separate "1989-1990" into three tokens. */
 /* Ok, breaking this not matching dates inside NYT-03-04-2012 thing for simplicity -- do we even need to not match that? */
@@ -402,7 +396,20 @@ wan / na { printDebug("wanna"); tok() }
 
 {CAPS} / [^\p{Ll}] { printDebug("CAPS"); tok() }
 
-{WORD} { printDebug("WORD"); tok() }
+{WORD} {
+  printDebug("WORD")
+  if(normalizeHtmlAccent){
+    val matched = yytext()
+    val startIdx = matched.indexOf("&")
+    if(startIdx != -1){
+      val endIdx = matched.indexOf(";")
+      // these are of the form "&Eacute;"; grab just the E
+      tok(matched.substring(0, startIdx) + yycharat(startIdx+1) + matched.substring(endIdx+1))
+    }
+    else tok()
+  }
+  else tok()
+}
 
 {NUMBER} { printDebug("NUMBER"); tok() }
 
