@@ -73,7 +73,7 @@ class TestLexerTokenizer extends JUnitSuite with FastLogging {
   @Test def testDeterministicLexerTokenizer(): Unit = {
 
     // spaces
-    checkDeterministicLexerTokenizer(t.stringStart, t.stringEnd)(
+    checkDeterministicLexerTokenizer(
       src = "a b  c\n d \t\n\r\fe",
       trg = "[a, b, c, d, e]")
 
@@ -347,8 +347,8 @@ class TestLexerTokenizer extends JUnitSuite with FastLogging {
     assert(DeterministicLexerTokenizer("Oct. 24").toSeq == Seq("Oct.", "24"))
     assert(DeterministicLexerTokenizer("Mr. Smith.").toSeq == Seq("Mr.", "Smith", "."))
     //println(RegexTokenizer("MR. SMITH.").mkString(" "))
-    //assert(RegexTokenizer("MR. SMITH.").toSeq == Seq("MR.", "SMITH", ".")) // TODO It would be nice if this worked.
-    //assert(RegexTokenizer("mr. smith.").toSeq != Seq("mr.", "smith", ".")) // TODO Should this work? -akm
+    assert(DeterministicLexerTokenizer("MR. SMITH.").toSeq == Seq("MR.", "SMITH", ".")) // TODO It would be nice if this worked.
+    assert(DeterministicLexerTokenizer("mr. smith.").toSeq != Seq("mr.", "smith", ".")) // TODO Should this work? -akm
   }
   
 }
