@@ -21,10 +21,18 @@ class TestLexerTokenizer extends JUnitSuite with FastLogging {
   
   def assertEquals(a: Any, b: Any): Unit = assert(a == b, "\"%s\" did not equal \"%s\"" format (a, b))
 
-  def check(tokenizer: DeterministicLexerTokenizer, src: String, trg: String): Unit = {
-    val tokens = runTokenizer(tokenizer, src)
+  def checkDeterministicLexerTokenizer(src: String, trg: String): Unit = {
+    val tokens = runTokenizer(DeterministicLexerTokenizer, src)
     for (t <- tokens) {
       assertEquals(t.string, src.substring(t.stringStart, t.stringEnd))
+    }
+    assertEquals("[" + tokens.map(_.string).mkString(", ") + "]", trg)
+  }
+
+  def checkDeterministicNormalizingTokenizer(tokenizer: DeterministicLexerTokenizer, src: String, trg: String): Unit = {
+    val tokens = runTokenizer(tokenizer, src)
+    for (t <- tokens) {
+      assertEquals(t.document.string.substring(t.stringStart, t.stringEnd), src.substring(t.stringStart, t.stringEnd))
     }
     assertEquals("[" + tokens.map(_.string).mkString(", ") + "]", trg)
   }
@@ -64,155 +72,153 @@ class TestLexerTokenizer extends JUnitSuite with FastLogging {
 
   @Test def testDeterministicLexerTokenizer(): Unit = {
 
-    def checkNoNormalize(src: String, trg: String) = check(DeterministicLexerTokenizer, src, trg)
-
     // spaces
-    checkNoNormalize(
+    checkDeterministicLexerTokenizer(t.stringStart, t.stringEnd)(
       src = "a b  c\n d \t\n\r\fe",
       trg = "[a, b, c, d, e]")
 
     // emoticons
-    checkNoNormalize(
+    checkDeterministicLexerTokenizer(
       src = ":-)))) :----) :( :-) :--)",
       trg = "[:-)))), :----), :(, :-), :--)]")
     
     // URLs
-    checkNoNormalize(
+    checkDeterministicLexerTokenizer(
       src = "|http://www.google.com|www.google.com|mailto:somebody@google.com|some-body@google+.com|",
       trg = "[|, http://www.google.com, |, www.google.com, |, mailto:somebody@google.com, |, some-body@google+.com, |]")
     
-    checkNoNormalize(
+    checkDeterministicLexerTokenizer(
       src = "google.com index.html a.b.htm ab-cd.shtml",
       trg = "[google.com, index.html, a.b.htm, ab-cd.shtml]")
 
     // abbreviations
-    checkNoNormalize(
+    checkDeterministicLexerTokenizer(
       src = "prof. ph.d. a. a.b. a.b a.b.c. men.cd ab.cd",
       trg = "[prof., ph.d., a., a.b., a.b, a.b.c., men, ., cd, ab, ., cd]")
 
     // consecutive punctuation
-    checkNoNormalize(
+    checkDeterministicLexerTokenizer(
       src = "A..B!!C??D.!?E.!?.!?F..!!??",
       trg = "[A, .., B, !!, C, ??, D, .!?, E, .!?.!?, F, ..!!??]")
 
-    checkNoNormalize(
+    checkDeterministicLexerTokenizer(
       src = ",,A---C*D**E~~~~F==",
       trg = "[,,, A, ---, C, *, D, **, E, ~~~~, F, ==]")
       // was: trg = "[,,, A, ---, C*D, **, E, ~~~~, F, ==]")
 
     // dots in numbers
     // Really?  Do we want this? -akm
-//    checkNoNormalize(
+//    checkDeterministicLexerTokenizer(
 //      src = ".1 a.1 2.3 4,5 6:7 8-9 0/1 '2 3's 3'4 5'b a'6 a'b",
 //      trg = "[.1, a.1, 2.3, 4,5, 6:7, 8-9, 0/1, '2, 3's, 3'4, 5'b, a'6, a'b]")
 
-//    checkNoNormalize(
+//    checkDeterministicLexerTokenizer(
 //      src = ".a a.3 4,a a:a a8-9 0/1a",
 //      trg = "[., a, a.3, 4, ,, a, a, :, a, a8-9, 0/1a]")
     
     // hyphens
-    checkNoNormalize(
+    checkDeterministicLexerTokenizer(
       src = "dis-able cross-validation o-kay art-o-torium s-e-e art-work",
       trg = "[dis-able, cross-validation, o-kay, art-o-torium, s-e-e, art, -, work]")
     
     // apostrophies
-    checkNoNormalize(
+    checkDeterministicLexerTokenizer(
       src = "he's we'd I'm you'll they're I've didn't did'nt",
       trg = "[he, 's, we, 'd, I, 'm, you, 'll, they, 're, I, 've, did, n't, did, 'nt]")
     
-    checkNoNormalize(
+    checkDeterministicLexerTokenizer(
       src = "he'S DON'T gue'ss",
       trg = "[he, 'S, DO, N'T, gue, ', ss]")
       // Was: trg = "[he, 'S, DO, N'T, gue'ss]")
     
       // Really?  Do we want this? -akm
-//    checkNoNormalize(
+//    checkDeterministicLexerTokenizer(
 //      src = "aint cannot don'cha d'ye i'mma dunno",
 //      trg = "[ai, nt, can, not, do, n', cha, d', ye, i, 'm, ma, du, n, no]")
 
-    checkNoNormalize(
+    checkDeterministicLexerTokenizer(
       src = "$1 E2 L3 USD1 2KPW ||$1 USD1..",
       trg = "[$, 1, E2, L3, USD, 1, 2, KPW, |, |, $, 1, USD, 1, ..]")
     
-    checkNoNormalize(
+    checkDeterministicLexerTokenizer(
       src = "1m 2mm 3kg 4oz",
       trg = "[1, m, 2, mm, 3, kg, 4, oz]")
     
-    checkNoNormalize(
+    checkDeterministicLexerTokenizer(
       src = "1D 2nM 3CM 4LB",
       trg = "[1, D, 2, nM, 3, CM, 4, LB]")
     
-    checkNoNormalize(
+    checkDeterministicLexerTokenizer(
       src = "(1){2}[3]<4>",
       trg = "[(, 1, ), {, 2, }, [, 3, ], <, 4, >]")
     
     // Really?  Do we want this? -akm
-//    checkNoNormalize(
+//    checkDeterministicLexerTokenizer(
 //      src = "`a'b,c:d;e-f/g\"h'",
 //      trg = "[`, a'b, ,, c, :, d, ;, e, -, f, /, g, \", h, ']")
-//    checkNoNormalize(
+//    checkDeterministicLexerTokenizer(
 //      src = "`a'b,c:d;e-f/g\"h'",
 //      trg = "[`, a'b, ,, c, :, d, ;, e, -, f, /, g, \", h, ']")
     
-    checkNoNormalize(
+    checkDeterministicLexerTokenizer(
       src = "a@b #c$d%e&f|g",
       trg = "[a@b, #, c$, d, %, e, &, f, |, g]")
       // Was: trg = "[a@b, #, c, $, d, %, e, &, f, |, g]")
     
-    checkNoNormalize(
+    checkDeterministicLexerTokenizer(
       src = "e.g., i.e, (e.g.,",
       trg = "[e.g., ,, i.e, ,, (, e.g., ,]")
     
-    checkNoNormalize(
+    checkDeterministicLexerTokenizer(
       src = " \n \t",
       trg = "[]")
 
-    checkNoNormalize(
+    checkDeterministicLexerTokenizer(
       src = "\"John & Mary's dog,\" Jane thought (to herself).\n" + "\"What a #$%!\n" + "a- ``I like AT&T''.\"",
       trg = "[\", John, &, Mary, 's, dog, ,, \", Jane, thought, (, to, herself, ), ., \", What, a, #, $, %, !, a, -, ``, I, like, AT&T, '', ., \"]")
     
-    checkNoNormalize(
+    checkDeterministicLexerTokenizer(
       src = "I said at 4:45pm.  Never 2am.",
       trg = "[I, said, at, 4:45, pm, ., Never, 2, am, .]")
     
-    checkNoNormalize(
+    checkDeterministicLexerTokenizer(
       src = "I can't believe they wanna keep 40% of that.\"``Whatcha think?''\"I don't --- think so...,\"",
       trg = "[I, ca, n't, believe, they, wan, na, keep, 40, %, of, that, ., \", ``, What, cha, think, ?, '', \", I, do, n't, ---, think, so, ..., ,, \"]")
     
-    checkNoNormalize(
+    checkDeterministicLexerTokenizer(
       src = "You `paid' US$170,000?!\nYou should've paid only$16.75.",
       trg = "[You, `, paid, ', US$, 170,000, ?!, You, should, 've, paid, only, $, 16.75, .]")
     
-    checkNoNormalize(
+    checkDeterministicLexerTokenizer(
       src = " 1. Buy a new Chevrolet (37%-owned in the U.S..) . 15%",
       trg = "[1, ., Buy, a, new, Chevrolet, (, 37, %, -, owned, in, the, U.S., ., ), ., 15, %]")
 
-    checkNoNormalize(
+    checkDeterministicLexerTokenizer(
       src = "A.  A.A.A.I.  and U.S. in U.S.. etc., but not A... or A..B iPhone 3G in Washington D.C.",
       trg = "[A., A.A.A.I., and, U.S., in, U.S., ., etc., ,, but, not, A, ..., or, A, .., B, iPhone, 3, G, in, Washington, D.C.]"
     )
 
-    checkNoNormalize(
+    checkDeterministicLexerTokenizer(
       src = "AT&T but don't grab LAT&Eacute; and be sure not to grab PE&gym",
       trg = "[AT&T, but, do, n't, grab, LAT&Eacute;, and, be, sure, not, to, grab, PE, &, gym]"
     )
 
     /* A useful string for checking various options to the tokenizer (but not checked here) */
-    checkNoNormalize(
+    checkDeterministicLexerTokenizer(
       src = "2012-04-05 ethno-centric art-o-torium sure. thing",
       trg = "[2012-04-05, ethno-centric, art-o-torium, sure, ., thing]"
     )
   }
 
   @Test def testDeterministicNormalizingTokenizer(): Unit = {
-    check(DeterministicNormalizingTokenizer,
+    checkDeterministicNormalizingTokenizer(DeterministicNormalizingTokenizer,
       src = "''Going to the store to grab . . . some coffee for \u20ac50. He`s right\u2026 &ndash; &amp; \u2154 \\*\\* -- &trade; &mdash; \u2015 \u0096 -- --- ..",
       trg = "\", Going, to, the, store, to, grab, ..., some, coffee, for, $, 50, ., He, ', s, right, ..., -, &, 2/3, **, --, (TM), --, --, -, --, --, ...]"
     )
   }
 
   @Test def testDeterministicNormalizingHtmlTokenizer(): Unit = {
-    check(DeterministicNormalizingHtmlTokenizer,
+    checkDeterministicNormalizingTokenizer(DeterministicNormalizingHtmlTokenizer,
       src = "''Going to the store to grab . . . some coffee for \u20ac50. He`s right\u2026 &ndash; &amp; \u2154 \\*\\* -- &trade; &mdash; \u2015 \u0096 -- --- ..",
       trg = "\", Going, to, the, store, to, grab, ..., some, coffee, for, $, 50, ., He, ', s, right, ..., -, &, 2/3, **, --, (TM), --, --, -, --, --, ...]"
     )
