@@ -212,14 +212,14 @@ class TestLexerTokenizer extends JUnitSuite with FastLogging {
 
   @Test def testDeterministicNormalizingTokenizer(): Unit = {
     checkDeterministicNormalizingTokenizer(DeterministicNormalizingTokenizer,
-      src = "''Going to the store to grab . . . some coffee for \u20ac50. He`s right\u2026 &ndash; &amp; \u2154 \\*\\* -- &trade; &mdash; \u2015 \u0096 -- --- ..",
+      src = "''Going to the stor&eacute; to grab . . . some c&ouml;ff&eacute;&eacute; for \u20ac50. He`s right\u2026 &ndash; &amp; \u2154 \\*\\* -- &trade; &mdash; \u2015 \u0096 -- --- ..",
       trg = "[\", Going, to, the, store, to, grab, ..., some, coffee, for, $, 50, ., He, ', s, right, ..., -, &, 2/3, **, --, (TM), --, --, -, --, --, ...]"
     )
   }
 
   @Test def testDeterministicNormalizingHtmlTokenizer(): Unit = {
     checkDeterministicNormalizingTokenizer(DeterministicNormalizingHtmlTokenizer,
-      src = "''Going to the store to grab . . . some coffee for \u20ac50. He`s right\u2026 &ndash; &amp; \u2154 \\*\\* -- &trade; &mdash; \u2015 \u0096 -- --- ..",
+      src = "''Going to the stor&eacute; to grab . . . some c&ouml;ff&eacute;&eacute; for \u20ac50. He`s right\u2026 &ndash; &amp; \u2154 \\*\\* -- &trade; &mdash; \u2015 \u0096 -- --- ..",
       trg = "[\", Going, to, the, store, to, grab, ..., some, coffee, for, $, 50, ., He, ', s, right, ..., -, &, 2/3, **, --, (TM), --, --, -, --, --, ...]"
     )
   }

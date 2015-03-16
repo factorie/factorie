@@ -160,16 +160,17 @@ object DeterministicNormalizingTokenizer extends DeterministicLexerTokenizer(
   normalizeHtmlSymbol = true,
   normalizeHtmlAccent = true
 ){
-/* For testing purposes: Takes a filename as input and tokenizes it */
-def main(args: Array[String]): Unit = {
+  /* For testing purposes: Takes a filename as input and tokenizes it */
+  def main(args: Array[String]): Unit = {
     val fname = "/iesl/canvas/strubell/data/tackbp/source/2013/LDC2013E45_TAC_2013_KBP_Source_Corpus_disc_2/data/English/discussion_forums/bolt-eng-DF-200"
     println(s"Loading $fname")
     val string = io.Source.fromFile(fname, "utf-8").mkString
     println("Tokenizing...")
     val doc = new Document(string)
     val t0 = System.currentTimeMillis()
-    DeterministicLexerTokenizer.process(doc)
+    DeterministicNormalizingTokenizer.process(doc)
     val time = System.currentTimeMillis()-t0
     println(s"Processed ${doc.tokenCount} tokens in ${time}ms (${doc.tokenCount.toDouble/time*1000} tokens/second)")
+    println(doc.tokens.map(_.string).mkString(" "))
   }
 }
