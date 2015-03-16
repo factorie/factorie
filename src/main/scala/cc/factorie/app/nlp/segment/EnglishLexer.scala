@@ -363,6 +363,7 @@ class EnglishLexer(in: Reader)  {
 
   def tok(txt: String): Object = (txt, yychar, yylength)
 
+  /* Uncomment below for useful debugging output */
   def printDebug(tok: String) = {}//println(s"$tok: |${yytext()}|")
 
 
@@ -691,7 +692,18 @@ class EnglishLexer(in: Reader)  {
              printDebug("ELLIPSIS"); if(normalizeEllipsis) tok(NORMALIZED_ELLIPSIS) else tok()
           case 67 => null // noop
           case 7 => 
-             printDebug("WORD"); tok()
+             printDebug("WORD")
+               if(normalizeHtmlAccent){
+                 val matched = yytext()
+                 val startIdx = matched.indexOf("&")
+                 if(startIdx != -1){
+                   val endIdx = matched.indexOf(";")
+                   // these are of the form "&Eacute;"; grab just the E
+                   tok(matched.substring(0, startIdx) + yycharat(startIdx+1) + matched.substring(endIdx+1))
+                 }
+                 else tok()
+               }
+               else tok()
           case 68 => null // noop
           case 8 => 
              printDebug("NUMBER"); tok()
