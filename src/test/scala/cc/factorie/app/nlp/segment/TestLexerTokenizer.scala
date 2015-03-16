@@ -183,6 +183,11 @@ class TestLexerTokenizer extends JUnitSuite with FastLogging {
     check(
       src = " 1. Buy a new Chevrolet (37%-owned in the U.S..) . 15%",
       trg = "[1, ., Buy, a, new, Chevrolet, (, 37, %, -, owned, in, the, U.S., ., ), ., 15, %]")
+
+    check(
+      src = "A.  A.A.A.I.  and U.S. in U.S.. etc., but not A... or A..B iPhone 3G in Washington D.C.",
+      trg = "[A., A.A.A.I., and, U.S., in, U.S., .,  etc., but, not, A, ..., or, A, .., B, iPhone, 3, G, in, Washington, D.C.]"
+    )
   }
 
   val testText2 =
