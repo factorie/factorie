@@ -58,7 +58,7 @@ class TestLexerTokenizer extends JUnitSuite with FastLogging {
     def check(src: String, trg: String): Unit = {
       val tokens = runDeterministicLexerTokenizer(src)
       for (t <- tokens) {
-        assertEquals(t.string, src.substring(t.stringStart, t.stringEnd))
+        assertEquals(t.document.string.substring(t.stringStart, t.stringEnd), src.substring(t.stringStart, t.stringEnd))
       }
       assertEquals("[" + tokens.map(_.string).mkString(", ") + "]", trg)
     }
