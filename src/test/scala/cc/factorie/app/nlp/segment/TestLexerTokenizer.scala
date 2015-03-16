@@ -90,7 +90,7 @@ class TestLexerTokenizer extends JUnitSuite with FastLogging {
     // consecutive punctuation
     check(
       src = "A..B!!C??D.!?E.!?.!?F..!!??",
-      trg = "[A, ..., B, !!, C, ??, D, .!?, E, .!?.!?, F, ..!!??]")
+      trg = "[A, .., B, !!, C, ??, D, .!?, E, .!?.!?, F, ..!!??]")
 
     check(
       src = ",,A---C*D**E~~~~F==",
