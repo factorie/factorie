@@ -213,14 +213,14 @@ class TestLexerTokenizer extends JUnitSuite with FastLogging {
   @Test def testDeterministicNormalizingTokenizer(): Unit = {
     checkDeterministicNormalizingTokenizer(DeterministicNormalizingTokenizer,
       src = "''Going to the store to grab . . . some coffee for \u20ac50. He`s right\u2026 &ndash; &amp; \u2154 \\*\\* -- &trade; &mdash; \u2015 \u0096 -- --- ..",
-      trg = "\", Going, to, the, store, to, grab, ..., some, coffee, for, $, 50, ., He, ', s, right, ..., -, &, 2/3, **, --, (TM), --, --, -, --, --, ...]"
+      trg = "[\", Going, to, the, store, to, grab, ..., some, coffee, for, $, 50, ., He, ', s, right, ..., -, &, 2/3, **, --, (TM), --, --, -, --, --, ...]"
     )
   }
 
   @Test def testDeterministicNormalizingHtmlTokenizer(): Unit = {
     checkDeterministicNormalizingTokenizer(DeterministicNormalizingHtmlTokenizer,
       src = "''Going to the store to grab . . . some coffee for \u20ac50. He`s right\u2026 &ndash; &amp; \u2154 \\*\\* -- &trade; &mdash; \u2015 \u0096 -- --- ..",
-      trg = "\", Going, to, the, store, to, grab, ..., some, coffee, for, $, 50, ., He, ', s, right, ..., -, &, 2/3, **, --, (TM), --, --, -, --, --, ...]"
+      trg = "[\", Going, to, the, store, to, grab, ..., some, coffee, for, $, 50, ., He, ', s, right, ..., -, &, 2/3, **, --, (TM), --, --, -, --, --, ...]"
     )
   }
 
@@ -346,9 +346,8 @@ class TestLexerTokenizer extends JUnitSuite with FastLogging {
     assert(DeterministicLexerTokenizer("Acme Inc.").toSeq == Seq("Acme", "Inc."))
     assert(DeterministicLexerTokenizer("Oct. 24").toSeq == Seq("Oct.", "24"))
     assert(DeterministicLexerTokenizer("Mr. Smith.").toSeq == Seq("Mr.", "Smith", "."))
-    //println(RegexTokenizer("MR. SMITH.").mkString(" "))
-    assert(DeterministicLexerTokenizer("MR. SMITH.").toSeq == Seq("MR.", "SMITH", ".")) // TODO It would be nice if this worked.
-    assert(DeterministicLexerTokenizer("mr. smith.").toSeq != Seq("mr.", "smith", ".")) // TODO Should this work? -akm
+    assert(DeterministicLexerTokenizer("MR. SMITH.").toSeq == Seq("MR.", "SMITH", "."))
+    assert(DeterministicLexerTokenizer("mr. smith.").toSeq == Seq("mr.", "smith", ".")) // TODO Should this work? -akm
   }
   
 }
