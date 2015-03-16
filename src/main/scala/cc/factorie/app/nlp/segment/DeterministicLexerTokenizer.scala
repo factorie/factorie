@@ -53,10 +53,17 @@ class DeterministicLexerTokenizer(
   def process(document: Document): Document = {
     for (section <- document.sections) {
       /* Add this newline to avoid JFlex issue where we can't match EOF with lookahead */
-      val lexer = new EnglishLexer(new StringReader(section.string + "\n"),
-        tokenizeSgml, tokenizeNewline, tokenizeWhitespace, tokenizeAllDashedWords, abbrevPrecedesLowercase,
-        normalizeQuote, normalizeApostrophe, normalizeCurrency, normalizeAmpersand, normalizeFractions, normalizeEllipsis,
-        undoPennParens, unescapeSlash, unescapeAsterisk, normalizeMDash, normalizeDash, normalizeHtmlSymbol, normalizeHtmlAccent)
+      val reader = new StringReader(section.string + "\n")
+      val lexer =
+        // here we make sure that if normalize = false, we really don't normalize anything
+        if(normalize)
+          new EnglishLexer(reader, tokenizeSgml, tokenizeNewline, tokenizeWhitespace, tokenizeAllDashedWords, abbrevPrecedesLowercase,
+          normalizeQuote, normalizeApostrophe, normalizeCurrency, normalizeAmpersand, normalizeFractions, normalizeEllipsis,
+          undoPennParens, unescapeSlash, unescapeAsterisk, normalizeMDash, normalizeDash, normalizeHtmlSymbol, normalizeHtmlAccent)
+        else
+          new EnglishLexer(reader, tokenizeSgml, tokenizeNewline, tokenizeWhitespace, tokenizeAllDashedWords, abbrevPrecedesLowercase,
+            false, false, false, false, false, false, false, false, false, false, false, false, false)
+
       var currentToken = lexer.yylex().asInstanceOf[(String, Int, Int)]
       while (currentToken != null){
         if (abbrevPrecedesLowercase && section.length > 1 && section.tokens.last.string == "." && java.lang.Character.isLowerCase(currentToken._1(0)) && section.tokens(section.length-2).stringEnd == section.tokens(section.length-1).stringStart) {
@@ -85,7 +92,31 @@ class DeterministicLexerTokenizer(
   def apply(s:String): Seq[String] = process(new Document(s)).tokens.toSeq.map(_.string)
 }
 
+/* This version does not perform normalization, only tokenization */
 object DeterministicLexerTokenizer extends DeterministicLexerTokenizer(
+  tokenizeSgml = false,
+  tokenizeNewline = false,
+  tokenizeWhitespace = false,
+  tokenizeAllDashedWords = false,
+  abbrevPrecedesLowercase = false,
+  normalize = false,
+  normalizeQuote = false,
+  normalizeApostrophe = false,
+  normalizeCurrency = false,
+  normalizeAmpersand = false,
+  normalizeFractions = false,
+  normalizeEllipsis = false,
+  undoPennParens = false,
+  unescapeSlash = false,
+  unescapeAsterisk = false,
+  normalizeMDash = false,
+  normalizeDash = false,
+  normalizeHtmlSymbol = false,
+  normalizeHtmlAccent = false
+)
+
+/* This token performs normalization while it tokenizes, you probably want to use this one */
+object DeterministicNormalizingTokenizer extends DeterministicLexerTokenizer(
   tokenizeSgml = false,
   tokenizeNewline = false,
   tokenizeWhitespace = false,
@@ -106,6 +137,7 @@ object DeterministicLexerTokenizer extends DeterministicLexerTokenizer(
   normalizeHtmlSymbol = true,
   normalizeHtmlAccent = true
 ){
+/* For testing purposes: Takes a filename as input and tokenizes it */
 def main(args: Array[String]): Unit = {
     val fname = "/iesl/canvas/strubell/data/tackbp/source/2013/LDC2013E45_TAC_2013_KBP_Source_Corpus_disc_2/data/English/discussion_forums/bolt-eng-DF-200"
 //    val fname = "/iesl/canvas/strubell/weird_character.txt"

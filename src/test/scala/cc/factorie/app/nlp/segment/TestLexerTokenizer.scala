@@ -58,7 +58,7 @@ class TestLexerTokenizer extends JUnitSuite with FastLogging {
     def check(src: String, trg: String): Unit = {
       val tokens = runDeterministicLexerTokenizer(src)
       for (t <- tokens) {
-        assertEquals(t.document.string.substring(t.stringStart, t.stringEnd), src.substring(t.stringStart, t.stringEnd))
+        assertEquals(t.string, src.substring(t.stringStart, t.stringEnd))
       }
       assertEquals("[" + tokens.map(_.string).mkString(", ") + "]", trg)
     }
@@ -94,7 +94,7 @@ class TestLexerTokenizer extends JUnitSuite with FastLogging {
 
     check(
       src = ",,A---C*D**E~~~~F==",
-      trg = "[,,, A, --, C, *, D, **, E, ~~~~, F, ==]")
+      trg = "[,,, A, ---, C, *, D, **, E, ~~~~, F, ==]")
       // was: trg = "[,,, A, ---, C*D, **, E, ~~~~, F, ==]")
 
     // dots in numbers
@@ -129,7 +129,7 @@ class TestLexerTokenizer extends JUnitSuite with FastLogging {
 
     check(
       src = "$1 E2 L3 USD1 2KPW ||$1 USD1..",
-      trg = "[$, 1, E2, L3, USD, 1, 2, KPW, |, |, $, 1, USD, 1, ...]")
+      trg = "[$, 1, E2, L3, USD, 1, 2, KPW, |, |, $, 1, USD, 1, ..]")
     
     check(
       src = "1m 2mm 3kg 4oz",
