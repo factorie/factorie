@@ -194,7 +194,7 @@ class TestLexerTokenizer extends JUnitSuite with FastLogging {
 
     checkNoNormalize(
       src = "AT&T but don't grab LAT&Eacute; and be sure not to grab PE&gym",
-      trg = "[AT&T, but, do, n't, grab, LAT&Eacute;, and, be, sure, not, to, grab, PE&gym]"
+      trg = "[AT&T, but, do, n't, grab, LAT&Eacute;, and, be, sure, not, to, grab, PE, &, gym]"
     )
 
     /* A useful string for checking various options to the tokenizer (but not checked here) */
