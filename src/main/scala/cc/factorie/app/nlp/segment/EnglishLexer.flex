@@ -97,7 +97,7 @@ import cc.factorie.util.JavaHashMap
   def tok(txt: String): Object = (txt, yychar, yylength)
 
   /* Uncomment below for useful debugging output */
-  def printDebug(tok: String) = println(s"$tok: |${yytext()}|")
+  def printDebug(tok: String) = {}//println(s"$tok: |${yytext()}|")
 
 %}
 
