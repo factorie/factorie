@@ -115,7 +115,30 @@ object DeterministicLexerTokenizer extends DeterministicLexerTokenizer(
   normalizeHtmlAccent = false
 )
 
-/* This token performs normalization while it tokenizes, you probably want to use this one */
+/* This version performs normalization while it tokenizes, and also includes html tags as tokens */
+object DeterministicNormalizingHtmlTokenizer extends DeterministicLexerTokenizer(
+  tokenizeSgml = true,
+  tokenizeNewline = false,
+  tokenizeWhitespace = false,
+  tokenizeAllDashedWords = false,
+  abbrevPrecedesLowercase = false,
+  normalize = true,
+  normalizeQuote = true,
+  normalizeApostrophe = true,
+  normalizeCurrency = true,
+  normalizeAmpersand = true,
+  normalizeFractions = true,
+  normalizeEllipsis = true,
+  undoPennParens = true,
+  unescapeSlash = true,
+  unescapeAsterisk = true,
+  normalizeMDash = true,
+  normalizeDash = true,
+  normalizeHtmlSymbol = true,
+  normalizeHtmlAccent = true
+)
+
+/* This token performs normalization while it tokenizes, removing html; You probably want to use this one */
 object DeterministicNormalizingTokenizer extends DeterministicLexerTokenizer(
   tokenizeSgml = false,
   tokenizeNewline = false,
@@ -140,32 +163,13 @@ object DeterministicNormalizingTokenizer extends DeterministicLexerTokenizer(
 /* For testing purposes: Takes a filename as input and tokenizes it */
 def main(args: Array[String]): Unit = {
     val fname = "/iesl/canvas/strubell/data/tackbp/source/2013/LDC2013E45_TAC_2013_KBP_Source_Corpus_disc_2/data/English/discussion_forums/bolt-eng-DF-200"
-//    val fname = "/iesl/canvas/strubell/weird_character.txt"
-//    val fname = "/Users/strubell/Documents/research/tunisia.txt"
     println(s"Loading $fname")
     val string = io.Source.fromFile(fname, "utf-8").mkString
-
-//    val string = "A.  A.A.A.I.  and U.S. in U.S.. etc., but not A... or A..B iPhone 3G in Washington D.C."
-//    val string = "Washington D.C.... A..B!!C??D.!?E.!?.!?F..!!?? U.S.." // want: [A, .., B, !!, C, ??, D, .!?, E, .!?.!?, F, ..!!??]
-//    val string = "AT&T but don't grab LAT&Eacute; and be sure not to grab PE&gym AT&T"
-//    val string = "2012-04-05"
-//    val string = "ethno-centric art-o-torium sure. thing"
-//    val string = "prof. ph.d. a. a.b. a.b a.b.c. men.cd ab.cd"
-//    val string = "he'll go to hell we're"
-//    val string = "I paid $50 USD"
-//    val string =  "$1 E2 L3 USD1 2KPW ||$1 USD1.." // want: "[$, 1, E2, L3, USD, 1, 2, KPW, |, |, $, 1, USD, 1, ..]"
-//    val string = " 1. Buy a new Chevrolet (37%-owned in the U.S..) . 15%"
-//    val string = "blah blah Abbrev. has blah"
-//  val string = "''Going to the store to grab . . . some coffee for \u20ac50. He`s right\u2026 &ndash; &amp; \u2154 \\*\\* -- &trade; &mdash; \u2015 \u0096 -- --- .."
-
-
     println("Tokenizing...")
     val doc = new Document(string)
     val t0 = System.currentTimeMillis()
     DeterministicLexerTokenizer.process(doc)
     val time = System.currentTimeMillis()-t0
     println(s"Processed ${doc.tokenCount} tokens in ${time}ms (${doc.tokenCount.toDouble/time*1000} tokens/second)")
-//    println(string)
-//    println(doc.tokens.map(_.string).mkString("\n"))
   }
 }
