@@ -94,7 +94,7 @@ class TestLexerTokenizer extends JUnitSuite with FastLogging {
 
     check(
       src = ",,A---C*D**E~~~~F==",
-      trg = "[,,, A, ---, C, *, D, **, E, ~~~~, F, ==]")
+      trg = "[,,, A, --, C, *, D, **, E, ~~~~, F, ==]")
       // was: trg = "[,,, A, ---, C*D, **, E, ~~~~, F, ==]")
 
     // dots in numbers
