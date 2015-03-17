@@ -4,19 +4,26 @@ import com.google.common.collect.HashBiMap
 import cc.factorie.app.nlp.{DocumentAnnotator, Document}
 import cc.factorie.app.nlp.relation.RelationMentionList
 import cc.factorie.app.nlp.{Document=>FactorieDocument}
+import cc.factorie.app.nlp.ner.NerTag
+
+case class MentionId(docid: String, startOffset: Int, length:Int)
 
 trait XDocMention[T] {
-  // identifies the document from which this mention came
-  def docPointer:String
+  // identifies the document and offsets from which this mention came
+  def mentionId: MentionId
   // some representation of the entity used to do XDoc coref
   // This stores of the necessary features.
-  def entity:T
-  // unique string for this mention
-  def id:String
+  def features: T
+
   // predicted entity id
-  def predictedEnt:Int
-  // true entity id
-  def trueEnt:Option[Int]
+  def predictedEnt: Int
+
+  // TODO: should this go into features?
+  // TODO: or, should this be TAC type?
+  def entityTag: NerTag
+
+  // Maps kb name to link to kb entry.
+  def kbLinks: Map[String, String]
 }
 
 trait XDocCorefSystem[T] {
