@@ -138,7 +138,7 @@ object DeterministicNormalizingHtmlTokenizer extends DeterministicLexerTokenizer
   normalizeHtmlAccent = true
 )
 
-/* This token performs normalization while it tokenizes, removing html; You probably want to use this one */
+/* This token performs normalization while it tokenizes, removing html tags; You probably want to use this one */
 object DeterministicNormalizingTokenizer extends DeterministicLexerTokenizer(
   tokenizeSgml = false,
   tokenizeNewline = false,
@@ -160,17 +160,19 @@ object DeterministicNormalizingTokenizer extends DeterministicLexerTokenizer(
   normalizeHtmlSymbol = true,
   normalizeHtmlAccent = true
 ){
-  /* For testing purposes: Takes a filename as input and tokenizes it */
+  /* For testing purposes: Tokenizes and normalizes input from stdin using DeterministicNormalizingTokenizer */
   def main(args: Array[String]): Unit = {
-    val fname = "/iesl/canvas/strubell/data/tackbp/source/2013/LDC2013E45_TAC_2013_KBP_Source_Corpus_disc_2/data/English/discussion_forums/bolt-eng-DF-200"
+    //val string = io.Source.fromInputStream(System.in).mkString
+//    val fname = "/iesl/canvas/strubell/data/tackbp/source/2013/LDC2013E45_TAC_2013_KBP_Source_Corpus_disc_2/data/English/discussion_forums/bolt-eng-DF-200"
+    val fname = "/iesl/canvas/strubell/eng-NG-31-1321"
     println(s"Loading $fname")
     val string = io.Source.fromFile(fname, "utf-8").mkString
     println("Tokenizing...")
     val doc = new Document(string)
     val t0 = System.currentTimeMillis()
-    DeterministicNormalizingTokenizer.process(doc)
+    DeterministicNormalizingHtmlTokenizer.process(doc)
     val time = System.currentTimeMillis()-t0
     println(s"Processed ${doc.tokenCount} tokens in ${time}ms (${doc.tokenCount.toDouble/time*1000} tokens/second)")
-    println(doc.tokens.map(_.string).mkString(" "))
+    println(doc.tokens.map(_.string).mkString("\n"))
   }
 }

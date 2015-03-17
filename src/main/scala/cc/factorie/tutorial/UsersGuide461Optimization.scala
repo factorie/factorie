@@ -169,7 +169,7 @@ object UsersGuide70LearningAndOptimization extends App {
 
   // The Document class implements documents as sequences of sentences and tokens.
   val document = new Document("The quick brown fox jumped over the lazy dog.")
-  val tokenizer = new app.nlp.segment.DeterministicTokenizer
+  val tokenizer = new app.nlp.segment.DeterministicRegexTokenizer$
   tokenizer.process(document)
   val segmenter = new app.nlp.segment.DeterministicSentenceSegmenter
   segmenter.process(document)

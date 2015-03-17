@@ -17,7 +17,7 @@ import org.junit.Test
 import cc.factorie.app.nlp.{DocumentAnnotatorPipeline, DocumentAnnotator, Sentence, Document, Token}
 import cc.factorie.util.FastLogging
 
-class TestTokenizer extends JUnitSuite with FastLogging {
+class TestRegexTokenizer extends JUnitSuite with FastLogging {
   
   def assertEquals(a: Any, b: Any): Unit = assert(a == b, "\"%s\" did not equal \"%s\"" format (a, b))
 
@@ -36,7 +36,7 @@ class TestTokenizer extends JUnitSuite with FastLogging {
       I now use my iphone as an alarm clock and is the bluetooth source to play music in my car.
       """.stripMargin
     val d = new Document((1 to 2).map(_ => text).mkString("\n"))
-    DocumentAnnotatorPipeline(DeterministicTokenizer, DeterministicSentenceSegmenter).process(d)
+    DocumentAnnotatorPipeline(DeterministicRegexTokenizer, DeterministicSentenceSegmenter).process(d)
     assert(d.sentences.size > 0)
     d.sentences.map(_.string).foreach(s => logger.debug(s.toString))
   }
@@ -44,14 +44,14 @@ class TestTokenizer extends JUnitSuite with FastLogging {
   @Test def testSentenceSegmenterWithOneSentence() {
     val text = "The quick brown fox jumps over the lazy dog."
     val d = new Document(text)
-    DocumentAnnotatorPipeline(DeterministicTokenizer, DeterministicSentenceSegmenter).process(d)
+    DocumentAnnotatorPipeline(DeterministicRegexTokenizer, DeterministicSentenceSegmenter).process(d)
     assert(d.sentences.size == 1)
     assert(d.tokens.size == 10)
   }
 
   private def runDeterministicTokenizer(src: String): Iterable[Token] = {
     val d = new Document(src)
-    DocumentAnnotatorPipeline(DeterministicTokenizer).process(d).tokens
+    DocumentAnnotatorPipeline(DeterministicRegexTokenizer).process(d).tokens
   }
 
   @Test def testDeterministicTokenizer(): Unit = {
@@ -301,10 +301,10 @@ class TestTokenizer extends JUnitSuite with FastLogging {
   }
   
   @Test def testRegexTokenizer(): Unit = {
-    assert(DeterministicTokenizer("Washington D.C.").toSeq == Seq("Washington", "D.C."))
-    assert(DeterministicTokenizer("Acme Inc.").toSeq == Seq("Acme", "Inc."))
-    assert(DeterministicTokenizer("Oct. 24").toSeq == Seq("Oct.", "24"))
-    assert(DeterministicTokenizer("Mr. Smith.").toSeq == Seq("Mr.", "Smith", "."))
+    assert(DeterministicRegexTokenizer("Washington D.C.").toSeq == Seq("Washington", "D.C."))
+    assert(DeterministicRegexTokenizer("Acme Inc.").toSeq == Seq("Acme", "Inc."))
+    assert(DeterministicRegexTokenizer("Oct. 24").toSeq == Seq("Oct.", "24"))
+    assert(DeterministicRegexTokenizer("Mr. Smith.").toSeq == Seq("Mr.", "Smith", "."))
     //println(RegexTokenizer("MR. SMITH.").mkString(" "))
     //assert(RegexTokenizer("MR. SMITH.").toSeq == Seq("MR.", "SMITH", ".")) // TODO It would be nice if this worked.
     //assert(RegexTokenizer("mr. smith.").toSeq != Seq("mr.", "smith", ".")) // TODO Should this work? -akm
