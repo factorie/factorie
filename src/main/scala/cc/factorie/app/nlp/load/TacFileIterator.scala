@@ -5,10 +5,34 @@ import java.util.zip.GZIPInputStream
 import java.util.Scanner
 import cc.factorie.app.nlp.Document
 
+object TACDocTypes {
+  sealed trait TACDocumentType
+  case object Newswire extends TACDocumentType
+  case object DiscussionForum extends TACDocumentType
+  case object WebDocument extends TACDocumentType
+
+  object TACDocumentType {
+    def fromFilePath(f:File):TACDocumentType = {
+      val path = f.getAbsolutePath.toLowerCase
+      if(path.contains("discussion_forums")) {
+        DiscussionForum
+      } else if(path.contains("newswire")) {
+        Newswire
+      } else if(path.contains("web")) {
+        WebDocument
+      } else {
+        throw new Exception("Unable to assign document at path %s to a document type".format(path))
+      }
+    }
+  }
+}
+
+
 /**
  * @author John Sullivan
  */
 class TacFileIterator(tacDocFile:File) extends Iterator[Document] {
+  import TACDocTypes._
 
   private val docEndString = """</doc>"""
   private val webDocStartString = """<DOC>"""
@@ -65,8 +89,25 @@ class TacFileIterator(tacDocFile:File) extends Iterator[Document] {
     advanceLine()
     val docString = docBuffer.toString()
     docBuffer = new StringBuilder()
-    new Document(docString).setName(docId)
+    val doc = new Document(docString).setName(docId)
+    doc.attr += TACDocumentType.fromFilePath(tacDocFile)
+    doc.annotators += classOf[TACDocumentType] -> this.getClass
+    doc
   }
 
   def hasNext = line != null
+}
+
+object TacFileIterator {
+  def main(args:Array[String]) {
+    val f = new File(args(0))
+
+    val doc = new TacFileIterator(f).next()
+    println(doc.name)
+    val wrt = new BufferedWriter(new FileWriter(doc.name))
+    wrt.write(doc.string)
+    wrt.flush()
+    wrt.close()
+
+  }
 }
