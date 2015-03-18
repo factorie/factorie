@@ -44,7 +44,7 @@ class RelationMention(val arg1: Mention, val arg2: Mention, var isArg1First:Bool
 
 class RelationMentionNew(val argMention1: MentionId, val uniqEntityStringId1: String,
                          val argMention2: MentionId, val uniqEntityStringId2: String,
-                         val relation: String, relOffsets: MentionId) extends ArrowVariable(arg1, arg2) with Attr {
+                         val relation: String, relOffsets: MentionId) extends ArrowVariable(argMention1, argMention2) with Attr {
   val _relations = ArrayBuffer[TACRelation]()
   this.attr += TACRelationList(_relations)
   def relations = this.attr[TACRelationList]

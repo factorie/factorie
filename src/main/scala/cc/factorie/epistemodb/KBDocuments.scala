@@ -1,10 +1,9 @@
 package cc.factorie.epistemodb
 
-import com.google.common.collect.HashBiMap
-import cc.factorie.app.nlp.{DocumentAnnotator, Document}
-import cc.factorie.app.nlp.relation.RelationMentionList
-import cc.factorie.app.nlp.{Document=>FactorieDocument}
 import cc.factorie.app.nlp.ner.NerTag
+import cc.factorie.app.nlp.relation.RelationMentionList
+import cc.factorie.app.nlp.{Document => FactorieDocument, DocumentAnnotator}
+import com.google.common.collect.HashBiMap
 
 case class MentionId(docid: String, startOffset: Int, length:Int)
 
@@ -35,7 +34,7 @@ trait XDocCorefSystem[T] {
 // do we need this?
 // how do the relationmentions interact with the documents and the matrix?
 trait KbDocuments {
-  type EntityMap = HashBiMap[String, Int]
+  type EntityMap = HashBiMap[MentionId, Int]
   // - build the doc table
   // - build xDocMentions table
   def addDoc(doc: FactorieDocument)
@@ -45,7 +44,7 @@ trait KbDocuments {
   // We should be able to share this implementation between Documents implementations
   def doXDocCoref[T](em: EntityMap, xcs: XDocCorefSystem[T]) {
     xcs.performCoref(documents.flatMap(xcs.generateXDocMentions)) foreach { ment =>
-      em.put(ment.id, ment.predictedEnt)
+      em.put(ment.mentionId, ment.predictedEnt)
     }
   }
 }
