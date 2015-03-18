@@ -1,5 +1,5 @@
 language: java
 env:
   global:
-    - MAVEN_OPTS="-XX:MaxPermSize=512m -Xmx8g"
+    - MAVEN_OPTS="-XX:MaxPermSize=512m -Xmx3g"
 script: mvn clean install
