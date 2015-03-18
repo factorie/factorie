@@ -243,8 +243,8 @@ limitations under the License.
             <useZincServer>true</useZincServer>
             <scalaVersion>${scala.majorVersion}${scala.minorVersion}</scalaVersion>
             <jvmArgs>
-              <jvmArg>-Xms64m</jvmArg>
-              <jvmArg>-Xmx1800m</jvmArg>
+              <jvmArg>-Xmx3g</jvmArg>
+              <jvmArg>-XX:MaxPermSize=512m</jvmArg>
             </jvmArgs>
           </configuration>
         </plugin>
@@ -413,8 +413,8 @@ limitations under the License.
                   <useZincServer>true</useZincServer>
                   <scalaVersion>${scala.majorVersion}${scala.minorVersion}</scalaVersion>
                   <jvmArgs>
-                    <jvmArg>-Xms64m</jvmArg>
-                    <jvmArg>-Xmx1800m</jvmArg>
+                    <jvmArg>-Xmx3g</jvmArg>
+                    <jvmArg>-XX:MaxPermSize=512m</jvmArg>
                   </jvmArgs>
                 </configuration>
               </plugin>
