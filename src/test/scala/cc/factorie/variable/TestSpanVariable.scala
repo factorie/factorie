@@ -10,17 +10,16 @@
    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
    See the License for the specific language governing permissions and
    limitations under the License. */
-package cc.factorie
+package cc.factorie.variable
 
 import cc.factorie.app.nlp._
 import cc.factorie.app.nlp.ner._
-import junit.framework._
-import Assert._
 import cc.factorie.app.nlp.segment.DeterministicNormalizingTokenizer
-import cc.factorie.variable.SpanVarBuffer
+import junit.framework.Assert._
+import junit.framework._
 
-class TestSpanVariable extends TestCase  with cc.factorie.util.FastLogging {
-  
+class TestSpanVariable extends TestCase with cc.factorie.util.FastLogging {
+
   class MySpanBuffer extends SpanVarBuffer[TokenSpan,Section,Token]
 
   def testDiffLists(): Unit = {
@@ -29,6 +28,7 @@ class TestSpanVariable extends TestCase  with cc.factorie.util.FastLogging {
      doc.attr += sl
        
      DeterministicNormalizingTokenizer.process(doc)
+    
      //doc.foreach(logger.debug(_))
      assertEquals(7, doc.tokenCount)
      val d = new DiffList

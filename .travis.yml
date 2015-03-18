@@ -1,4 +1,5 @@
 language: java
-jdk:
-  - oraclejdk8
-  - oraclejdk7
+env:
+  global:
+    - MAVEN_OPTS="-XX:MaxPermSize=512m -Xmx4g"
+script: mvn clean install
