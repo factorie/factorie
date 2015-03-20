@@ -168,7 +168,6 @@ limitations under the License.
       <groupId>org.mongodb</groupId>
       <artifactId>mongo-java-driver</artifactId>
       <version>2.12.3</version>
-<<<<<<< HEAD
     </dependency>
 
     <dependency>
@@ -180,8 +179,6 @@ limitations under the License.
       <groupId>org.json4s</groupId>
       <artifactId>json4s-jackson_${scala.majorVersion}</artifactId>
       <version>3.2.9</version>
-=======
->>>>>>> 7d86d6c24d0e7a7fad3da6fda5194b6d442a946b
     </dependency>
 
     <dependency>
