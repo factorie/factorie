@@ -15,13 +15,9 @@ import org.junit.Test
 import java.io._
 
 /**
- * Created by IntelliJ IDEA.
  * User: apassos
  * Date: 10/10/12
- * Time: 3:29 PM
- * To change this template use File | Settings | File Templates.
  */
-
 class TestExamples {
 
   val emptyArgs = Array[String]()

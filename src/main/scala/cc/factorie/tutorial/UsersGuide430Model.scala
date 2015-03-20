@@ -22,6 +22,10 @@
  * The trait ``Model`` leaves abstract how this mapping from Variables to Factors is maintained.
  **/
 package cc.factorie.tutorial
+
+import cc.factorie
+import cc.factorie.model.ConstantWeights2
+
 object TutorialModel extends App {
   import cc.factorie._
   import cc.factorie.la._
@@ -31,14 +35,13 @@ object TutorialModel extends App {
   /*& Let's start by creating some Variables and Factor classes. **/
   val outputs: Seq[BooleanVariable] = for (i <- 0 until 10) yield new BooleanVariable
   val inputs: Seq[BooleanVariable] = for (i <- 0 until 10) yield new BooleanVariable(i % 2 == 0)
-  val markovWeights = new DenseTensor2(Array(Array(1.0, 0.0), Array(0.0, 1.0)))
+
   class MarkovFactor(b1: BooleanVariable, b2: BooleanVariable) extends DotFactorWithStatistics2(b1, b2) {
-    def weights = markovWeights
+    val weights = new ConstantWeights2(new factorie.DenseTensor2(Array(Array(1.0, 0.0), Array(0.0, 1.0))))
     override def factorName = "MarkovFactor"
   }
-  val inputWeights = new DenseTensor2(Array(Array(1.0, -1.0), Array(-1.0, 1.0)))
   class InputFactor(bi: BooleanVariable, bo: BooleanVariable) extends DotFactorWithStatistics2(bi, bo) {
-    def weights = inputWeights
+    val weights = new ConstantWeights2(new DenseTensor2(Array(Array(1.0, -1.0), Array(-1.0, 1.0))))
     override def factorName = "InputFactor"
   }
 

@@ -154,6 +154,16 @@ trait Weights2 extends Weights { type Value = Tensor2 }
 trait Weights3 extends Weights { type Value = Tensor3 }
 trait Weights4 extends Weights { type Value = Tensor4 }
 
+trait ConstantWeights extends Weights {
+  def newBlankTensor: Value = value.blankCopy.asInstanceOf[Value]
+  def set(t: Tensor): Unit = sys.error("Weights are constant, can't set.")
+}
+
+class ConstantWeights1(val value: Tensor1) extends ConstantWeights with Weights1
+class ConstantWeights2(val value: Tensor2) extends ConstantWeights with Weights2
+class ConstantWeights3(val value: Tensor3) extends ConstantWeights with Weights3
+class ConstantWeights4(val value: Tensor4) extends ConstantWeights with Weights4
+
 /** A Cubbie for serializing a WeightsSet.  Typically used for saving parameters to disk. */
 class WeightsSetCubbie(val ws: WeightsSet) extends Cubbie {
   // we write directly into the WeightsSet so that if we deserialize the weights before the domains, we can give everything the right size from the file

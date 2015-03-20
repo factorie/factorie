@@ -177,9 +177,9 @@ object TutorialFactors extends App {
      * Since Factors with Tensor statistics are common, there are Factor classes that pre-define this,
      * avoiding the need to assign StatisticsType.
      * 
-     * The method "score" is pre-defined to gather these Tensor statistics and call "scoreStatistics(Tensor)".
+     * The method "score" is pre-defined to gather these Tensor statistics and call "statisticsScore(Tensor)".
      * (This enforces that the Tensor statistics are sufficient to calculate the score.)
-     * In TensorFactor2 only "statistics" and "scoreStatistics" are abstract.
+     * In TensorFactor2 only "statistics" and "statisticsScore" are abstract.
      **/
     val f6 = new TensorFactor2(flag1, flag2) {
       val weights = new DenseTensor2(Array(Array(3.0, 1.0), Array(2.0, 4.0)))
@@ -190,7 +190,7 @@ object TutorialFactors extends App {
     /*&
      * Because it is also common that the statistics are the outer product of the neighbors Tensor values,
      * there are also TensorFactor* subclasses that pre-define "statistics" in this way.
-     * Only the "scoreStatistics(Tensor)" method is abstract.
+     * Only the "statisticsScore(Tensor)" method is abstract.
      **/
     val f7 = new TensorFactorWithStatistics2(flag1, flag2) {
       val weights = new DenseTensor2(Array(Array(3.0, 1.0), Array(2.0, 4.0)))
@@ -200,21 +200,21 @@ object TutorialFactors extends App {
     /*&
      * Because it is furthermore common that the score be 
      * a dot product of the Tensor statistics and a "weight" parameter Tensor,
-     * there are Factor subclasses that pre-define scoreStatistics to perform this dot-product.
-     * Only the "weightsSet" method is abstract.
+     * there are Factor subclasses that pre-define statisticsScore to perform this dot-product.
+     * Only the "weights" method (a container of type Weights, holding a tensor) is abstract.
      **/
     val f8 = new DotFactorWithStatistics2(flag1, flag2) {
-      val weights = new DenseTensor2(Array(Array(3.0, 1.0), Array(2.0, 4.0)))
+      val weights = new ConstantWeights2(new DenseTensor2(Array(Array(3.0, 1.0), Array(2.0, 4.0))))
     }
     
     /*&
      * If you want the score to be such a dot-product, but you want the statistics Tensor
      * to be something other than the outer product of the neighbor values, 
      * you can use the DotFactor{1,2,3,4} classes.
-     * Here only the "statistics" and "weightsSet" methods are abstract.
+     * Here only the "statistics" and "weights" methods are abstract.
      **/
     val f9 = new DotFactor4(label1, label2, label3, flag1) {
-      val weights = new DenseTensor2(Array(Array(2.0, 1.0, 0.0), Array(1.0, 2.0, 1.0), Array(0.0, 1.0, 2.0)))
+      val weights = new ConstantWeights2(new DenseTensor2(Array(Array(2.0, 1.0, 0.0), Array(1.0, 2.0, 1.0), Array(0.0, 1.0, 2.0))))
       override def statistics(lv1:Label#Value, lv2:Label#Value, lv3:Label#Value, fv2:BooleanValue): Tensor = 
         if (flag1.booleanValue) lv1 outer lv2 else lv1 outer lv3
     }
@@ -254,16 +254,16 @@ object TutorialFactors extends App {
     }
 
     class MyClassifier(label:Label, article:Article) extends DotFactorWithStatistics2(label, article) {
-      val weights = new DenseTensor2(LabelDomain.size, WordDomain.size)
-      weights(LabelDomain.index("politics"), WordDomain.index("beat")) = 3.0
-      weights(LabelDomain.index("politics"), WordDomain.index("beautiful")) = 2.0
-      weights(LabelDomain.index("politics"), WordDomain.index("election")) = 5.0
-      weights(LabelDomain.index("sports"), WordDomain.index("beat")) = 4.0
-      weights(LabelDomain.index("sports"), WordDomain.index("beautiful")) = 1.0
-      weights(LabelDomain.index("sports"), WordDomain.index("election")) = -1.0
-      weights(LabelDomain.index("arts"), WordDomain.index("beat")) = -2.0
-      weights(LabelDomain.index("arts"), WordDomain.index("beautiful")) = 5.0
-      weights(LabelDomain.index("arts"), WordDomain.index("election")) = 1.0
+      val weights = new ConstantWeights2(new DenseTensor2(LabelDomain.size, WordDomain.size))
+      weights.value(LabelDomain.index("politics"), WordDomain.index("beat")) = 3.0
+      weights.value(LabelDomain.index("politics"), WordDomain.index("beautiful")) = 2.0
+      weights.value(LabelDomain.index("politics"), WordDomain.index("election")) = 5.0
+      weights.value(LabelDomain.index("sports"), WordDomain.index("beat")) = 4.0
+      weights.value(LabelDomain.index("sports"), WordDomain.index("beautiful")) = 1.0
+      weights.value(LabelDomain.index("sports"), WordDomain.index("election")) = -1.0
+      weights.value(LabelDomain.index("arts"), WordDomain.index("beat")) = -2.0
+      weights.value(LabelDomain.index("arts"), WordDomain.index("beautiful")) = 5.0
+      weights.value(LabelDomain.index("arts"), WordDomain.index("election")) = 1.0
     }
     
     val a1 = new Article("beat election".split(" "))

@@ -11,13 +11,12 @@
    See the License for the specific language governing permissions and
    limitations under the License. */
 
-package cc.factorie
+package cc.factorie.variable
 
 import junit.framework._
-import cc.factorie.variable.IntegerVariable
 
 /** @author Pallika Kanani */
-class TestIntegerVariable extends TestCase  with cc.factorie.util.FastLogging {
+class TestIntegerVariable extends TestCase with cc.factorie.util.FastLogging {
 
    def testDiffLists(): Unit = {
       val initialValue:Int = 100

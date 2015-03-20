@@ -11,8 +11,8 @@ import scala.collection.JavaConverters._
  */
 
 class StringStringMatrix(val __rowMap: MatrixIndexMap[String]  = new MemoryIndexMap[String],
-                          val __colMap: MatrixIndexMap[String] = new MemoryIndexMap[String],
-                          val matrix: CoocMatrix = new CoocMatrix(0,0)) extends KBMatrix[StringStringMatrix, String, String] {
+                         val __colMap: MatrixIndexMap[String] = new MemoryIndexMap[String],
+                         val matrix: CoocMatrix = new CoocMatrix(0,0)) extends KBMatrix[StringStringMatrix, String, String] {
   def cloneWithNewCells(cells: CoocMatrix): StringStringMatrix = new StringStringMatrix(__rowMap, __colMap, cells)
   def createEmptyMatrix: StringStringMatrix = new StringStringMatrix()
 }

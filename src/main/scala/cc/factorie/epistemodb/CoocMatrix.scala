@@ -126,7 +126,7 @@ class CoocMatrix(var _numRows: Int, var _numCols:Int) extends MongoWritable {
         while (!q.isEmpty) {
           val v : Int = q.dequeue()
           if (rows.contains(v) ||
-              __cols.contains(v - _numRows) ){
+            __cols.contains(v - _numRows) ){
             var offset = 0
             // Current row/column has outgoing pointers.
             val adj: Iterable[Int] = if (v < _numRows) {
@@ -188,7 +188,7 @@ class CoocMatrix(var _numRows: Int, var _numCols:Int) extends MongoWritable {
    * be smaller than specified.
    */
   def randomTestSplit(numDevNNZ: Int, numTestNNZ: Int, testRows: Option[Set[Int]] = None,
-                              testCols: Option[Set[Int]] = None, random:Random = new Random(0)): (CoocMatrix, CoocMatrix, CoocMatrix) = {
+                      testCols: Option[Set[Int]] = None, random:Random = new Random(0)): (CoocMatrix, CoocMatrix, CoocMatrix) = {
 
 
     // first sort, then shuffle (wrt the seed) -- in order to reproduce exactly the same ordering, no matter what
@@ -326,26 +326,26 @@ object CoocMatrix {
   val CELL_VAL = "val"
   val COL_LIST = "cols"
   val CELL_VAL_LIST = "vals"
-/*
-  def fromMongoCellBased(mongoDb: DB) : CoocMatrix = {
-    val collection: DBCollection = mongoDb.getCollection(CELLS_COLLECTION)
-    val m = new CoocMatrix(0, 0) // grow on the fly
-    val cursor: DBCursor = collection.find();
-    try {
-      while(cursor.hasNext()) {
-        val cellObject: DBObject = cursor.next()
-        val rowNr = cellObject.get(ROW_NR).asInstanceOf[Int]
-        val colNr = cellObject.get(COL_NR).asInstanceOf[Int]
-        val cellVal = cellObject.get(CELL_VAL).asInstanceOf[Double]
-        m.set(rowNr, colNr, cellVal)
+  /*
+    def fromMongoCellBased(mongoDb: DB) : CoocMatrix = {
+      val collection: DBCollection = mongoDb.getCollection(CELLS_COLLECTION)
+      val m = new CoocMatrix(0, 0) // grow on the fly
+      val cursor: DBCursor = collection.find();
+      try {
+        while(cursor.hasNext()) {
+          val cellObject: DBObject = cursor.next()
+          val rowNr = cellObject.get(ROW_NR).asInstanceOf[Int]
+          val colNr = cellObject.get(COL_NR).asInstanceOf[Int]
+          val cellVal = cellObject.get(CELL_VAL).asInstanceOf[Double]
+          m.set(rowNr, colNr, cellVal)
+        }
+      } finally {
+        cursor.close();
       }
-    } finally {
-      cursor.close();
+      m
     }
-    m
-  }
 
-  */
+    */
 
   def fromTensor2(t:Tensor2 with SparseTensor):CoocMatrix = {
     t._makeReadable()
@@ -381,4 +381,3 @@ object CoocMatrix {
     m
   }
 }
-
