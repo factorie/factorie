@@ -567,7 +567,7 @@ class StackedChainNer[L<:NerTag](labelDomain: CategoricalDomain[String],
 }
 
 object StackedChainNer {
-  def initialiseLexicons() : Unit = synchronized {
+  def initLexicons() : Unit = synchronized {
     lexicon.iesl.Month.toString()
     lexicon.iesl.Day.toString()
 
