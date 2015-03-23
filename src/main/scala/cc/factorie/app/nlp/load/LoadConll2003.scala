@@ -76,7 +76,6 @@ case class LoadConll2003(BILOU:Boolean = false, verbose:Boolean = false) extends
         assert(fields.length == 4)
         val word = fields(0)
         val partOfSpeech = conllToPennMap.getOrElse(fields(1), fields(1))
-        assert(cc.factorie.app.nlp.pos.PennPosDomain.categories.contains(partOfSpeech), s"token with bad POS tag: word=$word pos=$partOfSpeech")
         val ner = fields(3).stripLineEnd
         if (sentence.length > 0) document.appendString(" ")
         val token = new Token(sentence, word)
