@@ -22,11 +22,28 @@ import cc.factorie.app.nlp.Sentence
 import cc.factorie.app.nlp.Token
 import cc.factorie.app.nlp.UnknownDocumentAnnotator
 
-// Usage:
-// Either LoadConll2003.fromFilename("foo")
-// or LoadConll2003(BILOU = true).fromFilename("foo")
-// or LoadConll2003(BILOU = true, verbose = true).fromFilename("foo")
-
+/** Load a sequence of CoNLL 2003 documents.
+  *
+  * Usage: LoadConll2003.fromFilename("path/to/file")
+  *
+  * By default, this loads NER tags using the IOB encoding.
+  * To load documents with the BILOU encoding, use:
+  *
+  * LoadConll2003(BILOU = true).fromFilename("path/to/file")
+  *
+  * The columns of a CoNLL 2003 document are:
+  * 0: token string
+  * 1: part-of-speech tag
+  * 2: chunk tag
+  * 3: (IOB) NER tag
+  *
+  * for example:
+  * -DOCSTART- -X- -X- O (the start of a document boundary)
+  * EU NNP I-NP I-ORG
+  * ...
+  *
+  * See http://www.aclweb.org/anthology/W03-0419 for details.
+  */
 object LoadConll2003 extends LoadConll2003(false, false)
 
 case class LoadConll2003(BILOU:Boolean = false, verbose:Boolean = false) extends Load with FastLogging {
@@ -35,33 +52,31 @@ case class LoadConll2003(BILOU:Boolean = false, verbose:Boolean = false) extends
 
   def fromSource(source:io.Source): Seq[Document] = {
     import scala.collection.mutable.ArrayBuffer
-    def newDocument(name:String): Document = {
-      val document = new Document("").setName(name)
-      document.annotators(classOf[Token]) = UnknownDocumentAnnotator.getClass // register that we have token boundaries
-      document.annotators(classOf[Sentence]) = UnknownDocumentAnnotator.getClass // register that we have sentence boundaries
-      document.annotators(classOf[pos.PennPosTag]) = UnknownDocumentAnnotator.getClass // register that we have POS tags
-      document
-    }
     val documents = new ArrayBuffer[Document]
-    var document = newDocument("CoNLL2003-"+documents.length)
-    documents += document
+    var document = new Document("").setName("CoNLL2003-"+documents.length)
     var sentence = new Sentence(document)
     for (line <- source.getLines()) {
       if (line.length < 2) { // Sentence boundary
         document.appendString("\n")
         sentence = new Sentence(document)
-      } else if (line.startsWith("-DOCSTART-")) {
-        // Skip document boundaries
-        document.asSection.chainFreeze()
-        document = new Document().setName("CoNLL2003-"+documents.length)
+      } else if (line.startsWith("-DOCSTART-")) { // Found a new document
+        // If the current document isn't empty, add it to the list
+        if (document.tokenCount > 0) {
+          document.asSection.chainFreeze()
+          documents += document
+        }
+        document = new Document().setName("CoNLL2003-" + documents.length)
         document.annotators(classOf[Token]) = UnknownDocumentAnnotator.getClass // register that we have token boundaries
         document.annotators(classOf[Sentence]) = UnknownDocumentAnnotator.getClass // register that we have sentence boundaries
-        documents += document
+        document.annotators(classOf[pos.PennPosTag]) = UnknownDocumentAnnotator.getClass // register that we have POS tags
+        document.annotators(classOf[LabeledIobConllNerTag]) = UnknownDocumentAnnotator.getClass // register that we have IOB NER tags
+        if (BILOU) document.annotators(classOf[LabeledBilouConllNerTag]) = UnknownDocumentAnnotator.getClass // register that we have BILOU NER tags
       } else {
         val fields = line.split(' ')
         assert(fields.length == 4)
         val word = fields(0)
         val partOfSpeech = conllToPennMap.getOrElse(fields(1), fields(1))
+        assert(cc.factorie.app.nlp.pos.PennPosDomain.categories.contains(partOfSpeech), s"token with bad POS tag: word=$word pos=$partOfSpeech")
         val ner = fields(3).stripLineEnd
         if (sentence.length > 0) document.appendString(" ")
         val token = new Token(sentence, word)
@@ -69,6 +84,8 @@ case class LoadConll2003(BILOU:Boolean = false, verbose:Boolean = false) extends
         token.attr += new cc.factorie.app.nlp.pos.PennPosTag(token, partOfSpeech)
       }
     }
+    // Take care of last document that may have been accumulated
+    if (document.tokenCount > 0) documents += document
     if (BILOU) convertToBILOU(documents)
     if (verbose) logger.info("Loaded "+documents.length+" documents with "+documents.map(_.sentences.size).sum+" sentences with "+documents.map(_.tokens.size).sum+" tokens total")
     documents
