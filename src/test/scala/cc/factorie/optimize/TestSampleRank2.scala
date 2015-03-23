@@ -10,20 +10,16 @@
    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
    See the License for the specific language governing permissions and
    limitations under the License. */
-package cc.factorie
-
-
-import cc.factorie.optimize.{Trainer, BatchTrainer, LikelihoodExample}
-import org.scalatest.junit.{JUnitSuite, AssertionsForJUnit}
-import scala.collection.mutable.{ListBuffer, ArrayBuffer}
-import org.junit.Assert._
-import org.junit.Test
-import org.junit.Before
+package cc.factorie.optimize
 
 import cc.factorie._
-import cc.factorie.variable._
+import cc.factorie.infer.{InferByBPLoopy, MHSampler}
 import cc.factorie.model._
-import cc.factorie.infer.{MHSampler, InferByBPLoopy}
+import cc.factorie.variable._
+import org.junit.{Before, Test}
+import org.scalatest.junit.{AssertionsForJUnit, JUnitSuite}
+
+import scala.collection.mutable.ArrayBuffer
 
 
 /**
