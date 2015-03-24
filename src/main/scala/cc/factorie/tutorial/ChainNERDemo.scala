@@ -88,6 +88,13 @@ object ChainNERDemo {
     TokenDomain.freeze()
     println("Using "+TokenDomain.dimensionSize+" observable features.")
 
+    // Compute features on test data
+    val testLabels = testSentences.flatMap(_.links.map(_.label))//.take(2000)
+    testLabels.map(_.token).foreach(t => {
+      if (t.hasPrev) t ++= t.prev.activeCategories.filter(!_.contains('@')).map(_+"@-1")
+      if (t.hasNext) t ++= t.next.activeCategories.filter(!_.contains('@')).map(_+"@+1")
+    })
+
     // Print some significant features
     //println("Most predictive features:")
     //val pllo = new cc.factorie.app.classify.PerLabelLogOdds(trainSentences.flatMap(_.map(_.label)), (label:Label) => label.token)
@@ -95,20 +102,19 @@ object ChainNERDemo {
 
     // Sample and Learn!
     val startTime = System.currentTimeMillis
-    trainLabels.foreach(_.setRandomly)
+    (trainLabels ++ testLabels).foreach(_.setRandomly)
     val learner = new optimize.SampleRankTrainer(new GibbsSampler(model, objective) {temperature=0.1}, new cc.factorie.optimize.AdaGrad)
     val predictor = new IteratedConditionalModes(model, null)
     for (i <- 1 to 3) {
       // println("Iteration "+i)
       learner.processContexts(trainLabels)
-      //      predictor.processAll(testLabels);
-      predictor.processAll(trainLabels)
+      predictor.processAll(testLabels); predictor.processAll(trainLabels)
       trainLabels.take(20).foreach(printLabel _); println(); println()
       printDiagnostic(trainLabels.take(400))
       //trainLabels.take(20).foreach(label => println("%30s %s %s %f".format(label.token.word, label.targetCategory, label.categoryValue, objective.currentScore(label))))
       //println ("Tr50  accuracy = "+ objective.accuracy(trainLabels.take(20)))
       println ("Train accuracy = "+ objective.accuracy(trainLabels))
-      //      println ("Test  accuracy = "+ objective.accuracy(testLabels))
+      println ("Test  accuracy = "+ objective.accuracy(testLabels))
     }
     if (false) {
       // Use BP Viterbi for prediction
@@ -130,15 +136,6 @@ object ChainNERDemo {
       //predictor.temperature *= 0.1
       //      predictor.processAll(testLabels, 2)
     }
-
-    // Compute features on test data
-    val testLabels = testSentences.flatMap(_.links.map(_.label))//.take(2000)
-    testLabels.map(_.token).foreach(t => {
-      if (t.hasPrev) t ++= t.prev.activeCategories.filter(!_.contains('@')).map(_+"@-1")
-      if (t.hasNext) t ++= t.next.activeCategories.filter(!_.contains('@')).map(_+"@+1")
-    })
-    testLabels.foreach(_.setRandomly)
-    predictor.processAll(testLabels, 2)
 
     println ("Final Test  accuracy = "+ objective.accuracy(testLabels))
     //println("norm " + model.weights.twoNorm)
