@@ -59,7 +59,6 @@ class OntonotesPhraseEntityTypeLabeler extends DocumentAnnotator {
   object FeatureDomain extends CategoricalVectorDomain[String]
   class FeatureVariable extends BinaryFeatureVectorVariable[String] {
     def domain = FeatureDomain
-    override def skipNonCategories: Boolean = domain.dimensionDomain.frozen
   }
   lazy val model = new LinearMulticlassClassifier(OntonotesEntityTypeDomain.size, FeatureDomain.dimensionDomain.size)
   
