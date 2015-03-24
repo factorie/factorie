@@ -33,7 +33,7 @@ case class DocStringWithId(id:String, docString:String, sourceFilename:String) {
   def toDocument = {
     val doc = new Document(docString).setName(id)
     doc.attr += TACDocumentType.fromFilePath(new File(sourceFilename))
-    doc.annotators += classOf[TACDocumentType] -> this.getClass
+    doc.annotators += classOf[TACDocumentType] -> classOf[TACDocumentType]
     doc
   }
 }
@@ -104,7 +104,7 @@ class TacFileIterator(tacDocFile:File) extends Iterator[DocStringWithId] {
     new GZIPInputStream(new FileInputStream(tacDocFile))
   } else {
     new FileInputStream(tacDocFile)
-  }).useDelimiter("\n").asScala, tacDocFile.getName)
+  }).useDelimiter("\n").asScala, tacDocFile.getAbsolutePath)
 
 
   def hasNext = iter.hasNext

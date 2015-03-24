@@ -19,6 +19,10 @@ class UnusableText(tokens:Iterable[Token]) extends TACSection(tokens)
 /** A document annotator that creates [[UsableText]] sections for texts within boundaryToken that
   * are not within excludeTokens. Everything else goes in [[UnusableText]] sections. */
 class XMLSectionalizer(boundaryToken:String, excludeTokens:Set[String]) extends DocumentAnnotator {
+
+  // we want a regex that will never match anything in a text document, visual bell is a good bet
+  private val nullRegex = 7.toChar.toString.r
+
   sealed trait State
   case object Usable extends State
   case object Unusable extends State
@@ -26,8 +30,8 @@ class XMLSectionalizer(boundaryToken:String, excludeTokens:Set[String]) extends 
   val acceptedOpenTag = ("""(?i)< *(""" + boundaryToken + """)[^\n>]*?>""").r
   val acceptedCloseTag = ("""(?i)</ *(""" + boundaryToken + """) *>""").r
 
-  val excludedOpenTag = ("""(?i)< *(""" + excludeTokens.mkString("|") + """)[^\n>]*?>""").r
-  val excludedCloseTag = ("""(?i)</ *(""" + excludeTokens.mkString("|") + """) *>""").r
+  val excludedOpenTag = if (excludeTokens.isEmpty) nullRegex  else ("""(?i)< *(""" + excludeTokens.mkString("|") + """)[^\n>]*?>""").r
+  val excludedCloseTag = if(excludeTokens.isEmpty) nullRegex else ("""(?i)</ *(""" + excludeTokens.mkString("|") + """) *>""").r
 
   def tokenAnnotationString(token: Token) = null
 
