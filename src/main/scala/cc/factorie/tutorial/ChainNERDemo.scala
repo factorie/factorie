@@ -128,13 +128,13 @@ object ChainNERDemo {
         println("---MaxProduct---")
         // printTokenMarginals(sentence.asSeq, BP.inferChainMax(sentence.asSeq.map(_.label), model))
         println("---Gibbs Sampling---")
-        //        predictor.processAll(testLabels, 2)
+        predictor.processAll(testLabels, 2)
         sentence.asSeq.foreach(token => printLabel(token.label))
       }
     } else {
       // Use VariableSettingsSampler for prediction
       //predictor.temperature *= 0.1
-      //      predictor.processAll(testLabels, 2)
+      predictor.processAll(testLabels, 2)
     }
 
     println ("Final Test  accuracy = "+ objective.accuracy(testLabels))
