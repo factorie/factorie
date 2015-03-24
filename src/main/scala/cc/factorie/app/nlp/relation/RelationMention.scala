@@ -4,6 +4,7 @@ import cc.factorie.variable._
 import cc.factorie.app.nlp.coref._
 import cc.factorie.util.Attr
 import scala.collection.mutable._
+import cc.factorie.epistemodb.MentionId
 
 object RelationArgFeaturesDomain extends CategoricalDomain[String]
 
@@ -36,6 +37,14 @@ case class TACRelationList(value:Iterable[TACRelation])
 class RelationMentionSeq extends SeqVariable[RelationMention]
 
 class RelationMention(val arg1: Mention, val arg2: Mention, var isArg1First:Boolean=true) extends ArrowVariable(arg1, arg2) with Attr {
+  val _relations = ArrayBuffer[TACRelation]()
+  this.attr += TACRelationList(_relations)
+  def relations = this.attr[TACRelationList]
+}
+
+class RelationMentionNew(val argMention1: MentionId, val uniqEntityStringId1: String,
+                         val argMention2: MentionId, val uniqEntityStringId2: String,
+                         val relation: String, relOffsets: MentionId) extends ArrowVariable(argMention1, argMention2) with Attr {
   val _relations = ArrayBuffer[TACRelation]()
   this.attr += TACRelationList(_relations)
   def relations = this.attr[TACRelationList]
