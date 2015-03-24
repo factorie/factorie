@@ -57,7 +57,7 @@ abstract class CategoricalSeqVariable[C] extends MutableDiscreteSeqVar[Categoric
     initialValue.foreach(c => this += d.value(c))
   }
   def domain: CategoricalSeqDomain[C]
-  def skipNonCategories = false
+  def skipNonCategories = domain.elementDomain.frozen
   def appendCategory(x:C): Unit = {
     val index = domain.elementDomain.index(x)
     if (index >= 0) _append(index)

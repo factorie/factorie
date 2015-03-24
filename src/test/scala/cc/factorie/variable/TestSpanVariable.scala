@@ -10,24 +10,23 @@
    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
    See the License for the specific language governing permissions and
    limitations under the License. */
-package cc.factorie
+package cc.factorie.variable
 
 import cc.factorie.app.nlp._
 import cc.factorie.app.nlp.ner._
-import junit.framework._
-import Assert._
 import cc.factorie.app.nlp.segment.DeterministicTokenizer
-import cc.factorie.variable.{SpanVarBuffer, SpanVarList}
+import junit.framework.Assert._
+import junit.framework._
 
-class TestSpanVariable extends TestCase  with cc.factorie.util.FastLogging {
-  
+class TestSpanVariable extends TestCase with cc.factorie.util.FastLogging {
+
   class MySpanBuffer extends SpanVarBuffer[TokenSpan,Section,Token]
 
   def testDiffLists(): Unit = {
      val doc = load.LoadPlainText.fromString("aaa bb John Smith eee ff ggg").head
      val sl = new MySpanBuffer
      doc.attr += sl
-       
+
      DeterministicTokenizer.process(doc)
      //doc.foreach(logger.debug(_))
      assertEquals(7, doc.tokenCount)
