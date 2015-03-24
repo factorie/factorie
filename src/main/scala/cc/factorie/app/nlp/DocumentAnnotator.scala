@@ -16,7 +16,7 @@ import cc.factorie.app.nlp.phrase.Phrase
 import cc.factorie.util.{Cubbie, Threading}
 import cc.factorie.app.nlp.coref.Mention
 
-trait DocumentAnnotator {
+trait DocumentAnnotator extends Serializable {
   def process(document: Document): Document  // NOTE: this method may mutate and return the same document that was passed in
   def prereqAttrs: Iterable[Class[_]]
   def postAttrs: Iterable[Class[_]]
