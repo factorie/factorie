@@ -87,6 +87,7 @@ class XMLSectionalizer(boundaryToken:String, excludeTokens:Set[String]) extends 
     }
     document.clearSections()
     sectionBuffer foreach document.+=
+    document.annotators += classOf[TACSection] -> this.getClass
     document
   }
 }
