@@ -5,16 +5,25 @@ import scala.collection.mutable
 import cc.factorie.app.nlp.load.TACDocTypes._
 
 /** The token span is assumed to be contiguous */
-abstract class TACSection(tks:Iterable[Token]) extends Section {
-  val document:Document = tks.head.document
-  val stringStart:Int = tks.head.stringStart
-  val stringEnd:Int = tks.last.stringEnd
-  // this needs to go after the definition of document because of the wonky way
-  // that token.document and section.document interact.
-  tks foreach this.+=
+abstract class TACSection(val document: Document, val stringStart: Int, val stringEnd: Int) extends Section
+class UsableText(document: Document, stringStart: Int, stringEnd: Int) extends TACSection(document, stringStart, stringEnd){
+  // todo is it possible to avoid this duplication?
+  def this(tokens: Iterable[Token]) = {
+    this(tokens.head.document, tokens.head.stringStart, tokens.last.stringEnd)
+    // this needs to go after the definition of document because of the wonky way
+    // that token.document and section.document interact.
+    tokens foreach this.+=
+  }
 }
-class UsableText(tokens:Iterable[Token]) extends TACSection(tokens)
-class UnusableText(tokens:Iterable[Token]) extends TACSection(tokens)
+class UnusableText(document: Document, stringStart: Int, stringEnd: Int) extends TACSection(document, stringStart, stringEnd){
+  // todo is it possible to avoid this duplication?
+  def this(tokens: Iterable[Token]) = {
+    this(tokens.head.document, tokens.head.stringStart, tokens.last.stringEnd)
+    // this needs to go after the definition of document because of the wonky way
+    // that token.document and section.document interact.
+    tokens foreach this.+=
+  }
+}
 
 /** A document annotator that creates [[UsableText]] sections for texts within boundaryToken that
   * are not within excludeTokens. Everything else goes in [[UnusableText]] sections. */
