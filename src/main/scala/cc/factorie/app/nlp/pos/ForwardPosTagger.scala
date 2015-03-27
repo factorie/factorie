@@ -448,7 +448,7 @@ class ForwardPosOptions extends cc.factorie.util.DefaultCmdOptions with SharedNL
 }
 
 object ForwardPosTester {
-  final val logger = Logger.getLogger(this.getClass.getName)
+  implicit final val logger = Logger.getLogger(this.getClass.getName)
   def main(args: Array[String]) {
     val opts = new ForwardPosOptions
     opts.parse(args)
