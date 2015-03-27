@@ -25,8 +25,8 @@ import cc.factorie.app.classify.backend.LinearMulticlassClassifier
     
     For the Viterbi-based part-of-speech tagger, see ChainPosTagger.  
     @author Andrew McCallum, */
-class ForwardPosTagger extends DocumentAnnotator {
-  private val logger = Logger.getLogger(this.getClass.getName)
+class ForwardPosTagger(implicit val logger: Logger) extends DocumentAnnotator {
+//  private final val logger = Logger.getLogger(this.getClass.getName)
 
   // Different ways to load saved parameters
   def this(stream:InputStream) = { this(); deserialize(stream) }
@@ -448,41 +448,43 @@ class ForwardPosOptions extends cc.factorie.util.DefaultCmdOptions with SharedNL
 }
 
 object ForwardPosTester {
+  final val logger = Logger.getLogger(this.getClass.getName)
   def main(args: Array[String]) {
-	val opts = new ForwardPosOptions
-	opts.parse(args)
-	assert(opts.testFile.wasInvoked || opts.testDir.wasInvoked || opts.testFiles.wasInvoked)
-	  	
-	// load model from file if given,
-	// else if the wsj command line param was specified use wsj model,
-	// otherwise ontonotes model
-	val pos = {
-	  if(opts.modelFile.wasInvoked) new ForwardPosTagger(new File(opts.modelFile.value))
-	  else if(opts.owpl.value) WSJForwardPosTagger
-	  else OntonotesForwardPosTagger
-	}
-	
-	assert(!(opts.testDir.wasInvoked && opts.testFiles.wasInvoked))
-    var testFileList = Seq(opts.testFile.value)
-    if(opts.testDir.wasInvoked){
-    	testFileList = FileUtils.getFileListFromDir(opts.testDir.value)
-    }else if (opts.testFiles.wasInvoked){
-      testFileList =  opts.testFiles.value.split(",")
+    val opts = new ForwardPosOptions
+    opts.parse(args)
+    assert(opts.testFile.wasInvoked || opts.testDir.wasInvoked || opts.testFiles.wasInvoked)
+
+    // load model from file if given,
+    // else if the wsj command line param was specified use wsj model,
+    // otherwise ontonotes model
+    val pos = {
+      if (opts.modelFile.wasInvoked) new ForwardPosTagger(new File(opts.modelFile.value))
+      else if (opts.owpl.value) WSJForwardPosTagger
+      else OntonotesForwardPosTagger
     }
-	
-	val testPortionToTake =  if(opts.testPortion.wasInvoked) opts.testPortion.value else 1.0
-	val testDocs = testFileList.map(fname => {
-	  if(opts.owpl.value) load.LoadOWPL.fromFilename(fname, pennPosLabelMaker).head
-	  else load.LoadOntonotes5.fromFilename(fname).head
-	})
+
+    assert(!(opts.testDir.wasInvoked && opts.testFiles.wasInvoked))
+    var testFileList = Seq(opts.testFile.value)
+    if (opts.testDir.wasInvoked) {
+      testFileList = FileUtils.getFileListFromDir(opts.testDir.value)
+    } else if (opts.testFiles.wasInvoked) {
+      testFileList = opts.testFiles.value.split(",")
+    }
+
+    val testPortionToTake = if (opts.testPortion.wasInvoked) opts.testPortion.value else 1.0
+    val testDocs = testFileList.map(fname => {
+      if (opts.owpl.value) load.LoadOWPL.fromFilename(fname, pennPosLabelMaker).head
+      else load.LoadOntonotes5.fromFilename(fname).head
+    })
     val testSentencesFull = testDocs.flatMap(_.sentences)
-    val testSentences = testSentencesFull.take((testPortionToTake*testSentencesFull.length).floor.toInt)
+    val testSentences = testSentencesFull.take((testPortionToTake * testSentencesFull.length).floor.toInt)
 
     pos.test(testSentences)
   }
 }
 
 object ForwardPosTrainer extends HyperparameterMain {
+  final val logger = Logger.getLogger(this.getClass.getName)
   def evaluateParameters(args: Array[String]): Double = {
     implicit val random = new scala.util.Random(0)
     val opts = new ForwardPosOptions
