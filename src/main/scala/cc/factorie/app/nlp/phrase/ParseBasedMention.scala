@@ -16,9 +16,8 @@ package cc.factorie.app.nlp.phrase
 import scala.collection.mutable.ArrayBuffer
 import cc.factorie.app.nlp._
 import cc.factorie.app.nlp.parse.ParseTree
-import cc.factorie.app.nlp.ner._
-import scala.Some
-import cc.factorie.app.nlp.coref.{ConllProperNounPhraseFinder, MentionList, Mention}
+import cc.factorie.app.nlp.coref.{AnyNerPhraseFinder, MentionList, Mention}
+import cc.factorie.app.nlp.ner.{NerSpanBuffer, NerTag}
 
 
 class ParseBasedMentionList(spans:Iterable[Mention]) extends MentionList(spans)
@@ -28,7 +27,7 @@ object ParseBasedPhraseFinder extends ParseBasedPhraseFinder(false)
 object ParseAndNerBasedPhraseFinder extends ParseBasedPhraseFinder(true)
 
 class ParseBasedPhraseFinder(val useNER: Boolean) extends DocumentAnnotator {
-  def prereqAttrs: Iterable[Class[_]] = if (!useNER) List(classOf[parse.ParseTree]) else List(classOf[parse.ParseTree])++ConllProperNounPhraseFinder.prereqAttrs
+  def prereqAttrs: Iterable[Class[_]] = if (!useNER) List(classOf[parse.ParseTree]) else List(classOf[parse.ParseTree], classOf[NerTag])
   def postAttrs: Iterable[Class[_]] = List(classOf[PhraseList])
 
   def process(doc: Document): Document = {
@@ -42,7 +41,7 @@ class ParseBasedPhraseFinder(val useNER: Boolean) extends DocumentAnnotator {
 
     //if NER has already been done, then convert the NER tags to NER spans
     //Note that this doesn't change the postAttrs for the annotator, since it may not necessarily add spans
-    if(useNER) docPhrases ++= ConllProperNounPhraseFinder(doc)
+    if(useNER) docPhrases ++= AnyNerPhraseFinder(doc)
 
     // NAM = proper noun, NOM = common noun, PRO = pronoun
     docPhrases ++= personalPronounSpans(doc)           map(  phrase => {phrase.attr += new NounPhraseType(phrase,"PRO");phrase})
@@ -72,12 +71,6 @@ class ParseBasedPhraseFinder(val useNER: Boolean) extends DocumentAnnotator {
                             If the mentions that we are extracting do not include the appositives as part of a mention
                             we want to make sure that we are extracting the appositives separately
                             default behavior is that we do filter the appositives.   */
-
-  private def nerSpans(doc: Document): Seq[Phrase] = {
-    (for (span <- doc.attr[ConllNerSpanBuffer]) yield
-      new Phrase(span.section, span.start, span.length, -1)
-      ).toSeq
-  }
 
   private def NNPSpans(doc : Document) : Seq[Phrase] = {
     val spans = ArrayBuffer[ArrayBuffer[Token]]()
