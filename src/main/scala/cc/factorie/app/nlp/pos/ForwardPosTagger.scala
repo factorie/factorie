@@ -25,7 +25,7 @@ import cc.factorie.app.classify.backend.LinearMulticlassClassifier
     
     For the Viterbi-based part-of-speech tagger, see ChainPosTagger.  
     @author Andrew McCallum, */
-class ForwardPosTagger extends DocumentAnnotator with FastLogging {
+class ForwardPosTagger extends DocumentAnnotator {
 
   // Different ways to load saved parameters
   def this(stream:InputStream) = { this(); deserialize(stream) }

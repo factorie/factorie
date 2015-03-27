@@ -13,11 +13,11 @@
 
 package cc.factorie.app.nlp
 import cc.factorie.app.nlp.phrase.Phrase
-import cc.factorie.util.{Cubbie, Threading}
+import cc.factorie.util.{FastLogging, Cubbie, Threading}
 import cc.factorie.app.nlp.coref.Mention
 import scala.reflect.ClassTag
 
-trait DocumentAnnotator extends Serializable {
+trait DocumentAnnotator extends Serializable with FastLogging {
   def process(document: Document): Document  // NOTE: this method may mutate and return the same document that was passed in
   def prereqAttrs: Iterable[Class[_]]
   def postAttrs: Iterable[Class[_]]
