@@ -31,13 +31,13 @@ class ForwardPosTagger extends DocumentAnnotator {
   def this(stream:InputStream) = { this(); deserialize(stream) }
   def this(file: File) = {
     this(new FileInputStream(file))
-    logger.debug("ForwardPosTagger loading from "+file.getAbsolutePath)
+//    logger.debug("ForwardPosTagger loading from "+file.getAbsolutePath)
   }
   def this(url:java.net.URL) = {
     this()
     val stream = url.openConnection.getInputStream
     if (stream.available <= 0) throw new Error("Could not open "+url)
-    logger.debug("ForwardPosTagger loading from "+url)
+//    logger.debug("ForwardPosTagger loading from "+url)
     deserialize(stream)
   }
   

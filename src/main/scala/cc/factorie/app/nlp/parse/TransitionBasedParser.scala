@@ -38,7 +38,7 @@ class TransitionBasedParser extends DocumentAnnotator {
     this()
     val stream = url.openConnection.getInputStream
     if (stream.available <= 0) throw new Error("Could not open "+url)
-    logger.debug("TransitionBasedParser loading from "+url)
+//    logger.debug("TransitionBasedParser loading from "+url)
     deserialize(stream)
   }
 
