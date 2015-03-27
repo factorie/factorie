@@ -103,7 +103,7 @@ class WeightsMap(defaultTensor: Weights => Tensor) extends TensorSet {
 }
 
 /** A collection of Tensors each associated with a Weights key. */
-trait TensorSet {
+trait TensorSet  extends Serializable {
   def keys: Iterable[Weights]
   def tensors: Iterable[Tensor]
 
