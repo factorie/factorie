@@ -25,20 +25,20 @@ import cc.factorie.app.classify.backend.LinearMulticlassClassifier
     
     For the Viterbi-based part-of-speech tagger, see ChainPosTagger.  
     @author Andrew McCallum, */
-class ForwardPosTagger(implicit logger: Logger) extends DocumentAnnotator {
+class ForwardPosTagger extends DocumentAnnotator {
 //  private final val logger = Logger.getLogger(this.getClass.getName)
 
   // Different ways to load saved parameters
-  def this(stream:InputStream)(implicit logger: Logger) = { this(); deserialize(stream) }
-  def this(file: File)(implicit logger: Logger) = {
+  def this(stream:InputStream) = { this(); deserialize(stream) }
+  def this(file: File) = {
     this(new FileInputStream(file))
-    logger.debug("ForwardPosTagger loading from "+file.getAbsolutePath)
+//    logger.debug("ForwardPosTagger loading from "+file.getAbsolutePath)
   }
-  def this(url:java.net.URL)(implicit logger: Logger) = {
+  def this(url:java.net.URL) = {
     this()
     val stream = url.openConnection.getInputStream
     if (stream.available <= 0) throw new Error("Could not open "+url)
-    logger.debug("ForwardPosTagger loading from "+url)
+//    logger.debug("ForwardPosTagger loading from "+url)
     deserialize(stream)
   }
   
@@ -419,16 +419,12 @@ class ForwardPosTagger(implicit logger: Logger) extends DocumentAnnotator {
 }
 
 /** The default part-of-speech tagger, trained on Penn Treebank Wall Street Journal, with parameters loaded from resources in the classpath. */
-class WSJForwardPosTagger(url:java.net.URL)(implicit logger: Logger) extends ForwardPosTagger(url)
-object WSJForwardPosTagger extends WSJForwardPosTagger(cc.factorie.util.ClasspathURL[WSJForwardPosTagger](".factorie")){
-  implicit final val logger = Logger.getLogger(this.getClass.getName)
-}
+class WSJForwardPosTagger(url:java.net.URL) extends ForwardPosTagger(url)
+object WSJForwardPosTagger extends WSJForwardPosTagger(cc.factorie.util.ClasspathURL[WSJForwardPosTagger](".factorie"))
 
 /** The default part-of-speech tagger, trained on all Ontonotes training data (including Wall Street Journal), with parameters loaded from resources in the classpath. */
-class OntonotesForwardPosTagger(url:java.net.URL)(implicit logger: Logger) extends ForwardPosTagger(url)
-object OntonotesForwardPosTagger extends OntonotesForwardPosTagger(cc.factorie.util.ClasspathURL[OntonotesForwardPosTagger](".factorie")){
-  implicit final val logger = Logger.getLogger(this.getClass.getName)
-}
+class OntonotesForwardPosTagger(url:java.net.URL) extends ForwardPosTagger(url)
+object OntonotesForwardPosTagger extends OntonotesForwardPosTagger(cc.factorie.util.ClasspathURL[OntonotesForwardPosTagger](".factorie"))
 
 class ForwardPosOptions extends cc.factorie.util.DefaultCmdOptions with SharedNLPCmdOptions{
   val modelFile = new CmdOption("model", "", "FILENAME", "Filename for the model (saving a trained model or reading a running model.")
@@ -452,7 +448,6 @@ class ForwardPosOptions extends cc.factorie.util.DefaultCmdOptions with SharedNL
 }
 
 object ForwardPosTester {
-  implicit final val logger = Logger.getLogger(this.getClass.getName)
   def main(args: Array[String]) {
     val opts = new ForwardPosOptions
     opts.parse(args)
@@ -488,7 +483,6 @@ object ForwardPosTester {
 }
 
 object ForwardPosTrainer extends HyperparameterMain {
-  implicit final val logger = Logger.getLogger(this.getClass.getName)
   def evaluateParameters(args: Array[String]): Double = {
     implicit val random = new scala.util.Random(0)
     val opts = new ForwardPosOptions
