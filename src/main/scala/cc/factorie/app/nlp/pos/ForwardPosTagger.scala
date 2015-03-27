@@ -419,12 +419,16 @@ class ForwardPosTagger(implicit logger: Logger) extends DocumentAnnotator {
 }
 
 /** The default part-of-speech tagger, trained on Penn Treebank Wall Street Journal, with parameters loaded from resources in the classpath. */
-class WSJForwardPosTagger(url:java.net.URL) extends ForwardPosTagger(url) 
-object WSJForwardPosTagger extends WSJForwardPosTagger(cc.factorie.util.ClasspathURL[WSJForwardPosTagger](".factorie"))
+class WSJForwardPosTagger(url:java.net.URL)(implicit logger: Logger) extends ForwardPosTagger(url)
+object WSJForwardPosTagger extends WSJForwardPosTagger(cc.factorie.util.ClasspathURL[WSJForwardPosTagger](".factorie")){
+  implicit final val logger = Logger.getLogger(this.getClass.getName)
+}
 
 /** The default part-of-speech tagger, trained on all Ontonotes training data (including Wall Street Journal), with parameters loaded from resources in the classpath. */
-class OntonotesForwardPosTagger(url:java.net.URL) extends ForwardPosTagger(url) 
-object OntonotesForwardPosTagger extends OntonotesForwardPosTagger(cc.factorie.util.ClasspathURL[OntonotesForwardPosTagger](".factorie"))
+class OntonotesForwardPosTagger(url:java.net.URL)(implicit logger: Logger) extends ForwardPosTagger(url)
+object OntonotesForwardPosTagger extends OntonotesForwardPosTagger(cc.factorie.util.ClasspathURL[OntonotesForwardPosTagger](".factorie")){
+  implicit final val logger = Logger.getLogger(this.getClass.getName)
+}
 
 class ForwardPosOptions extends cc.factorie.util.DefaultCmdOptions with SharedNLPCmdOptions{
   val modelFile = new CmdOption("model", "", "FILENAME", "Filename for the model (saving a trained model or reading a running model.")
