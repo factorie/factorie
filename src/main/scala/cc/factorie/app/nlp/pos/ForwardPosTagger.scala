@@ -64,7 +64,7 @@ class ForwardPosTagger extends DocumentAnnotator {
 /** Infrastructure for building and remembering a list of training data words that nearly always have the same POS tag.
       Used as cheap "stacked learning" features when looking-ahead to words not yet predicted by this POS tagger.
       The key into the ambiguityClasses is app.strings.replaceDigits().toLowerCase */
-  object WordData {
+  object WordData extends Serializable {
     val ambiguityClasses = JavaHashMap[String,String]()
     val sureTokens = JavaHashMap[String,Int]()
     var docWordCounts = JavaHashMap[String,Int]()
