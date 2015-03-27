@@ -484,7 +484,7 @@ object ForwardPosTester {
 }
 
 object ForwardPosTrainer extends HyperparameterMain {
-  final val logger = Logger.getLogger(this.getClass.getName)
+  implicit final val logger = Logger.getLogger(this.getClass.getName)
   def evaluateParameters(args: Array[String]): Double = {
     implicit val random = new scala.util.Random(0)
     val opts = new ForwardPosOptions
@@ -534,7 +534,7 @@ object ForwardPosTrainer extends HyperparameterMain {
               opts.rate.value, opts.delta.value, opts.cutoff.value, opts.updateExamples.value, opts.useHingeLoss.value, numIterations=opts.numIters.value.toInt,l1Factor=opts.l1.value, l2Factor=opts.l2.value)
     if (opts.saveModel.value) {
       pos.serialize(opts.modelFile.value)
-      val pos2 = new ForwardPosTagger
+      val pos2 = new ForwardPosTagger//(logger)
       pos2.deserialize(new java.io.File(opts.modelFile.value))
       pos.printAccuracy(testDocs.flatMap(_.sentences), "pre-serialize accuracy: ")
       pos2.printAccuracy(testDocs.flatMap(_.sentences), "post-serialize accuracy: ")
