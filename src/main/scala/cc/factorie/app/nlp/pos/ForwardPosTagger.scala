@@ -27,18 +27,19 @@ import cc.factorie.app.classify.backend.LinearMulticlassClassifier
     @author Andrew McCallum, */
 class ForwardPosTagger extends DocumentAnnotator {
 //  private final val logger = Logger.getLogger(this.getClass.getName)
+  this: DocumentAnnotator with FastLogging =>
 
   // Different ways to load saved parameters
   def this(stream:InputStream) = { this(); deserialize(stream) }
   def this(file: File) = {
     this(new FileInputStream(file))
-//    logger.debug("ForwardPosTagger loading from "+file.getAbsolutePath)
+    logger.debug("ForwardPosTagger loading from "+file.getAbsolutePath)
   }
   def this(url:java.net.URL) = {
     this()
     val stream = url.openConnection.getInputStream
     if (stream.available <= 0) throw new Error("Could not open "+url)
-//    logger.debug("ForwardPosTagger loading from "+url)
+    logger.debug("ForwardPosTagger loading from "+url)
     deserialize(stream)
   }
   
@@ -424,7 +425,7 @@ object WSJForwardPosTagger extends WSJForwardPosTagger(cc.factorie.util.Classpat
 
 /** The default part-of-speech tagger, trained on all Ontonotes training data (including Wall Street Journal), with parameters loaded from resources in the classpath. */
 class OntonotesForwardPosTagger(url:java.net.URL) extends ForwardPosTagger(url)
-object OntonotesForwardPosTagger extends OntonotesForwardPosTagger(cc.factorie.util.ClasspathURL[OntonotesForwardPosTagger](".factorie"))
+object OntonotesForwardPosTagger extends OntonotesForwardPosTagger(cc.factorie.util.ClasspathURL[OntonotesForwardPosTagger](".factorie")) with FastLogging
 
 class ForwardPosOptions extends cc.factorie.util.DefaultCmdOptions with SharedNLPCmdOptions{
   val modelFile = new CmdOption("model", "", "FILENAME", "Filename for the model (saving a trained model or reading a running model.")
