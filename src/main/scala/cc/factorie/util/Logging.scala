@@ -22,7 +22,7 @@ import java.io._
     "type Logging = cc.factorie.util.Logging" 
     in cc/factorie/package.scala to something else, and recompile.  The logging method names used in the library are pretty standard
     @author Andrew McCallum  */
-class Logger(val name:String, outputStream: => OutputStream = System.err, @volatile var level: Int = Logger.INFO) {
+class Logger(val name:String, outputStream: => OutputStream = System.err, var level: Int = Logger.INFO) {
   def this(name:String, f:File) = this (name, new BufferedOutputStream(new FileOutputStream(f)))
   def this(name:String, s:String) = this (name, new File(s))
   /**  Try to parse the level string into an Int from System.getenv, but if it fails to parse, do nothing.  
