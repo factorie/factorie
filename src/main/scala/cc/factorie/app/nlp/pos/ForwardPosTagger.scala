@@ -25,7 +25,7 @@ import cc.factorie.app.classify.backend.LinearMulticlassClassifier
     
     For the Viterbi-based part-of-speech tagger, see ChainPosTagger.  
     @author Andrew McCallum, */
-class ForwardPosTagger(implicit val logger: Logger) extends DocumentAnnotator {
+class ForwardPosTagger(implicit logger: Logger) extends DocumentAnnotator {
 //  private final val logger = Logger.getLogger(this.getClass.getName)
 
   // Different ways to load saved parameters
@@ -534,7 +534,7 @@ object ForwardPosTrainer extends HyperparameterMain {
               opts.rate.value, opts.delta.value, opts.cutoff.value, opts.updateExamples.value, opts.useHingeLoss.value, numIterations=opts.numIters.value.toInt,l1Factor=opts.l1.value, l2Factor=opts.l2.value)
     if (opts.saveModel.value) {
       pos.serialize(opts.modelFile.value)
-      val pos2 = new ForwardPosTagger//(logger)
+      val pos2 = new ForwardPosTagger
       pos2.deserialize(new java.io.File(opts.modelFile.value))
       pos.printAccuracy(testDocs.flatMap(_.sentences), "pre-serialize accuracy: ")
       pos2.printAccuracy(testDocs.flatMap(_.sentences), "post-serialize accuracy: ")
