@@ -164,8 +164,6 @@ object BioOntonotesNerDomain extends CategoricalDomain[String] with BIO {
 }
 class BioOntonotesNerTag(token:Token, initialCategory:String) extends NerTag(token, initialCategory) { def domain = BioOntonotesNerDomain }
 class LabeledBioOntonotesNerTag(token:Token, initialCategory:String) extends BioOntonotesNerTag(token, initialCategory) with CategoricalLabeling[String]
-class IobOntonotesNerTag(token:Token, initialCategory:String) extends NerTag(token, initialCategory) { def domain = BioOntonotesNerDomain }
-class LabeledIobOntonotesNerTag(token:Token, initialCategory:String) extends IobOntonotesNerTag(token, initialCategory) with CategoricalLabeling[String]
 //class BioOntonotesNerLabel(val token:Token, targetValue:String) extends NerLabel(targetValue) { def domain = BioOntonotesNerDomain }
 
 object BilouOntonotesNerDomain extends CategoricalDomain[String] with BILOU {
