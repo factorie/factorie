@@ -48,7 +48,6 @@ class ProcessEventCorpusOpts extends CmdOptions{
   val dataDirs = new CmdOption("data-dirs", Nil.asInstanceOf[List[String]], "FILENAME...", "List of directories containing (only) data files in sgml format.")
   val dataFile = new CmdOption("data-files", Nil.asInstanceOf[List[String]], "FILENAME...", "List of files in sgml format.")
   val keyFile = new CmdOption("key-file", "", "FILENAME...", "Key file.")
-  val outFile = new CmdOption("out-file", "", "FILENAME...", "Output file.")
 }
 
 object ProcessEventCorpus {
@@ -93,7 +92,6 @@ object ProcessEventCorpus {
       System.exit(1)
     }
     assert(opts.dataDirs.wasInvoked || opts.dataFile.wasInvoked)
-    assert(opts.outFile.wasInvoked)
     println(opts.dataDirs.value.mkString("\n"))
 
     val dataFileList = if (opts.dataDirs.wasInvoked) opts.dataDirs.value.flatMap(FileUtils.getFileListFromDir(_)) else opts.dataFile.value
