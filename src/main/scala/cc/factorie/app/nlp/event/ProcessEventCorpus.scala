@@ -38,7 +38,7 @@ object EventNLPComponents extends CompoundDocumentAnnotator(
     DeterministicTokenizer,
     PlainTokenNormalizer,
     DeterministicSentenceSegmenter,
-    OntonotesForwardPosTagger,
+    new OntonotesForwardPosTagger(new URL("file:///iesl/canvas/sullivan/dev/all-models/src/main/resources/cc/factorie/app/nlp/pos/OntonotesForwardPosTagger.factorie")),
     new BBNEventChainNer(new URL("file:///iesl/canvas/ksilvers/trained-models/BBNTagger_optimized.factorie")),
 
     //BBNEventStringMatchingLabelerComponent,// TODO: copy over
