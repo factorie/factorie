@@ -229,3 +229,43 @@ class LabeledLvl1BilouGermevalNerTag(token:Token, initialCategory:String) extend
 class Lvl2BilouGermevalNerTag(token:Token, initialCategory:String) extends NerTag(token, initialCategory) { def domain = BilouGermevalNerDomain }
 class LabeledLvl2BilouGermevalNerTag(token:Token, initialCategory:String) extends Lvl2BilouGermevalNerTag(token, initialCategory) with CategoricalLabeling[String]
 
+
+object BBNEventDomain extends CategoricalDomain[String] {
+  this ++= Vector ("CHARGES",
+    "DATE:DATE",
+    "DATE:DURATION",
+    "FAC",
+    "GPE",
+    "JOB_TITLE",
+    "LOCATION",
+    "MONEY",
+    "NUM",
+    "ORGANIZATION",
+    "PERSON",
+    "PRODUCT:VEHICLE",
+    "PRODUCT:WEAPON")
+  freeze()
+}
+
+class BBNEventNerTag(token:Token, initialCategory:String) extends NerTag(token, initialCategory) { def domain = BBNEventDomain}
+class LabeledBBNEventNerTag(token:Token, initialCategory:String) extends BBNEventNerTag(token, initialCategory) with CategoricalLabeling[String]
+
+class BBNEventNerSpanLabel(span:TokenSpan, initialCategory:String) extends NerSpanLabel(span, initialCategory) { def domain = BBNEventDomain }
+class BBNEventNerSpan(section:Section, start:Int, length:Int, category:String) extends NerSpan(section, start, length) { val label = new BBNEventNerSpanLabel(this, category) }
+class BBNEventNerSpanBuffer(spans:Iterable[BBNEventNerSpan]) extends NerSpanBuffer[BBNEventNerSpan] {
+  def this() = this(Iterable.empty[BBNEventNerSpan])
+}
+
+object BioBBNEventDomain extends CategoricalDomain[String] with BIO {
+  this ++= encodedTags(BBNEventDomain.categories)
+}
+
+class BioBBNEventNerTag(token:Token, initialCategory:String) extends NerTag(token, initialCategory) { def domain = BioBBNEventDomain }
+class LabeledBioBBNEventNerTag(token:Token, initialCategory:String) extends BioBBNEventNerTag(token, initialCategory) with CategoricalLabeling[String]
+
+object BilouBBNEventDomain extends CategoricalDomain[String] with BILOU {
+  this ++= encodedTags(BBNEventDomain.categories)
+}
+
+class BilouBBNEventNerTag(token:Token, initialCategory:String) extends NerTag(token, initialCategory) { def domain = BilouBBNEventDomain }
+class LabeledBilouBBNEventNerTag(token:Token, initialCategory:String) extends BilouBBNEventNerTag(token, initialCategory) with CategoricalLabeling[String]
