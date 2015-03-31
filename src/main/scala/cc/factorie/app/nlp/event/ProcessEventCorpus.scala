@@ -9,6 +9,7 @@ import cc.factorie.app.nlp.pos.OntonotesForwardPosTagger
 import scala.collection.mutable.HashSet
 import scala.collection.mutable
 import scala.io.Source
+import java.net.URL
 
 
 /**
@@ -38,7 +39,8 @@ object EventNLPComponents extends CompoundDocumentAnnotator(
     PlainTokenNormalizer,
     DeterministicSentenceSegmenter,
     OntonotesForwardPosTagger,
-    BBNEventChainNer,
+    new BBNEventChainNer(new URL("file:///iesl/canvas/ksilvers/trained-models/BBNTagger_optimized.factorie")),
+
     //BBNEventStringMatchingLabelerComponent,// TODO: copy over
     BBNEventPatternBasedEventFinder
   )
@@ -93,6 +95,7 @@ object ProcessEventCorpus {
     }
     assert(opts.dataDirs.wasInvoked || opts.dataFile.wasInvoked)
     println(opts.dataDirs.value.mkString("\n"))
+
 
     val dataFileList = if (opts.dataDirs.wasInvoked) opts.dataDirs.value.flatMap(FileUtils.getFileListFromDir(_)) else opts.dataFile.value
     val docs = dataFileList.flatMap(LoadTac.fromFilename(_))
