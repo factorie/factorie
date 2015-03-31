@@ -1,9 +1,9 @@
 env:
   global:
-    - MAVEN_OPTS="-Xmx2560m -XX:MaxPermSize=512m"
+    - MAVEN_OPTS="-Xmx2469m -XX:MaxPermSize=512m"
 script:
     - sudo cat /proc/meminfo
-    - MAVEN_OPTS="-Xmx2560m -XX:MaxPermSize=512m" mvn clean install
+    - MAVEN_OPTS="-Xmx2469m -XX:MaxPermSize=512m" mvn -X clean install
 jdk:
     - oraclejdk8
     - oraclejdk7
