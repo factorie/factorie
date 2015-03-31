@@ -242,7 +242,6 @@ limitations under the License.
             <recompileMode>incremental</recompileMode>
             <useZincServer>false</useZincServer>
             <scalaVersion>${scala.majorVersion}${scala.minorVersion}</scalaVersion>
-            <maxmem>2560m</maxmem>
 	    <jvmArgs>
               <jvmArg>-Xmx2560m</jvmArg>
               <jvmArg>-XX:MaxPermSize=512m</jvmArg>
@@ -420,7 +419,7 @@ limitations under the License.
                 </executions>
                 <configuration>
                   <recompileMode>incremental</recompileMode>
-                  <useZincServer>true</useZincServer>
+                  <useZincServer>false</useZincServer>
                   <scalaVersion>${scala.majorVersion}${scala.minorVersion}</scalaVersion>
                   <jvmArgs>
                     <jvmArg>-Xmx2560m</jvmArg>
