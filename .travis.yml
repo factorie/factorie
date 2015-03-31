@@ -1,7 +1,6 @@
-language: java
 env:
   global:
-    - MAVEN_OPTS="-XX:MaxPermSize=512m -Xmx2560m"
+    - MAVEN_OPTS="-Xmx2560m -XX:MaxPermSize=512m"
 script:
     - sudo cat /proc/meminfo
     - mvn clean install
