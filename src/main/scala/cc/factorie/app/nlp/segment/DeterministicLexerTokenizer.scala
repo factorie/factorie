@@ -96,7 +96,7 @@ class DeterministicLexerTokenizer(
 }
 
 /* This version does not perform normalization, only tokenization */
-object DeterministicLexerTokenizer extends DeterministicLexerTokenizer(
+object DeterministicTokenizer extends DeterministicLexerTokenizer(
   tokenizeSgml = false,
   tokenizeNewline = false,
   tokenizeWhitespace = false,
