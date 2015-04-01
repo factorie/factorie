@@ -1,5 +1,11 @@
-language: java
-env:
-  global:
-    - MAVEN_OPTS="-XX:MaxPermSize=512m -Xmx4g"
-script: mvn clean install
+# Building this way is a workaround required due to a bug in Travis
+# wherein MAVEN_OPTS are not actually set unless /etc/mavenrc is
+# removed first, see https://github.com/travis-ci/travis-ci/issues/1689
+script:
+    - sudo cat /proc/meminfo
+    - sudo rm /etc/mavenrc
+    - export MAVEN_OPTS="-Xmx2469m -XX:MaxPermSize=512m"
+    - mvn clean install
+jdk:
+    - oraclejdk8
+    - oraclejdk7

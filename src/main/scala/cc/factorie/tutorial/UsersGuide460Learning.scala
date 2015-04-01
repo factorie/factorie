@@ -21,7 +21,7 @@
  * tutorial, but most of the things we'll discuss generalize all across Factorie.
  */
 package cc.factorie.tutorial
-object Tutorial60Learning extends App {
+object TutorialLearning extends App {
   import cc.factorie._
   import variable._
   import cc.factorie.app.nlp._
@@ -66,9 +66,9 @@ object Tutorial60Learning extends App {
 
   // The Document class implements documents as sequences of sentences and tokens.
   val document = new Document("The quick brown fox jumped over the lazy dog.")
-  val tokenizer = new app.nlp.segment.DeterministicTokenizer
+  val tokenizer = app.nlp.segment.DeterministicNormalizingTokenizer
   tokenizer.process(document)
-  val segmenter = new app.nlp.segment.DeterministicSentenceSegmenter
+  val segmenter = app.nlp.segment.DeterministicSentenceSegmenter
   segmenter.process(document)
   assertStringEquals(document.tokenCount, "10")
   assertStringEquals(document.sentenceCount, "1")
