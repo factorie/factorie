@@ -357,9 +357,9 @@ class DocumentStore(mongoDB:String = "DocumentDB") {
   val collection = db.getCollection("documents")
   val cubbieCollection = new MongoCubbieCollection[StandardDocumentCubbie](collection, () => new StandardDocumentCubbie)
 
-  val annotator = DocumentAnnotatorPipeline(DeterministicTokenizer, DeterministicSentenceSegmenter, OntonotesForwardPosTagger, WSJTransitionBasedParser, ParseForwardCoref)
-  //val annotator = DocumentAnnotatorPipeline(DeterministicTokenizer, DeterministicSentenceSegmenter, OntonotesForwardPosTagger, WSJTransitionBasedParser)
-  //val annotator = DocumentAnnotatorPipeline(DeterministicTokenizer, DeterministicSentenceSegmenter)
+  val annotator = DocumentAnnotatorPipeline(DeterministicNormalizingTokenizer, DeterministicSentenceSegmenter, OntonotesForwardPosTagger, WSJTransitionBasedParser, ParseForwardCoref)
+  //val annotator = DocumentAnnotatorPipeline(DeterministicNormalizingTokenizer, DeterministicSentenceSegmenter, OntonotesForwardPosTagger, WSJTransitionBasedParser)
+  //val annotator = DocumentAnnotatorPipeline(DeterministicNormalizingTokenizer, DeterministicSentenceSegmenter)
   def +=(doc:Document): Unit = {
     annotator.process(doc)
     //println(s"Adding doc tokens=${doc.tokenCount}")

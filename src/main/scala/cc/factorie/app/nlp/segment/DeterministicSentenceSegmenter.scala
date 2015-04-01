@@ -41,7 +41,7 @@ class DeterministicSentenceSegmenter extends DocumentAnnotator {
   /** Whitespace that should not be allowed between a closingRegex and closingContinuationRegex for a sentence continuation.  For example:  He ran.  "You shouldn't run!" */
   val spaceRegex = "[ \n\r\t\u00A0\\p{Z}]+".r
   
-  val emoticonRegex = ("\\A("+DeterministicTokenizer.emoticon+")\\Z").r
+  val emoticonRegex = ("\\A("+DeterministicRegexTokenizer.emoticon+")\\Z").r
   
   /** If there are more than this number of characters between the end of the previous token and the beginning of this one, force a sentence start.
       If negative, don't break sentences according to this criteria at all. */
@@ -125,7 +125,7 @@ object DeterministicSentenceSegmenter extends DeterministicSentenceSegmenter {
   def main(args: Array[String]): Unit = {
     for (filename <- args) yield {
       val doc = new Document(io.Source.fromFile(filename).mkString).setName(filename)
-      DeterministicTokenizer.process(doc)
+      DeterministicNormalizingTokenizer.process(doc)
       DeterministicSentenceSegmenter.this.process(doc)
       println(filename)
       for (sentence <- doc.sentences)
