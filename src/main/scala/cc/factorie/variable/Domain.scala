@@ -24,7 +24,7 @@ package cc.factorie.variable
     CategoricalDomain provides a densely-packed mapping between category values and integers.
     @author Andrew McCallum
     @since 0.8 */
-trait Domain {
+trait Domain extends Serializable {
   type Value <: Any
 }
 // TODO Consider removing type argument from Domain?  

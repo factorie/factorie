@@ -1,7 +1,7 @@
 package cc.factorie.app.nlp
 
 import org.scalatest.{FlatSpec, Matchers}
-import cc.factorie.app.nlp.segment.{DeterministicSentenceSegmenter, DeterministicTokenizer}
+import cc.factorie.app.nlp.segment.{DeterministicNormalizingTokenizer, DeterministicSentenceSegmenter}
 
 /**
  * @author John Sullivan
@@ -15,7 +15,7 @@ class TestCompoundDocumentAnnotator extends FlatSpec with Matchers {
     val f = fix
     import f._
 
-    val annos = Seq(DeterministicTokenizer, DeterministicSentenceSegmenter)
+    val annos = Seq(DeterministicNormalizingTokenizer, DeterministicSentenceSegmenter)
 
     val compAnno = new CompoundDocumentAnnotator(annos)
     compAnno process doc
