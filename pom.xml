@@ -261,12 +261,13 @@ limitations under the License.
           </executions>
           <configuration>
             <recompileMode>incremental</recompileMode>
-            <useZincServer>true</useZincServer>
+            <useZincServer>false</useZincServer>
             <scalaVersion>${scala.majorVersion}${scala.minorVersion}</scalaVersion>
-            <jvmArgs>
-              <jvmArg>-Xms64m</jvmArg>
-              <jvmArg>-Xmx1800m</jvmArg>
-            </jvmArgs>
+            <!--<displayCmd>true</displayCmd>-->
+	        <!--<jvmArgs>-->
+              <!--<jvmArg>-Xmx2560m</jvmArg>-->
+              <!--<jvmArg>-XX:MaxPermSize=512m</jvmArg>-->
+            <!--</jvmArgs>-->
           </configuration>
         </plugin>
 
@@ -280,6 +281,14 @@ limitations under the License.
           </configuration>
         </plugin>
 
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-surefire-plugin</artifactId>
+          <version>2.7</version>
+          <!--<configuration>-->
+            <!--<argLine>-Xmx2560m -XX:MaxPermSize=512m</argLine>-->
+          <!--</configuration>-->
+        </plugin>
 
         <plugin>
           <groupId>org.scalatest</groupId>
@@ -289,6 +298,7 @@ limitations under the License.
             <reportsDirectory>${project.build.directory}/surefire-reports</reportsDirectory>
             <junitxml>.</junitxml>
             <filereports>WDF TestSuite.txt</filereports>
+            <!--<argLine>-Xmx2560m -XX:MaxPermSize=512m</argLine>-->
           </configuration>
           <executions>
             <execution>
@@ -431,12 +441,13 @@ limitations under the License.
                 </executions>
                 <configuration>
                   <recompileMode>incremental</recompileMode>
-                  <useZincServer>true</useZincServer>
+                  <useZincServer>false</useZincServer>
                   <scalaVersion>${scala.majorVersion}${scala.minorVersion}</scalaVersion>
-                  <jvmArgs>
-                    <jvmArg>-Xms64m</jvmArg>
-                    <jvmArg>-Xmx1800m</jvmArg>
-                  </jvmArgs>
+                  <!--<displayCmd>true</displayCmd>-->
+                  <!--<jvmArgs>-->
+                    <!--<jvmArg>-Xmx2560m</jvmArg>-->
+                    <!--<jvmArg>-XX:MaxPermSize=512m</jvmArg>-->
+                  <!--</jvmArgs>-->
                 </configuration>
               </plugin>
 

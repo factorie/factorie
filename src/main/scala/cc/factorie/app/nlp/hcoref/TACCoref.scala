@@ -10,7 +10,7 @@ import cc.factorie.app.nlp.ner.NoEmbeddingsConllStackedChainNer
 import cc.factorie.app.nlp.coref.ParseForwardCoref
 import cc.factorie.app.nlp.parse.OntonotesTransitionBasedParser
 import scala.util.Random
-import cc.factorie.app.nlp.segment.{DeterministicSentenceSegmenter, DeterministicTokenizer}
+import cc.factorie.app.nlp.segment.{DeterministicNormalizingTokenizer, DeterministicSentenceSegmenter}
 import cc.factorie.app.nlp.phrase.Phrase
 import cc.factorie.variable.{DenseDoubleBagVariable, CategoricalDomain, BagOfWordsVariable}
 import java.util.zip.GZIPInputStream
@@ -31,7 +31,7 @@ object TACCorefWithFactorie {
     println("loaded %d mentions/queries in %d entities.".format(refMentions.size, refMentions.map(_.entId).toSet.size))
 
     val pipelineElements = Seq(
-      DeterministicTokenizer,
+      DeterministicNormalizingTokenizer,
       DeterministicSentenceSegmenter,
       OntonotesForwardPosTagger,
       NoEmbeddingsConllStackedChainNer,
@@ -92,7 +92,7 @@ object TACCoref {
 
     val mentions = refMentions.flatMap{ rMention =>
       val doc = new Document(map.getDoc(rMention.docId).toIterator.mkString("\n")).setName(rMention.docId)
-      DeterministicTokenizer.process(doc)
+      DeterministicNormalizingTokenizer.process(doc)
       DeterministicSentenceSegmenter.process(doc)
       rMention.doc = Some(doc)
 
@@ -227,7 +227,7 @@ case class ReferenceMention(id:String, name:String, docId:String, offsets:Option
 object RefMentionConverterNoPipeline {
   def toDocEntNode(ref:ReferenceMention):Option[Mention[DocEntityVars]] = {
     val doc = ref.doc.get
-    DeterministicTokenizer.process(doc)
+    DeterministicNormalizingTokenizer.process(doc)
     DeterministicSentenceSegmenter.process(doc)
 
     val offsetOpt = ref.offsets match {
@@ -304,7 +304,7 @@ object GenerateEmbeddings {
 
     val tokens = refMentions.map{ rMention =>
       val doc = new Document(map.getDoc(rMention.docId).toIterator.mkString("\n")).setName(rMention.docId)
-      DeterministicTokenizer.process(doc)
+      DeterministicNormalizingTokenizer.process(doc)
       DeterministicSentenceSegmenter.process(doc)
       doc.tokens.map(_.lemmaString)
     }

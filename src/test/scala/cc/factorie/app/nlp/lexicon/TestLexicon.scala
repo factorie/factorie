@@ -31,7 +31,7 @@ class TestLexicon extends JUnitSuite {
     assert(newlex.contains("New York") && oldlex.contains("New York"))
 
     val string = "Yesterday I flew from Paris to New York."
-    val doc = DocumentAnnotatorPipeline(segment.DeterministicTokenizer).process(new Document(string))
+    val doc = DocumentAnnotatorPipeline(segment.DeterministicNormalizingTokenizer).process(new Document(string))
     val section = doc.asSection
     val tok = section.tokens(4)
     assert(tok.string == "Paris")
@@ -86,7 +86,7 @@ class TestLexicon extends JUnitSuite {
     assert(!lexicon.containsWord("England"))
 
     val string = "Yesterday I flew from Paris to New York."
-    val doc = DocumentAnnotatorPipeline(segment.DeterministicTokenizer).process(new Document(string))
+    val doc = DocumentAnnotatorPipeline(segment.DeterministicNormalizingTokenizer).process(new Document(string))
     val section = doc.asSection
     assert(section.tokens(4).string == "Paris")
     assert(lexicon.contains(section.tokens(4)))
@@ -133,7 +133,7 @@ class TestLexicon extends JUnitSuite {
     assert(!lexicon.containsWord("England"))
     
     val string = "Yesterday I flew from Paris to New York."
-    val doc = DocumentAnnotatorPipeline(segment.DeterministicTokenizer).process(new Document(string))
+    val doc = DocumentAnnotatorPipeline(segment.DeterministicNormalizingTokenizer).process(new Document(string))
     val section = doc.asSection
     assert(section.tokens(4).string == "Paris")
     assert(lexicon.contains(section.tokens(4)))

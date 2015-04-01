@@ -4,14 +4,12 @@ import cc.factorie.app.nlp._
 import cc.factorie.app.nlp.coref.WithinDocCoref
 import java.io._
 import cc.factorie.util.{DefaultCmdOptions, NonValidatingXML}
-import scala.Some
 import cc.factorie.app.nlp.phrase.Phrase
 import scala.io.Source
-import cc.factorie.app.nlp.segment.{DeterministicSentenceSegmenter, DeterministicTokenizer}
+import cc.factorie.app.nlp.segment.{DeterministicSentenceSegmenter, DeterministicNormalizingTokenizer}
 import cc.factorie.app.nlp.pos.PennPosTag
 import scala.util.matching.Regex
 import scala.xml.Node
-import scala.Some
 import java.util.zip.GZIPInputStream
 
 /**
@@ -290,7 +288,7 @@ object LoadAPFCoref {
 
 
 
-    (DeterministicTokenizer.process _ andThen DeterministicSentenceSegmenter.process)(doc)
+    (DeterministicNormalizingTokenizer.process _ andThen DeterministicSentenceSegmenter.process)(doc)
     println("tokenized doc")
     val corefAnnotator = new LoadAPFCoref(apfFile)
     println("built anno")
