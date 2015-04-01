@@ -51,7 +51,9 @@ abstract class NerAnnotator[Span <: NerSpan : ClassTag, Tag <: NerTag : ClassTag
             tokBuffer.clear()
             state = NotReading
           case (prefix, s) =>
-            sys.error("Invalid combination of states, prefix %s, state %s at token %s".format(prefix, s, tok))
+            tokBuffer.clear()
+            state = NotReading
+            System.err.println("Invalid combination of states, prefix %s, state %s at token %s".format(prefix, s, tok))
         }
       }
       if(tokBuffer.nonEmpty) {

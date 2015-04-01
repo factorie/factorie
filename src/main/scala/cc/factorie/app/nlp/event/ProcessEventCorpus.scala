@@ -4,7 +4,7 @@ import cc.factorie.util.{FileUtils, CmdOptions}
 import java.io.{File, PrintWriter}
 import cc.factorie.app.nlp._
 import cc.factorie.app.nlp.segment.{DeterministicSentenceSegmenter, PlainTokenNormalizer, DeterministicTokenizer}
-import cc.factorie.app.nlp.ner.{BBNEventChainNer, ConllChainNer, ChainNer}
+import cc.factorie.app.nlp.ner._
 import cc.factorie.app.nlp.pos.OntonotesForwardPosTagger
 import scala.collection.mutable.HashSet
 import scala.collection.mutable
@@ -40,8 +40,7 @@ object EventNLPComponents extends CompoundDocumentAnnotator(
     DeterministicSentenceSegmenter,
     new OntonotesForwardPosTagger(new URL("file:///iesl/canvas/sullivan/dev/all-models/src/main/resources/cc/factorie/app/nlp/pos/OntonotesForwardPosTagger.factorie")),
     new BBNEventChainNer(new URL("file:///iesl/canvas/ksilvers/trained-models/BBNTagger_optimized.factorie")),
-
-    //BBNEventStringMatchingLabelerComponent,// TODO: copy over
+    //EventStringMatchingLabeler,
     BBNEventPatternBasedEventFinder
   )
 )
@@ -108,6 +107,23 @@ object ProcessEventCorpus {
       i += 1
       doc
     }).seq.foreach{ doc =>
+      println("processing results for doc %s" format doc.name)
+      Option(doc.attr[BBNEventNerSpanBuffer]) match {
+        case Some(buf) => buf.size match {
+          case 0 => println("\tspan buffer is empty")
+            val tags = doc.tokens.map(_.attr.exactly[BilouBBNEventNerTag])
+            println("\t\t%d tags were non O" format tags.count(_.categoryValue != "O"))
+            tags.groupBy(_.baseCategoryValue).mapValues(_.size) foreach {case (t,c) => println("\t\t\t%s appeared %d times".format(t, c))}
+          case otw => println("\tspan buffer has %d elements".format(otw))
+            println("\t\tspan labels")
+            buf.groupBy(_.label.categoryValue).mapValues(_.size ) foreach {case (t,c) => println("\t\t\t%s appeared %d times".format(t, c))}
+            val tags = doc.tokens.map(_.attr.exactly[BilouBBNEventNerTag])
+            println("\t\t%d tags were non O" format tags.count(_.categoryValue != "O"))
+            tags.groupBy(_.baseCategoryValue).mapValues(_.size) foreach {case (t,c) => println("\t\t\t%s appeared %d times".format(t, c))}
+        }
+        case None => println("\tdid not have EventSpanBuffer")
+      }
+
       doc.attr[MatchedEventPatterns].foreach{p =>
         val ans = EventAnswer(doc.name, p.span.string, p.pattern.eventRole.event, p.pattern.eventRole.role)
         responses.add(ans)
