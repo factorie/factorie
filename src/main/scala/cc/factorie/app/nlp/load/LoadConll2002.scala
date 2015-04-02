@@ -23,6 +23,7 @@ import cc.factorie.app.nlp.Sentence
 import cc.factorie.app.nlp.Token
 import cc.factorie.app.nlp.UnknownDocumentAnnotator
 import cc.factorie.app.nlp.pos.PennPosTag
+import cc.factorie.app.nlp.ner.LabeledBioConllNerTag
 
 // Usage:
 // Either LoadConll2003.fromFilename("foo")
@@ -72,7 +73,7 @@ case class LoadConll2002(BILOU:Boolean = false) extends Load with FastLogging {
         val ner = fields(1).stripLineEnd
         if (sentence.length > 0) document.appendString(" ")
         val token = new Token(sentence, word)
-        token.attr += new LabeledIobConllNerTag(token, ner)
+        token.attr += new LabeledBioConllNerTag(token, ner)
         //        token.attr += new cc.factorie.app.nlp.pos.PennPosTag(token, partOfSpeech)
       }
     }
