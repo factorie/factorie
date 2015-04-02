@@ -72,7 +72,7 @@ class AhoCorasick(val sep : String) extends Serializable {
 
         return found;
     }
-    
+
     /**
      * Finds all mentions of the trie phrases in a tokenized input text.
      */

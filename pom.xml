@@ -290,6 +290,7 @@ limitations under the License.
             <reportsDirectory>${project.build.directory}/surefire-reports</reportsDirectory>
             <junitxml>.</junitxml>
             <filereports>WDF TestSuite.txt</filereports>
+            <tagsToExclude>cc.factorie.app.nlp.RequiresTrainedModel</tagsToExclude>
           </configuration>
           <executions>
             <execution>

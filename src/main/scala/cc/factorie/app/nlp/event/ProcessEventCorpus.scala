@@ -1,9 +1,9 @@
 package cc.factorie.app.nlp.event
 
 import cc.factorie.util.{FileUtils, CmdOptions}
-import java.io.{File, PrintWriter}
+import java.io.{BufferedWriter, FileWriter, File, PrintWriter}
 import cc.factorie.app.nlp._
-import cc.factorie.app.nlp.segment.{DeterministicSentenceSegmenter, PlainTokenNormalizer, DeterministicTokenizer}
+import cc.factorie.app.nlp.segment.{DeterministicNormalizingTokenizer, DeterministicSentenceSegmenter, PlainTokenNormalizer, DeterministicTokenizer}
 import cc.factorie.app.nlp.ner._
 import cc.factorie.app.nlp.pos.OntonotesForwardPosTagger
 import scala.collection.mutable.HashSet
@@ -35,12 +35,11 @@ object BBNEventStringMatchingLabelerComponent extends NLPComponent {
 
 object EventNLPComponents extends CompoundDocumentAnnotator(
   Seq(
-    DeterministicTokenizer,
-    PlainTokenNormalizer,
+    DeterministicNormalizingTokenizer,
     DeterministicSentenceSegmenter,
     new OntonotesForwardPosTagger(new URL("file:///iesl/canvas/sullivan/dev/all-models/src/main/resources/cc/factorie/app/nlp/pos/OntonotesForwardPosTagger.factorie")),
-    new BBNEventChainNer(new URL("file:///iesl/canvas/ksilvers/trained-models/BBNTagger_optimized.factorie")),
-    //EventStringMatchingLabeler,
+    new BBNEventChainNer(new URL("file:///iesl/canvas/sullivan/dev/factorie/BBNTagger_optimized.factorie")),
+    BilouEventStringMatchingLabeler,
     BBNEventPatternBasedEventFinder
   )
 )
@@ -107,6 +106,7 @@ object ProcessEventCorpus {
       i += 1
       doc
     }).seq.foreach{ doc =>
+      /*
       println("processing results for doc %s" format doc.name)
       Option(doc.attr[BBNEventNerSpanBuffer]) match {
         case Some(buf) => buf.size match {
@@ -124,6 +124,17 @@ object ProcessEventCorpus {
         case None => println("\tdid not have EventSpanBuffer")
       }
 
+      val wrt = new BufferedWriter(new FileWriter(doc.name + ".owpl"))
+      wrt write "Token\tLemma\tSentenceIdx\tPOS\tNER"
+      wrt.newLine()
+      doc.tokens foreach { token =>
+        wrt write Seq(token.string, token.lemmaString, token.sentence.indexInSection, token.posTag.categoryValue, token.nerTag.categoryValue).mkString("\t")
+        wrt.newLine()
+      }
+      wrt.flush()
+      wrt.close()
+
+      */
       doc.attr[MatchedEventPatterns].foreach{p =>
         val ans = EventAnswer(doc.name, p.span.string, p.pattern.eventRole.event, p.pattern.eventRole.role)
         responses.add(ans)

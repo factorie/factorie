@@ -12,7 +12,16 @@ import scala.collection.mutable
  * @author John Sullivan
  */
 class PatternBasedEventFinder[NERSpan <: NerSpan, NERBuffer <: NerSpanBuffer[NERSpan]](typeEventMap:Map[String, Iterable[EventRole]], eventPatterns:Map[EventRole, Seq[EventPattern]])(implicit buff:ClassTag[NERBuffer]) extends DocumentAnnotator {
-  def tokenAnnotationString(token: Token) = null //todo we can actually set this up if we need it
+
+
+  def tokenAnnotationString(token: Token) = {
+    Option(token.document.attr[MatchedEventPatterns]) match {
+      case Some(pats) => pats.collectFirst{
+        case pat if pat.span.contains(token) =>  pat.pattern.eventRole.event + "-" + pat.pattern.eventRole.role
+      }.getOrElse(null)
+      case None => null
+    }
+  }
 
   val postAttrs = Seq(classOf[MatchedEventPatterns])
 
@@ -21,7 +30,7 @@ class PatternBasedEventFinder[NERSpan <: NerSpan, NERBuffer <: NerSpanBuffer[NER
   def process(document: Document) = {
     val matchedPatterns = new MatchedEventPatterns
     document.attr[NERBuffer].map{span =>
-      val sentenceSlug = " " + span.sentence.string.replace(span.string, "\\$ARG") + " "
+      val sentenceSlug = " " + span.sentence.string.replace(span.string, "$ARG") + " "
       matchedPatterns ++= typeEventMap(span.label.categoryValue).flatMap{ role =>
         eventPatterns.get(role).flatMap(_.collectFirst{case ep if ep.matches(sentenceSlug) => ep})
       }.map(MatchedEventPattern(span, _))
@@ -38,7 +47,7 @@ object BBNEventPatternBasedEventFinder extends PatternBasedEventFinder[BBNEventN
     .toIterator.flatMap{ line =>
       val Array(event, role, typeString) = line.split("\\s+")
       val types = typeString.split(",")
-      types.map(_ -> EventRole(event, role, types.toSet))
+      types.map(_ -> EventRole(event, role).withRestrictions(types))
     }.toIterable.groupBy(_._1).mapValues(_.map(_._2)),
   eventPatterns = new BufferedReader(new InputStreamReader(getClass.getResourceAsStream("/event/event_patterns_10k")))
     .toIterator.map{line =>
@@ -48,7 +57,14 @@ object BBNEventPatternBasedEventFinder extends PatternBasedEventFinder[BBNEventN
     er -> RegexEventPattern(confidence, er, pattern)
   }.toSeq.groupBy(_._1).mapValues(_.map(_._2)))
 
-case class EventRole(event:String, role:String, typeRestrictions:Set[String]=Set.empty[String])
+case class EventRole(event:String, role:String) {
+  val typeRestrictions = mutable.HashSet[String]()
+  def withRestrictions(types:Iterable[String]) = {
+    types.foreach(typeRestrictions.+=)
+    this
+  }
+}
+
 trait EventPattern {
   def confidence:Double
   def eventRole:EventRole
@@ -100,7 +116,10 @@ case class RegexEventPattern(confidence:Double, eventRole:EventRole, rawPattern:
 
   }
 
-  def matches(sentenceSlug:String) = patternRegex.findFirstMatchIn(sentenceSlug).isDefined
+  def matches(sentenceSlug:String) = {
+    //println("\t\t\t\tAttempting to match %s with regex %s".format(sentenceSlug, patternRegex.toString()))
+    patternRegex.findFirstMatchIn(sentenceSlug).isDefined
+  }
 }
 
 case class MatchedEventPattern(span:NerSpan, pattern:EventPattern)
