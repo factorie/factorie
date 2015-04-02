@@ -7,12 +7,11 @@ package cc.factorie.app.nlp.ner
 
 import java.io._
 import cc.factorie.app.nlp._
-import cc.factorie.util.BinarySerializer
+import cc.factorie.util.{BinarySerializer, JavaHashMap}
 import cc.factorie.variable._
 import cc.factorie.app.chain.ChainModel
 import cc.factorie.optimize.{Trainer, AdaGrad, ParameterAveraging}
 import cc.factorie.app.chain.SegmentEvaluation
-import cc.factorie.util.JavaHashMap
 import scala.reflect.ClassTag
 
 /**

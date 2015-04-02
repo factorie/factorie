@@ -32,7 +32,7 @@ abstract class NerAnnotator[Span <: NerSpan : ClassTag, Tag <: NerTag : ClassTag
       val tokBuffer = mutable.ArrayBuffer[Token]()
       while(iter.hasNext) {
         tok = iter.next()
-        val tag = tok.attr.exactly[Tag]
+        val tag = tok.attr[Tag]
         (tag.spanPrefix, state) match {
           case ("O", NotReading) => ()
           case ("U", NotReading) => spanBuffer.add(newSpan(sec, tok.positionInSection, 1, tag.baseCategoryValue))(null)

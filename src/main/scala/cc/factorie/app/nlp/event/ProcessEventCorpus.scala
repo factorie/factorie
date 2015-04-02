@@ -1,7 +1,7 @@
 package cc.factorie.app.nlp.event
 
 import cc.factorie.util.{FileUtils, CmdOptions}
-import java.io.{File, PrintWriter}
+import java.io.{BufferedWriter, FileWriter, File, PrintWriter}
 import cc.factorie.app.nlp._
 import cc.factorie.app.nlp.segment.{DeterministicSentenceSegmenter, PlainTokenNormalizer, DeterministicTokenizer}
 import cc.factorie.app.nlp.ner._
@@ -123,6 +123,16 @@ object ProcessEventCorpus {
         }
         case None => println("\tdid not have EventSpanBuffer")
       }
+
+      val wrt = new BufferedWriter(new FileWriter(doc.name + ".owpl"))
+      wrt write "Token\tLemma\tSentenceIdx\tPOS\tNER"
+      wrt.newLine()
+      doc.tokens foreach { token =>
+        wrt write Seq(token.string, token.lemmaString, token.sentence.indexInSection, token.posTag.categoryValue, token.nerTag.categoryValue).mkString("\t")
+        wrt.newLine()
+      }
+      wrt.flush()
+      wrt.close()
 
       doc.attr[MatchedEventPatterns].foreach{p =>
         val ans = EventAnswer(doc.name, p.span.string, p.pattern.eventRole.event, p.pattern.eventRole.role)
