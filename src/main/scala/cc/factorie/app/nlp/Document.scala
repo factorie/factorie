@@ -135,7 +135,7 @@ class Document extends DocumentSubstring with Attr with UniqueId {
 
   // A few iterators that combine the results from the Sections
   /** Return an Iterable collection of all Tokens in all canonical Sections of this Document. */
-  def tokens: Iterable[Token] = if (sections.length == 1) sections.head.tokens else new Iterable[Token] { def iterator = for (section <- sections.iterator; token <- section.tokens.iterator) yield token }
+  def tokens: Seq[Token] = if (sections.length == 1) sections.head.tokens else sections.flatMap(_.tokens)
   /** Return an Iterable collection of all Sentences in all canonical Sections of this Document. */
   def sentences: Iterable[Sentence] = if (sections.length == 1) sections.head.sentences else new Iterable[Sentence] { def iterator = for (section <- sections.iterator; sentence <- section.sentences.iterator) yield sentence }
   

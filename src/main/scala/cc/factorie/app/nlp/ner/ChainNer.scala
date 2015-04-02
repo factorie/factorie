@@ -58,6 +58,14 @@ class OntonotesChainNer(url: java.net.URL=null)(implicit ct:ClassTag[OntonotesNe
 // todo a serialized model for this does not exist
 object OntonotesChainNer extends OntonotesChainNer(cc.factorie.util.ClasspathURL[OntonotesChainNer](".factorie"))
 
+class BBNEventChainNer(url: java.net.URL=null)(implicit ct:ClassTag[BBNEventNerSpan]) extends ChainNer[BBNEventNerSpan, BilouBBNEventNerTag](BilouBBNEventDomain, (t, s) => new BilouBBNEventNerTag(t, s), l => l.token, url) {
+  def newBuffer = new BBNEventNerSpanBuffer()
+  def newSpan(sec:Section, start:Int, length:Int, category:String) = new BBNEventNerSpan(sec, start, length, category)
+}
+
+// todo a serialized model for this does not exist
+object BBNEventChainNer extends BBNEventChainNer(cc.factorie.util.ClasspathURL[BBNEventChainNer](".factorie"))
+
 /**
  * A base class for finite-state named entity recognizers
  */

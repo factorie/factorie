@@ -50,7 +50,10 @@ abstract class NerAnnotator[Span <: NerSpan : ClassTag, Tag <: NerTag : ClassTag
             spanBuffer.add(newSpan(sec, tokBuffer.head.positionInSection, tokBuffer.size, t))(null)
             tokBuffer.clear()
             state = NotReading
-          case (prefix, s) => throw new Error("Invalid combination of states, prefix %s, state %s at token %s".format(prefix, s, tok))
+          case (prefix, s) =>
+            tokBuffer.clear()
+            state = NotReading
+            System.err.println("Invalid combination of states, prefix %s, state %s at token %s".format(prefix, s, tok))
         }
       }
       if(tokBuffer.nonEmpty) {
