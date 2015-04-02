@@ -25,7 +25,7 @@ class TestPhraseTokenizer {
     val phrases = Seq(Seq("of", "cards"), Seq("New", "York", "City"), Seq("New", "York"))
     val phraseTokenizer = new PhraseTokenizer(phrases)
     val sampleDocument = new cc.factorie.app.nlp.Document("I built myself a house of cards in New York City, New York State.")
-    DeterministicTokenizer.process(sampleDocument)
+    DeterministicNormalizingTokenizer.process(sampleDocument)
     phraseTokenizer.process(sampleDocument)
     val oldLength = sampleDocument.sections.length
     assert(oldLength > 0)

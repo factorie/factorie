@@ -58,7 +58,7 @@ trait CategoricalVectorVar[C] extends VectorVar {
   def domain: CategoricalVectorDomain[C]
   /** If false, then when += is called with a value (or index) outside the Domain, an error is thrown.
       If true, then no error is thrown, and request to add the outside-Domain value is simply ignored. */
-  def skipNonCategories = false
+  def skipNonCategories = domain.dimensionDomain.frozen
   protected def doWithIndexSafely(elt:C, v:Double, update:Boolean): Unit = {
     val i = domain.dimensionDomain.index(elt)
     if (i == CategoricalDomain.NULL_INDEX) {

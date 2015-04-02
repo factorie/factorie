@@ -4,6 +4,8 @@ import java.io._
 import java.util.zip.GZIPInputStream
 import java.util.Scanner
 import cc.factorie.app.nlp.Document
+import scala.collection.JavaConverters._
+import cc.factorie.app.nlp.load.TACDocTypes.TACDocumentType
 
 object TACDocTypes {
   sealed trait TACDocumentType
@@ -27,26 +29,24 @@ object TACDocTypes {
   }
 }
 
+case class DocStringWithId(id:String, docString:String, sourceFilename:String) {
+  def toDocument = {
+    val doc = new Document(docString).setName(id)
+    doc.attr += TACDocumentType.fromFilePath(new File(sourceFilename))
+    doc.annotators += classOf[TACDocumentType] -> classOf[TACDocumentType]
+    doc
+  }
+}
 
 /**
- * @author John Sullivan
+ * The base class for splitting up tac files. Reads an iterator of lines of a tac
+ * file an returns an iterator of document strings with their names.
  */
-class TacFileIterator(tacDocFile:File) extends Iterator[Document] {
-  import TACDocTypes._
-
+class TacStringIterator(lines:Iterator[String], filename:String="") extends Iterator[DocStringWithId] {
   private val docEndString = """</doc>"""
   private val webDocStartString = """<DOC>"""
   private val docIdRegex = """(?i)<DOC ID="([^"]+)"[^>]*>""".r
   private val webDocIdRegex = """(?i)<DOCID> ([^ ]+) </DOCID>""".r
-
-  /** we use scanner here so that when we recreate the lines by adding \n we don't change
-    * the character count on documents that may use crlf to delimit lines
-    */
-  private val tacReader = new Scanner(if(tacDocFile.getName.endsWith(".gz")) {
-    new GZIPInputStream(new FileInputStream(tacDocFile))
-  } else {
-    new FileInputStream(tacDocFile)
-  }).useDelimiter("\n")
 
   private var docBuffer = new StringBuilder()
   private var line = null.asInstanceOf[String]
@@ -57,12 +57,12 @@ class TacFileIterator(tacDocFile:File) extends Iterator[Document] {
   private def advanceLine() {
     docBuffer append line
     docBuffer append "\n"
-    line = if(tacReader.hasNext) tacReader.next() else null
+    line = if(lines.hasNext) lines.next() else null
     lineNum += 1
   }
 
   //priming the pump - we don't call advanceLine because we don't want to add a null to the start of our doc
-  line = if(tacReader.hasNext) tacReader.next() else null
+  line = if(lines.hasNext) lines.next() else null
   lineNum += 1
 
   def next() = {
@@ -70,7 +70,7 @@ class TacFileIterator(tacDocFile:File) extends Iterator[Document] {
     val docIdMatchOpt = docIdRegex.unapplySeq(line).map(_.head)
 
     // We should be at the start of a new document here, otherwise we have a problem.
-    assert(line.equalsIgnoreCase(webDocStartString) || docIdMatchOpt.isDefined, "Found line: |%s| that was not a valid doc start at line %d in %s".format(line, lineNum, tacDocFile.getName))
+    assert(line.equalsIgnoreCase(webDocStartString) || docIdMatchOpt.isDefined, "Found line: |%s| that was not a valid doc start at line %d in %s".format(line, lineNum, filename))
     val docId = if(docIdMatchOpt.isDefined) {
       docIdRegex.unapplySeq(line).get.head
       //var docIdRegex(docId) = line
@@ -79,7 +79,7 @@ class TacFileIterator(tacDocFile:File) extends Iterator[Document] {
       //var webDocIdRegex(docId) = line
       webDocIdRegex.unapplySeq(line).get.head
     } else {
-      throw new Exception("Found line: |%s| that was not a valid doc start at line %d in %s".format(line, lineNum, tacDocFile.getName))
+      throw new Exception("Found line: |%s| that was not a valid doc start at line %d in %s".format(line, lineNum, filename))
     }
 
     while(!line.equalsIgnoreCase(docEndString)) {
@@ -89,25 +89,32 @@ class TacFileIterator(tacDocFile:File) extends Iterator[Document] {
     advanceLine()
     val docString = docBuffer.toString()
     docBuffer = new StringBuilder()
-    val doc = new Document(docString).setName(docId)
-    doc.attr += TACDocumentType.fromFilePath(tacDocFile)
-    doc.annotators += classOf[TACDocumentType] -> this.getClass
-    doc
+    DocStringWithId(docId, docString, filename)
   }
 
   def hasNext = line != null
 }
 
-object TacFileIterator {
-  def main(args:Array[String]) {
-    val f = new File(args(0))
 
-    val doc = new TacFileIterator(f).next()
-    println(doc.name)
-    val wrt = new BufferedWriter(new FileWriter(doc.name))
-    wrt.write(doc.string)
-    wrt.flush()
-    wrt.close()
+class TacFileIterator(tacDocFile:File) extends Iterator[DocStringWithId] {
+  /** we use scanner here so that when we recreate the lines by adding \n we don't change
+    * the character count on documents that may use crlf to delimit lines
+    */
+  private val iter = new TacStringIterator(new Scanner(if(tacDocFile.getName.endsWith(".gz")) {
+    new GZIPInputStream(new FileInputStream(tacDocFile))
+  } else {
+    new FileInputStream(tacDocFile)
+  }).useDelimiter("\n").asScala, tacDocFile.getAbsolutePath)
 
-  }
+
+  def hasNext = iter.hasNext
+  def next() = iter.next()
+}
+
+class TacDocumentIterator(tacDocFile:File) extends Iterator[Document] {
+  private val iter = new TacFileIterator(tacDocFile)
+
+  def next() = iter.next().toDocument
+
+  def hasNext = iter.hasNext
 }

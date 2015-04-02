@@ -21,7 +21,7 @@ limitations under the License.
   <url>http://factorie.cs.umass.edu</url>
   <groupId>cc.factorie</groupId>
   <artifactId>factorie_${scala.majorVersion}</artifactId>
-  <version>1.2-SNAPSHOT</version>
+  <version>1.2-TAC-SNAPSHOT</version>
   <packaging>jar</packaging>
   <inceptionYear>2009</inceptionYear>
 
@@ -261,12 +261,8 @@ limitations under the License.
           </executions>
           <configuration>
             <recompileMode>incremental</recompileMode>
-            <useZincServer>true</useZincServer>
+            <useZincServer>false</useZincServer>
             <scalaVersion>${scala.majorVersion}${scala.minorVersion}</scalaVersion>
-            <jvmArgs>
-              <jvmArg>-Xms64m</jvmArg>
-              <jvmArg>-Xmx1800m</jvmArg>
-            </jvmArgs>
           </configuration>
         </plugin>
 
@@ -280,6 +276,11 @@ limitations under the License.
           </configuration>
         </plugin>
 
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-surefire-plugin</artifactId>
+          <version>2.7</version>
+        </plugin>
 
         <plugin>
           <groupId>org.scalatest</groupId>
@@ -386,8 +387,6 @@ limitations under the License.
               <version>1.0.0</version>
               <configuration>
                 <scalaVersion>${scala.majorVersion}${scala.minorVersion}</scalaVersion>
-              <!--   <minimumCoverage>80</minimumCoverage> -->
-              <!--   <failOnMinimumCoverage>true</failOnMinimumCoverage> -->
               </configuration>
               <executions>
                 <execution>
@@ -431,12 +430,8 @@ limitations under the License.
                 </executions>
                 <configuration>
                   <recompileMode>incremental</recompileMode>
-                  <useZincServer>true</useZincServer>
+                  <useZincServer>false</useZincServer>
                   <scalaVersion>${scala.majorVersion}${scala.minorVersion}</scalaVersion>
-                  <jvmArgs>
-                    <jvmArg>-Xms64m</jvmArg>
-                    <jvmArg>-Xmx1800m</jvmArg>
-                  </jvmArgs>
                 </configuration>
               </plugin>
 
