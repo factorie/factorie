@@ -5,6 +5,7 @@ import scala.reflect.ClassTag
 import cc.factorie.app.nlp.lexicon.{LexiconMention, TriePhraseLexicon}
 import java.io.{BufferedReader, InputStreamReader}
 import cc.factorie._
+import cc.factorie.app.nlp.lemma.LowercaseTokenLemma
 
 /**
  * A very simple document annotator that labels tokens (and spans) in a document
@@ -12,11 +13,17 @@ import cc.factorie._
  * a label. BILOU domain is generated on-the-fly from the given list of labels.
  */
 abstract class StringMatchingLabeler[Span <: NerSpan : ClassTag, Tag <: NerTag : ClassTag](tagLexicons:Iterable[(String, TriePhraseLexicon)]) extends NerAnnotator[Span, Tag] {
-  val prereqAttrs = Seq(classOf[Token])
+  val prereqAttrs = Seq(classOf[Token], classOf[LowercaseTokenLemma])
 
+  def newTag(t:Token):Tag
   def annotateTokens(document: Document) = {
+    document.tokens foreach { token =>
+      if(token.attr[Tag] == null) {
+        token.attr += newTag(token)
+      }
+    }
 
-    def nerTag(t:Token):Tag = t.attr.exactly[Tag]
+    def nerTag(t:Token):Tag = t.attr[Tag]
 
     tagLexicons foreach {
       case (label, trie) =>
@@ -43,12 +50,14 @@ abstract class StringMatchingLabeler[Span <: NerSpan : ClassTag, Tag <: NerTag :
   }
 }
 
-object EventStringMatchingLabeler extends StringMatchingLabeler[BBNEventNerSpan, BBNEventNerTag](Seq("CHARGES", "JOB_TITLE").map{lexiconName =>
+object BilouEventStringMatchingLabeler extends StringMatchingLabeler[BBNEventNerSpan, BilouBBNEventNerTag](Seq("CHARGES", "JOB_TITLE").map{lexiconName =>
   val lexicon = new TriePhraseLexicon(lexiconName)
   new BufferedReader(new InputStreamReader(getClass.getResourceAsStream("/event/lexicons/" + lexiconName))).toIterator foreach lexicon.+=
+  lexicon.setTransitions()
   lexiconName -> lexicon
 }) {
   def newSpan(sec: Section, start: Int, length: Int, category: String) = new BBNEventNerSpan(sec, start, length, category)
   def newBuffer = new BBNEventNerSpanBuffer
+  def newTag(t:Token) = new BilouBBNEventNerTag(t, "O")
 }
 
