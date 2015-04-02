@@ -243,7 +243,8 @@ object BBNEventDomain extends CategoricalDomain[String] {
     "ORGANIZATION",
     "PERSON",
     "PRODUCT:VEHICLE",
-    "PRODUCT:WEAPON")
+    "PRODUCT:WEAPON",
+    "O")
   freeze()
 }
 
