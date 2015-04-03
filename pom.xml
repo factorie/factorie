@@ -187,11 +187,6 @@ limitations under the License.
       <version>1.2.3</version>
     </dependency>
 
-    <dependency>
-      <groupId>edu.umass.cs.iesl</groupId>
-      <artifactId>jflex-scala</artifactId>
-      <version>1.6.1</version>
-    </dependency>
 
   </dependencies>
 
