@@ -92,9 +92,13 @@ import cc.factorie.util.JavaHashMap
     normalizeHtmlAccent = normHtmlAccent
   }
 
-  def tok(): Object = tok(yytext())
+  def tok(): Object = tok(yytext(), false)
 
-  def tok(txt: String): Object = (txt, yychar, yylength)
+  def tok(txt: String): Object = (txt, yychar, yylength, false)
+
+  def tok(isSgml: Boolean): Object = tok(yytext(), isSgml)
+
+  def tok(txt: String, isSgml: Boolean): Object = (txt, yychar, yylength, isSgml)
 
   /* Uncomment below for useful debugging output */
   def printDebug(tok: String) = {}//println(s"$tok: |${yytext()}|")
@@ -277,7 +281,7 @@ CATCHALL = \P{C}
 
 //{SGML2} { if(tokenizeSgml) tok() else null }
 
-{SGML} { printDebug("SGML"); if(tokenizeSgml) tok() else null}
+{SGML} { printDebug("SGML"); if(tokenizeSgml) tok(isSgml=true) else null }
 
 &amp; { printDebug("AMPERSAND"); if(normalizeAmpersand || normalizeHtmlSymbol) tok(NORMALIZED_AMPERSAND) else tok() }
 

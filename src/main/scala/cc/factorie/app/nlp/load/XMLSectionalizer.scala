@@ -1,5 +1,6 @@
 package cc.factorie.app.nlp.load
 
+import cc.factorie.app.nlp.segment.IsSgmlTag
 import cc.factorie.app.nlp.{Section, Token, Document, DocumentAnnotator}
 import scala.collection.mutable
 import cc.factorie.app.nlp.load.TACDocTypes._
@@ -54,10 +55,13 @@ class XMLSectionalizer(boundaryToken:String, excludeTokens:Set[String]) extends 
     stateStack push Unusable
     val sectionBuffer = mutable.ArrayBuffer[TACSection]()
     val tokenBuffer = mutable.ArrayBuffer[Token]()
+
+    def addToken(t: Token) = if(t.attr.contains[IsSgmlTag.type]) tokenBuffer += t
+
     document.tokens.foreach { t =>
       (t.string, stateStack.top) match {
         case (acceptedOpenTag(tag), Unusable) =>
-          tokenBuffer += t
+          addToken(t)
           tagStack push tag.asInstanceOf[String]
           sectionBuffer += new UnusableText(tokenBuffer)
           tokenBuffer.clear()
@@ -69,16 +73,16 @@ class XMLSectionalizer(boundaryToken:String, excludeTokens:Set[String]) extends 
             tokenBuffer.clear()
           }
           stateStack.pop()
-          tokenBuffer += t
+          addToken(t)
         case (excludedOpenTag(tag), Usable) =>
           if(tokenBuffer.nonEmpty) {
             sectionBuffer += new UsableText(tokenBuffer)
             tokenBuffer.clear()
           }
-          tokenBuffer += t
+          addToken(t)
           stateStack push Unusable
         case (excludedOpenTag(tag), Unusable) =>
-          tokenBuffer += t
+          addToken(t)
           stateStack push Unusable
         case (excludedCloseTag(tag), Unusable) if tagStack.headOption == Some(tag.asInstanceOf[String]) =>
           tagStack.pop()
@@ -92,10 +96,10 @@ class XMLSectionalizer(boundaryToken:String, excludeTokens:Set[String]) extends 
             sectionBuffer += new UsableText(tokenBuffer)
             tokenBuffer.clear()
           }
-          tokenBuffer += t
+          addToken(t)
           stateStack.pop()
         case _ =>
-          tokenBuffer += t
+          addToken(t)
       }
     }
     document.clearSections()
