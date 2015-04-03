@@ -56,7 +56,7 @@ class XMLSectionalizer(boundaryToken:String, excludeTokens:Set[String]) extends 
     val sectionBuffer = mutable.ArrayBuffer[TACSection]()
     val tokenBuffer = mutable.ArrayBuffer[Token]()
 
-    def addToken(t: Token) = if(t.attr.contains[IsSgmlTag.type]) tokenBuffer += t
+    def addToken(t: Token) = if(!t.attr.contains[IsSgmlTag.type]) tokenBuffer += t
 
     document.tokens.foreach { t =>
       (t.string, stateStack.top) match {
