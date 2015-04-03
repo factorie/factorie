@@ -206,3 +206,45 @@ class UniversalPosTag(val token:Token, initialValue:String) extends CategoricalV
 /** A categorical variable, associated with a token, holding its Google Universal part-of-speech category,
     which also separately holds its desired correct "target" value.  */
 class LabeledUniversalPosTag(token:Token, targetValue:String) extends UniversalPosTag(token, targetValue) with CategoricalLabeling[String]
+
+
+/** Penn Treebank part-of-speech tag domain. */
+object SpanishPosDomain extends CategoricalDomain[String] {
+  this ++= Vector(
+    "a", // adjective
+    "c", // conjunction
+    "d", // determiner
+    "f", // punctuation
+    "i", // interjection
+    "n", // noun
+    "p", // pronoun
+    "r", // adverb
+    "s", // preposition
+    "v", // verb
+    "w", // date
+    "z", // number
+    "_" // unknown
+  )
+  freeze()
+
+  def isNoun(pos:String): Boolean = pos(0) == 'n'
+//  def isProperNoun(pos:String) = { pos == "NNP" || pos == "NNPS" }
+  def isVerb(pos:String) = pos(0) == 'v'
+  def isAdjective(pos:String) = pos(0) == 'a'
+//  def isPersonalPronoun(pos: String) = pos == "PRP"
+}
+/** A categorical variable, associated with a token, holding its Penn Treebank part-of-speech category.  */
+class SpanishPosTag(token:Token, initialIndex:Int) extends PosTag(token, initialIndex) {
+  def this(token:Token, initialCategory:String) = this(token, SpanishPosDomain.index(initialCategory))
+  final def domain = SpanishPosDomain
+  def isNoun = SpanishPosDomain.isNoun(categoryValue)
+//  def isProperNoun = SpanishPosDomain.isProperNoun(categoryValue)
+  def isVerb = SpanishPosDomain.isVerb(categoryValue)
+  def isAdjective = SpanishPosDomain.isAdjective(categoryValue)
+//  def isPersonalPronoun = SpanishPosDomain.isPersonalPronoun(categoryValue)
+}
+
+/** A categorical variable, associated with a token, holding its Spanish Treebank part-of-speech category,
+    which also separately holds its desired correct "target" value.  */
+class LabeledSpanishPosTag(token:Token, targetValue:String) extends SpanishPosTag(token, targetValue) with CategoricalLabeling[String]
+
