@@ -32,7 +32,7 @@ import java.io.PrintWriter
  * @author Brian Martin
  */
 
-object SpanishConll2008 extends LoadConll2008(classOf[pos.SpanishPosTag]) {
+object LoadSpanishConll2008 extends LoadConll2008(classOf[pos.SpanishPosTag]) {
   def makePosTag(token: Token, partOfSpeech: String): PosTag =
     new LabeledSpanishPosTag(token, partOfSpeech)
 }

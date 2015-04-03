@@ -23,7 +23,6 @@ import cc.factorie.app.nlp.Sentence
 import cc.factorie.app.nlp.Token
 import cc.factorie.app.nlp.UnknownDocumentAnnotator
 import cc.factorie.app.nlp.pos.PennPosTag
-import cc.factorie.app.nlp.ner.LabeledBioConllNerTag
 
 // Usage:
 // Either LoadConll2003.fromFilename("foo")
