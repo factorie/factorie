@@ -305,5 +305,5 @@ class SpanishChainPosTagger extends ChainPosTagger((t:Token) => new SpanishPosTa
 object SpanishChainPosTagger extends SpanishChainPosTagger(ClasspathURL[SpanishChainPosTagger](".factorie"))
 object SpanishChainPosTrainer extends ChainPosTrainer[SpanishPosTag, SpanishChainPosTagger](
   () => new SpanishChainPosTagger(),
-  (dirName: String) => load.LoadSpanishConll2008.fromFilename(dirName)
+  (dirName: String) => load.SpanishConll2008.fromFilename(dirName)
 )
