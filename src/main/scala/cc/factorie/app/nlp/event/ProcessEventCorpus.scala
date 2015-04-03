@@ -39,7 +39,7 @@ object EventNLPComponents extends CompoundDocumentAnnotator(
     DeterministicSentenceSegmenter,
     new OntonotesForwardPosTagger(new URL("file:///iesl/canvas/sullivan/dev/all-models/src/main/resources/cc/factorie/app/nlp/pos/OntonotesForwardPosTagger.factorie")),
     new BBNEventChainNer(new URL("file:///iesl/canvas/sullivan/dev/factorie/BBNTagger_optimized.factorie")),
-    //BilouEventStringMatchingLabeler,
+    BilouEventStringMatchingLabeler,
     BBNEventPatternBasedEventFinder
   )
 )
