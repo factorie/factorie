@@ -37,13 +37,13 @@ class TokenSequence[T<:NerTag](token: Token)(implicit m: ClassTag[T]) extends co
 }
 
 abstract class StackedChainNer[S <: NerSpan, L<:NerTag](labelDomain: CategoricalDomain[String],
-                                 newLabel: (Token, String) => L,
-                                 labelToToken: L => Token,
-                                 embeddingMap: SkipGramEmbedding,
-                                 embeddingDim: Int,
-                                 scale: Double,
-                                 useOffsetEmbedding: Boolean,
-                                 url: java.net.URL=null)(implicit m: ClassTag[L], s:ClassTag[S]) extends NerAnnotator[S, L] {
+                                                        newLabel: (Token, String) => L,
+                                                        labelToToken: L => Token,
+                                                        embeddingMap: SkipGramEmbedding,
+                                                        embeddingDim: Int,
+                                                        scale: Double,
+                                                        useOffsetEmbedding: Boolean,
+                                                        url: java.net.URL=null)(implicit m: ClassTag[L], s:ClassTag[S]) extends NerAnnotator[S, L] {
   object NERModelOpts {
     val argsList = new scala.collection.mutable.HashMap[String, String]()
     argsList += ("scale" -> scale.toString)
@@ -58,24 +58,24 @@ abstract class StackedChainNer[S <: NerSpan, L<:NerTag](labelDomain: Categorical
   }
 
   def annotateTokens(document: Document) =
-  if(document.tokenCount > 0) {
-    if (!document.tokens.head.attr.contains(m.runtimeClass))
-      document.tokens.map(token => token.attr += newLabel(token, "O"))
-    if (!document.tokens.head.attr.contains(classOf[ChainNerFeatures])) {
-      document.tokens.map(token => {token.attr += new ChainNerFeatures(token)})
-      initFeatures(document,(t:Token)=>t.attr[ChainNerFeatures])
+    if(document.tokenCount > 0) {
+      if (!document.tokens.head.attr.contains(m.runtimeClass))
+        document.tokens.map(token => token.attr += newLabel(token, "O"))
+      if (!document.tokens.head.attr.contains(classOf[ChainNerFeatures])) {
+        document.tokens.map(token => {token.attr += new ChainNerFeatures(token)})
+        initFeatures(document,(t:Token)=>t.attr[ChainNerFeatures])
+      }
+      process(document, useModel2 = false)
+      if (!document.tokens.head.attr.contains(classOf[ChainNer2Features])) {
+        document.tokens.map(token => token.attr += new ChainNer2Features(token))
+        initFeatures(document,(t:Token)=>t.attr[ChainNer2Features])
+        initSecondaryFeatures(document)
+      }
+      process(document,useModel2 = true)
+      document
+    } else {
+      document
     }
-    process(document, useModel2 = false)
-    if (!document.tokens.head.attr.contains(classOf[ChainNer2Features])) {
-      document.tokens.map(token => token.attr += new ChainNer2Features(token))
-      initFeatures(document,(t:Token)=>t.attr[ChainNer2Features])
-      initSecondaryFeatures(document)
-    }
-    process(document,useModel2 = true)
-    document
-  } else {
-    document
-  }
 
   def prereqAttrs = Seq(classOf[Sentence])
 
@@ -91,9 +91,9 @@ abstract class StackedChainNer[S <: NerSpan, L<:NerTag](labelDomain: Categorical
   }
 
   class StackedChainNereModel[Features <: CategoricalVectorVar[String]:ClassTag](featuresDomain1:CategoricalVectorDomain[String],
-                                                                        labelToFeatures1:L=>Features,
-                                                                        labelToToken1:L=>Token,
-                                                                        tokenToLabel1:Token=>L)
+                                                                                 labelToFeatures1:L=>Features,
+                                                                                 labelToToken1:L=>Token,
+                                                                                 tokenToLabel1:Token=>L)
     extends ChainModel(labelDomain, featuresDomain1, labelToFeatures1, labelToToken1, tokenToLabel1) with Parameters {
 
     // Factor for embedding of observed token
@@ -606,7 +606,8 @@ class StackedChainNerOpts extends CmdOptions with SharedNLPCmdOptions{
   val delta =  new CmdOption("delta", 0.066, "DOUBLE", "Learning delta")
   val saveModel = new CmdOption("save-model", false, "BOOLEAN", "Whether to save the model")
   val runOnlyHere = new CmdOption("runOnlyHere", false, "BOOLEAN", "Run Experiments only on this machine")
-
+  val dataLoader  =   new CmdOption("data-loader", "conll2003", "STRING", "Data loader for this format.")
+  val encoding =      new CmdOption("encoding", "UTF-8", "STRING", "Encoding of input files.")
   val dataDir = new CmdOption("data", "/home/vineet/canvas/embeddings/data/conll2003/", "STRING", "CONLL data path")
   val embeddingDim = new CmdOption("embeddingDim", 100, "INT", "embedding dimension")
   val embeddingScale = new CmdOption("embeddingScale", 10.0, "FLOAT", "The scale of the embeddings")
@@ -632,8 +633,12 @@ object ConllStackedChainNerTrainer extends HyperparameterMain {
 
     val trainPortionToTake = if(opts.trainPortion.wasInvoked) opts.trainPortion.value.toDouble  else 1.0
     val testPortionToTake =  if(opts.testPortion.wasInvoked) opts.testPortion.value.toDouble  else 1.0
-    val trainDocsFull = load.LoadConll2003(BILOU=true).fromFilename(opts.trainFile.value)
-    val testDocsFull =  load.LoadConll2003(BILOU=true).fromFilename(opts.testFile.value)
+    val dataLoader = opts.dataLoader.value match {
+      case "conll2003" => load.LoadConll2003(BILOU = true)
+      case "conll2002" => load.LoadConll2002(BILOU = true)
+    }
+    val trainDocsFull = dataLoader.fromFilename(opts.trainFile.value, encoding = opts.encoding.value)
+    val testDocsFull = dataLoader.fromFilename(opts.testFile.value, encoding = opts.encoding.value)
 
     val trainDocs = trainDocsFull.take((trainDocsFull.length*trainPortionToTake).floor.toInt)
     val testDocs = testDocsFull.take((testDocsFull.length*testPortionToTake).floor.toInt)
@@ -648,6 +653,23 @@ object ConllStackedChainNerTrainer extends HyperparameterMain {
 
     result
   }
+}
+
+
+object ConllStackedChainNerTester extends App {
+  val opts = new StackedChainNerOpts
+  opts.parse(args)
+  val ner = new ConllStackedChainNer(null: SkipGramEmbedding, opts.embeddingDim.value, opts.embeddingScale.value, opts.useOffsetEmbedding.value)
+  val testPortionToTake = if (opts.testPortion.wasInvoked) opts.testPortion.value.toDouble else 1.0
+  val dataLoader = opts.dataLoader.value match {
+    case "conll2003" => load.LoadConll2003(BILOU = true)
+    case "conll2002" => load.LoadConll2002(BILOU = true)
+  }
+  val testDocsFull = dataLoader.fromFilename(opts.testFile.value, encoding = opts.encoding.value)
+  val testDocs = testDocsFull.take((testDocsFull.length * testPortionToTake).floor.toInt)
+
+  ner.deSerialize(new FileInputStream(opts.modelDir.value))
+  println(ner.test(testDocs))
 }
 
 object ConllStackedChainNerOptimizer {

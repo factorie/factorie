@@ -24,7 +24,7 @@ import scala.reflect.ClassTag
 
 /** A linear-chain CRF part-of-speech tagger, doing inference by Viterbi.
     @author Alexandre Passos, Andrew McCallum
- */
+  */
 abstract class ChainPosTagger[A<:PosTag](val tagConstructor:(Token)=>A)(implicit ct:ClassTag[A]) extends DocumentAnnotator {
   def this(tagConstructor:(Token)=>A, url:java.net.URL)(implicit ct:ClassTag[A]) = { this(tagConstructor); deserialize(url.openConnection().getInputStream) }
   def process(document: Document) = {
@@ -82,10 +82,10 @@ abstract class ChainPosTagger[A<:PosTag](val tagConstructor:(Token)=>A)(implicit
       println("Test accuracy: "+ HammingObjective.accuracy(testSentences.flatMap(s => s.tokens.map(_.attr[A with LabeledVar]))))
     }
     val examples =
-    if(useHingeLoss)
-      trainSentences.map(sentence => new model.ChainStructuredSVMExample(sentence.tokens.map(_.attr[A with LabeledMutableDiscreteVar]))).toSeq
-    else
-      trainSentences.map(sentence => new model.ChainLikelihoodExample(sentence.tokens.map(_.attr[A with LabeledMutableDiscreteVar])))
+      if(useHingeLoss)
+        trainSentences.map(sentence => new model.ChainStructuredSVMExample(sentence.tokens.map(_.attr[A with LabeledMutableDiscreteVar]))).toSeq
+      else
+        trainSentences.map(sentence => new model.ChainLikelihoodExample(sentence.tokens.map(_.attr[A with LabeledMutableDiscreteVar])))
     //val optimizer = new cc.factorie.optimize.AdaGrad(rate=lrate)
     val optimizer = new cc.factorie.optimize.AdaGradRDA(rate=lrate, l1=l1Factor/examples.length, l2=l2Factor/examples.length)
     println("Running Parameter Optimization")
@@ -110,7 +110,7 @@ abstract class ChainPosTagger[A<:PosTag](val tagConstructor:(Token)=>A)(implicit
 
 class WSJChainPosTagger extends ChainPosTagger((t:Token) => new PennPosTag(t, 0)) {
   def this(url: java.net.URL) = {
-    this()  
+    this()
     deserialize(url.openConnection().getInputStream)
   }
 
@@ -146,7 +146,7 @@ object WSJChainPosTagger extends WSJChainPosTagger(ClasspathURL[WSJChainPosTagge
 
 class OntonotesChainPosTagger extends ChainPosTagger((t:Token) => new PennPosTag(t, 0)) {
   def this(url: java.net.URL) = {
-    this()  
+    this()
     deserialize(url.openConnection().getInputStream)
   }
 
@@ -180,6 +180,7 @@ class OntonotesChainPosTagger extends ChainPosTagger((t:Token) => new PennPosTag
 }
 object OntonotesChainPosTagger extends OntonotesChainPosTagger(ClasspathURL[OntonotesChainPosTagger](".factorie"))
 
+
 class ChainPosTrainer[A<:PosTag, B<:ChainPosTagger[A]](taggerConstructor: () => B, loadingMethod:(String) => Seq[Document])(implicit ct:ClassTag[A]) extends HyperparameterMain {
   def evaluateParameters(args: Array[String]): Double = {
     implicit val random = new scala.util.Random(0)
@@ -212,14 +213,14 @@ class ChainPosTrainer[A<:PosTag, B<:ChainPosTagger[A]](taggerConstructor: () => 
 
     println("Training")
     pos.train(trainSentences,
-              testSentences,
-              opts.rate.value,
-              opts.delta.value,
-              opts.cutoff.value,
-              opts.updateExamples.value,
-              opts.useHingeLoss.value,
-              l1Factor=opts.l1.value,
-              l2Factor=opts.l2.value)
+      testSentences,
+      opts.rate.value,
+      opts.delta.value,
+      opts.cutoff.value,
+      opts.updateExamples.value,
+      opts.useHingeLoss.value,
+      l1Factor=opts.l1.value,
+      l2Factor=opts.l2.value)
     println("Finished Training")
     if (opts.saveModel.value) {
       println("Serializing Model")
@@ -266,3 +267,43 @@ object ChainPosOptimizer {
   }
 }
 
+
+class SpanishChainPosTagger extends ChainPosTagger((t:Token) => new SpanishPosTag(t, 0)) {
+  def this(url: java.net.URL) = {
+    this()
+    deserialize(url.openConnection().getInputStream)
+  }
+
+  def initPOSFeatures(sentence: Sentence): Unit = {
+    import cc.factorie.app.strings.simplifyDigits
+    for (token <- sentence.tokens) {
+      if(token.attr[PosFeatures] ne null)
+        token.attr.remove[PosFeatures]
+
+      val features = token.attr += new PosFeatures(token)
+      val rawWord = token.string
+      val word = simplifyDigits(rawWord).toLowerCase
+      features += "W="+word
+      features += "STEM=" + cc.factorie.app.strings.porterStem(word)
+      features += "SHAPE2=" + cc.factorie.app.strings.stringShape(rawWord, 2)
+      features += "SHAPE3=" + cc.factorie.app.strings.stringShape(rawWord, 3)
+      // pre/suf of length 1..9
+      //for (i <- 1 to 9) {
+      val i = 3
+      features += "SUFFIX" + i + "=" + word.takeRight(i)
+      features += "PREFIX" + i + "=" + word.take(i)
+      //}
+      if (token.isCapitalized) features += "CAPITALIZED"
+      if (token.string.matches("[A-Z]")) features += "CONTAINS_CAPITAL"
+      if (token.string.matches("-")) features += "CONTAINS_DASH"
+      if (token.containsDigit) features += "NUMERIC"
+      if (token.isPunctuation) features += "PUNCTUATION"
+    }
+    addNeighboringFeatureConjunctions(sentence.tokens, (t: Token) => t.attr[PosFeatures], "W=[^@]*$", List(-2), List(-1), List(1), List(-2,-1), List(-1,0))
+  }
+}
+object SpanishChainPosTagger extends SpanishChainPosTagger(ClasspathURL[SpanishChainPosTagger](".factorie"))
+object SpanishChainPosTrainer extends ChainPosTrainer[SpanishPosTag, SpanishChainPosTagger](
+  () => new SpanishChainPosTagger(),
+  (dirName: String) => load.LoadSpanishConll2008.fromFilename(dirName)
+)
