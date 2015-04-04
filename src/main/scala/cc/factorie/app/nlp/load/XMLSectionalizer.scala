@@ -63,8 +63,10 @@ class XMLSectionalizer(boundaryToken:String, excludeTokens:Set[String]) extends 
         case (acceptedOpenTag(tag), Unusable) =>
           addToken(t)
           tagStack push tag.asInstanceOf[String]
-          sectionBuffer += new UnusableText(tokenBuffer)
-          tokenBuffer.clear()
+          if (tokenBuffer.nonEmpty) {
+            sectionBuffer += new UnusableText(tokenBuffer)
+            tokenBuffer.clear()
+          }
           stateStack push Usable
         case (acceptedCloseTag(tag), Usable) if tagStack.headOption == Some(tag.asInstanceOf[String]) =>
           tagStack.pop()
@@ -86,8 +88,10 @@ class XMLSectionalizer(boundaryToken:String, excludeTokens:Set[String]) extends 
           stateStack push Unusable
         case (excludedCloseTag(tag), Unusable) if tagStack.headOption == Some(tag.asInstanceOf[String]) =>
           tagStack.pop()
-          sectionBuffer += new UnusableText(tokenBuffer)
-          tokenBuffer.clear()
+          if (tokenBuffer.nonEmpty) {
+            sectionBuffer += new UnusableText(tokenBuffer)
+            tokenBuffer.clear()
+          }
           stateStack.pop()
         case (acceptedCloseTag(tag), Unusable) =>
           // we are in this state because we found an excluded open tag without a corresponding close tag.
