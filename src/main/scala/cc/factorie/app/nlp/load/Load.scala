@@ -22,8 +22,8 @@ trait Load {
   def fromSource(source:io.Source): Seq[Document]
   def fromString(string:String): Seq[Document] = fromSource(io.Source.fromString(string))
   def fromStream(stream:java.io.InputStream, encoding:String = "UTF-8"): Seq[Document] = fromSource(io.Source.fromInputStream(stream, encoding))
-  def fromFile(file:java.io.File): Seq[Document] = fromSource(io.Source.fromFile(file))
-  def fromFilename(filename:String): Seq[Document] = fromFile(new java.io.File(filename))
+  def fromFile(file:java.io.File, encoding:String = "UTF-8"): Seq[Document] = fromSource(io.Source.fromFile(file, encoding))
+  def fromFilename(filename:String, encoding:String = "UTF-8"): Seq[Document] = fromFile(new java.io.File(filename), encoding)
 }
 
 /** The interface common to objects that create Documents from the files in a directory.
