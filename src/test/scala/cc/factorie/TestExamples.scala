@@ -15,13 +15,9 @@ import org.junit.Test
 import java.io._
 
 /**
- * Created by IntelliJ IDEA.
  * User: apassos
  * Date: 10/10/12
- * Time: 3:29 PM
- * To change this template use File | Settings | File Templates.
  */
-
 class TestExamples {
 
   val emptyArgs = Array[String]()
@@ -104,32 +100,32 @@ class TestExamples {
     cc.factorie.tutorial.MultinomialDemo.main(emptyArgs)
   }
 
-  @Test def testTutorial10() {
+  @Test def testTutorialVariables() {
     cc.factorie.tutorial.TutorialVariables.main(emptyArgs)
   }
 
-  @Test def testTutorial11() {
+  @Test def testTutorialDomain() {
     cc.factorie.tutorial.TutorialDomain.main(emptyArgs)
   }
 
-  @Test def testTutorial20() {
+  @Test def testTutorialFactors() {
     cc.factorie.tutorial.TutorialFactors.main(emptyArgs)
   }
 
-  @Test def testTutorial21() {
+  @Test def testTutorialFamily() {
     cc.factorie.tutorial.TutorialFamily.main(emptyArgs)
   }
 
-  @Test def testTutorial30() {
+  @Test def testTutorialModel() {
     cc.factorie.tutorial.TutorialModel.main(emptyArgs)
   }
 
-  @Test def testTutorial40() {
-    cc.factorie.tutorial.Tutorial60Learning.main(emptyArgs)
+  @Test def testTutorialLearning() {
+    cc.factorie.tutorial.TutorialLearning.main(emptyArgs)
   }
 
-  @Test def testTutorial040() {
-    cc.factorie.tutorial.Tutorial90ParallelismAndHyperparameters.main(emptyArgs)
+  @Test def testTutorialParallelismAndHyperparameters() {
+    cc.factorie.tutorial.TutorialParallelismAndHyperparameters.main(emptyArgs)
   }
 
   @Test def testWordSegmenter() {

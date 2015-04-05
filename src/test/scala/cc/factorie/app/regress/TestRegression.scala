@@ -20,11 +20,8 @@ import cc.factorie.optimize.OptimizableObjectives
 import cc.factorie.variable.{TensorVariable, DiffList}
 
 /**
- * Created by IntelliJ IDEA.
- * User: apassos
- * Date: 9/15/12
- * Time: 3:00 PM
- * To change this template use File | Settings | File Templates.
+ * @author apassos
+ * @since 9/15/12
  */
 
 class MyTensorVariable(x0: Double, x1: Double, y: Double)(implicit d: DiffList = null) extends TensorVariable[Tensor1] {
@@ -41,6 +38,7 @@ class MyTensorVariable(x0: Double, x1: Double, y: Double)(implicit d: DiffList =
 
 class TestRegression {
   @Test def testSimpleRegression() {
+    // y = 2*x0 + x1
     val y0 = new MyTensorVariable(1, 2, 4)
     val y1 = new MyTensorVariable(2, 1, 5)
     val y2 = new MyTensorVariable(1, 1, 3)
@@ -54,5 +52,32 @@ class TestRegression {
     assertEquals(4, regressor2.regress(y0).dependantValue(0), 0.01)
     assertEquals(5, regressor2.regress(y1).dependantValue(0), 0.01)
     assertEquals(3, regressor2.regress(y2).dependantValue(0), 0.01)
+  }
+}
+
+class TestLinearRegressor {
+
+  class MyTensorVariable(x0: Double, x1: Double, y: Double)(implicit d: DiffList = null) extends TensorVariable[Tensor1] {
+    // the target value
+    set(new DenseTensor1(Array(y)))
+    // the dependent values
+    val features = new TensorVariable[Tensor1](new DenseTensor1(Array(x0, x1)))
+  }
+
+  @Test
+  def testLinearRegressor {
+    // y = 2*x_0 + x_1
+    val weights = new DenseTensor2(Array(Array(2.0), Array(1.0)))
+    val r = new LinearRegressor[TensorVariable[Tensor1], MyTensorVariable](v=>v.features, weights)
+
+    // y = 2*3 + 1*4 = 10
+    val result = r.regress(new MyTensorVariable(3, 4, 0))
+    assertEquals(10, result.dependantValue(0), 0.01)
+
+    // perform multiple regressions
+    val results = r.regress(Seq(new MyTensorVariable(3,4,0), new MyTensorVariable(5,6,0)))
+    assertEquals(10, results(0).dependantValue(0), 0.01)
+    assertEquals(16, results(1).dependantValue(0), 0.01)
+
   }
 }

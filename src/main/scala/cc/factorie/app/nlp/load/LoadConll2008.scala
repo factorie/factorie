@@ -12,11 +12,13 @@
    limitations under the License. */
 
 package cc.factorie.app.nlp.load
+
 import cc.factorie.app.nlp._
+import cc.factorie.util.FastLogging
 
 
 import scala.io.Source
-import cc.factorie.app.nlp.pos.PennPosTag
+import cc.factorie.app.nlp.pos.{LabeledSpanishPosTag, PosTag, PennPosTag, SpanishPosTag}
 import cc.factorie.app.nlp.parse.ParseTree
 import cc.factorie.app.nlp.lemma.TokenLemma
 
@@ -30,9 +32,21 @@ import java.io.PrintWriter
  * @author Brian Martin
  */
 
+object LoadSpanishConll2008 extends LoadConll2008(classOf[pos.SpanishPosTag]) {
+  def makePosTag(token: Token, partOfSpeech: String): PosTag =
+    new LabeledSpanishPosTag(token, partOfSpeech)
+}
 
-object LoadConll2008 {
-  private def addDepInfo(s: Sentence, depInfoSeq: Seq[(Int,Int,String)]): Unit = {
+object LoadConll2008 extends LoadConll2008(classOf[pos.PennPosTag]) {
+  def makePosTag(token: Token, partOfSpeech: String): PosTag =
+    new PennPosTag(token, partOfSpeech)
+}
+
+abstract class LoadConll2008(val posType: Class[_]) extends Load with FastLogging {
+
+  def makePosTag(token: Token, partOfSpeech: String): PosTag
+
+  private def addDepInfo(s: Sentence, depInfoSeq: Seq[(Int, Int, String)]): Unit = {
     val tree = new ParseTree(s)
     for ((childIdx, parentIdx, depLabel) <- depInfoSeq) {
       tree.setParent(childIdx, parentIdx)
@@ -43,20 +57,24 @@ object LoadConll2008 {
 
   var loadLemma = true
 
-  def fromFilename(filename:String): Seq[Document] = {
-    var document: Document = new Document
+  def fromFilename(filename: String): Seq[Document] = {
+    fromSource(Source.fromFile(filename))
+  }
+
+  override def fromSource(source: Source): Seq[Document] = {
+    val document: Document = new Document
     document.annotators(classOf[Token]) = UnknownDocumentAnnotator.getClass // register that we have token boundaries
     document.annotators(classOf[Sentence]) = UnknownDocumentAnnotator.getClass // register that we have sentence boundaries
-    document.annotators(classOf[pos.PennPosTag]) = UnknownDocumentAnnotator.getClass // register that we have POS tags
+    document.annotators(posType) = UnknownDocumentAnnotator.getClass // register that we have POS tags
     if (loadLemma) document.annotators(classOf[TokenLemma]) = UnknownDocumentAnnotator.getClass // register that we have lemma
-    val source = Source.fromFile(filename)
     var sentence: Sentence = new Sentence(document)
-    var depInfoSeq = new collection.mutable.ArrayBuffer[(Int,Int,String)]
+//    var depInfoSeq = new collection.mutable.ArrayBuffer[(Int, Int, String)]
     for (line <- source.getLines()) {
-      if (line.length < 2) { // Sentence boundary
+      if (line.length < 2) {
+        // Sentence boundary
         document.appendString("\n")
-        addDepInfo(sentence, depInfoSeq)
-        depInfoSeq = new collection.mutable.ArrayBuffer[(Int,Int,String)]
+//        addDepInfo(sentence, depInfoSeq)
+//        depInfoSeq = new collection.mutable.ArrayBuffer[(Int, Int, String)]
         sentence = null
       } else {
         if (sentence eq null)
@@ -71,16 +89,16 @@ object LoadConll2008 {
         val depLabel = fields(9)
         document.appendString(" ")
         val token = new Token(sentence, word)
-        token.attr += new PennPosTag(token, partOfSpeech) // TODO Change this to PennPosTag
+        token.attr += makePosTag(token, partOfSpeech)
         if (loadLemma)
           token.attr += new TokenLemma(token, lemma) // TODO Change this to some more specific TokenLemma subclass
-        depInfoSeq.append((currTokenIdx, parentIdx, depLabel))
+//        depInfoSeq.append((currTokenIdx, parentIdx, depLabel))
       }
     }
-    if (sentence ne null)
-      addDepInfo(sentence, depInfoSeq)
+//    if (sentence ne null)
+//      addDepInfo(sentence, depInfoSeq)
 
-    println("Loaded 1 document with "+document.sentences.size+" sentences with "+document.asSection.length+" tokens total from file "+filename)
+    println("Loaded 1 document with " + document.sentences.size + " sentences with " + document.asSection.length + " tokens total from file.")
     Seq(document)
   }
 
@@ -88,9 +106,9 @@ object LoadConll2008 {
     for (s <- d.sentences)
       println(s.attr[ParseTree].toString() + "\n")
 
-  def main(args: Array[String]) =
-    for (filename <- args)
-      printDocument(fromFilename(filename).head)
+//  def main(args: Array[String]) =
+//    for (filename <- args)
+//      printDocument(fromFilename(filename).head)
 
 }
 
@@ -100,7 +118,9 @@ object WriteConll2008 {
   // if the source file is given, then include the fields that we don't know anything about
   // otherwise just give underscores for info we don't know.
   def toFile(outputFile: String, document: Document, sourceFile: String = null): Unit = {
-    val source = { if (sourceFile eq null) None else Some(Source.fromFile(sourceFile).getLines())}
+    val source = {
+      if (sourceFile eq null) None else Some(Source.fromFile(sourceFile).getLines())
+    }
     val sentences = document.sentences.iterator
     val writer = new PrintWriter(outputFile)
     var sentence: Sentence = sentences.next()
@@ -125,7 +145,10 @@ object WriteConll2008 {
       }
       else {
         val field8 = "" + (tree.parentIndex(currTokenIdx) + 1)
-        val field9 = "" + { val category = tree.label(currTokenIdx).categoryValue; if (category == "") "_" else category }
+        val field9 = "" + {
+          val category = tree.label(currTokenIdx).categoryValue;
+          if (category == "") "_" else category
+        }
         val fields = source match {
           case None => {
             val x = Array.fill[String](10)("_")

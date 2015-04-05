@@ -140,12 +140,12 @@ First we need to set up a basic model, features, and single training example:
 */
 package cc.factorie.tutorial
 
-object UsersGuide70LearningAndOptimization extends App {
+object TutorialLearningAndOptimization extends App {
   import cc.factorie._
   import variable._
   import cc.factorie.app.nlp._
   import cc.factorie.app.chain._
-  import cc.factorie.optimize.{SynchronizedOptimizerOnlineTrainer, Trainer, SampleRankTrainer}
+  import cc.factorie.optimize.Trainer
   import cc.factorie.infer.{GibbsSampler, InferByBPChain}
   import cc.factorie.optimize.OnlineTrainer
 
@@ -169,9 +169,9 @@ object UsersGuide70LearningAndOptimization extends App {
 
   // The Document class implements documents as sequences of sentences and tokens.
   val document = new Document("The quick brown fox jumped over the lazy dog.")
-  val tokenizer = new app.nlp.segment.DeterministicTokenizer
+  val tokenizer = app.nlp.segment.DeterministicNormalizingTokenizer
   tokenizer.process(document)
-  val segmenter = new app.nlp.segment.DeterministicSentenceSegmenter
+  val segmenter = app.nlp.segment.DeterministicSentenceSegmenter
   segmenter.process(document)
   assertStringEquals(document.tokenCount, "10")
   assertStringEquals(document.sentenceCount, "1")

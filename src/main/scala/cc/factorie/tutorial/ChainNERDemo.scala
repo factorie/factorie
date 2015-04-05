@@ -11,8 +11,6 @@
    See the License for the specific language governing permissions and
    limitations under the License. */
 
-
-
 package cc.factorie.tutorial
 import cc.factorie._
 import java.io.File
@@ -41,7 +39,7 @@ object ChainNERDemo {
     def prev = token.prev.label
   }
   class Sentence extends Chain[Sentence,Token]
-  
+
   // The model
   val model = new TemplateModel with Parameters {
     // Bias term on each individual label
@@ -64,7 +62,7 @@ object ChainNERDemo {
     this += bias
     this += transtion
   }
-  
+
   // The training objective
   val objective = new HammingTemplate[Label, Label#TargetType]
 
@@ -78,23 +76,30 @@ object ChainNERDemo {
 
     // Get the variables to be inferred
     val trainLabels = trainSentences.flatMap(_.links.map(_.label)).take(50000) //.take(30000)
-    val testLabels = testSentences.flatMap(_.links.map(_.label))//.take(2000)
-    val allTokens: Seq[Token] = (trainLabels ++ testLabels).map(_.token)
 
-    // Add features from next and previous tokens 
+    // Add features from next and previous tokens
     // println("Adding offset features...")
-    allTokens.foreach(t => {
+    trainLabels.map(_.token).foreach(t => {
       if (t.hasPrev) t ++= t.prev.activeCategories.filter(!_.contains('@')).map(_+"@-1")
       if (t.hasNext) t ++= t.next.activeCategories.filter(!_.contains('@')).map(_+"@+1")
     })
 
+    // Freeze domain now that we've added all feature values observed in training data
+    TokenDomain.freeze()
     println("Using "+TokenDomain.dimensionSize+" observable features.")
-    
+
+    // Compute features on test data
+    val testLabels = testSentences.flatMap(_.links.map(_.label))//.take(2000)
+    testLabels.map(_.token).foreach(t => {
+      if (t.hasPrev) t ++= t.prev.activeCategories.filter(!_.contains('@')).map(_+"@-1")
+      if (t.hasNext) t ++= t.next.activeCategories.filter(!_.contains('@')).map(_+"@+1")
+    })
+
     // Print some significant features
     //println("Most predictive features:")
     //val pllo = new cc.factorie.app.classify.PerLabelLogOdds(trainSentences.flatMap(_.map(_.label)), (label:Label) => label.token)
     //for (label <- LabelDomain.values) println(label.category+": "+pllo.top(label, 20))
-    
+
     // Sample and Learn!
     val startTime = System.currentTimeMillis
     (trainLabels ++ testLabels).foreach(_.setRandomly)
@@ -108,15 +113,15 @@ object ChainNERDemo {
       printDiagnostic(trainLabels.take(400))
       //trainLabels.take(20).foreach(label => println("%30s %s %s %f".format(label.token.word, label.targetCategory, label.categoryValue, objective.currentScore(label))))
       //println ("Tr50  accuracy = "+ objective.accuracy(trainLabels.take(20)))
-      //println ("Train accuracy = "+ objective.accuracy(trainLabels))
+      println ("Train accuracy = "+ objective.accuracy(trainLabels))
       println ("Test  accuracy = "+ objective.accuracy(testLabels))
     }
     if (false) {
       // Use BP Viterbi for prediction
       for (sentence <- testSentences)
         BP.inferChainMax(sentence.asSeq.map(_.label), model).setToMaximize(null)
-        //BP.inferChainSum(sentence.asSeq.map(_.label), model).setToMaximize(null) // max-marginal inference
-      
+      //BP.inferChainSum(sentence.asSeq.map(_.label), model).setToMaximize(null) // max-marginal inference
+
       for (sentence <- trainSentences.take(10)) {
         println("---SumProduct---")
         printTokenMarginals(sentence.asSeq, BP.inferChainSum(sentence.asSeq.map(_.label), model))
@@ -131,10 +136,11 @@ object ChainNERDemo {
       //predictor.temperature *= 0.1
       predictor.processAll(testLabels, 2)
     }
+
     println ("Final Test  accuracy = "+ objective.accuracy(testLabels))
     //println("norm " + model.weights.twoNorm)
     println("Finished in " + ((System.currentTimeMillis - startTime) / 1000.0) + " seconds")
-    
+
     //for (sentence <- testSentences) BP.inferChainMax(sentence.asSeq.map(_.label), model); println ("MaxBP Test accuracy = "+ objective.accuracy(testLabels))
     //for (sentence <- testSentences) BP.inferChainSum(sentence.asSeq.map(_.label), model).setToMaximize(null); println ("SumBP Test accuracy = "+ objective.accuracy(testLabels))
     //predictor.processAll(testLabels, 2); println ("Gibbs Test accuracy = "+ objective.accuracy(testLabels))
@@ -162,21 +168,21 @@ object ChainNERDemo {
   val Numeric = "^[0-9]+$".r
   val Punctuation = "[-,\\.;:?!()]+".r
 
-  
+
   def printLabel(label:Label) : Unit = {
     println("%-16s TRUE=%-8s PRED=%-8s %s".format(label.token.word, label.target.categoryValue, label.value.category, label.token.toString))
   }
- 
+
   def printDiagnostic(labels:Seq[Label]) : Unit = {
     for (label <- labels; if label.intValue != label.domain.index("O")) {
-      if (!label.hasPrev || label.value != label.prev.value) 
+      if (!label.hasPrev || label.value != label.prev.value)
         print("%-7s %-7s ".format(if (label.value != label.target.value) label.target.value.category.drop(2) else " ", label.value.category.drop(2)))
       print(label.token.word+" ")
       if (!label.hasNext || label.value != label.next.value) println()
     }
     println()
   }
- 
+
   def load(filename:String) : Seq[Sentence] = {
     import scala.io.Source
     import scala.collection.mutable.ArrayBuffer
@@ -205,5 +211,3 @@ object ChainNERDemo {
   }
 
 }
-
-
