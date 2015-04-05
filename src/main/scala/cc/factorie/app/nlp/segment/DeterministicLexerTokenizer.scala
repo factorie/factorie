@@ -169,11 +169,8 @@ object DeterministicNormalizingTokenizer extends DeterministicLexerTokenizer(
 ){
   /* For testing purposes: Tokenizes and normalizes input from stdin using DeterministicNormalizingTokenizer */
   def main(args: Array[String]): Unit = {
-    //val string = io.Source.fromInputStream(System.in).mkString
-    val fname = "/iesl/canvas/strubell/eng-NG-31-1321"
-    println(s"Loading $fname")
-    val string = io.Source.fromFile(fname, "utf-8").mkString
-    println("Tokenizing...")
+    val string = io.Source.fromInputStream(System.in).mkString
+//    println("Tokenizing...")
     val doc = new Document(string)
     val t0 = System.currentTimeMillis()
     DeterministicNormalizingHtmlTokenizer.process(doc)
