@@ -15,7 +15,7 @@ package cc.factorie.app.nlp.phrase
 
 import cc.factorie.app.nlp._
 import cc.factorie.util.Attr
-import cc.factorie.app.nlp.pos.PennPosDomain
+import cc.factorie.app.nlp.pos.{PennPosTag, PennPosDomain}
 import cc.factorie.app.nlp.parse.ParseTreeLabelDomain
 
 /** A Phrase is a TokenSpan that has a head token.
@@ -80,7 +80,7 @@ object HeadTokenOffset {
       val prepositionIndex = span.indexWhere(cc.factorie.app.nlp.lexicon.Preposition.contains(_))
       if (prepositionIndex >= 1) return prepositionIndex - 1
       // If there is noun, return the last noun
-      val lastNounIndex = span.lastIndexWhere(_.posTag.isNoun)
+      val lastNounIndex = span.lastIndexWhere(_.attr[PennPosTag].isNoun)
       if (lastNounIndex > 0) return lastNounIndex
       // Otherwise simply select the last word of the span
       else return span.length-1
