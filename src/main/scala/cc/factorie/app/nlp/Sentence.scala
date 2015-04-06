@@ -13,6 +13,8 @@
 
 package cc.factorie.app.nlp
 
+import cc.factorie.app.nlp.pos.PennPosTag
+
 /** A span of Tokens making up a sentence within a Section of a Document.
     A Sentence is a special case of a TokenSpan, stored in its Section, and available through the Section.sentences method.
     From the Sentence you can get its sequence of Tokens, the Section that contains it, and the Document that contains it.
@@ -49,7 +51,7 @@ class Sentence(sec:Section, initialStart:Int, initialLength:Int) extends TokenSp
 
   // common labels
   /** Returns the sequence of PennPosTags attributed to the sequence of Tokens in this Sentence. */
-  def posTags: IndexedSeq[pos.PennPosTag] = tokens.map(_.posTag)
+  def posTags: IndexedSeq[pos.PennPosTag] = tokens.map(_.attr[PennPosTag])
   /** Returns the sequence of NerTags attributed to the sequence of Tokens in this Sentence. */
   def nerTags: IndexedSeq[ner.NerTag] = tokens.map(_.nerTag)
 }
