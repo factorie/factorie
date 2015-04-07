@@ -290,12 +290,9 @@ limitations under the License.
                 <goal>generate</goal>
               </goals>
               <configuration>
-                <outputDirectory>src/main/scala/cc/factorie/app/nlp/segment</outputDirectory>
-                <!--<lexDefintions>-->
-                  <!--<lexDefinition>src/main/jflex</lexDefintion>-->
-                  <!--<lexDefinition>src/main/lex/preprocessor.jflex</lexFile>-->
-                  <!--<lexDefinition>/pub/postrocessor.jflex</lexFile>-->
-                <!--</lexDefinitions>-->
+                <lexDefinitions>
+                  <lexDefinition>src/main/scala/cc/factorie/app/nlp/segment</lexDefinition>
+                </lexDefinitions>
               </configuration>
             </execution>
           </executions>
