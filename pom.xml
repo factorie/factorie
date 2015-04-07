@@ -301,6 +301,25 @@ limitations under the License.
             </execution>
           </executions>
         </plugin>
+
+        <plugin>
+          <groupId>edu.umass.cs.iesl</groupId>
+          <artifactId>jflex-scala-maven-plugin</artifactId>
+          <version>1.6.1</version>
+          <executions>
+            <execution>
+              <goals>
+                <goal>generate</goal>
+              </goals>
+              <configuration>
+                <lexDefinitions>
+                  <lexDefinition>src/main/scala/cc/factorie/app/nlp/segment</lexDefinition>
+                </lexDefinitions>
+              </configuration>
+            </execution>
+          </executions>
+        </plugin>
+
       </plugins>
     </build>
 
