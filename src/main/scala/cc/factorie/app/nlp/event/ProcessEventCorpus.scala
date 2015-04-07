@@ -145,19 +145,19 @@ object ProcessEventCorpus {
     Source.fromFile(opts.keyFile.value).getLines().map(line => new Line(line)).foreach(l =>
       key.add(EventAnswer(l.docid, l.surface, l.event, l.role)))
 
-    val (p,r,f1) = evaluate(key, responses)
+    val (p,r,f1) = evaluate(key.toSet, responses.toSet)
 
     println(s"precision=$p recall=$r f1=$f1")
   }
 
   case class EventAnswer(docid: String, surface: String, event: String, role: String)
 
-  def evaluate(key:HashSet[EventAnswer], responses:HashSet[EventAnswer]): (Double, Double, Double) = {
-    val correct = responses.filter(key.contains(_)).size.toDouble
+  def evaluate(key:Set[EventAnswer], responses:Set[EventAnswer]): (Double, Double, Double) = {
+    val correct = responses.count(key.contains).toDouble
     println(s"# responses: ${responses.size} # answers: ${key.size}")
     println(s"# correct responses: $correct")
-    val precision = correct/(responses.size.toDouble)
-    val recall = correct/(key.size.toDouble)
+    val precision = correct/responses.size.toDouble
+    val recall = correct/key.size.toDouble
     //    println(s"prec=$precision rec=$recall")
     val f1 = if ((precision+recall) > 0) 2*((precision*recall)/(precision+recall)) else 0
     (precision, recall, f1)

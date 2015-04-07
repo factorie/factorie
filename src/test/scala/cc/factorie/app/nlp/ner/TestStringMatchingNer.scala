@@ -13,6 +13,7 @@ class TestStringMatchingNer extends FlatSpec with Matchers {
   def f = new {
     val text = "Caitlin Cellier, pickpocket entomologist, was indicted today on Federal RICO charges for her violent murder of Minsc and Imoen."
     val doc = new Document(text)
+    val goldTags = Seq("O","O","O","U-JOB_TITLE","U-JOB_TITLE","O","O","O","O","O","O","B-CHARGES","L-CHARGES","O","O","O","U-CHARGES","O","O","O","O","O")
   }
 
   "EventStringMatchingLabeler" should "retrieve charges" in {
@@ -24,12 +25,8 @@ class TestStringMatchingNer extends FlatSpec with Matchers {
       token.attr += new TokenLemma(token, LowercaseLemmatizer.lemmatize(token.string))
     }
     BilouEventStringMatchingLabeler.process(doc)
-    //val pipe = new CompoundDocumentAnnotator(Seq(DeterministicNormalizingTokenizer, DeterministicSentenceSegmenter, BilouEventStringMatchingLabeler))
-    //pipe.process(doc)
 
-    doc.tokens foreach { token =>
-      println(Seq(token.string, token.nerTag).mkString("\t"))
-    }
+    assert(doc.tokens.map(_.nerTag.categoryValue).zip(f.goldTags).forall{case (pred, gold) => pred == gold})
   }
 
 }
