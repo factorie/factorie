@@ -61,7 +61,7 @@ abstract class LoadConll2008(val posType: Class[_]) extends Load with FastLoggin
     fromSource(Source.fromFile(filename))
   }
 
-  override def fromSource(source: Source): Seq[Document] = {
+  def fromSource(source: Source): Seq[Document] = {
     val document: Document = new Document
     document.annotators(classOf[Token]) = UnknownDocumentAnnotator.getClass // register that we have token boundaries
     document.annotators(classOf[Sentence]) = UnknownDocumentAnnotator.getClass // register that we have sentence boundaries
