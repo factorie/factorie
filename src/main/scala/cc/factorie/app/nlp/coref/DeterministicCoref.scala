@@ -551,7 +551,7 @@ class CorefUtil {
         var m1HeadVerb: Token = null
         var found: Boolean = false
         while (tmp != null && !found) {
-          if (tmp.posTag.isVerb) {
+          if (tmp.attr[PennPosTag].isVerb) {
             m1HeadVerb = tmp
             found = true
           } else {
@@ -562,7 +562,7 @@ class CorefUtil {
         var m2HeadVerb: Token = null
         found = false
         while (tmp != null && !found) {
-          if (tmp.posTag.isVerb) {
+          if (tmp.attr[PennPosTag].isVerb) {
             m2HeadVerb = tmp
             found = true
           } else {
@@ -625,8 +625,8 @@ class CorefUtil {
    * @return
    */
   def agreesInLocation(currentMention: Mention, candidateAntecedent: Mention): Boolean = {
-    val currentMentionModifiers: Set[String] = currentMention.phrase.tokens.toSeq.filter(x => (x.posTag.isNoun || x.posTag.isAdjective) && x != (currentMention.phrase.headToken)).map(_.string.trim.toLowerCase).toSet
-    val candidateAntecedentModifiers: Set[String] = candidateAntecedent.phrase.tokens.toSeq.filter(x => (x.posTag.isNoun || x.posTag.isAdjective) && x != (candidateAntecedent.phrase.headToken)).map(_.string.trim.toLowerCase).toSet
+    val currentMentionModifiers: Set[String] = currentMention.phrase.tokens.toSeq.filter(x => (x.attr[PennPosTag].isNoun || x.attr[PennPosTag].isAdjective) && x != (currentMention.phrase.headToken)).map(_.string.trim.toLowerCase).toSet
+    val candidateAntecedentModifiers: Set[String] = candidateAntecedent.phrase.tokens.toSeq.filter(x => (x.attr[PennPosTag].isNoun || x.attr[PennPosTag].isAdjective) && x != (candidateAntecedent.phrase.headToken)).map(_.string.trim.toLowerCase).toSet
     if (currentMentionModifiers.intersect(locationModifiers) != candidateAntecedentModifiers.intersect(locationModifiers)) {
       return false
     }
@@ -646,8 +646,8 @@ class CorefUtil {
   def hasCompatibleModifiersOnly(currentMention: Mention, candidateAntecedent: Mention, cm: MentionClusterManager): Boolean = {
     // Check that current mention does not have additional modifier that antecedent doesn't have
     // Check that the location modifiers are consistent
-    val currentMentionModifiers: Set[String] = currentMention.phrase.tokens.toSeq.filter(x => (x.posTag.isNoun || x.posTag.isAdjective || x.posTag.categoryValue == "CD") && x != (currentMention.phrase.headToken)).map(_.string.trim.toLowerCase).toSet
-    val candidateAntecedentModifiers: Set[String] = candidateAntecedent.phrase.tokens.toSeq.filter(x => (x.posTag.isNoun || x.posTag.isAdjective || x.posTag.categoryValue == "CD") && x != (candidateAntecedent.phrase.headToken)).map(_.string.trim.toLowerCase).toSet
+    val currentMentionModifiers: Set[String] = currentMention.phrase.tokens.toSeq.filter(x => (x.attr[PennPosTag].isNoun || x.attr[PennPosTag].isAdjective || x.posTag.categoryValue == "CD") && x != (currentMention.phrase.headToken)).map(_.string.trim.toLowerCase).toSet
+    val candidateAntecedentModifiers: Set[String] = candidateAntecedent.phrase.tokens.toSeq.filter(x => (x.attr[PennPosTag].isNoun || x.attr[PennPosTag].isAdjective || x.posTag.categoryValue == "CD") && x != (candidateAntecedent.phrase.headToken)).map(_.string.trim.toLowerCase).toSet
     if (currentMentionModifiers.diff(candidateAntecedentModifiers).size != 0) {
       return false
     }
@@ -684,7 +684,7 @@ class CorefUtil {
    */
   def isBarePlural(currentMention: Mention): Boolean = {
     val currentMentionHead: Token = currentMention.phrase.headToken
-    val currentMentionHeadPos: PennPosTag = currentMentionHead.posTag
+    val currentMentionHeadPos: PennPosTag = currentMentionHead.attr[PennPosTag]
     return (currentMentionHeadPos.categoryValue == "NNS" && currentMention.phrase.tokens.length == 1)
   }
 
@@ -697,8 +697,8 @@ class CorefUtil {
    * @return
    */
   def agreementBetweenModifiersWhichAreNumbers(currentMention: Mention, candidateAntecedent: Mention): Boolean = {
-    val currentMentionModifiers: Set[String] = currentMention.phrase.tokens.toSeq.filter(x => (x.posTag.categoryValue == "CD") && x != (currentMention.phrase.headToken)).map(_.string.trim.toLowerCase).toSet
-    val candidateAntecedentModifiers: Set[String] = candidateAntecedent.phrase.tokens.toSeq.filter(x => (x.posTag.categoryValue == "CD") && x != (candidateAntecedent.phrase.headToken)).map(_.string.trim.toLowerCase).toSet
+    val currentMentionModifiers: Set[String] = currentMention.phrase.tokens.toSeq.filter(x => (x.attr[PennPosTag].categoryValue == "CD") && x != (currentMention.phrase.headToken)).map(_.string.trim.toLowerCase).toSet
+    val candidateAntecedentModifiers: Set[String] = candidateAntecedent.phrase.tokens.toSeq.filter(x => (x.attr[PennPosTag].categoryValue == "CD") && x != (candidateAntecedent.phrase.headToken)).map(_.string.trim.toLowerCase).toSet
     if (currentMentionModifiers.diff(candidateAntecedentModifiers).size != 0) {
       return false
     }
@@ -803,7 +803,7 @@ class CorefUtil {
   def mentionStringWithoutDeterminer(m: Mention): String = {
     var res: String = ""
     for (token <- m.phrase.tokens) {
-      if (token.posTag.categoryValue != "DT" ||token.posTag.categoryValue != "WDT" || token.posTag.categoryValue != "PDT") {
+      if (token.attr[PennPosTag].categoryValue != "DT" ||token.attr[PennPosTag].categoryValue != "WDT" || token.attr[PennPosTag].categoryValue != "PDT") {
         res = res + token.string + " "
       }
     }
@@ -823,7 +823,7 @@ class CorefUtil {
     val mentionHeadIdx: Int = mentionHead.positionInSection - mention.phrase.start
     var idx: Int = 0
     for (token <- mention.phrase.tokens) {
-      if ((idx > mentionHeadIdx) && (token.string.trim == "," || token.posTag.categoryValue == "WDT" || token.posTag.categoryValue == "WP" || token.posTag.categoryValue == "WP$" || token.posTag.categoryValue == "WRB")) {
+      if ((idx > mentionHeadIdx) && (token.string.trim == "," || token.attr[PennPosTag].categoryValue == "WDT" || token.attr[PennPosTag].categoryValue == "WP" || token.attr[PennPosTag].categoryValue == "WP$" || token.attr[PennPosTag].categoryValue == "WRB")) {
         return mentionString.trim
       } else {
         mentionString += token.string.trim + " "

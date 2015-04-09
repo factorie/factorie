@@ -222,6 +222,11 @@ class TestLexerTokenizer extends JUnitSuite with FastLogging {
       src = "''Going to the stor&eacute; to grab . . . some c&ouml;ff&eacute;&eacute; for \u20ac50. He`s right\u2026 &ndash; &amp; \u2154 \\*\\* -- &trade; &mdash; \u2015 \u0096 -- --- ..",
       trg = "[\", Going, to, the, store, to, grab, ..., some, coffee, for, $, 50, ., He, ', s, right, ..., -, &, 2/3, **, --, (TM), --, --, -, --, --, ...]"
     )
+
+    checkDeterministicNormalizingTokenizer(DeterministicNormalizingHtmlTokenizer,
+      src = "<DOC id=\"AFP_ENG_20101231.0424\" type=\"story\" >\n<P>\nblah blah\n\n</P>\n<DOC id=\"AFP_ENG_20101231.0422\" type=\"story\" >",
+      trg = "[<DOC id=\"AFP_ENG_20101231.0424\" type=\"story\" >, <P>, blah, blah, </P>, <DOC id=\"AFP_ENG_20101231.0422\" type=\"story\" >]"
+    )
   }
 
   val testText2 =
