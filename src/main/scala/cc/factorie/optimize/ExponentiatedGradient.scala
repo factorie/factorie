@@ -75,3 +75,46 @@ class ExponentiatedGradient(rate: Double = 1.0) extends GradientOptimizer {
     initialized = false
   }
 }
+
+// NOTE: this includes an annealed learning rate schedule at rate 1/sqrt(k) -luke
+// This also uses sum-log-probs and so should have better numerical stability than the regular exponentiated gradient optimizer
+class DenseExponentiatedGradient(rate: Double = 1.0) extends GradientOptimizer {
+  var initialized = false
+  var i = 0
+  def initializeWeights(weights: WeightsSet) =
+    if (!initialized) {
+      val len = weights.length * 1.0
+      weights.tensors.foreach(t => t += Array.fill(t.length)(1 / len)) // need to initialize it to lie on the simplex
+      initialized = true
+    } else
+      sys.error("already initialized")
+  def finalizeWeights(weights: WeightsSet) = { }
+
+  def step(weights: WeightsSet, gradient: WeightsMap, value: Double): Unit = {
+    if (!initialized) initializeWeights(weights)
+    i += 1
+    for (template <- gradient.keys)
+      (weights(template), gradient(template)) match {
+        case (weights: Tensor, gradient: DenseTensor) =>
+          val wArr = weights.asArray
+          val gArr = gradient.asArray
+          val len = weights.length
+          var i = 0
+          while (i < len) {
+            wArr(i) = math.log(wArr(i)) + rate * gArr(i) / math.sqrt(i)
+            i += 1
+          }
+          val logZ = cc.factorie.maths.sumLogProbs(weights.asArray)
+          i = 0
+          while (i < len) {
+            wArr(i) = math.exp(wArr(i) - logZ)
+            i += 1
+          }
+      }
+  }
+  def isConverged: Boolean = false
+  def reset(): Unit = {
+    initialized = false
+    i = 1
+  }
+}

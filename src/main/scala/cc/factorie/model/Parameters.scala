@@ -36,6 +36,8 @@ class WeightsSet extends TensorSet {
   self =>
   private val _keys = mutable.ArrayBuffer[Weights]()
 
+  def append(key: Weights): Unit = _keys.append(key)
+
   def keys: Seq[Weights] = _keys
   def tensors: Seq[Tensor] = keys.map(_.value)
 
@@ -81,6 +83,13 @@ class WeightsSet extends TensorSet {
     dt += weights.value
     weights.set(dt)
   }
+
+  def filter(pred: Weights => Boolean): WeightsSet = {
+    val ret = new WeightsSet
+    for (k <- keys; if pred(k))
+      ret.append(k)
+    ret
+  }
 }
 
 /** A TensorSet in which the Tensors are not stored in the Weights objects, but in a map inside this object.
@@ -100,6 +109,12 @@ class WeightsMap(defaultTensor: Weights => Tensor) extends TensorSet {
     c
   }
   override def -(other: TensorSet) = { val newT = copy; newT += (other, -1); newT }
+  def filter(pred: Weights => Boolean): WeightsMap = {
+    val ret = new WeightsMap(_.newBlankTensor)
+    for ((k, v) <- toSeq; if pred(k))
+      ret(k) = v
+    ret
+  }
 }
 
 /** A collection of Tensors each associated with a Weights key. */
