@@ -219,6 +219,7 @@ class CmdOptions {
       nextIndex
     }
   }
+  override def toString: String = unParse.mkString("\n")
 }
 
 /** Default CmdOption collection that should be included in most CmdOptions. */
