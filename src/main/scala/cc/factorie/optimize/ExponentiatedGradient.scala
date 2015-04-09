@@ -80,7 +80,7 @@ class ExponentiatedGradient(rate: Double = 1.0) extends GradientOptimizer {
 // This also uses sum-log-probs and so should have better numerical stability than the regular exponentiated gradient optimizer
 class DenseExponentiatedGradient(rate: Double = 1.0) extends GradientOptimizer {
   var initialized = false
-  var i = 0
+  var iter = 0
   def initializeWeights(weights: WeightsSet) =
     if (!initialized) {
       val len = weights.length * 1.0
@@ -92,7 +92,7 @@ class DenseExponentiatedGradient(rate: Double = 1.0) extends GradientOptimizer {
 
   def step(weights: WeightsSet, gradient: WeightsMap, value: Double): Unit = {
     if (!initialized) initializeWeights(weights)
-    i += 1
+    iter += 1
     for (template <- gradient.keys)
       (weights(template), gradient(template)) match {
         case (weights: Tensor, gradient: DenseTensor) =>
@@ -101,7 +101,7 @@ class DenseExponentiatedGradient(rate: Double = 1.0) extends GradientOptimizer {
           val len = weights.length
           var i = 0
           while (i < len) {
-            wArr(i) = math.log(wArr(i)) + rate * gArr(i) / math.sqrt(i)
+            wArr(i) = math.log(wArr(i)) + rate * gArr(i) / math.sqrt(iter)
             i += 1
           }
           val logZ = cc.factorie.maths.sumLogProbs(weights.asArray)
@@ -115,6 +115,6 @@ class DenseExponentiatedGradient(rate: Double = 1.0) extends GradientOptimizer {
   def isConverged: Boolean = false
   def reset(): Unit = {
     initialized = false
-    i = 1
+    iter = 0
   }
 }
