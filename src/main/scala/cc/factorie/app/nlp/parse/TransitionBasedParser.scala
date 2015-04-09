@@ -136,12 +136,11 @@ class ParseState(var stack: Int, var input: Int, val reducedIds: Set[Int], val s
     arcLabels(tokenIndex) = label
 
     // update left and rightmost dependents
-    val grandHeadIndex = headIndices(headIndex)
-    if(grandHeadIndex != -1){
-      if (tokenIndex < grandHeadIndex)
-        leftmostDeps(grandHeadIndex) = tokenIndex
+    if(headIndex != -1){
+      if (tokenIndex < headIndex)
+        leftmostDeps(headIndex) = tokenIndex
       else
-        rightmostDeps(grandHeadIndex) = tokenIndex
+        rightmostDeps(headIndex) = tokenIndex
     }
   }
 
@@ -852,6 +851,7 @@ class TransitionBasedParser extends DocumentAnnotator {
       val decision = getGoldDecision(decisionVariable.state)
       computeFeatures(decisionVariable.state, decisionVariable.features, addFeatureString, addConjunctiveFeatureWithNulls)
       decisionVariable.target = ParseDecisionDomain.index(decision)
+      decisionVariable.setCategory(decision)(null)
       getParseDecision(decision)
     }
   }
