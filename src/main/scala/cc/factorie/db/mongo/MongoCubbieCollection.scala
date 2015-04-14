@@ -130,7 +130,7 @@ trait MutableCubbieCollection[C <: Cubbie] extends AbstractCubbieCollection[C] {
 class MongoCubbieCollection[C <: Cubbie](val coll: DBCollection,
                                          val constructor: () => C,
                                          val indices: C => Seq[Seq[C#AbstractSlot[Any]]] = (c: C) => Seq.empty[Seq[C#AbstractSlot[Any]]])
-  extends MutableCubbieCollection[C] with MongoCubbieConverter[C] {
+  extends MutableCubbieCollection[C] with MongoCubbieConverter[C] with Serializable {
 
   import MongoCubbieConverter._
 

@@ -13,7 +13,7 @@
 
 package cc.factorie.app.nlp
 import cc.factorie.app.nlp.phrase.Phrase
-import cc.factorie.util.{Cubbie, Threading}
+import cc.factorie.util.{FastLogging, Cubbie, Threading}
 import cc.factorie.app.nlp.coref.Mention
 import scala.reflect.ClassTag
 

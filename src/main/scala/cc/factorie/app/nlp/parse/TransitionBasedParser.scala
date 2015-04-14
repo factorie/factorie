@@ -31,7 +31,6 @@ import scala.Some
 
 /** Default transition-based dependency parser. */
 class TransitionBasedParser extends DocumentAnnotator {
-  private val logger = Logger.getLogger(this.getClass.getName)
 
   def this(stream:InputStream) = { this(); deserialize(stream) }
   def this(file: File) = this(new FileInputStream(file))
@@ -39,7 +38,7 @@ class TransitionBasedParser extends DocumentAnnotator {
     this()
     val stream = url.openConnection.getInputStream
     if (stream.available <= 0) throw new Error("Could not open "+url)
-    logger.debug("TransitionBasedParser loading from "+url)
+//    logger.debug("TransitionBasedParser loading from "+url)
     deserialize(stream)
   }
 

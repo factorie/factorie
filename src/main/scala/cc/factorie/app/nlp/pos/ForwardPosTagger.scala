@@ -26,19 +26,18 @@ import cc.factorie.app.classify.backend.LinearMulticlassClassifier
     For the Viterbi-based part-of-speech tagger, see ChainPosTagger.  
     @author Andrew McCallum, */
 class ForwardPosTagger extends DocumentAnnotator {
-  private val logger = Logger.getLogger(this.getClass.getName)
 
   // Different ways to load saved parameters
   def this(stream:InputStream) = { this(); deserialize(stream) }
   def this(file: File) = {
     this(new FileInputStream(file))
-    logger.debug("ForwardPosTagger loading from "+file.getAbsolutePath)
+//    logger.debug("ForwardPosTagger loading from "+file.getAbsolutePath)
   }
   def this(url:java.net.URL) = {
     this()
     val stream = url.openConnection.getInputStream
     if (stream.available <= 0) throw new Error("Could not open "+url)
-    logger.debug("ForwardPosTagger loading from "+url)
+//    logger.debug("ForwardPosTagger loading from "+url)
     deserialize(stream)
   }
   
@@ -64,7 +63,7 @@ class ForwardPosTagger extends DocumentAnnotator {
 /** Infrastructure for building and remembering a list of training data words that nearly always have the same POS tag.
       Used as cheap "stacked learning" features when looking-ahead to words not yet predicted by this POS tagger.
       The key into the ambiguityClasses is app.strings.replaceDigits().toLowerCase */
-  object WordData {
+  object WordData extends Serializable {
     val ambiguityClasses = JavaHashMap[String,String]()
     val sureTokens = JavaHashMap[String,Int]()
     var docWordCounts = JavaHashMap[String,Int]()
@@ -419,11 +418,11 @@ class ForwardPosTagger extends DocumentAnnotator {
 }
 
 /** The default part-of-speech tagger, trained on Penn Treebank Wall Street Journal, with parameters loaded from resources in the classpath. */
-class WSJForwardPosTagger(url:java.net.URL) extends ForwardPosTagger(url) 
+class WSJForwardPosTagger(url:java.net.URL) extends ForwardPosTagger(url)
 object WSJForwardPosTagger extends WSJForwardPosTagger(cc.factorie.util.ClasspathURL[WSJForwardPosTagger](".factorie"))
 
 /** The default part-of-speech tagger, trained on all Ontonotes training data (including Wall Street Journal), with parameters loaded from resources in the classpath. */
-class OntonotesForwardPosTagger(url:java.net.URL) extends ForwardPosTagger(url) 
+class OntonotesForwardPosTagger(url:java.net.URL) extends ForwardPosTagger(url)
 object OntonotesForwardPosTagger extends OntonotesForwardPosTagger(cc.factorie.util.ClasspathURL[OntonotesForwardPosTagger](".factorie"))
 
 class ForwardPosOptions extends cc.factorie.util.DefaultCmdOptions with SharedNLPCmdOptions{
@@ -449,34 +448,34 @@ class ForwardPosOptions extends cc.factorie.util.DefaultCmdOptions with SharedNL
 
 object ForwardPosTester {
   def main(args: Array[String]) {
-	val opts = new ForwardPosOptions
-	opts.parse(args)
-	assert(opts.testFile.wasInvoked || opts.testDir.wasInvoked || opts.testFiles.wasInvoked)
-	  	
-	// load model from file if given,
-	// else if the wsj command line param was specified use wsj model,
-	// otherwise ontonotes model
-	val pos = {
-	  if(opts.modelFile.wasInvoked) new ForwardPosTagger(new File(opts.modelFile.value))
-	  else if(opts.owpl.value) WSJForwardPosTagger
-	  else OntonotesForwardPosTagger
-	}
-	
-	assert(!(opts.testDir.wasInvoked && opts.testFiles.wasInvoked))
-    var testFileList = Seq(opts.testFile.value)
-    if(opts.testDir.wasInvoked){
-    	testFileList = FileUtils.getFileListFromDir(opts.testDir.value)
-    }else if (opts.testFiles.wasInvoked){
-      testFileList =  opts.testFiles.value.split(",")
+    val opts = new ForwardPosOptions
+    opts.parse(args)
+    assert(opts.testFile.wasInvoked || opts.testDir.wasInvoked || opts.testFiles.wasInvoked)
+
+    // load model from file if given,
+    // else if the wsj command line param was specified use wsj model,
+    // otherwise ontonotes model
+    val pos = {
+      if (opts.modelFile.wasInvoked) new ForwardPosTagger(new File(opts.modelFile.value))
+      else if (opts.owpl.value) WSJForwardPosTagger
+      else OntonotesForwardPosTagger
     }
-	
-	val testPortionToTake =  if(opts.testPortion.wasInvoked) opts.testPortion.value else 1.0
-	val testDocs = testFileList.map(fname => {
-	  if(opts.owpl.value) load.LoadOWPL.fromFilename(fname, pennPosLabelMaker).head
-	  else load.LoadOntonotes5.fromFilename(fname).head
-	})
+
+    assert(!(opts.testDir.wasInvoked && opts.testFiles.wasInvoked))
+    var testFileList = Seq(opts.testFile.value)
+    if (opts.testDir.wasInvoked) {
+      testFileList = FileUtils.getFileListFromDir(opts.testDir.value)
+    } else if (opts.testFiles.wasInvoked) {
+      testFileList = opts.testFiles.value.split(",")
+    }
+
+    val testPortionToTake = if (opts.testPortion.wasInvoked) opts.testPortion.value else 1.0
+    val testDocs = testFileList.map(fname => {
+      if (opts.owpl.value) load.LoadOWPL.fromFilename(fname, pennPosLabelMaker).head
+      else load.LoadOntonotes5.fromFilename(fname).head
+    })
     val testSentencesFull = testDocs.flatMap(_.sentences)
-    val testSentences = testSentencesFull.take((testPortionToTake*testSentencesFull.length).floor.toInt)
+    val testSentences = testSentencesFull.take((testPortionToTake * testSentencesFull.length).floor.toInt)
 
     pos.test(testSentences)
   }

@@ -24,8 +24,8 @@ abstract class NerAnnotator[Span <: NerSpan : ClassTag, Tag <: NerTag : ClassTag
     case object NotReading extends State
 
     val doc = annotateTokens(document)
-    val spanBuffer = newBuffer
     doc.sections.map { sec =>
+      val spanBuffer = newBuffer
       val iter = sec.tokens.iterator
       var tok:Token = null
       var state:State = NotReading
@@ -59,8 +59,8 @@ abstract class NerAnnotator[Span <: NerSpan : ClassTag, Tag <: NerTag : ClassTag
       if(tokBuffer.nonEmpty) {
         spanBuffer.add(newSpan(sec, tokBuffer.head.positionInSection, tokBuffer.size, state.asInstanceOf[Reading].tag))(null)
       }
+      doc.attr += spanBuffer
     }
-    doc.attr += spanBuffer
     doc.annotators ++= Seq(classTag[Tag].runtimeClass -> this.getClass, classTag[NerSpanBuffer[Span]].runtimeClass -> this.getClass)
     doc
   }
