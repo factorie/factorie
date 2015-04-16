@@ -11,7 +11,7 @@ import java.io.InputStream
 class PatternBasedRelationFinder(predictors:Seq[PatternRelationPredictor]) extends DocumentAnnotator{
   def tokenAnnotationString(token: Token) = null
 
-  def postAttrs = Seq(classOf[RelationMentionSeq])
+  def postAttrs = Seq(classOf[RelationMentionList])
 
   def prereqAttrs = (Seq(classOf[WithinDocCoref]) ++ ParseForwardCoref.prereqAttrs).distinct
 
@@ -38,7 +38,7 @@ class PatternBasedRelationFinder(predictors:Seq[PatternRelationPredictor]) exten
       rm._relations.+=(TACRelation(predictor.relation, matchLevel, rm.arg1.phrase.sentence.string))
     }
 
-    val relSet = new RelationMentionSeq()
+    val relSet = new RelationMentionList()
     relSet.++=(relationMentions.filter(_._relations.nonEmpty))
     doc.attr += relSet
     doc

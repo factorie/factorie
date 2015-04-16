@@ -34,12 +34,12 @@ object Relation {
       ParseForwardCoref,
       relFinder 
     )
-    val annoMap = DocumentAnnotatorPipeline.defaultDocumentAnnotationMap.toMap ++ Seq(classOf[RelationMentionSeq] -> (() => relFinder))
+    val annoMap = DocumentAnnotatorPipeline.defaultDocumentAnnotationMap.toMap ++ Seq(classOf[RelationMentionList] -> (() => relFinder))
     val pipeline = DocumentAnnotatorPipeline(annoMap, Nil, pipelineElements.flatMap(_.postAttrs))
     println("loaded document")
     pipeline process doc
     println("processed pipeline")
-    val relMentions = doc.attr[RelationMentionSeq].value
+    val relMentions = doc.attr[RelationMentionList]
 
     println("Detected Mentions: ")
     doc.coref.mentions.foreach { mention =>
@@ -109,7 +109,7 @@ object GoldRelation {
     }
 
     relFinder.process(doc)
-    val relMentions = doc.attr[RelationMentionSeq].value
+    val relMentions = doc.attr[RelationMentionList]
 
     println("Detected Mentions: ")
     doc.coref.mentions.foreach { mention =>

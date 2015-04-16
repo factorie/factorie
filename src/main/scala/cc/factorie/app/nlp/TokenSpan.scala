@@ -132,7 +132,16 @@ class TokenSpan(theSection:Section, initialStart:Int, initialLength:Int) extends
       }
     }
   }
+
+  def remote = {
+    val (start, end) = characterOffsets
+    RemoteTokenSpan(document.name, start, end - start)
+  }
+
 }
+
+case class RemoteTokenSpan(docId:String, startOffset:Int, length:Int)
+
 trait TokenSpanCollection[S<:TokenSpan] extends SpanVarCollection[S, Section, Token]
 
 
