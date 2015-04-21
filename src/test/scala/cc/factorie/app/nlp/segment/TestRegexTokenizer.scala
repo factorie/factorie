@@ -17,7 +17,7 @@ import org.junit.Test
 import cc.factorie.app.nlp.{DocumentAnnotatorPipeline, DocumentAnnotator, Sentence, Document, Token}
 import cc.factorie.util.FastLogging
 
-class TestTokenizer extends JUnitSuite with FastLogging {
+class TestRegexTokenizer extends JUnitSuite with FastLogging {
   
   def assertEquals(a: Any, b: Any): Unit = assert(a == b, "\"%s\" did not equal \"%s\"" format (a, b))
 
@@ -36,7 +36,7 @@ class TestTokenizer extends JUnitSuite with FastLogging {
       I now use my iphone as an alarm clock and is the bluetooth source to play music in my car.
       """.stripMargin
     val d = new Document((1 to 2).map(_ => text).mkString("\n"))
-    DocumentAnnotatorPipeline(DeterministicTokenizer, DeterministicSentenceSegmenter).process(d)
+    DocumentAnnotatorPipeline(DeterministicRegexTokenizer, DeterministicSentenceSegmenter).process(d)
     assert(d.sentences.size > 0)
     d.sentences.map(_.string).foreach(s => logger.debug(s.toString))
   }
@@ -44,19 +44,19 @@ class TestTokenizer extends JUnitSuite with FastLogging {
   @Test def testSentenceSegmenterWithOneSentence() {
     val text = "The quick brown fox jumps over the lazy dog."
     val d = new Document(text)
-    DocumentAnnotatorPipeline(DeterministicTokenizer, DeterministicSentenceSegmenter).process(d)
+    DocumentAnnotatorPipeline(DeterministicRegexTokenizer, DeterministicSentenceSegmenter).process(d)
     assert(d.sentences.size == 1)
     assert(d.tokens.size == 10)
   }
 
-  private def runDeterministicTokenizer(src: String): Iterable[Token] = {
+  private def runDeterministicRegexTokenizer(src: String): Iterable[Token] = {
     val d = new Document(src)
-    DocumentAnnotatorPipeline(DeterministicTokenizer).process(d).tokens
+    DocumentAnnotatorPipeline(DeterministicRegexTokenizer).process(d).tokens
   }
 
-  @Test def testDeterministicTokenizer(): Unit = {
+  @Test def testDeterministicRegexTokenizer(): Unit = {
     def check(src: String, trg: String): Unit = {
-      val tokens = runDeterministicTokenizer(src)
+      val tokens = runDeterministicRegexTokenizer(src)
       for (t <- tokens) {
         assertEquals(t.string, src.substring(t.stringStart, t.stringEnd))
       }
@@ -290,21 +290,21 @@ class TestTokenizer extends JUnitSuite with FastLogging {
     docs.map(_.sentences.toSeq)
   }
 
-  @Test def testDeterministicTokenizerUnclosedLine(): Unit = {
+  @Test def testDeterministicRegexTokenizerUnclosedLine(): Unit = {
     val unclosedLine = "<" + ("x" * 1679)
-    val tokens = runDeterministicTokenizer(unclosedLine)
+    val tokens = runDeterministicRegexTokenizer(unclosedLine)
   }
 
-  @Test def testDeterministicTokenizerLongLine(): Unit = {
+  @Test def testDeterministicRegexTokenizerLongLine(): Unit = {
     val hugeLine = """<meta content="Read Featured Article “YesAsia 2011 Bestsellers - Movies” by YumCha! Editorial Team mentioning Donnie Yen,Shawn Yue,Jung Woo Sung,Michelle Yeoh,Jiang Wen,Andy Lau,Kaneshiro Takeshi,Yamazaki Takashi,Benny Chan,Won Bin,Kim Jee Woon,Kimura Takuya,Tsui Hark,Su Chao Pin,Barbie Hsu,Wang Xue Qi,John Woo,Peter Chan, &quot;Villain (DVD) (English Subtitled) (Hong Kong Version)&quot;,&quot;Let The Bullets Fly (2010) (Blu-ray + DVD) (Hong Kong Version)&quot;,&quot;Villain (Blu-ray) (English Subtitled) (Hong Kong Version)&quot;,&quot;The Borrower Arrietty (DVD) (English Subtitled) (2-Disc Edition) (Hong Kong Version)&quot;,&quot;Shaolin (2011) (Blu-ray) (English Subtitled) (Hong Kong Version)&quot;,&quot;A Better Tomorrow (2010) (DVD) (First Press Limited Edition) (Korea Version)&quot;,&quot;Outrage (Blu-ray) (English Subtitled) (Hong Kong Version)&quot;,&quot;The Housemaid (2010) (DVD) (Single Disc) (Korea Version)&quot;,&quot;Bruce Lee My Brother (Blu-ray) (Hong Kong Version)&quot;,&quot;Space Battleship Yamato (DVD) (Collector&#039;s Edition) (First Press Limited Edition) (Japan Version)&quot;,&quot;I Saw the Devil (Blu-ray) (2-Disc) (Normal Edition) (Korea Version)&quot;,&quot;Natalie (DVD) (Hong Kong Version)&quot;,&quot;The Lady Shogun And Her Men (DVD) (English Subtitled) (Hong Kong Version)&quot;,&quot;Wu Xia (2011) (DVD) (Hong Kong Version)&quot;,&quot;The Borrower Arrietty (Blu-ray) (English Subtitled) (Hong Kong Version)&quot;,&quot;Whisper Of The Heart (Blu-ray) (English Subtitled) (Hong Kong Version)&quot;,&quot;The Housemaid (2010) (DVD) (English Subtitled) (Hong Kong Version)&quot;,&quot;Laputa: Castle in The Sky (Blu-ray) (Hong Kong Version)&quot;,&quot;A Better Tomorrow (2010) (DVD) (English Subtitled) (Hong Kong Version)&quot;,&quot;The Borrower Arrietty (Blu-ray) (Multi Audio &amp; Subtitled) (Region Free) (Japan Version)&quot;,&quot;Natalie (Blu-ray) (2D+3D Version) (Hong Kong Version)&quot;,&quot;The Lost Bladesman (DVD) (Hong Kong Version)&quot;,&quot;Haunters (Blu-ray + OST) (First Press Limited Edition) (Korea Version)&quot;,&quot;Cyrano Agency (DVD) (Single Disc) (Korea Version) &quot;,&quot;The Man From Nowhere (Blu-ray) (Normal Edition) (Korea Version)&quot;,&quot;Outrage (Blu-ray) (English Subtitled) (Japan Version)&quot;,&quot;Natalie 3D (DVD) (2-Disc) (First Press Limited Edition) (Korea Version)&quot;,&quot;Laputa: Castle in the Sky (Blu-ray) (Multi Audio &amp; Subtitled) (Region Free) (Japan Version)&quot;,&quot;Sex &amp; Zen: Extreme Ecstasy (Blu-ray) (2D + 3D Director&#039;s Cut) (Hong Kong Version)&quot;,&quot;A Moment to Remember (Blu-ray) (Director&#039;s Cut) (First Press Limited Edition) (Korea Version)&quot;,&quot;The Man From Nowhere (DVD) (English Subtitled) (Hong Kong Version)&quot;,&quot;A Bittersweet Life (Blu-ray) (Director&#039;s Cut) (Normal Edition) (First Press Limited Edition) (Korea Version)&quot;,&quot;The Lost Bladesman (Blu-ray) (Hong Kong Version)&quot;,&quot;Whisper Of The Heart (Blu-ray) (Multi Audio &amp; Subtitled) (Region Free) (Japan Version)&quot;,&quot;Wu Xia (2011) (Blu-ray) (Hong Kong Version)&quot;,&quot;Outrage (2-DVD Special Edition) (English Subtitled) (Hong Kong Version)&quot;,&quot;Reign Of Assassins (Blu-ray) (Hong Kong Version)&quot;,&quot;The Sorcerer And The White Snake (2011) (Blu-ray) (Hong Kong Version)&quot;,&quot;Space Battleship Yamato (Blu-ray) (English Subtitled) (Hong Kong Version)&quot;,&quot;The Man From Nowhere (DVD) (2-Disc) (Normal Edition) (Korea Version)&quot;,&quot;Norwegian Wood (2010) (Blu-ray) (English Subtitled) (Hong Kong Version)&quot;,&quot;What Women Want (2011) (DVD) (English Subtitled) (Hong Kong Version)&quot;,&quot;A Better Tomorrow (2010) (Blu-ray) (English Subtitled) (Hong Kong Version)&quot;,&quot;Secret Reunion (DVD) (Single Disc) (Korea Version)&quot;,&quot;Outrage (DVD) (English Subtitled) (Hong Kong Version)&quot;,&quot;Sex &amp; Zen: Extreme Ecstasy (DVD) (2D+3D Special Version) (Hong Kong Version)&quot;,&quot;The Borrower Arrietty (DVD) (English Subtitled) (Japan Version)&quot;,&quot;Detective Dee And The Mystery Of The Phantom Flame (Blu-ray) (Hong Kong Version)&quot;,&quot;Reign Of Assassins (DVD) (Hong Kong Version)&quot;,&quot;Detective Dee And The Mystery Of The Phantom Flame (DVD) (Hong Kong Version)&quot;,&quot;Secret Reunion (Blu-ray) (Limited Edition) (Korea Version)&quot;,&quot;Confessions (Blu-ray) (English Subtitled) (Hong Kong Version)&quot;,&quot;Confessions (DVD) (English Subtitled) (Hong Kong Version)&quot;,&quot;Tomorrow&#039;s Joe (Blu-ray) (Premium Edition) (Japan Version)&quot;,&quot;Tomorrow&#039;s Joe (DVD) (English Subtitled) (Taiwan Version)&quot;,&quot;Bruce Lee My Brother (DVD) (Hong Kong Version)&quot;,&quot;Haunters (DVD) (Single Disc) (Korea Version)&quot;,&quot;Shaolin (2011) (DVD) (2-Disc Edition) (Hong Kong Version)&quot;,&quot;The Lady Shogun and Her Men (DVD) (Deluxe Edition) (First Press Limited Edition) (Japan Version)&quot;,&quot;The Housemaid (2010) (Blu-ray) (First Press Limited Edition) (Korea Version)&quot;,&quot;Space Battleship Yamato (DVD) (2-Disc Edition) (English Subtitled) (Hong Kong Version)&quot;,&quot;Sex &amp; Zen: Extreme Ecstasy (DVD) (2D Director&#039;s Cut) (Hong Kong Version)&quot;,&quot;Norwegian Wood (2010) (DVD) (English Subtitled) (Hong Kong Version)&quot;,&quot;Tomorrow&#039;s Joe (DVD) (Standard Edition) (Japan Version)&quot;,&quot;The Lady Shogun And Her Men (Blu-ray) (English Subtitled) (Hong Kong Version)&quot;,&quot;What Women Want (2011) (Blu-ray) (English Subtitled) (Hong Kong Version)&quot;,&quot;The Sorcerer And The White Snake (2011) (DVD) (Hong Kong Version)&quot; and more customer and professional reviews, editors’ picks, and the latest in Asian Entertainment at YumCha! from YesAsia.com. - North America Site" name="description"/>^M"""
-    val tokens = runDeterministicTokenizer(hugeLine)
+    val tokens = runDeterministicRegexTokenizer(hugeLine)
   }
   
   @Test def testRegexTokenizer(): Unit = {
-    assert(DeterministicTokenizer("Washington D.C.").toSeq == Seq("Washington", "D.C."))
-    assert(DeterministicTokenizer("Acme Inc.").toSeq == Seq("Acme", "Inc."))
-    assert(DeterministicTokenizer("Oct. 24").toSeq == Seq("Oct.", "24"))
-    assert(DeterministicTokenizer("Mr. Smith.").toSeq == Seq("Mr.", "Smith", "."))
+    assert(DeterministicRegexTokenizer("Washington D.C.").toSeq == Seq("Washington", "D.C."))
+    assert(DeterministicRegexTokenizer("Acme Inc.").toSeq == Seq("Acme", "Inc."))
+    assert(DeterministicRegexTokenizer("Oct. 24").toSeq == Seq("Oct.", "24"))
+    assert(DeterministicRegexTokenizer("Mr. Smith.").toSeq == Seq("Mr.", "Smith", "."))
     //println(RegexTokenizer("MR. SMITH.").mkString(" "))
     //assert(RegexTokenizer("MR. SMITH.").toSeq == Seq("MR.", "SMITH", ".")) // TODO It would be nice if this worked.
     //assert(RegexTokenizer("mr. smith.").toSeq != Seq("mr.", "smith", ".")) // TODO Should this work? -akm

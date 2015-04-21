@@ -14,7 +14,6 @@ class TokenTests extends FlatSpec with Matchers {
     }
 
     val span = new TokenSpan(doc.asSection, 5, 2)
-
   }
 
   "Token" should "calculate context bags properly" in {

@@ -12,7 +12,7 @@
    limitations under the License. */
 package cc.factorie.app.nlp.segment
 
-import cc.factorie.app.nlp.{UnknownDocumentAnnotator, DocumentAnnotator, Token, Document}
+import cc.factorie.app.nlp.{DocumentAnnotator, Token, Document}
 
 /** Split a String into a sequence of Tokens.  Aims to adhere to tokenization rules used in Ontonotes and Penn Treebank.
     Note that CoNLL tokenization would use tokenizeAllDashedWords=true.
@@ -20,7 +20,7 @@ import cc.factorie.app.nlp.{UnknownDocumentAnnotator, DocumentAnnotator, Token, 
     (Although our the DeterministicSentenceSegmenter does make a few adjustments beyond this tokenizer.)
     @author Andrew McCallum
     */
-class DeterministicTokenizer(caseSensitive:Boolean = false, tokenizeSgml:Boolean = false, tokenizeNewline:Boolean = false, tokenizeAllDashedWords:Boolean = false, abbrevPreceedsLowercase:Boolean = false) extends DocumentAnnotator {
+class DeterministicRegexTokenizer(caseSensitive:Boolean = false, tokenizeSgml:Boolean = false, tokenizeNewline:Boolean = false, tokenizeAllDashedWords:Boolean = false, abbrevPrecedesLowercase:Boolean = false) extends DocumentAnnotator {
 
   /** How the annotation of this DocumentAnnotator should be printed in one-word-per-line (OWPL) format.
       If there is no per-token annotation, return null.  Used in Document.owplString. */
@@ -109,7 +109,6 @@ class DeterministicTokenizer(caseSensitive:Boolean = false, tokenizeSgml:Boolean
   val space = "(?:\\p{Z}|&nbsp;)+" // but not tokenized here
 
   val tokenRegexString = patterns.filter(_.length != 0).mkString("|")
-//  val tokenRegex = if (!caseSensitive) ("(?i)"+tokenRegexString).r else tokenRegexString.r
   val tokenRegex = if (!caseSensitive) ("(?i)"+tokenRegexString).r else tokenRegexString.r
 
   def process(document: Document): Document = {
@@ -119,7 +118,7 @@ class DeterministicTokenizer(caseSensitive:Boolean = false, tokenizeSgml:Boolean
       while (tokenIterator.hasNext) {
         tokenIterator.next()
         val string = document.string.substring(section.stringStart + tokenIterator.start, section.stringStart + tokenIterator.end)
-        if (abbrevPreceedsLowercase && prevTokenPeriod && java.lang.Character.isLowerCase(string(0)) && section.length > 1 && section.tokens(section.length-2).stringEnd == section.tokens(section.length-1).stringStart) {
+        if (abbrevPrecedesLowercase && prevTokenPeriod && java.lang.Character.isLowerCase(string(0)) && section.length > 1 && section.tokens(section.length-2).stringEnd == section.tokens(section.length-1).stringStart) {
           // If we have a pattern like "Abbrev. has" (where "has" is any lowercase word) with token strings "Abbrev", ".", "is" (currently looking at "is")
           // then assume that the previous-previous word is actually an abbreviation; patch it up to become "Abbrev.", "has".
           val lastTwoTokens = section.takeRight(2).toIndexedSeq
@@ -150,11 +149,11 @@ class DeterministicTokenizer(caseSensitive:Boolean = false, tokenizeSgml:Boolean
   def apply(s:String): Seq[String] = process(new Document(s)).tokens.toSeq.map(_.string)
 }
 
-object DeterministicTokenizer extends DeterministicTokenizer(false, false, false, false, false) {
+object DeterministicRegexTokenizer extends DeterministicRegexTokenizer(false, false, false, false, false) {
   def main(args: Array[String]): Unit = {
     val string = io.Source.fromInputStream(System.in).mkString
     val doc = new Document(string)
-    DeterministicTokenizer.process(doc)
+    DeterministicRegexTokenizer.process(doc)
     println(doc.tokens.map(_.string).mkString("\n"))
   }
 }

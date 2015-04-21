@@ -54,6 +54,10 @@ class TestTensor extends cc.factorie.util.FastLogging {
     t2 += (2, 1.0)
     t3 += (3, 4.0)
 
+    println(t1 outer t2)
+    // the outer product is an instance of Tensor2
+    assert((t1 outer t2).isInstanceOf[Outer1Tensor2])
+
     assert(((t1 outer t2 outer t3) dot (t1 outer t2 outer t3)) == 64)
     assert(((t1 outer (t2 outer t3)) dot (t1 outer (t2 outer t3))) == 64)
 
@@ -64,7 +68,6 @@ class TestTensor extends cc.factorie.util.FastLogging {
     val res = new SparseIndexedTensor2(10, 10) + (t4 outer t1)
 
     assert(res(21) == 5.0, 0.0001)
-
   }
 
   @Test def testBinary(): Unit = {
@@ -73,9 +76,19 @@ class TestTensor extends cc.factorie.util.FastLogging {
     foo += (60, 0.0)
     foo(70) = 0.0
     foo(71) = 1.0
+
+    assertDoubleEquals(foo(50), 1, 0.01)
+    assertDoubleEquals(foo(60), 0, 0.01)
+    assertDoubleEquals(foo(70), 0, 0.01)
+    assertDoubleEquals(foo(71), 1, 0.01)
+
     val bar = new SparseBinaryTensor2(10, 10)
     bar(5, 5) = 0.0
     bar (6, 6) = 1.0
+
+    assertDoubleEquals(bar(4,4), 0, 0.01)
+    assertDoubleEquals(bar(5,5), 0, 0.01)
+    assertDoubleEquals(bar(6,6), 1, 0.01)
   }
 
   trait TensorCreator {
@@ -124,7 +137,7 @@ class TestTensor extends cc.factorie.util.FastLogging {
         test(t1, t2)
     }
   }
-  
+
   @Test def testDot() {
     val dim1 = 10; val dim2 = 1000
     val random = new scala.util.Random(0)
@@ -176,5 +189,29 @@ class TestTensor extends cc.factorie.util.FastLogging {
         case e: Error => assert(e.getMessage.contains("Method copy not defined"))
       }
     }
+  }
+
+  // DenseTensor stores elements in an full-size array
+  @Test def testDenseTensor3(): Unit = {
+    val tensor = new DenseTensor3(3, 3, 3)
+
+    // ensure numDimensions is correct
+    assertEquals(tensor.numDimensions, 3)
+    assertEquals(tensor.length, 27)
+
+    // convert array index to tensor index
+    assertEquals(tensor.singleIndex(0, 0, 0), 0)
+    assertEquals(tensor.singleIndex(0, 0, 1), 1)
+    assertEquals(tensor.singleIndex(0, 0, 2), 2)
+    assertEquals(tensor.singleIndex(0, 1, 0), 3)
+    assertEquals(tensor.singleIndex(0, 1, 1), 4)
+
+    // element value can be assigned by index
+    tensor(1,1,1) = 1.0
+    assertEquals(tensor(1,1,1), 1.0, 0.001)
+
+    // element value can also be assigned by +=
+    tensor += (2, 2, 2, 2.0)
+    assertEquals(tensor(2,2,2), 2.0, 0.001)
   }
 }

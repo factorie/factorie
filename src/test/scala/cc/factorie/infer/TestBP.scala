@@ -10,33 +10,31 @@
    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
    See the License for the specific language governing permissions and
    limitations under the License. */
-package cc.factorie
+package cc.factorie.infer
 
-import app.chain.ChainModel
-import app.nlp.Token
-import org.junit.Assert._
-import scala.util.Random
-import scala.collection.mutable.ArrayBuffer
-import org.junit.Test
-import cc.factorie.variable._
-import cc.factorie.model._
-import cc.factorie.infer._
+import cc.factorie._
+import cc.factorie.app.chain.ChainModel
+import cc.factorie.app.nlp.Token
+import cc.factorie.model.{Factor, Parameters, _}
 import cc.factorie.optimize.LikelihoodExample
+import cc.factorie.variable.{DiscreteDomain, DiscreteVariable, _}
+import org.junit.Assert._
+import org.junit.Test
+
+import scala.collection.mutable.ArrayBuffer
+import scala.util.Random
 
 /**
  * Test for the factorie-1.0 BP framework (that uses WeightsMap)
  * @author sameer, brian
  * @since Aug 7, 2012
  */
+class TestBP extends util.FastLogging {
 
-
-//@RunWith(classOf[JUnitRunner])
-class TestBP extends util.FastLogging { //}extends FunSuite with BeforeAndAfter {
-  
-  import BPTestUtils._
+  import cc.factorie.infer.BPTestUtils._
 
   val eps = 1e-4
-  
+
   @Test def v1f1Test() {
     // one variable, one factor
     val v = new BinVar(0)
@@ -48,7 +46,7 @@ class TestBP extends util.FastLogging { //}extends FunSuite with BeforeAndAfter 
     logger.debug(fg.marginal(v).proportions)
     assertEquals(0.5, fg.marginal(v).proportions(0), eps)
   }
-  
+
   @Test def v1f1UnequalPotentialsSum() {
     // one variable, one factor
     val v = new BinVar(0)
@@ -60,7 +58,7 @@ class TestBP extends util.FastLogging { //}extends FunSuite with BeforeAndAfter 
     //logger.debug(fg.marginal(v).proportions)
     assertEquals(e(2) / (e(2) + e(1)), fg.marginal(v).proportions(0), eps)
   }
-  
+
   @Test def v1f2Test1() {
     //f1 = {0: 2, 1: 1}, f2 = {0: 1, 1: 2}") {
     // one variable, two factors
@@ -73,7 +71,7 @@ class TestBP extends util.FastLogging { //}extends FunSuite with BeforeAndAfter 
     //logger.debug(fg.marginal(v).proportions)
     assertEquals(0.5, fg.marginal(v).proportions(0), eps)
   }
-    
+
   @Test def v1f2Test2() {
   // f1 = {0: 0, 1: 1}, f2 = {0: 0, 1: 1}") {
   // one variable, two factors
@@ -86,13 +84,13 @@ class TestBP extends util.FastLogging { //}extends FunSuite with BeforeAndAfter 
     //logger.debug(fg.marginal(v).proportions)
     assertEquals(fg.marginal(v).proportions(0), e(0) / (e(0) + e(2)), eps)
   }
-  
+
   @Test def v1f2MAP1() {
     // f1 = {0: 2, 1: 1}, f2 = {0: 1, 1: 2}") {
     // one variable, two factors
     val v = new BinVar(0)
     val model = new ItemizedModel(newFactor1(v, 1, 2), newFactor1(v, 2, 1))
-    val fg = BPSummary(Set(v), BPMaxProductRing, model) 
+    val fg = BPSummary(Set(v), BPMaxProductRing, model)
     BP.inferLoopy(fg, 2)
     //logger.debug(fg.marginal(v).proportions)
     assertEquals(fg.marginal(v).proportions.maxIndex, 0)
@@ -132,13 +130,13 @@ class TestBP extends util.FastLogging { //}extends FunSuite with BeforeAndAfter 
     // create template between v1 and v2
     val model = newTemplate2(v1, v2, 10, 0)
     val vars: Set[DiscreteVar] = Set(v1, v2)
-    
+
     val f = model.factors(v1).head
     logger.debug("f score unequal: " + f.currentScore)
     v2 := 1
     logger.debug("f score equal: " + f.currentScore)
-    
-    
+
+
     logger.debug(newTemplate2(v1, v2, 10.0, 0.0).neighborDomain2)
     logger.debug(model.asInstanceOf[FamilyWithNeighborDomains].neighborDomains)
 
@@ -160,7 +158,7 @@ class TestBP extends util.FastLogging { //}extends FunSuite with BeforeAndAfter 
     val fg3 = BP.inferTreeSum(Seq(v1, v2).toSet, model)
     assertEquals(math.log(2*math.exp(10) + 2*math.exp(0)), fg3.logZ, 0.001)
   }
-  
+
   @Test def v2f2VaryingBoth() {
     logger.debug("V2F1: varying both")
     // a sequence of two variables, one factor
@@ -268,12 +266,12 @@ class TestBP extends util.FastLogging { //}extends FunSuite with BeforeAndAfter 
     // a sequence of two variables, one factor
     val v1 = new BinVar(1)
     val v2 = new BinVar(0)
-    
+
     // create template between v1 and v2
     val model = newTemplate2(v1, v2, -10, 0)
     val vars: Set[Var] = Set(v1, v2)
     val varying = Set(v1)
-    
+
     val fg = BPSummary(varying, model)
     assert(fg.bpFactors.size == 1)
     assert(fg.bpVariables.size == 1)
@@ -283,9 +281,9 @@ class TestBP extends util.FastLogging { //}extends FunSuite with BeforeAndAfter 
     val v1Marginal = fg.marginal(v1).proportions
     for ((_, i) <- v1.settings.zipWithIndex if v1.value == v2.value)
       assertEquals(v1Marginal(i), 0.0, eps)
-    
-  }  
-  
+
+  }
+
   @Test def loop2() {
     val v1 = new BinVar(1)
     val v2 = new BinVar(0)
@@ -293,20 +291,20 @@ class TestBP extends util.FastLogging { //}extends FunSuite with BeforeAndAfter 
 
     val model = new ItemizedModel(
       // bias
-      newFactor1(v1, 1, 0), 
+      newFactor1(v1, 1, 0),
       newFactor1(v2, 1, 0),
       // loop
       newFactor2(v1, v2, 1, 0),
       newFactor2(v1, v2, 3, -1)
     )
-    
+
     var fg = BPSummary(vars, model)
     BP.inferLoopy(fg, 1)
     logger.debug("v1 : " + fg.marginal(v1).proportions)
     logger.debug("v2 : " + fg.marginal(v2).proportions)
-    
+
     fg.setToMaximize(null)
-    
+
     logger.debug("v1 val : " + v1.value)
     logger.debug("v2 val : " + v2.value)
     assert(v1.intValue == 0)
@@ -324,18 +322,18 @@ class TestBP extends util.FastLogging { //}extends FunSuite with BeforeAndAfter 
     val model = new ItemizedModel(
       // loop of repulsion factors, with v4 having an extra factor
       // pegging its value to 0
-      newFactor2(v1, v2, -5, 0), 
+      newFactor2(v1, v2, -5, 0),
       newFactor2(v2, v3, -5, 0),
-      newFactor2(v3, v4, -5, 0), 
+      newFactor2(v3, v4, -5, 0),
       newFactor2(v4, v1, -5, 0),
       // bias
       newFactor1(v4, 10, 0)
     )
-    
+
     val fg = BPSummary(vars, model)
     BP.inferLoopy(fg, 4)
     fg.setToMaximize()
-    
+
     assertEquals(fg.marginal(v1).proportions(0), 0.0, 0.1)
     assertEquals(fg.marginal(v1).proportions(1), 1.0, 0.1)
     assertEquals(fg.marginal(v2).proportions(0), 1.0, 0.1)
@@ -390,7 +388,7 @@ class TestBP extends util.FastLogging { //}extends FunSuite with BeforeAndAfter 
       }
       logger.debug("map : " + mapAssignment)
       logger.debug("marginals : " + marginals.map(_ / Z).mkString(", "))
-      
+
       // test sum-product
       val fg = BP.inferChainSum(vars, model)
       for (i <- 0 until numVars) {
@@ -404,7 +402,7 @@ class TestBP extends util.FastLogging { //}extends FunSuite with BeforeAndAfter 
       //logger.debug("z : " + math.log(Z) + ", " + fg.logZ())
       //assertEquals(math.log(Z), fg.logZ(), eps)
       // max product
-      
+
       val mfg = BP.inferChainMax(vars, model)
       val mfg2 = BP.inferTreeMarginalMax(vars, model)
       assertEquals(mfg.logZ, mfg2.logZ, 0.001)
@@ -420,7 +418,7 @@ class TestBP extends util.FastLogging { //}extends FunSuite with BeforeAndAfter 
       }
     }
   }
-  
+
   @Test def tree3() {
     val v1 = new BinVar(0)
     val v2 = new BinVar(1)
@@ -433,17 +431,17 @@ class TestBP extends util.FastLogging { //}extends FunSuite with BeforeAndAfter 
 	    newFactor2(v1, v3, 3, 0),
 	    newFactor2(v3, v2, 3, 0)
 	  )
-    
+
     val fg = BP.inferTreeSum(vars, model, root = v3)
     fg.setToMaximize()
-    
+
     logger.debug("v1 : " + fg.marginal(v1).proportions)
     logger.debug("v2 : " + fg.marginal(v2).proportions)
     logger.debug("v3 : " + fg.marginal(v3).proportions)
     logger.debug("v1 val : " + v1.value)
     logger.debug("v2 val : " + v2.value)
     logger.debug("v3 val : " + v3.value)
-    
+
     assertEquals(0.5, fg.marginal(v3).proportions(0), eps)
     assertEquals(v1.intValue, 0)
     assertEquals(v2.intValue, 1)
@@ -472,7 +470,7 @@ class TestBP extends util.FastLogging { //}extends FunSuite with BeforeAndAfter 
     assertEquals(math.log(z2), BP.inferChainSum(vars2, model).logZ, 0.001)
     assertEquals(math.log(z2), BP.inferTreeSum(vars2.toSet, model).logZ, 0.001)
   }
-  
+
   @Test def tree7() {
     val v1 = new BinVar(0) { override def toString = "v1" }
     val v2 = new BinVar(1) { override def toString = "v2" }
@@ -493,9 +491,9 @@ class TestBP extends util.FastLogging { //}extends FunSuite with BeforeAndAfter 
     )
     val fg = BP.inferTreeSum(vars, model, v4)
     fg.setToMaximize()
-    
+
     assert(fg.marginal(v7).proportions(0) > 0.95)
-    
+
     logger.debug("v1 : " + fg.marginal(v1).proportions)
     logger.debug("v2 : " + fg.marginal(v2).proportions)
     logger.debug("v3 : " + fg.marginal(v3).proportions)
@@ -506,7 +504,7 @@ class TestBP extends util.FastLogging { //}extends FunSuite with BeforeAndAfter 
     logger.debug("      %2d".format(v4.intValue))
     logger.debug("  %2d      %2d".format(v3.intValue, v5.intValue))
     logger.debug("%2d  %2d  %2d  %2d".format(v1.intValue, v2.intValue, v6.intValue, v7.intValue))
-    
+
     assert(v1.intValue == 0)
     assert(v2.intValue == 1)
     assert(v3.intValue == 0)
@@ -515,7 +513,7 @@ class TestBP extends util.FastLogging { //}extends FunSuite with BeforeAndAfter 
     assert(v6.intValue == 1)
     assert(v7.intValue == 0)
   }
-  
+
 }
 
 object BPTestUtils {
@@ -525,7 +523,7 @@ object BPTestUtils {
   class BinVar(i: Int) extends DiscreteVariable(i) {
     def domain = BinDomain
   }
-  
+
 
   def newFactor1(n1: BinVar, score0: Double, score1: Double): Factor = {
     val family = new DotTemplateWithStatistics1[BinVar] with Parameters {
@@ -546,7 +544,7 @@ object BPTestUtils {
       val weights = Weights(new la.DenseTensor1(BinDomain.size))
       def unroll1(v: BinVar) = if (v == n1) Factor(n1, n2) else Nil
       def unroll2(v: BinVar) = if (v == n2) Factor(n1, n2) else Nil
-      override def statistics(value1: BinVar#Value, value2: BinVar#Value) = 
+      override def statistics(value1: BinVar#Value, value2: BinVar#Value) =
         BinDomain(if (value1.intValue == value2.intValue) 0 else 1)
     }
     assert(!family.statisticsAreValues)
@@ -554,7 +552,7 @@ object BPTestUtils {
     family.weights.value(1) = scoreUnequal
     family.factors(n1).head
   }
-  
+
   def newTemplate2(n1: BinVar, n2: BinVar, scoreEqual: Double, scoreUnequal: Double) = {
     new TupleTemplateWithStatistics2[BinVar, BinVar] {
       override def neighborDomain1 = BinDomain
@@ -576,5 +574,5 @@ object BPTestUtils {
 
   // short for exponential
   def e(num: Double) = math.exp(num)
-  
+
 }

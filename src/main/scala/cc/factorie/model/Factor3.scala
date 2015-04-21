@@ -311,8 +311,8 @@ abstract class TensorFactorWithStatistics3[N1<:TensorVar,N2<:TensorVar,N3<:Tenso
     Only "statistics" and "weightsSet" methods are abstract.  
     @author Andrew McCallum */
 abstract class DotFactor3[N1<:TensorVar,N2<:TensorVar,N3<:TensorVar](override val _1:N1, override val _2:N2, override val _3:N3) extends TensorFactor3[N1,N2,N3](_1, _2, _3) {
-  def weights: Tensor
-  def statisticsScore(t:Tensor): Double = weights dot t
+  def weights: Weights
+  def statisticsScore(t:Tensor): Double = weights.value dot t
 }
 
 /** A 3-neighbor Factor whose neighbors have Tensor values, 
@@ -321,7 +321,7 @@ abstract class DotFactor3[N1<:TensorVar,N2<:TensorVar,N3<:TensorVar](override va
     Only "weightsSet" method is abstract.  
     @author Andrew McCallum */
 abstract class DotFactorWithStatistics3[N1<:TensorVar,N2<:TensorVar,N3<:TensorVar](override val _1:N1, override val _2:N2, override val _3:N3) extends DotFactor3(_1, _2, _3) with TensorFactorStatistics3[N1,N2,N3] {
-  override def valuesScore(valueTensor:Tensor) = weights dot valueTensor
+  override def valuesScore(valueTensor:Tensor) = weights.value dot valueTensor
 }
 
 

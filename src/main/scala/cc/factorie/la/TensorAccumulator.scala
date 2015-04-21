@@ -15,11 +15,18 @@ package cc.factorie.la
 import cc.factorie.util.{DoubleAccumulator, LocalDoubleAccumulator, Accumulator}
 import cc.factorie.model.{Weights, WeightsMap}
 
-// TODO why doesn't this implement Accumulator[WeightsMap]? -luke
-// answer: it's hard - contravariance on the method arguments
+// NOTE: we don't implement Accumulator[WeightsMap] because contravariance
 trait WeightsMapAccumulator {
   def accumulate(key: Weights, t: Tensor): Unit
   def accumulate(key: Weights, t: Tensor, factor: Double): Unit
+  def accumulate(map: WeightsMap): Unit = {
+    for ((k, v) <- map.toSeq)
+      accumulate(k, v)
+  }
+  def accumulate(map: WeightsMap, factor: Double): Unit = {
+    for ((k, v) <- map.toSeq)
+      accumulate(k, v, factor)
+  }
 }
 
 class LocalWeightsMapAccumulator(val tensorSet: WeightsMap) extends WeightsMapAccumulator {

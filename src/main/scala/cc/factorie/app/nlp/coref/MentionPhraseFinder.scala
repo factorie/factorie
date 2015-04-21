@@ -48,7 +48,7 @@ trait MentionPhraseFinder {
 object PronounFinder extends MentionPhraseFinder {
   def prereqAttrs = Seq(classOf[PennPosTag])
   def apply(document:Document): Iterable[Phrase] = { 
-    val phrases = document.tokens.filter(_.posTag.isPersonalPronoun).map(t => new Phrase(t.section, start=t.positionInSection, length=1,offsetToHeadToken = -1))
+    val phrases = document.tokens.filter(_.attr[PennPosTag].isPersonalPronoun).map(t => new Phrase(t.section, start=t.positionInSection, length=1,offsetToHeadToken = -1))
     for (phrase <- phrases) phrase.attr += new NounPhraseType(phrase, "PRO")
     phrases
   }

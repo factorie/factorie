@@ -10,12 +10,15 @@
    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
    See the License for the specific language governing permissions and
    limitations under the License. */
-package cc.factorie
-import cc.factorie.la._
-import cc.factorie.variable._
-import cc.factorie.model.DotTemplateWithStatistics2
+package cc.factorie.optimize
 
-object TestSampleRank  extends cc.factorie.util.FastLogging{
+import cc.factorie._
+import cc.factorie.infer.GibbsSampler
+import cc.factorie.la.{DenseTensor2, DenseTensor3, DenseTensor4, _}
+import cc.factorie.model.DotTemplateWithStatistics2
+import cc.factorie.variable._
+
+object TestSampleRank extends cc.factorie.util.FastLogging{
   object LabelDomain extends CategoricalDomain[String]
   class Label(s:String, val instance:Instance) extends LabeledCategoricalVariable(s) { def domain = LabelDomain }
   object InstanceDomain extends CategoricalVectorDomain[String]
@@ -33,7 +36,7 @@ object TestSampleRank  extends cc.factorie.util.FastLogging{
     def unroll1(l:Label) = Factor(l, l.instance)
     def unroll2(i:Instance) = Factor(i.label, i)
   }
-  
+
   def main(args:Array[String]): Unit = {
     implicit val random = new scala.util.Random(0)
     // Test Tensor index arithmetic
@@ -52,7 +55,7 @@ object TestSampleRank  extends cc.factorie.util.FastLogging{
       rdim2 = random.nextInt(dim2)
       val t2i = t2.singleIndex(rdim1, rdim2)
       assert(t2.multiIndex(t2i) == (rdim1, rdim2))
-      
+
       val t3 = new DenseTensor3(dim1,dim2,dim3)
       v = 0.0; for (i <- 0 until dim1; j <- 0 until dim2; k <- 0 until dim3) { t3(i, j, k) = v; v += 1.0 }
       v = 0.0; for (i <- 0 until dim1*dim2*dim3) { assert(t3(i) == v); v += 1.0 }
@@ -72,8 +75,7 @@ object TestSampleRank  extends cc.factorie.util.FastLogging{
       val t4i = t4.singleIndex(rdim1, rdim2, rdim3, rdim4)
       assert(t4.multiIndex(t4i) == (rdim1, rdim2, rdim3, rdim4))
     }
-    
-    
+
     val labels = List("n", "y").map(s => new Instance(s)).map(_.label)
     logger.debug("feature domain: "+InstanceDomain.dimensionDomain.mkString(" "))
     logger.debug("feature tensors:\n"+labels.map(l => l.instance.value.toString+"\n"))

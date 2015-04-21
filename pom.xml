@@ -150,6 +150,17 @@ limitations under the License.
     </dependency>
 
     <dependency>
+      <groupId>org.json4s</groupId>
+      <artifactId>json4s-core_${scala.majorVersion}</artifactId>
+      <version>3.2.9</version>
+    </dependency>
+    <dependency>
+      <groupId>org.json4s</groupId>
+      <artifactId>json4s-jackson_${scala.majorVersion}</artifactId>
+      <version>3.2.9</version>
+    </dependency>
+
+    <dependency>
       <groupId>org.jblas</groupId>
       <artifactId>jblas</artifactId>
       <version>1.2.3</version>
@@ -229,12 +240,8 @@ limitations under the License.
           </executions>
           <configuration>
             <recompileMode>incremental</recompileMode>
-            <useZincServer>true</useZincServer>
+            <useZincServer>false</useZincServer>
             <scalaVersion>${scala.majorVersion}${scala.minorVersion}</scalaVersion>
-            <jvmArgs>
-              <jvmArg>-Xms64m</jvmArg>
-              <jvmArg>-Xmx1800m</jvmArg>
-            </jvmArgs>
           </configuration>
         </plugin>
 
@@ -248,6 +255,11 @@ limitations under the License.
           </configuration>
         </plugin>
 
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-surefire-plugin</artifactId>
+          <version>2.7</version>
+        </plugin>
 
         <plugin>
           <groupId>org.scalatest</groupId>
@@ -267,6 +279,25 @@ limitations under the License.
             </execution>
           </executions>
         </plugin>
+
+        <plugin>
+          <groupId>edu.umass.cs.iesl</groupId>
+          <artifactId>jflex-scala-maven-plugin</artifactId>
+          <version>1.6.1</version>
+          <executions>
+            <execution>
+              <goals>
+                <goal>generate</goal>
+              </goals>
+              <configuration>
+                <lexDefinitions>
+                  <lexDefinition>src/main/scala/cc/factorie/app/nlp/segment</lexDefinition>
+                </lexDefinitions>
+              </configuration>
+            </execution>
+          </executions>
+        </plugin>
+
       </plugins>
     </build>
 
@@ -354,8 +385,6 @@ limitations under the License.
               <version>1.0.0</version>
               <configuration>
                 <scalaVersion>${scala.majorVersion}${scala.minorVersion}</scalaVersion>
-              <!--   <minimumCoverage>80</minimumCoverage> -->
-              <!--   <failOnMinimumCoverage>true</failOnMinimumCoverage> -->
               </configuration>
               <executions>
                 <execution>
@@ -399,12 +428,8 @@ limitations under the License.
                 </executions>
                 <configuration>
                   <recompileMode>incremental</recompileMode>
-                  <useZincServer>true</useZincServer>
+                  <useZincServer>false</useZincServer>
                   <scalaVersion>${scala.majorVersion}${scala.minorVersion}</scalaVersion>
-                  <jvmArgs>
-                    <jvmArg>-Xms64m</jvmArg>
-                    <jvmArg>-Xmx1800m</jvmArg>
-                  </jvmArgs>
                 </configuration>
               </plugin>
 

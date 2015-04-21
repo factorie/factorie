@@ -50,7 +50,7 @@ trait VectorClassifier[V<:DiscreteVar, Features<:VectorVar] extends Classifier[V
 /** A VectorClassifier in which the score for each class is a dot-product between the observed feature vector and a vector of parameters.
     Examples include NaiveBayes, MultivariateLogisticRegression, LinearSVM, and many others.
     Counter-examples include KNearestNeighbor. */
-class LinearVectorClassifier[L<:DiscreteVar,F<:VectorVar](numLabels:Int, numFeatures:Int, val labelToFeatures:L=>F) extends LinearMulticlassClassifier(numLabels, numFeatures) with VectorClassifier[L,F] {
+class LinearVectorClassifier[L<:DiscreteVar,F<:VectorVar](numLabels:Int, numFeatures:Int, val labelToFeatures:L=>F) extends LinearMulticlassClassifier(numLabels, numFeatures) with VectorClassifier[L,F] with Serializable {
   def classification(v:L): Classification[L] = new Classification(v, predict(labelToFeatures(v).value))
   override def bestLabelIndex(v:L): Int = predict(labelToFeatures(v).value).maxIndex
 }

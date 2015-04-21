@@ -180,6 +180,7 @@ class OntonotesChainPosTagger extends ChainPosTagger((t:Token) => new PennPosTag
 }
 object OntonotesChainPosTagger extends OntonotesChainPosTagger(ClasspathURL[OntonotesChainPosTagger](".factorie"))
 
+
 class ChainPosTrainer[A<:PosTag, B<:ChainPosTagger[A]](taggerConstructor: () => B, loadingMethod:(String) => Seq[Document])(implicit ct:ClassTag[A]) extends HyperparameterMain {
   def evaluateParameters(args: Array[String]): Double = {
     implicit val random = new scala.util.Random(0)
@@ -266,3 +267,43 @@ object ChainPosOptimizer {
   }
 }
 
+
+class SpanishChainPosTagger extends ChainPosTagger((t:Token) => new SpanishPosTag(t, 0)) {
+  def this(url: java.net.URL) = {
+    this()
+    deserialize(url.openConnection().getInputStream)
+  }
+
+  def initPOSFeatures(sentence: Sentence): Unit = {
+    import cc.factorie.app.strings.simplifyDigits
+    for (token <- sentence.tokens) {
+      if(token.attr[PosFeatures] ne null)
+        token.attr.remove[PosFeatures]
+
+      val features = token.attr += new PosFeatures(token)
+      val rawWord = token.string
+      val word = simplifyDigits(rawWord).toLowerCase
+      features += "W="+word
+      features += "STEM=" + cc.factorie.app.strings.porterStem(word)
+      features += "SHAPE2=" + cc.factorie.app.strings.stringShape(rawWord, 2)
+      features += "SHAPE3=" + cc.factorie.app.strings.stringShape(rawWord, 3)
+      // pre/suf of length 1..9
+      //for (i <- 1 to 9) {
+      val i = 3
+      features += "SUFFIX" + i + "=" + word.takeRight(i)
+      features += "PREFIX" + i + "=" + word.take(i)
+      //}
+      if (token.isCapitalized) features += "CAPITALIZED"
+      if (token.string.matches("[A-Z]")) features += "CONTAINS_CAPITAL"
+      if (token.string.matches("-")) features += "CONTAINS_DASH"
+      if (token.containsDigit) features += "NUMERIC"
+      if (token.isPunctuation) features += "PUNCTUATION"
+    }
+    addNeighboringFeatureConjunctions(sentence.tokens, (t: Token) => t.attr[PosFeatures], "W=[^@]*$", List(-2), List(-1), List(1), List(-2,-1), List(-1,0))
+  }
+}
+object SpanishChainPosTagger extends SpanishChainPosTagger(ClasspathURL[SpanishChainPosTagger](".factorie"))
+object SpanishChainPosTrainer extends ChainPosTrainer[SpanishPosTag, SpanishChainPosTagger](
+  () => new SpanishChainPosTagger(),
+  (dirName: String) => load.LoadSpanishConll2008.fromFilename(dirName)
+)

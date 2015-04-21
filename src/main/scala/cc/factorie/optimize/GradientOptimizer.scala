@@ -56,3 +56,31 @@ trait L2Regularization extends GradientOptimizer {
     super.step(weights, gradient, value - 0.5 / variance * (weights dot weights))
   }
 }
+
+/** Synchronize on individual Weights template objects for better parallelism in e.g. embedding models */
+trait SynchronizedWeights extends GradientOptimizer {
+  abstract override def step(weights: WeightsSet, gradient: WeightsMap, value: Double): Unit = {
+    for ((k, v) <- gradient.toSeq) k.synchronized {
+      val gradForWeight = new WeightsMap(_.newBlankTensor)
+      gradForWeight(k) = v
+      super.step(weights, gradForWeight, value)
+    }
+  }
+  abstract override def initializeWeights(weights: WeightsSet): Unit = this.synchronized { super.initializeWeights(weights) }
+  abstract override def reset(): Unit = this.synchronized { super.reset() }
+  abstract override def finalizeWeights(weights: WeightsSet): Unit = this.synchronized { super.finalizeWeights(weights) }
+}
+
+/** Synchronize on individual Weights template objects for better parallelism in e.g. embedding models (this one mixes into GradientStep.) */
+trait SynchronizedWeightsStep extends GradientStep {
+  abstract override def doGradStep(weights: WeightsSet, gradient: WeightsMap, value: Double): Unit = {
+    for ((k, v) <- gradient.toSeq) k.synchronized {
+      val gradForWeight = new WeightsMap(_.newBlankTensor)
+      gradForWeight(k) = v
+      super.step(weights, gradForWeight, value)
+    }
+  }
+  override def initializeWeights(weights: WeightsSet): Unit = this.synchronized { super.initializeWeights(weights) }
+  override def reset(): Unit = this.synchronized { super.reset() }
+  override def finalizeWeights(weights: WeightsSet): Unit = this.synchronized { super.finalizeWeights(weights) }
+}

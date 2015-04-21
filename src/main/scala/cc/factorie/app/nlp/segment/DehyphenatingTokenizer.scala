@@ -25,7 +25,7 @@ import scala.collection.mutable.ArrayBuffer
  * @param useTokens if true, other tokens in document are used to check for merge eligibility
  * @author harshal
  */
-class DehyphenatingTokenizer[T <: DocumentAnnotator](tokenizer: T = new DeterministicTokenizer(), dictionary: Set[String] = Set.empty[String], useTokens: Boolean) extends DocumentAnnotator {
+class DehyphenatingTokenizer[T <: DocumentAnnotator](tokenizer: T = DeterministicNormalizingTokenizer, dictionary: Set[String] = Set.empty[String], useTokens: Boolean) extends DocumentAnnotator {
 
   def tokenize(document: Document) = tokenizer.process(document)
 

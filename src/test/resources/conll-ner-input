@@ -1,0 +1,65 @@
+-DOCSTART- -X- -X- O
+
+EU NNP I-NP I-ORG
+rejects VBZ I-VP O
+German JJ I-NP I-MISC
+call NN I-NP O
+to TO I-VP O
+boycott VB I-VP O
+British JJ I-NP I-MISC
+lamb NN I-NP O
+. . O O
+
+Peter NNP I-NP I-PER
+Blackburn NNP I-NP I-PER
+
+BRUSSELS NNP I-NP I-LOC
+1996-08-22 CD I-NP O
+
+The DT I-NP O
+European NNP I-NP I-ORG
+Commission NNP I-NP I-ORG
+said VBD I-VP O
+on IN I-PP O
+Thursday NNP I-NP O
+it PRP B-NP O
+disagreed VBD I-VP O
+with IN I-PP O
+German JJ I-NP I-MISC
+advice NN I-NP O
+to TO I-PP O
+consumers NNS I-NP O
+to TO I-VP O
+shun VB I-VP O
+British JJ I-NP I-MISC
+lamb NN I-NP O
+until IN I-SBAR O
+scientists NNS I-NP O
+determine VBP I-VP O
+whether IN I-SBAR O
+mad JJ I-NP O
+cow NN I-NP O
+disease NN I-NP O
+can MD I-VP O
+be VB I-VP O
+transmitted VBN I-VP O
+to TO I-PP O
+sheep NN I-NP O
+. . O O
+
+-DOCSTART- -X- -X- O
+
+CRICKET NNP I-NP O
+- : O O
+LEICESTERSHIRE NNP I-NP I-ORG
+TAKE NNP I-NP O
+OVER IN I-PP O
+AT NNP I-NP O
+TOP NNP I-NP O
+AFTER NNP I-NP O
+INNINGS NNP I-NP O
+VICTORY NN I-NP O
+. . O O
+
+LONDON NNP I-NP I-LOC
+1996-08-30 CD I-NP O

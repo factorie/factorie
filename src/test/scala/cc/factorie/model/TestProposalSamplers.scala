@@ -10,20 +10,16 @@
    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
    See the License for the specific language governing permissions and
    limitations under the License. */
-package cc.factorie
+package cc.factorie.model
 
 /**
  * @author sameer
  */
 
-import cc.factorie._
-import junit.framework._
-import Assert._
-import scala.util.Random
-import collection.mutable.ArrayBuffer
-import cc.factorie.variable.{LabeledCategoricalVariable, CategoricalDomain}
-import cc.factorie.model.{ItemizedModel, TupleFactorWithStatistics2}
 import cc.factorie.infer.VariablesSettingsSampler
+import cc.factorie.variable.{CategoricalDomain, LabeledCategoricalVariable}
+import junit.framework.Assert._
+import junit.framework._
 
 /**
  * @author sameer

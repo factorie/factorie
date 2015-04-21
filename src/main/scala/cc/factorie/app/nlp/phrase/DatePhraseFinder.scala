@@ -71,7 +71,7 @@ object DatePhraseFinder extends DocumentAnnotator with Parsers with ImplicitConv
   val simpleSep = hasString("[\\-/]")
 
 
-  val yearOnly = (temporalPreps | hasLemma("year")) ~> year <~ acceptIf(!_.posTag.isNoun)(err) ^^ { case y => new DatePhrase(y._1, year = y)}
+  val yearOnly = (temporalPreps | hasLemma("year")) ~> year <~ acceptIf(!_.attr[PennPosTag].isNoun)(err) ^^ { case y => new DatePhrase(y._1, year = y)}
   val onlyMonth: Parser[(Token, Int)] = (monthParser | monthAbbr) ^^ { case monthToken => (monthToken, monthToNr(monthToken.string.substring(0, 3).toLowerCase))}
   val monthOnly: Parser[DatePhrase] = onlyMonth ^^ { case m => new DatePhrase(m._1, month = m._2)}
 

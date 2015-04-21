@@ -36,6 +36,8 @@ class WeightsSet extends TensorSet {
   self =>
   private val _keys = mutable.ArrayBuffer[Weights]()
 
+  def append(key: Weights): Unit = _keys.append(key)
+
   def keys: Seq[Weights] = _keys
   def tensors: Seq[Tensor] = keys.map(_.value)
 
@@ -81,6 +83,13 @@ class WeightsSet extends TensorSet {
     dt += weights.value
     weights.set(dt)
   }
+
+  def filter(pred: Weights => Boolean): WeightsSet = {
+    val ret = new WeightsSet
+    for (k <- keys; if pred(k))
+      ret.append(k)
+    ret
+  }
 }
 
 /** A TensorSet in which the Tensors are not stored in the Weights objects, but in a map inside this object.
@@ -100,10 +109,16 @@ class WeightsMap(defaultTensor: Weights => Tensor) extends TensorSet {
     c
   }
   override def -(other: TensorSet) = { val newT = copy; newT += (other, -1); newT }
+  def filter(pred: Weights => Boolean): WeightsMap = {
+    val ret = new WeightsMap(_.newBlankTensor)
+    for ((k, v) <- toSeq; if pred(k))
+      ret(k) = v
+    ret
+  }
 }
 
 /** A collection of Tensors each associated with a Weights key. */
-trait TensorSet {
+trait TensorSet  extends Serializable {
   def keys: Iterable[Weights]
   def tensors: Iterable[Tensor]
 
@@ -153,6 +168,16 @@ trait Weights1 extends Weights { type Value = Tensor1 }
 trait Weights2 extends Weights { type Value = Tensor2 }
 trait Weights3 extends Weights { type Value = Tensor3 }
 trait Weights4 extends Weights { type Value = Tensor4 }
+
+trait ConstantWeights extends Weights {
+  def newBlankTensor: Value = value.blankCopy.asInstanceOf[Value]
+  def set(t: Tensor): Unit = sys.error("Weights are constant, can't set.")
+}
+
+class ConstantWeights1(val value: Tensor1) extends ConstantWeights with Weights1
+class ConstantWeights2(val value: Tensor2) extends ConstantWeights with Weights2
+class ConstantWeights3(val value: Tensor3) extends ConstantWeights with Weights3
+class ConstantWeights4(val value: Tensor4) extends ConstantWeights with Weights4
 
 /** A Cubbie for serializing a WeightsSet.  Typically used for saving parameters to disk. */
 class WeightsSetCubbie(val ws: WeightsSet) extends Cubbie {

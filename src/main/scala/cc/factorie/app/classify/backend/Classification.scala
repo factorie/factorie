@@ -50,7 +50,7 @@ trait OptimizablePredictor[Prediction, Input] extends Predictor[Prediction, Inpu
   def accumulateObjectiveGradient(accumulator: WeightsMapAccumulator, input: Input, objectiveByPredictionGradient: Prediction, weight: Double): Unit
 }
 
-trait Classifier[Prediction, Input] extends Predictor[Prediction, Input] {
+trait Classifier[Prediction, Input] extends Predictor[Prediction, Input] with Serializable {
   def classification(input: Input): Classification[Prediction]
 }
 
@@ -80,7 +80,7 @@ class ClassifierTemplate[Input, Value <: DiscreteValue, T <: LabeledMutableDiscr
   def score(v1: T#Value, v2: Input): Double = classifier.classification(v2).prediction(v1.asInstanceOf[DiscreteValue].intValue)
 }
 
-trait MulticlassClassifier[Input] extends Classifier[Tensor1, Input] {
+trait MulticlassClassifier[Input] extends Classifier[Tensor1, Input] with Serializable {
   def classification(input: Input) = new MulticlassClassification(predict(input))
   def asTemplate[Value <: DiscreteValue, T <: LabeledMutableDiscreteVar, F <: Var { type Value = Input }](l2f: T => F)(implicit ml: ClassTag[T], mf: ClassTag[F]) =
     new ClassifierTemplate[Input, Value, T, F](MulticlassClassifier.this, l2f)
@@ -117,8 +117,7 @@ trait OptimizingBaseLinearTrainer[Input, Prediction, Output, C <: OptimizablePre
 trait MulticlassClassifierTrainer[C <: MulticlassClassifier[Tensor1]] extends BaseLinearTrainer[Tensor1,Tensor1,Int,C] {
   // Various methods for creating and training a classifier
   def train(labels: Seq[LabeledDiscreteVar], features: Seq[VectorVar], weights: Seq[Double], testLabels: Seq[LabeledDiscreteVar], testFeatures: Seq[TensorVar]): C= {
-    val evaluate = (c: C) => println(f"Test accuracy: ${testFeatures.map(i => c.classification(i.value.asInstanceOf[Tensor1]).bestLabelIndex)
-                                                                                         .zip(testLabels).count(i => i._1 == i._2.target.intValue).toDouble/testLabels.length}%1.4f")
+    val evaluate = (c: C) => println(f"Test accuracy: ${testFeatures.map(i => c.classification(i.value.asInstanceOf[Tensor1]).bestLabelIndex).zip(testLabels).count(i => i._1 == i._2.target.intValue).toDouble/testLabels.length}%1.4f")
     simpleTrain(labels.head.domain.size, features.head.domain.dimensionSize, labels.map(_.target.intValue), features.map(_.value), weights, evaluate)
   }
   def train(labels: Seq[LabeledDiscreteVar], features: Seq[VectorVar], testLabels: Seq[LabeledDiscreteVar], testFeatures: Seq[TensorVar]): C =
@@ -138,8 +137,7 @@ trait MulticlassClassifierTrainer[C <: MulticlassClassifier[Tensor1]] extends Ba
 
   // Various methods for training an already-created classifier
   def train(classifier: C, labels: Seq[LabeledDiscreteVar], features: Seq[VectorVar], weights: Seq[Double], testLabels: Seq[LabeledDiscreteVar], testFeatures: Seq[TensorVar]) {
-    val evaluate = (c: C) => println(f"Test accuracy: ${testFeatures.map(i => c.classification(i.value.asInstanceOf[Tensor1]).bestLabelIndex)
-                                                                                         .zip(testLabels).count(i => i._1 == i._2.target.intValue).toDouble/testLabels.length}%1.4f")
+    val evaluate = (c: C) => println(f"Test accuracy: ${testFeatures.map(i => c.classification(i.value.asInstanceOf[Tensor1]).bestLabelIndex).zip(testLabels).count(i => i._1 == i._2.target.intValue).toDouble/testLabels.length}%1.4f")
     baseTrain(classifier, labels.map(_.target.intValue), features.map(_.value), weights, evaluate)
   }
   def train(classifier: C, labels: Seq[LabeledDiscreteVar], features: Seq[VectorVar], testLabels: Seq[LabeledDiscreteVar], testFeatures: Seq[TensorVar]): Unit =
