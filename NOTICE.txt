@@ -1,0 +1,32 @@
+FACTORIE
+
+This software is Copyright (C) 2008-2015 University of Massachusetts
+Amherst, Department of Computer Science, and is licensed under the
+terms of the Apache License, Version 2.0 (see LICENSE.txt) or (at your option)
+any subsequent version.
+
+The license is approved by the Open Source Initiative, and is available
+from their website at http://www.opensource.org.
+
+THIRD PARTY COMPONENTS
+
+The JBLAS linear algebra library is Copyright (c) 2009, Mikio L. Braun and contributors
+All rights reserved. BSD-style license/disclaimer included in LICENSE.txt
+
+The LogGamma and DiGamma implementations are based on code from the Apache Commons Math
+library, version 3.2, licensed under the Apache License 2.0:
+Copyright 2001-2013 The Apache Software Foundation
+
+The PunktTokenizer component is based on code from the NLTK library,
+ported from Python and modified, licensed under Apache License 2.0:
+Copyright (C) 2001-2012 NLTK Project
+Bird, Steven, Edward Loper and Ewan Klein (2009).
+Natural Language Processing with Python.  O'Reilly Media Inc.
+
+The WordNet and WordNetLemmatizer components are based on code from
+the WordNet Library, ported from C and modified, licensed under
+WordNet 3.0 license (BSD-like; see LICENSE.txt)
+
+The AhoCorasick and TrieNode classes are based on code licensed to UMass
+and the User under the ICLA Apache contributor agreement:
+Copyright C 2014, 2015, Oracle and/or its affiliates. All rights reserved.
