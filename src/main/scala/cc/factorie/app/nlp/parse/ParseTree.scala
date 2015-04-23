@@ -46,7 +46,6 @@ class ParseTree(val sentence:Sentence, theTargetParents:Array[Int], theTargetLab
   def this(sentence:Sentence, theTargetParents:Seq[Int], theTargetLabels:Seq[String]) = this(sentence, theTargetParents.toArray, theTargetLabels.map(c => ParseTreeLabelDomain.index(c)).toArray)
   def check(parents:Array[Int]): Unit = {
     val l = sentence.length; var i = 0; while (i < parents.length) {
-      println(s"${parents(i)} / $l")
       require(parents(i) < l)
       i += 1
     }
