@@ -11,7 +11,7 @@ import cc.factorie.util.{DoubleSeq, RangeIntSeq, DenseDoubleSeq}
  * This works much like AdaGradRDA, but applies the l1 and l2 regularization to the dual, and the adaptive learning rate to the primal iterates.
  * This provides better accuracy in practice while preserving the sparsifying properties of dual-averaging based l1 regularization.
  *
- * @param beta beta is a ridge that is added to the "covariance matrix" of gradients that keeps learning rates from being too big initiall
+ * @param beta beta is a ridge that is added to the "covariance matrix" of gradients that keeps learning rates from being too big initially
  * @param alpha The initial learning rate
  * @param l1 The strength of l1 regularization
  * @param l2 The strength of l2 regularization

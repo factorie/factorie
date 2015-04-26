@@ -26,14 +26,11 @@ import cc.factorie.model.{WeightsMap, WeightsSet}
  *
  * Tuning the rate an delta parameters is often not necessary.
  *
- * The regularizers, however, are per-example, which mean that their value should be set to be a very
- * small number, on the order of 0.01/num_training_examples, and these values should be tuned.
  * @param delta A large value of delta slows the rate at which the learning rates go down initially
  * @param rate The initial learning rate
  * @param l1 The strength of l1 regularization
  * @param l2 The strength of l2 regularization
  * @param numExamples The number of examples for online training, used to scale regularizers
- * @author Alexandre Passos
  */
 class AdaGradRDA(val delta: Double = 0.1, val rate: Double = 0.1, val l1: Double = 0.0, val l2: Double = 0.0, val numExamples: Int = 1) extends GradientOptimizer {
   var initialized = false
