@@ -369,17 +369,29 @@ trait Family3[N1<:Var,N2<:Var,N3<:Var] extends FamilyWithNeighborDomains {
   }
   // For implementing sparsity in belief propagation
   def hasLimitedDiscreteValues123 = limitedDiscreteValues123 != null && limitedDiscreteValues123.activeDomainSize < limitedDiscreteValues123.length
-  protected def getLimitedDiscreteValues123(factor:Factor3[VectorVar,VectorVar,VectorVar]): SparseBinaryTensor3 = { if (limitedDiscreteValues123 eq null) limitedDiscreteValues123 = new SparseBinaryTensor3(factor._1.domain.dimensionSize, factor._2.domain.dimensionSize, factor._3.domain.dimensionSize); limitedDiscreteValues123 }
+  protected def getLimitedDiscreteValues123(factor:Factor3[VectorVar,VectorVar,VectorVar]): SparseBinaryTensor3 = {
+    if (limitedDiscreteValues123 eq null) {
+      limitedDiscreteValues123 = new SparseBinaryTensor3(factor._1.domain.dimensionSize, factor._2.domain.dimensionSize, factor._3.domain.dimensionSize)
+      for (i <- 0 to limitedDiscreteValues123.size) limitedDiscreteValues123.+=(i, 1.0)
+    }; limitedDiscreteValues123 }
   var limitedDiscreteValues123: SparseBinaryTensor3 = null
 
   def hasLimitedDiscreteValues12 = limitedDiscreteValues12 != null && limitedDiscreteValues12.activeDomainSize < limitedDiscreteValues12.length
-  protected def getLimitedDiscreteValues12(factor:Factor3[VectorVar,VectorVar,_]): SparseBinaryTensor2 = { if (limitedDiscreteValues12 eq null) limitedDiscreteValues12 = new SparseBinaryTensor2(factor._1.domain.dimensionSize, factor._2.domain.dimensionSize); limitedDiscreteValues12 }
+  protected def getLimitedDiscreteValues12(factor:Factor3[VectorVar,VectorVar,_]): SparseBinaryTensor2 = {
+    if (limitedDiscreteValues12 eq null) {
+      limitedDiscreteValues12 = new SparseBinaryTensor2(factor._1.domain.dimensionSize, factor._2.domain.dimensionSize)
+      for (i <- 0 to limitedDiscreteValues12.size) limitedDiscreteValues12.+=(i, 1.0)
+    }; limitedDiscreteValues12 }
   var limitedDiscreteValues12: SparseBinaryTensor2 = null
-  
+
   def hasLimitedDiscreteValues1 = limitedDiscreteValues1 != null && limitedDiscreteValues1.activeDomainSize < limitedDiscreteValues1.length
-  protected def getLimitedDiscreteValues1(factor:Factor3[VectorVar,_,_]): SparseBinaryTensor1 = { if (limitedDiscreteValues1 eq null) limitedDiscreteValues1 = new SparseBinaryTensor1(factor._1.domain.dimensionSize); limitedDiscreteValues1 }
+  protected def getLimitedDiscreteValues1(factor:Factor3[VectorVar,_,_]): SparseBinaryTensor1 = {
+    if (limitedDiscreteValues1 eq null) {
+      limitedDiscreteValues1 = new SparseBinaryTensor1(factor._1.domain.dimensionSize)
+      for (i <- 0 to limitedDiscreteValues1.size) limitedDiscreteValues1.+=(i, 1.0)
+    }; limitedDiscreteValues1 }
   var limitedDiscreteValues1: SparseBinaryTensor1 = null
-  
+
 }
 
 trait TupleFamily3[N1<:Var,N2<:Var,N3<:Var] extends Family3[N1,N2,N3] {
