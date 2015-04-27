@@ -50,12 +50,12 @@ abstract class Factor3[N1<:Var,N2<:Var,N3<:Var](val _1:N1, val _2:N2, val _3:N3)
   // For implementing sparsity in belief propagation.  
   // Note that we do not provide all combinations/orderings of neighbors.  
   // Generally predicted DiscreteVars should be the first neighbors.
-  def hasLimitedDiscreteValues123: Boolean = limitedDiscreteValues123.activeDomainSize < limitedDiscreteValues123.length
-  def limitedDiscreteValues123: SparseBinaryTensor3 = throw new Error("This Factor type does not implement limitedDiscreteValues123: "+getClass)
-  def hasLimitedDiscreteValues12: Boolean = limitedDiscreteValues12.activeDomainSize < limitedDiscreteValues12.length
-  def limitedDiscreteValues12: SparseBinaryTensor2 = throw new Error("This Factor type does not implement limitedDiscreteValues12: "+getClass)
-  def hasLimitedDiscreteValues1: Boolean = limitedDiscreteValues1.activeDomainSize < limitedDiscreteValues1.length
-  def limitedDiscreteValues1: SparseBinaryTensor1 = throw new Error("This Factor type does not implement limitedDiscreteValues1: "+getClass)
+  def hasLimitedDiscreteValues123: Boolean = limitedDiscreteValues123 != null && limitedDiscreteValues123.activeDomainSize < limitedDiscreteValues123.length
+  def limitedDiscreteValues123: SparseBinaryTensor3 = null // throw new Error("This Factor type does not implement limitedDiscreteValues123: "+getClass)
+  def hasLimitedDiscreteValues12: Boolean = limitedDiscreteValues12 != null && limitedDiscreteValues12.activeDomainSize < limitedDiscreteValues12.length
+  def limitedDiscreteValues12: SparseBinaryTensor2 = null // throw new Error("This Factor type does not implement limitedDiscreteValues12: "+getClass)
+  def hasLimitedDiscreteValues1: Boolean = limitedDiscreteValues1 != null && limitedDiscreteValues1.activeDomainSize < limitedDiscreteValues1.length
+  def limitedDiscreteValues1: SparseBinaryTensor1 = null // throw new Error("This Factor type does not implement limitedDiscreteValues1: "+getClass)
 
   /** Given the Tensor value of neighbors _2 and _3, return a Tensor1 containing the scores for each possible value neighbor _1, which must be a DiscreteVar.
       Note that the returned Tensor may be sparse if this factor is set up for limited values iteration.
@@ -348,9 +348,9 @@ trait Family3[N1<:Var,N2<:Var,N3<:Var] extends FamilyWithNeighborDomains {
     override def valuesStatistics(tensor:Tensor): Tensor = Family3.this.valuesStatistics(tensor)
     override def statisticsAreValues: Boolean = Family3.this.statisticsAreValues
     //override def valuesScore(tensor:Tensor): Double = thisFamily.valuesScore(tensor) // TODO Consider implementing match here to use available _1 domain
-    override def limitedDiscreteValues123: SparseBinaryTensor3 = Family3.this.getLimitedDiscreteValues123(this.asInstanceOf[Factor3[VectorVar,VectorVar,VectorVar]])
-    override def limitedDiscreteValues12: SparseBinaryTensor2 = Family3.this.getLimitedDiscreteValues12(this.asInstanceOf[Factor3[VectorVar,VectorVar,N3]])
-    override def limitedDiscreteValues1: SparseBinaryTensor1 = Family3.this.getLimitedDiscreteValues1(this.asInstanceOf[Factor3[VectorVar,N2,N3]])
+    override def limitedDiscreteValues123: SparseBinaryTensor3 = Family3.this.limitedDiscreteValues123
+    override def limitedDiscreteValues12: SparseBinaryTensor2 = Family3.this.limitedDiscreteValues12
+    override def limitedDiscreteValues1: SparseBinaryTensor1 = Family3.this.limitedDiscreteValues1
   }
   def score(v1:N1#Value, v2:N2#Value, v3:N3#Value): Double
   def statistics(v1:N1#Value, v2:N2#Value, v3:N3#Value): StatisticsType

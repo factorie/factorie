@@ -54,10 +54,18 @@ abstract class Template3[N1<:Var,N2<:Var,N3<:Var](implicit nm1:ClassTag[N1], nm2
 
   def limitDiscreteValuesAsIn(vars:Iterable[DiscreteVar]): Unit = 
     for (v <- vars; factor <- factors(v)) factor.asInstanceOf[model.Factor] match {
-      case factor:Factor3[VectorVar @unchecked,VectorVar @unchecked,VectorVar @unchecked] => (factor._1.isInstanceOf[DiscreteVar], factor._2.isInstanceOf[DiscreteVar], factor._2.isInstanceOf[DiscreteVar]) match {  // TODO No need to check types every time. -akm
-        case (true, true, true) => getLimitedDiscreteValues123(factor).+=(factor._1.asInstanceOf[DiscreteVar].intValue, factor._2.asInstanceOf[DiscreteVar].intValue, factor._3.asInstanceOf[DiscreteVar].intValue)
-        case (true, true, false) => getLimitedDiscreteValues12(factor).+=(factor._1.asInstanceOf[DiscreteVar].intValue, factor._2.asInstanceOf[DiscreteVar].intValue)
-        case (true, false, false) => getLimitedDiscreteValues1(factor).+=(factor._1.asInstanceOf[DiscreteVar].intValue)
+      case factor:Factor3[VectorVar @unchecked,VectorVar @unchecked,VectorVar @unchecked] =>
+        (classOf[DiscreteVar].isAssignableFrom(neighborClass1), classOf[DiscreteVar].isAssignableFrom(neighborClass2), classOf[DiscreteVar].isAssignableFrom(neighborClass3)) match {
+//        (factor._1.isInstanceOf[DiscreteVar], factor._2.isInstanceOf[DiscreteVar], factor._3.isInstanceOf[DiscreteVar]) match {  // TODO No need to check types every time. -akm
+        case (true, true, true) =>
+          getLimitedDiscreteValues123(factor).+=(factor._1.asInstanceOf[DiscreteVar].intValue, factor._2.asInstanceOf[DiscreteVar].intValue, factor._3.asInstanceOf[DiscreteVar].intValue)
+          getLimitedDiscreteValues12(factor).+=(factor._1.asInstanceOf[DiscreteVar].intValue, factor._2.asInstanceOf[DiscreteVar].intValue)
+          getLimitedDiscreteValues1(factor).+=(factor._1.asInstanceOf[DiscreteVar].intValue)
+        case (true, true, false) =>
+          getLimitedDiscreteValues12(factor).+=(factor._1.asInstanceOf[DiscreteVar].intValue, factor._2.asInstanceOf[DiscreteVar].intValue)
+          getLimitedDiscreteValues1(factor).+=(factor._1.asInstanceOf[DiscreteVar].intValue)
+        case (true, false, false) =>
+          getLimitedDiscreteValues1(factor).+=(factor._1.asInstanceOf[DiscreteVar].intValue)
         case (false, false, false) => {}
         case _ => throw new Error("Combination of DiscreteVar not yet implemented.")
       } 
