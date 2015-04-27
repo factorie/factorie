@@ -455,10 +455,6 @@ class TestBP extends util.FastLogging {
       override def factors(variables: Iterable[Var]): Iterable[Factor] = {
         List(errorModel.Factor(firstVar, secondVar, featuresVar))
       }
-
-      // THE LACK OF "def limitedDiscreteValues12" IS THE POINT OF THIS TEST:
-      // a naive user won't override limitedDiscreteValues12
-      // they will be surprised when the BP below here doesn't work
     }
 
     // Do the inference over firstVar and secondVar using BP on a Tree
@@ -466,10 +462,14 @@ class TestBP extends util.FastLogging {
     // Get the marginals
     val m1 : DiscreteMarginal1[BooleanVariable] = sumExactBeliefs.getMarginal(firstVar).get.asInstanceOf[DiscreteMarginal1[BooleanVariable]]
     val m2 : DiscreteMarginal1[BooleanVariable] = sumExactBeliefs.getMarginal(secondVar).get.asInstanceOf[DiscreteMarginal1[BooleanVariable]]
-    assertEquals(0.8357, m1.proportions.toArray(0), 0.01)
-    assertEquals(0.1652, m1.proportions.toArray(1), 0.01)
-    assertEquals(0.6937, m2.proportions.toArray(0), 0.01)
-    assertEquals(0.3063, m2.proportions.toArray(1), 0.01)
+
+//    println(m1.proportions)
+//    println(m2.proportions)
+
+    assertEquals(0.8737, m1.proportions.toArray(0), 0.01)
+    assertEquals(0.1263, m1.proportions.toArray(1), 0.01)
+    assertEquals(0.8327, m2.proportions.toArray(0), 0.01)
+    assertEquals(0.1673, m2.proportions.toArray(1), 0.01)
   }
 
   @Test def tree3() {
