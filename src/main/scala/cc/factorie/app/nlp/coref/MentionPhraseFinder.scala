@@ -57,7 +57,7 @@ object PronounFinder extends MentionPhraseFinder {
 /** Apply returns a list of proper noun phrases, given BilouConllNerTags.
     @author Andrew McCallum */
 object ConllProperNounPhraseFinder extends MentionPhraseFinder {
-  def prereqAttrs = Seq(classOf[BilouConllNerTag])
+  def prereqAttrs = Seq(classOf[BilouConllNerTag], classOf[PennPosTag])
   def apply(doc:Document): Seq[Phrase] = {
     val result = new ArrayBuffer[Phrase]
     for (section <- doc.sections; token <- section.tokens) {
@@ -75,12 +75,12 @@ object ConllProperNounPhraseFinder extends MentionPhraseFinder {
             // TODO Be more clever in determining the headTokenOffset
             val phrase = new Phrase(section, token.positionInSection, length=lookFor.positionInSection - token.positionInSection,offsetToHeadToken = -1)
             phrase.attr += new ConllPhraseEntityType(phrase, attr(1))
-            DeterministicNounPhraseTypeLabeler.process(phrase)
+            DeterministicNounPhraseTypeLabeler.process(phrase) // this requires POS tags
             result += phrase
           } else {
             val phrase = new Phrase(section, token.positionInSection, length=1,offsetToHeadToken = -1)
             phrase.attr += new ConllPhraseEntityType(phrase, attr(1))
-            DeterministicNounPhraseTypeLabeler.process(phrase)
+            DeterministicNounPhraseTypeLabeler.process(phrase) // this requires POS tags
             result += phrase
           }
         }

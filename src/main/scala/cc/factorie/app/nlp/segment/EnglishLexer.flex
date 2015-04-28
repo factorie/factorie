@@ -308,7 +308,7 @@ CATCHALL = \P{C}
   }
   else tok()
 }
-{CURRENCY2} / [^A-Z] { printDebug("CURRENCY"); if(normalizeCurrency) tok(NORMALIZED_DOLLAR) else tok() }
+{CURRENCY2} / [^a-zA-Z] { printDebug("CURRENCY"); if(normalizeCurrency) tok(NORMALIZED_DOLLAR) else tok() }
 
 {HASHTAG} { printDebug("HASHTAG"); tok() }
 {ATUSER} { printDebug("ATUSER"); tok() }

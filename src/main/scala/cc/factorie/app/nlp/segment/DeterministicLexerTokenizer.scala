@@ -14,9 +14,7 @@ package cc.factorie.app.nlp.segment
 
 import java.io.StringReader
 
-import cc.factorie.app.nlp.{TokenString, Document, DocumentAnnotator, Token}
-
-import scala.reflect.ClassTag
+import cc.factorie.app.nlp.{Document, DocumentAnnotator, Token}
 
 /** Split a String into a sequence of Tokens.  Aims to adhere to tokenization rules used in Ontonotes and Penn Treebank.
     Note that CoNLL tokenization would use tokenizeAllDashedWords=true.
@@ -169,7 +167,7 @@ object DeterministicNormalizingTokenizer extends DeterministicLexerTokenizer(
 //    println("Tokenizing...")
     val doc = new Document(string)
     val t0 = System.currentTimeMillis()
-    DeterministicNormalizingHtmlTokenizer.process(doc)
+    DeterministicNormalizingTokenizer.process(doc)
     val time = System.currentTimeMillis()-t0
     println(s"Processed ${doc.tokenCount} tokens in ${time}ms (${doc.tokenCount.toDouble/time*1000} tokens/second)")
     println(doc.tokens.map(_.string).mkString("\n"))
