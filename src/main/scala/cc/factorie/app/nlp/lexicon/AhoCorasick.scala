@@ -1,16 +1,33 @@
 /*
- * Copyright C 2014, 2015, Oracle and/or its affiliates. All rights reserved. 
+ * This file is part of "FACTORIE" (Factor graphs, Imperative, Extensible)
+ * http://factorie.cs.umass.edu, http://github.com/factorie
+ * Licensed to the University of Massachusetts Amherst (UMass) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * UMass licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
+
+/*
+ * Copyright C 2014, 2015, Oracle and/or its affiliates. All rights reserved.
+ */
+
 package cc.factorie.app.nlp.lexicon
 
 import cc.factorie.app.nlp.Token
 import cc.factorie.app.nlp.lemma.Lemmatizer
 import cc.factorie.util.Logger
+import cc.factorie.util.JavaHashSet
 import cc.factorie.variable.CategoricalVectorVar
 import java.io.Serializable
-import scala.collection.mutable.Queue
 import scala.collection.mutable.Set
-import scala.collection.JavaConversions._
 
 /**
  * An implementation of the Aho-Corasick (1975) string matching automaton.
@@ -40,7 +57,7 @@ class AhoCorasick(val sep : String) extends Serializable {
     var found = true
     //Iterate through the Trie testing to see if the next token exists
     while ((i < input.length) && (found)) {
-      val head = input.get(i)
+      val head = input(i)
       val next = curNode.lookupToken(head)
       if (next != None) {
         curNode = next.get
@@ -65,13 +82,13 @@ class AhoCorasick(val sep : String) extends Serializable {
     if (!constructed) {
       setTransitions()
     }
-    val mentions : Set[LexiconMention] = new java.util.HashSet[LexiconMention]()
+    val mentions : Set[LexiconMention] = JavaHashSet[LexiconMention]()
     var i = 0
     var curNode = root
     while (i < input.length) {
-      val head : String = input.get(i)
-      //logger.log(Level.INFO, "Head = " + head + ", idx = " + index + ", label = " + label)
+      val head : String = input(i)
       val next = curNode.lookupToken(head)
+      //logger.log(Logger.INFO)("Head = " + head + ", idx = " + i + ", label = " + curNode.label + " next = " + next.toString())
       if (next != None) {
         curNode = next.get
         i = i + 1
@@ -81,16 +98,18 @@ class AhoCorasick(val sep : String) extends Serializable {
         curNode = curNode.failNode
         i = i + 1
       }
-      if (curNode.getEmit) {
-        for (e <- curNode.getOutputSet) {
+      if (curNode.getEmit()) {
+        //logger.log(Logger.INFO)("Emitting from node " + curNode.label)
+        for (e <- curNode.getOutputSet()) {
+          //logger.log(Logger.INFO)("Emitting at depth " + e)
           val strBuffer = new StringBuffer()
           var j = i - e
           while (j < i-1) {
-            strBuffer.append(input.get(j))
+            strBuffer.append(input(j))
             strBuffer.append(sep)
             j = j + 1
           }
-          strBuffer.append(input.get(j))
+          strBuffer.append(input(j))
           mentions.add(new LexiconMention(strBuffer.toString,i-e,i))
         }
       } 
@@ -100,47 +119,26 @@ class AhoCorasick(val sep : String) extends Serializable {
   
   /** Tags a Token's features with a specific tag, if it's context forms a phrase in the trie. */
   def tagMentions(input : Seq[Token], featureFunc : (Token => CategoricalVectorVar[String]), tag : String) : Unit = {
-    if (!constructed) {
-      setTransitions()
-    }
-    var i = 0
-    var curNode = root
-    while (i < input.length) {
-      val tokenString : String = input.get(i).string
-      //logger.log(Level.INFO, "Head = " + head + ", idx = " + index + ", label = " + label)
-      val next = curNode.lookupToken(tokenString)
-      if (next != None) {
-        curNode = next.get
-        i = i + 1
-      } else if (curNode != root) {
-        curNode = curNode.failNode
-      } else {
-        curNode = curNode.failNode
-        i = i + 1
-      }
-      if (curNode.getEmit) {
-        //annotate tokens
-        var j = i - 1
-        while (j >= (i - curNode.getEmitDepth)) {
-          featureFunc(input.get(j)) += tag
-          j = j - 1
-        }
-      } 
-    }
+    innerTagMentions(input,featureFunc,tag,((x : String) => x))
   }
-  
+
   /**
    * Tags a Token's features with a specific tag, if it's context forms a phrase in the trie, after lemmatizing each token.
    */
   def lemmatizeAndTagMentions(input : Seq[Token], featureFunc : (Token => CategoricalVectorVar[String]), tag : String, lemmatizer : Lemmatizer) : Unit = {
+    innerTagMentions(input,featureFunc,tag,lemmatizer.lemmatize)
+  }
+
+  /** Inner function which tags tokens, after applying the supplied lemmatizeFunc. */
+  private def innerTagMentions(input : Seq[Token], featureFunc : (Token => CategoricalVectorVar[String]), tag : String, lemmatizeFunc : (String => String)) : Unit = {
     if (!constructed) {
       setTransitions()
     }
     var i = 0
     var curNode = root
     while (i < input.length) {
-      val tokenString : String = lemmatizer.lemmatize(input.get(i).string)
-      //logger.log(Level.INFO, "Head = " + head + ", idx = " + index + ", label = " + label)
+      val tokenString : String = lemmatizeFunc(input(i).string)
+      //logger.log(Level.INFO)("Head = " + head + ", idx = " + i + ", label = " + curNode.label)
       val next = curNode.lookupToken(tokenString)
       if (next != None) {
         curNode = next.get
@@ -155,13 +153,14 @@ class AhoCorasick(val sep : String) extends Serializable {
         //annotate tokens
         var j = i - 1
         while (j >= (i - curNode.getEmitDepth)) {
-          featureFunc(input.get(j)) += tag
+          featureFunc(input(j)) += tag
+          //logger.log(Logger.INFO)("Tagging text " + input(j))
           j = j - 1
         }
-      } 
+      }
     }
   }
-  
+
   /** Adds a Seq of phrases into the current Trie, and fixes the failure transitions. */
   def ++=(input : Seq[Seq[String]]) : Unit = synchronized {
     logger.log(Logger.INFO)("Appending to automaton")

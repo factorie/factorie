@@ -1,6 +1,24 @@
 /*
- * Copyright C 2014, 2015, Oracle and/or its affiliates. All rights reserved. 
+ * This file is part of "FACTORIE" (Factor graphs, Imperative, Extensible)
+ * http://factorie.cs.umass.edu, http://github.com/factorie
+ * Licensed to the University of Massachusetts Amherst (UMass) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * UMass licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
+
+/*
+ * Copyright C 2014, 2015, Oracle and/or its affiliates. All rights reserved.
+ */
+
 package cc.factorie.app.nlp.lexicon
 
 import cc.factorie.util.Logger
@@ -19,11 +37,10 @@ import scala.collection.mutable.Map
  * the lookup at a specific node fails.
  */
 class TrieNode(val label : String, var root : TrieNode, val sep : String, val depth : Int) extends Serializable {
-  //Most nodes have < 2 elements in the map, so start it smaller than a standard Java HashMap.
-  private var transitionMap : Map[String, TrieNode] = null//JavaHashMap[String,TrieNode](2)
+  private var transitionMap : Map[String, TrieNode] = null
   private var key : String = null // key value pair to save transitionMap overhead
   private var value : TrieNode = null // key value pair to save transitionMap overhead
-  private var outputSet : Set[Int] = null//JavaHashSet[Int](2)
+  private var outputSet : Set[Int] = null
   private var output : Int = -1 // save outputSet overhead
   @transient var failNode : TrieNode = root
   private var phrases : Int = 0
@@ -59,7 +76,7 @@ class TrieNode(val label : String, var root : TrieNode, val sep : String, val de
     if (root == failNode) {
       buffer.append("<root>\n")
     } else {
-      buffer.append(failNode.label)
+      buffer.append(failNode.label + " at depth " + failNode.depth)
       buffer.append("\n")
     }
     buffer.append("Depth = ")

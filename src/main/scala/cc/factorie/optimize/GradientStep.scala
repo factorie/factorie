@@ -88,9 +88,15 @@ trait GradientStep extends GradientOptimizer {
 trait ParameterAveraging extends GradientStep {
   var wTmp: WeightsMap = null
   var isSetToAverage = false
+  private def initWtmp(weights: WeightsSet): Unit = {
+    wTmp = weights.blankDenseMap
+    // need these two lines to de-sparsify the wTmp matrix so we don't have thread-safety issues
+    wTmp += weights
+    wTmp.zero()
+  }
   override def doGradStep(weights: WeightsSet, gradient: WeightsMap, rate: Double): Unit = {
     super.doGradStep(weights, gradient, rate)
-    if (wTmp == null) wTmp = weights.blankDenseMap
+    if (wTmp == null) initWtmp(weights)
     wTmp += (gradient, rate*it)
   }
   def setWeightsToAverage(weights: WeightsSet): Unit = if (!isSetToAverage && (wTmp ne null)) {
@@ -104,7 +110,7 @@ trait ParameterAveraging extends GradientStep {
   override def reset(): Unit = { super.reset(); wTmp = null }
   override def initializeWeights(weights: WeightsSet): Unit = {
     super.initializeWeights(weights)
-    if (wTmp eq null) wTmp = weights.blankDenseMap
+    if (wTmp == null) initWtmp(weights)
     unSetWeightsToAverage(weights)
   }
   override def finalizeWeights(weights: WeightsSet): Unit = {
@@ -131,9 +137,15 @@ trait AdaptiveLearningRate extends GradientStep {
   val delta: Double = 0.1
   private var HSq: WeightsMap = null
   var printed = false
-  override def initializeWeights(weights: WeightsSet) {
+  private def initHSq(weights: WeightsSet): Unit = {
+    HSq = weights.blankDenseMap
+    // need these two lines to de-sparsify the H^2 matrix so we don't have thread-safety issues
+    HSq += weights
+    HSq.zero()
+  }
+  override def initializeWeights(weights: WeightsSet): Unit = {
     super.initializeWeights(weights)
-    if (HSq == null) HSq = weights.blankDenseMap
+    if (HSq == null) initHSq(weights)
   }
   override def reset(): Unit = {
     super.reset()
@@ -143,7 +155,7 @@ trait AdaptiveLearningRate extends GradientStep {
     val eta = rate
 //    val l2 = 0.1
 //    gradient += (weightsSet, -l2)
-    if(HSq == null) HSq =  weights.blankDenseMap
+    if (HSq == null) initHSq(weights)
     for (template <- gradient.keys) {
       gradient(template) match {
         case t: Outer1Tensor2 if t.tensor1.isDense && t.tensor2.isDense =>
@@ -234,7 +246,7 @@ trait AdaptiveLearningRate extends GradientStep {
  */
 trait MarginScaled extends GradientStep {
   val C: Double = 1.0
-  override def lRate(weights: WeightsSet, gradient: WeightsMap, value: Double) ={
+  override def lRate(weights: WeightsSet, gradient: WeightsMap, value: Double): Double = {
     val sqNorm = gradient.twoNormSquared
     if (sqNorm == 0.0) 0.0 else math.max(0.0, math.min(C, -value/gradient.twoNormSquared))
   }

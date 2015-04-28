@@ -419,6 +419,59 @@ class TestBP extends util.FastLogging {
     }
   }
 
+  // This is a test for the naive sparsity for BP in Factor3 messing up results on a graph like this:
+  // Ascii diagram:
+  //
+  //          featureVariable <-- (constant)
+  //                 |
+  //     firstVar ---+--- secondVar
+
+  @Test def defaultSparsity() {
+
+    // Create the variables we'll do inference over
+
+    val firstVar = new BooleanVariable()
+    val secondVar = new BooleanVariable()
+
+    // Create a feature variable (constant during inference), with string features
+
+    val featureDomain: CategoricalDomain[String] = new CategoricalDomain[String]
+    val featuresVar = new FeatureVectorVariable[String]() {
+      override def domain: CategoricalVectorDomain[String] = new CategoricalVectorDomain[String] {
+          override def dimensionDomain = featureDomain
+        }
+    }
+
+    // put a single feature in the variable
+    // "feat1" -> 1.0
+
+    featuresVar.update(featureDomain.index("feat1"), 1.0)(null)
+
+    val model = new Model with Parameters {
+      val errorModel = new DotFamilyWithStatistics3[BooleanVariable,BooleanVariable,FeatureVectorVariable[String]] {
+        val weights = Weights(new la.DenseTensor3(2, 2, 1))
+        weights.value := Array(3.0, 1.0, 0.5, 0.5)
+      }
+      override def factors(variables: Iterable[Var]): Iterable[Factor] = {
+        List(errorModel.Factor(firstVar, secondVar, featuresVar))
+      }
+    }
+
+    // Do the inference over firstVar and secondVar using BP on a Tree
+    val sumExactBeliefs : Summary = BP.inferTreeSum(List(firstVar, secondVar), model)
+    // Get the marginals
+    val m1 : DiscreteMarginal1[BooleanVariable] = sumExactBeliefs.getMarginal(firstVar).get.asInstanceOf[DiscreteMarginal1[BooleanVariable]]
+    val m2 : DiscreteMarginal1[BooleanVariable] = sumExactBeliefs.getMarginal(secondVar).get.asInstanceOf[DiscreteMarginal1[BooleanVariable]]
+
+//    println(m1.proportions)
+//    println(m2.proportions)
+
+    assertEquals(0.8737, m1.proportions.toArray(0), 0.01)
+    assertEquals(0.1263, m1.proportions.toArray(1), 0.01)
+    assertEquals(0.8327, m2.proportions.toArray(0), 0.01)
+    assertEquals(0.1673, m2.proportions.toArray(1), 0.01)
+  }
+
   @Test def tree3() {
     val v1 = new BinVar(0)
     val v2 = new BinVar(1)
