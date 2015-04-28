@@ -298,7 +298,7 @@ CATCHALL = \P{C}
 {DECADE} { printDebug("DECADE"); tok() }
 
 /* For some reason combining these using | makes the lexer go into an infinite loop */
-{CURRENCY1} / [^A-Z] {
+{CURRENCY1} {
   printDebug("CURRENCY")
   if(normalizeCurrency){
     yytext() match{
