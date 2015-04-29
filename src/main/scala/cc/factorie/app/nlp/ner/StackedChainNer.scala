@@ -637,8 +637,7 @@ class OntonotesStackedChainNer(embeddingMap: SkipGramEmbedding,
     if (document.tokenCount > 0) {
       val doc = super.process(document)
       // Add and populated NerSpanList attr to the document
-      var onsb: ner.OntonotesNerSpanBuffer =new ner.OntonotesNerSpanBuffer() ++= document.sections.flatMap(section => BilouOntonotesNerDomain.spanList(section)) 
-      doc.attr+=onsb
+      doc.attr.+= (new ner.OntonotesNerSpanBuffer() ++= document.sections.flatMap(section => BilouOntonotesNerDomain.spanList(section))) 
       doc
     } else document
   }
