@@ -142,8 +142,10 @@ class BasicOntonotesNER extends DocumentAnnotator {
         case model:Model3 => bpPredictDocument(document)
       }
       if (!alreadyHadFeatures) { document.annotators.remove(classOf[FeaturesVariable]); for (token <- document.tokens) token.attr.remove[FeaturesVariable] }
-      // Add and populated NerSpanList attr to the document 
-      document.attr.+=(new ner.OntonotesNerSpanBuffer(document.sections.flatMap(section => BilouOntonotesNerDomain.spanList(section))))
+      // Add and populated NerSpanList attr to the document
+      var onsb: ner.OntonotesNerSpanBuffer =new ner.OntonotesNerSpanBuffer() ++= document.sections.flatMap(section => BilouOntonotesNerDomain.spanList(section)) 
+      println("onsb: "+onsb.size)
+      document.attr+=onsb
     }
     document
   }

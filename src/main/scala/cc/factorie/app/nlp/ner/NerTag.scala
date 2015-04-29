@@ -152,7 +152,7 @@ class LabeledOntonotesNerTag(token:Token, initialCategory:String) extends Ontono
 
 class OntonotesNerSpanLabel(span:TokenSpan, initialCategory:String) extends NerSpanLabel(span, initialCategory) { def domain = OntonotesNerDomain }
 class OntonotesNerSpan(section:Section, start:Int, length:Int, category:String) extends NerSpan(section, start, length) { val label = new OntonotesNerSpanLabel(this, category) }
-class OntonotesNerSpanBuffer(spans:Iterable[OntonotesNerSpan]) extends TokenSpanBuffer[OntonotesNerSpan]
+class OntonotesNerSpanBuffer extends TokenSpanBuffer[OntonotesNerSpan]
 
 
 object BioOntonotesNerDomain extends CategoricalDomain[String] with BIO {
@@ -172,7 +172,7 @@ object BilouOntonotesNerDomain extends CategoricalDomain[String] with BILOU {
   def bilouSuffixIntValue(bilouIntValue:Int): Int = if (bilouIntValue == 0) 0 else ((bilouIntValue - 1) / 4) + 1 
   def spanList(section:Section): OntonotesNerSpanBuffer = {
     val boundaries = bilouBoundaries(section.tokens.map(_.attr[BilouOntonotesNerTag].categoryValue))
-    new OntonotesNerSpanBuffer(boundaries.map(b => new OntonotesNerSpan(section, b._1, b._2, b._3)))
+    new OntonotesNerSpanBuffer ++= boundaries.map(b => new OntonotesNerSpan(section, b._1, b._2, b._3))
   } 
 }
 class BilouOntonotesNerTag(token:Token, initialCategory:String) extends NerTag(token, initialCategory) { def domain = BilouOntonotesNerDomain }
