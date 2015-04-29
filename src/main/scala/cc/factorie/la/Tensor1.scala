@@ -214,6 +214,11 @@ trait SparseBinaryTensorLike1 extends Tensor1 with ArraySparseBinaryTensor { }
 class SparseBinaryTensor1(val dim1:Int) extends SparseBinaryTensorLike1 {
   def this(t:Tensor) = { this(t.length); throw new Error("Not yet implemented.") }
   override def blankCopy: SparseBinaryTensor1 = new SparseBinaryTensor1(dim1)
+  override def copy = {
+    val newT = new SparseBinaryTensor1(dim1)
+    this.foreachActiveElement((i, v) => newT(i) = v)
+    newT
+  }
 }
 class GrowableSparseBinaryTensor1(val sizeProxy:Iterable[Any]) extends SparseBinaryTensorLike1 {
   def dim1: Int = sizeProxy.size

@@ -208,6 +208,11 @@ class TestLexerTokenizer extends JUnitSuite with FastLogging {
       src = "2012-04-05 ethno-centric art-o-torium sure. thing",
       trg = "[2012-04-05, ethno-centric, art-o-torium, sure, ., thing]"
     )
+
+    checkDeterministicLexerTokenizer(
+      src = "Half of investors expect Greece to leave the euro zone.",
+      trg = "[Half, of, investors, expect, Greece, to, leave, the, euro, zone, .]"
+    )
   }
 
   @Test def testDeterministicNormalizingTokenizer(): Unit = {
