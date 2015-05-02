@@ -40,6 +40,7 @@ object JsonCubbieConverter {
           m += name -> toCubbieImpl(value)
         }
         m
+      case JArray(vals) if vals.isEmpty => List.empty[Any] // Handle empty list
       case JArray(vals) => if(vals.forall(_.isInstanceOf[JInt])) { // we assume this was an IntSeq
         new ArrayIntSeq(vals.collect{case JInt(i) => i.toInt}.toArray)
       } else if(vals.forall(_.isInstanceOf[JDouble])) {
