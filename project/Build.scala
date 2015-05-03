@@ -45,6 +45,7 @@ object Build extends sbt.Build {
         Compile.acommonslang,
         Compile.snappy,
         Compile.bliki,
+        Compile.json4s,
         Test.scalatest
       )
     ).
@@ -65,13 +66,15 @@ object Build extends sbt.Build {
 
 object Dependencies {
   val resolutionRepos = Seq(
-    "IESL repo" at "https://dev-iesl.cs.umass.edu/nexus/content/groups/public/",
+//    "IESL repo" at "https://dev-iesl.cs.umass.edu/nexus/content/groups/public/",
     "Scala tools" at "https://oss.sonatype.org/content/groups/scala-tools",
-    "Third party" at "https://dev-iesl.cs.umass.edu/nexus/content/repositories/thirdparty/",
+//    "Third party" at "https://dev-iesl.cs.umass.edu/nexus/content/repositories/thirdparty/",
     //"IESL releases" at "https://dev-iesl.cs.umass.edu/nexus/content/repositories/releases/",
-    "IESL snapshots" at "https://dev-iesl.cs.umass.edu/nexus/content/repositories/snapshots/"
+//    "IESL snapshots" at "https://dev-iesl.cs.umass.edu/nexus/content/repositories/snapshots/",
+    "OSS snapshots" at "https://oss.sonatype.org/content/repositories/snapshots",
+    "OSS releases" at "https://oss.sonatype.org/content/repositories/releases"
   )
-  
+
   object Compile {
     val mongodb  = "org.mongodb" % "mongo-java-driver" % "2.11.1"
     val colt = "org.jblas" % "jblas" % "1.2.3"
@@ -81,6 +84,7 @@ object Dependencies {
     val acommonslang = "commons-lang" % "commons-lang" % "2.6"
     val snappy = "org.xerial.snappy" % "snappy-java" % "1.1.1.3"
     val bliki = "info.bliki.wiki" % "bliki-core" % "3.0.19"
+    val json4s = "org.json4s" % "json4s-core_2.11" % "3.2.9"
   }
 
   object Test {
