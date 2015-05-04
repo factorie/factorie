@@ -6,7 +6,6 @@ script:
     - sudo rm /etc/mavenrc
     - export MAVEN_OPTS="-Xmx2469m -XX:MaxPermSize=512m"
     - mvn clean install
+    - sbt compile
 jdk:
     - oraclejdk8
-scala:
-    - 2.11.2
