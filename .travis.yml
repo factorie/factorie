@@ -8,3 +8,5 @@ script:
     - mvn clean install
 jdk:
     - oraclejdk8
+scala:
+    - 2.11.2
