@@ -12,8 +12,8 @@ object JsonCubbieConverter {
   def toJson(c:Cubbie):JObject = {
     def toJsonImpl(a:Any):JValue = a match {
       case null => JNull
-      case is:IntSeq => is._rawArray.map(toJsonImpl).toIterable  // we can do something cleverer here if we want
-      case ds:DoubleSeq => ds._rawArray.map(toJsonImpl).toIterable
+      case is:IntSeq => is._rawArray.slice(0,is.length).map(toJsonImpl).toIterable  // we can do something cleverer here if we want
+      case ds:DoubleSeq => ds._rawArray.slice(0,ds.length).map(toJsonImpl).toIterable
       case m:mutable.Map[_,_] =>
         m.toMap.map{case (k,v) => k.toString -> toJsonImpl(v)}
       case it:Iterable[_] =>
