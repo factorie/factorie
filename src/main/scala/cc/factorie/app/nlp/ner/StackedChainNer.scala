@@ -566,7 +566,49 @@ class StackedChainNer[L<:NerTag](labelDomain: CategoricalDomain[String],
   }
 }
 
+object StackedChainNer {
+  def initLexicons() : Unit = synchronized {
+    lexicon.iesl.Month.toString()
+    lexicon.iesl.Day.toString()
 
+    lexicon.iesl.PersonFirst.toString()
+    lexicon.iesl.PersonFirstHigh.toString()
+    lexicon.iesl.PersonFirstHighest.toString()
+    lexicon.iesl.PersonFirstMedium.toString()
+
+    lexicon.iesl.PersonLast.toString()
+    lexicon.iesl.PersonLastHigh.toString()
+    lexicon.iesl.PersonLastHighest.toString()
+    lexicon.iesl.PersonLastMedium.toString()
+
+    lexicon.iesl.PersonHonorific.toString()
+
+    lexicon.iesl.Company.toString()
+    lexicon.iesl.JobTitle.toString()
+    lexicon.iesl.OrgSuffix.toString()
+
+    lexicon.iesl.Country.toString()
+    lexicon.iesl.City.toString()
+    lexicon.iesl.PlaceSuffix.toString()
+    lexicon.iesl.USState.toString()
+    lexicon.iesl.Continents.toString()
+
+    lexicon.wikipedia.Person.toString()
+    lexicon.wikipedia.Event.toString()
+    lexicon.wikipedia.Location.toString()
+    lexicon.wikipedia.Organization.toString()
+    lexicon.wikipedia.ManMadeThing.toString()
+    lexicon.iesl.Demonym.toString()
+
+    lexicon.wikipedia.Book.toString()
+    lexicon.wikipedia.Business.toString()
+    lexicon.wikipedia.Film.toString()
+
+    lexicon.wikipedia.LocationAndRedirect.toString()
+    lexicon.wikipedia.PersonAndRedirect.toString()
+    lexicon.wikipedia.OrganizationAndRedirect.toString()
+  }
+}
 
 class ConllStackedChainNer(embeddingMap: SkipGramEmbedding,
                            embeddingDim: Int,
@@ -595,7 +637,7 @@ class OntonotesStackedChainNer(embeddingMap: SkipGramEmbedding,
     if (document.tokenCount > 0) {
       val doc = super.process(document)
       // Add and populated NerSpanList attr to the document
-      doc.attr.+=(new ner.OntonotesNerSpanBuffer(document.sections.flatMap(section => BilouOntonotesNerDomain.spanList(section))))
+      doc.attr.+= (new ner.OntonotesNerSpanBuffer() ++= document.sections.flatMap(section => BilouOntonotesNerDomain.spanList(section))) 
       doc
     } else document
   }

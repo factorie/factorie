@@ -15,7 +15,7 @@ object JsonCubbieConverter {
       case is:IntSeq => is._rawArray.map(toJsonImpl).toIterable  // we can do something cleverer here if we want
       case ds:DoubleSeq => ds._rawArray.map(toJsonImpl).toIterable
       case m:mutable.Map[_,_] =>
-        m.toMap.map{case (k,v) => println((k,v));k.toString -> toJsonImpl(v)}
+        m.toMap.map{case (k,v) => k.toString -> toJsonImpl(v)}
       case it:Iterable[_] =>
         it.map(toJsonImpl)
       case i:Int => i
@@ -40,6 +40,7 @@ object JsonCubbieConverter {
           m += name -> toCubbieImpl(value)
         }
         m
+      case JArray(vals) if vals.isEmpty => List.empty[Any] // Handle empty list
       case JArray(vals) => if(vals.forall(_.isInstanceOf[JInt])) { // we assume this was an IntSeq
         new ArrayIntSeq(vals.collect{case JInt(i) => i.toInt}.toArray)
       } else if(vals.forall(_.isInstanceOf[JDouble])) {

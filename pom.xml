@@ -291,7 +291,7 @@ limitations under the License.
               </goals>
               <configuration>
                 <lexDefinitions>
-                  <lexDefinition>src/main/scala/cc/factorie/app/nlp/segment</lexDefinition>
+                  <lexDefinition>src/main/flex</lexDefinition>
                 </lexDefinitions>
               </configuration>
             </execution>

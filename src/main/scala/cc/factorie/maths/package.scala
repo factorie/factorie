@@ -634,14 +634,6 @@ package object maths {
     i - 1
   }
 
-  /** Draw a single sample from multinomial "a".  Assumes that the elements of "a" already sum to 1.0. */
-  //@deprecated("Very inefficient due to boxing") def nextDiscrete (a:IndexedSeq[Double])(implicit r:Random): Int = {
-  //  var b = 0.0; val s = nextUniform(r); var i = 0
-  //  while (b <= s && i < a.length) { b += a(i); i += 1 }
-  //  assert(i > 0)
-  //  i - 1
-  //}
-
   /** draw a single sample from (unnormalized) multinomial "a", with normalizing factor "sum". */
   def nextDiscrete(a: Array[Double], sum: Double)(implicit r: Random): Int = {
     assert(sum > 0.0, "sum = "+sum)
@@ -651,31 +643,8 @@ package object maths {
     i - 1
   }
 
-  /*
-   Directly adapted from:
-   Michael Wichura,The Percentage Points of the Normal Distribution, 
-   Applied Statistics, Volume 37, Number 3, pages 477-484, 1988.
-   Algorithm AS 241,
-   */
-  
-  // TODO Not thread-safe!
-  private var nextGaussianValue = 0.0
-  private var haveNextGaussianValue = false
-
   /** Return a random double drawn from a Gaussian distribution with mean 0 and variance 1. */
-  def nextGaussian(implicit r: Random): Double = {
-    if (!haveNextGaussianValue) {
-      val v1 = nextUniform(r); val v2 = nextUniform(r)
-      val x1 = math.sqrt(-2*math.log(v1))*math.cos(2*math.Pi*v2)
-      val x2 = math.sqrt(-2*math.log(v1))*math.sin(2*math.Pi*v2)
-      nextGaussianValue = x2
-      haveNextGaussianValue = true
-      x1
-    } else {
-      haveNextGaussianValue = false
-      nextGaussian(r)
-    }
-  }
+  def nextGaussian(implicit r: Random): Double = r.nextGaussian()
 
   /** Return a random double drawn from a Gaussian distribution with mean m and variance s2. */
   def nextGaussian(mean: Double, s2: Double)(implicit r: Random): Double = nextGaussian(r) * math.sqrt(s2)+mean

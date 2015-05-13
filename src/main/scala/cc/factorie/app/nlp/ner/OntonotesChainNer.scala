@@ -142,8 +142,8 @@ class BasicOntonotesNER extends DocumentAnnotator {
         case model:Model3 => bpPredictDocument(document)
       }
       if (!alreadyHadFeatures) { document.annotators.remove(classOf[FeaturesVariable]); for (token <- document.tokens) token.attr.remove[FeaturesVariable] }
-      // Add and populated NerSpanList attr to the document 
-      document.attr.+=(new ner.OntonotesNerSpanBuffer(document.sections.flatMap(section => BilouOntonotesNerDomain.spanList(section))))
+      // Add and populated NerSpanList attr to the document
+      document.attr.+= (new ner.OntonotesNerSpanBuffer() ++= document.sections.flatMap(section => BilouOntonotesNerDomain.spanList(section))) 
     }
     document
   }
@@ -305,14 +305,18 @@ class BasicOntonotesNER extends DocumentAnnotator {
     Trainer.onlineTrain(model3.parameters, examples, evaluate=evaluate)
     new java.io.PrintStream(new File("ner2-test-output")).print(sampleOutputString(testDocs.head.tokens))
   }
-  
-  def train(trainFilename:String, testFilename:String)(implicit random: scala.util.Random): Unit = {
-    val trainDocs = cc.factorie.app.nlp.load.LoadOntonotes5.fromFilename(trainFilename)
-    val testDocs = cc.factorie.app.nlp.load.LoadOntonotes5.fromFilename(testFilename)
+
+  def train(trainDocs:Seq[Document], testDocs:Seq[Document])(implicit random: scala.util.Random): Unit = {
     mainModel match {
       case model:Model2 => trainModel2(trainDocs, testDocs)
       case model:Model3 => trainModel3(trainDocs, testDocs)
     }
+  }
+  
+  def train(trainFilename:String, testFilename:String)(implicit random: scala.util.Random): Unit = {
+    val trainDocs = cc.factorie.app.nlp.load.LoadOntonotes5.fromFilename(trainFilename, nerBilou=true)
+    val testDocs = cc.factorie.app.nlp.load.LoadOntonotes5.fromFilename(testFilename, nerBilou=true)
+    train(trainDocs, testDocs)
   }
   
   // Serialization
