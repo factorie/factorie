@@ -875,9 +875,9 @@ object OntonotesTransitionBasedParser extends OntonotesTransitionBasedParser(cc.
 class TransitionBasedParserArgs extends cc.factorie.util.DefaultCmdOptions with SharedNLPCmdOptions{
   val trainFiles =  new CmdOption("train", Nil.asInstanceOf[List[String]], "FILENAME...", "")
   val testFiles =  new CmdOption("test", Nil.asInstanceOf[List[String]], "FILENAME...", "")
-  val trainDir = new CmdOption("trainDir", "", "FILENAME", "Directory containing training files.")
-  val testDir = new CmdOption("testDir", "", "FILENAME", "Directory containing test files.")
-  val devDir = new CmdOption("devDir", "", "FILENAME", "Directory containing dev files.")
+  val trainDir = new CmdOption("train-dir", "", "FILENAME", "Directory containing training files.")
+  val testDir = new CmdOption("test-dir", "", "FILENAME", "Directory containing test files.")
+  val devDir = new CmdOption("dev-dir", "", "FILENAME", "Directory containing dev files.")
   val devFiles = new CmdOption("dev", Nil.asInstanceOf[List[String]], "FILENAME...", "")
   val dataLoader = new CmdOption("loader", "LoadOntonotes5", "STRING", "Class name of data loader to use")
   val cutoff    = new CmdOption("cutoff", 2, "", "")
@@ -993,8 +993,12 @@ object TransitionBasedParserOptimizer {
     opts.parse(args)
     val actuallySaveModel = opts.saveModel.value
     opts.saveModel.setValue(false) // don't want to save intermediate models, just the best one
-    val memory = 24
-    val cores = 9
+    // good for wsj
+//    val memory = 24
+//    val cores = 9
+    // good for ontonotes
+    val memory = 48
+    val cores = 20
     opts.nThreads.setValue(cores) // make sure we're using the same amount of cores we're allocating
 
     val l1 = cc.factorie.util.HyperParameter(opts.l1, new cc.factorie.util.LogUniformDoubleSampler(1e-10, 1e2))
