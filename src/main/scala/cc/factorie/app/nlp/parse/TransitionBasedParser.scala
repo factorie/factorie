@@ -662,7 +662,7 @@ class TransitionBasedParser extends DocumentAnnotator {
     }
     ParseDecisionDomain.freeze()
     println(s"Label (decision) domain size: ${ParseDecisionDomain.size}")
-    ParseDecisionDomain.dimensionDomain.categories.map(c => ParseDecision(c).readableString).foreach(c => println(c))
+    if(debug) ParseDecisionDomain.dimensionDomain.categories.map(c => ParseDecision(c).readableString).foreach(c => println(c))
 
     /* Print out features */
     if(debug) {
