@@ -314,8 +314,8 @@ class BasicOntonotesNER extends DocumentAnnotator {
   }
   
   def train(trainFilename:String, testFilename:String)(implicit random: scala.util.Random): Unit = {
-    val trainDocs = cc.factorie.app.nlp.load.LoadOntonotes5.fromFilename(trainFilename, nerBilou=true)
-    val testDocs = cc.factorie.app.nlp.load.LoadOntonotes5.fromFilename(testFilename, nerBilou=true)
+    val trainDocs = load.LoadOntonotes5.fromFilename(trainFilename, loadLemma=load.AutoLabel, loadPos=load.AutoLabel, loadParse=load.GoldLabel, loadNer=true, nerBilou=true)
+    val testDocs = load.LoadOntonotes5.fromFilename(testFilename, loadLemma=load.AutoLabel, loadPos=load.AutoLabel, loadParse=load.GoldLabel, loadNer=true, nerBilou=true)
     train(trainDocs, testDocs)
   }
   
