@@ -610,8 +610,8 @@ class TransitionBasedParser extends DocumentAnnotator {
   }
   lazy val model = new LinearMulticlassClassifier(ParseDecisionDomain.size, FeaturesDomain.dimensionSize)
 
-  def testString(testSentences:Seq[Sentence], extraText: String = ""): String = {
-    val(las, uas, tokSpeed, sentSpeed) = test(testSentences)
+  def testString(testSentences:Seq[Sentence], extraText: String = "", numThreads: Int = 1): String = {
+    val(las, uas, tokSpeed, sentSpeed) = if(numThreads > 1) testPar(testSentences, numThreads) else test(testSentences)
     s"$extraText LAS=$las UAS=$uas ${tokSpeed} tokens/sec ${sentSpeed} sentences/sec"
   }
 
@@ -631,6 +631,15 @@ class TransitionBasedParser extends DocumentAnnotator {
     (ParserEval.calcLas(pred), ParserEval.calcUas(pred), totalTokens*1000.0/totalTime, numSentences*1000.0/totalTime)
   }
 
+  def testPar(testSentences:Seq[Sentence], numThreads: Int): (Double, Double, Double, Double) = {
+    val t0 = System.currentTimeMillis()
+    Threading.parForeach(testSentences, numThreads){s => process(s)}
+    val totalTime = System.currentTimeMillis() - t0
+    val totalTokens = testSentences.map(_.length).sum
+    val pred = testSentences.map(_.attr[ParseTree])
+    (ParserEval.calcLas(pred), ParserEval.calcUas(pred), totalTokens*1000.0/totalTime, testSentences.size*1000.0/totalTime)
+  }
+
   def train(trainSentences: Seq[Sentence], testSentences: Seq[Sentence], lrate: Double = 1.0, delta: Double = 0.1,
             cutoff: Int = 2, numBoostingIterations: Int = 0, useHingeLoss: Boolean = true, useSVM: Boolean = false,
             nThreads: Int = 1, numIterations: Int = 7, l1Factor: Double = 0.01, l2Factor: Double = 0.0001, debug: Boolean = false)
@@ -642,8 +651,8 @@ class TransitionBasedParser extends DocumentAnnotator {
 
     def evaluate() {
       println(model.weights.value.toSeq.count(x => x == 0).toFloat/model.weights.value.length +" sparsity")
-      println(testString(trainSentences, "Train "))
-      println(testString(testSentences,  "Test "))
+      println(testString(trainSentences, "Train ", nThreads))
+      println(testString(testSentences,  "Test ", nThreads))
     }
 
     FeaturesDomain.dimensionDomain.gatherCounts = true
