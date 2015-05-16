@@ -104,7 +104,7 @@ object Classify {
       val readSVMLight = new CmdOption("read-svm-light", "instances", "FILE", "Filename from which to read the instances' labels and features in SVMLight format.")
       val readBinaryFeatures = new CmdOption("read-binary-features", true, "true|false", "If true, features will be binary as opposed to counts.  Default is true.")
 
-      val readTextDirs = new CmdOption("read-text-dirs", "textdir", "DIR...", "Directories from which to read text documents; tokens become features; directory name is the label.")
+      val readTextDirs = new CmdOption("read-text-dirs", "textdir", "DIR...", "Directories from which to read text documents; tokens become features; directory name is the label (or subdirectories if only one directory was specified).")
       val readTextLines = new CmdOption("read-text-lines", "textfile", "FILE.txt", "Filename from which to read the instances' labels and features; first word is the label value")
       val readTextTokenRegex = new CmdOption("read-text-token-regex", "\\p{Alpha}+", "REGEX", "Regular expression defining extent of text tokens.")
       val readTextSkipHeader = new CmdOption("read-text-skip-header", false, "true|false", "Skip text up until double newline.")
@@ -217,7 +217,13 @@ object Classify {
     // Read instances
     if (opts.readTextDirs.wasInvoked) {
       var numDocs = 0; var numDirs = 0
-      for (directory <- opts.readTextDirs.value.split(",")) {
+      var directories = opts.readTextDirs.value.split(",")
+      // if only one directory was provided, then need to read subdirectories instead (directories = subdirectories)
+      if (directories.length == 1){
+        directories = new File(directories(0)).listFiles().map(_.getPath)
+      }
+
+      for (directory <- directories) {
         val directoryFile = new File(directory)
         if (!directoryFile.exists) throw new IllegalArgumentException("Directory " + directory + " does not exist.")
         for (file <- new File(directory).listFiles; if file.isFile) {
