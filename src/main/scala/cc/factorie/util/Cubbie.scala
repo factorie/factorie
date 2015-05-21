@@ -412,8 +412,19 @@ class Cubbie {
   case class TensorSlot(name: String) extends PrimitiveSlot[Tensor]
 
   // These are specially handled in cc.factorie.db.mongo.MongoCubbieCollection
-  case class IntSeqSlot(name:String) extends PrimitiveSlot[IntSeq]
-  case class DoubleSeqSlot(name:String) extends PrimitiveSlot[DoubleSeq]
+  case class IntSeqSlot(name:String) extends PrimitiveSlot[IntSeq] {
+    override def value = _map(name) match {
+      case s: Seq[Any] if s.isEmpty => new IntArrayBuffer()
+      case x: Any => x.asInstanceOf[IntSeq]
+    }
+  }
+  
+  case class DoubleSeqSlot(name:String) extends PrimitiveSlot[DoubleSeq] {
+    override def value = _map(name) match {
+      case s: Seq[Any] if s.isEmpty => new DoubleArrayBuffer()
+      case x: Any => x.asInstanceOf[DoubleSeq]
+    }
+  }
 
 
   /** This allows any type to be stored in a slot.  But note that BSON and JSON only support the above restricted set of types.
