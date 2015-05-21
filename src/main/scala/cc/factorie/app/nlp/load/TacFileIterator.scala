@@ -8,10 +8,10 @@ import scala.collection.JavaConverters._
 import cc.factorie.app.nlp.load.TACDocTypes.TACDocumentType
 
 object TACDocTypes {
-  sealed trait TACDocumentType
-  case object Newswire extends TACDocumentType
-  case object DiscussionForum extends TACDocumentType
-  case object WebDocument extends TACDocumentType
+  sealed trait TACDocumentType {def toIndex:Int}
+  case object Newswire extends TACDocumentType {val toIndex = 0}
+  case object DiscussionForum extends TACDocumentType {val toIndex = 1}
+  case object WebDocument extends TACDocumentType {val toIndex = 2}
 
   object TACDocumentType {
     def fromFilePath(f:File):TACDocumentType = {
@@ -26,13 +26,21 @@ object TACDocTypes {
         throw new Exception("Unable to assign document at path %s to a document type".format(path))
       }
     }
+
+    def fromIndex(i:Int) = i match {
+      case 0 => Newswire
+      case 1 => DiscussionForum
+      case 2 => WebDocument
+      case otw =>
+        throw new Exception("Unable to assign index %s to a document type".format(otw))
+    }
   }
 }
 
-case class DocStringWithId(id:String, docString:String, sourceFilename:String) {
+case class DocStringWithId(id:String, docString:String, sourceFilename:String, docTypeIdx:Int) {
   def toDocument = {
     val doc = new Document(docString).setName(id)
-    doc.attr += TACDocumentType.fromFilePath(new File(sourceFilename))
+    doc.attr += TACDocumentType.fromIndex(docTypeIdx)
     doc.annotators += classOf[TACDocumentType] -> classOf[TACDocumentType]
     doc
   }
@@ -42,7 +50,7 @@ case class DocStringWithId(id:String, docString:String, sourceFilename:String) {
  * The base class for splitting up tac files. Reads an iterator of lines of a tac
  * file an returns an iterator of document strings with their names.
  */
-class TacStringIterator(lines:Iterator[String], filename:String="") extends Iterator[DocStringWithId] {
+class TacStringIterator(lines:Iterator[String], filename:String="", typeIdx:Option[Int]=None) extends Iterator[DocStringWithId] {
   private val docEndString = """</doc>"""
   private val webDocStartString = """<DOC>"""
   private val docIdRegex = """(?i)<DOC ID="([^"]+)"[^>]*>""".r
@@ -89,7 +97,7 @@ class TacStringIterator(lines:Iterator[String], filename:String="") extends Iter
     advanceLine()
     val docString = docBuffer.toString()
     docBuffer = new StringBuilder()
-    DocStringWithId(docId, docString, filename)
+    DocStringWithId(docId, docString, filename, typeIdx.getOrElse(TACDocumentType.fromFilePath(new File(filename)).toIndex))
   }
 
   def hasNext = line != null
