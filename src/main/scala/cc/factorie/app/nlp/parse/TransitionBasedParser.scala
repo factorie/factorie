@@ -898,9 +898,9 @@ class TransitionBasedParserArgs extends cc.factorie.util.DefaultCmdOptions with 
   val saveModel = new CmdOption("save-model", true,"BOOLEAN","whether to write out a model file or not")
   val l1 = new CmdOption("l1", 0.01, "FLOAT", "l1 regularization weight")
   val l2 = new CmdOption("l2", 0.00001, "FLOAT", "l2 regularization weight")
-  val rate = new CmdOption("rate", 1.0,"FLOAT","base learning rate")
+  val rate = new CmdOption("rate", 1.0,"FLOAT", "base learning rate")
   val maxIters = new CmdOption("max-iterations", 7, "INT", "Number of passes through data during training")
-  val delta = new CmdOption("delta", 0.1,"FLOAT","learning rate delta")
+  val delta = new CmdOption("delta", 0.1, "FLOAT", "learning rate delta")
   val hingeLoss = new CmdOption("hinge", true, "BOOLEAN", "Whether to use hinge or log loss")
   val debug = new CmdOption("debug", false, "BOOLEAN", "Whether to print out debugging info for training (generated features)")
 }
