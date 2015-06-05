@@ -62,6 +62,10 @@ package object factorie extends CubbieConversions {
     }
   }
 
+  object sDouble {
+    def unapply(s:String) = s.toDoubleSafe
+  }
+
   def assertStringEquals(expr:Any, str:String) = assert(expr.toString == str, "The string representation '" + expr.toString + "' does not match the expected value: '" + str +"'")
   def assertMinimalAccuracy(got:Double, goal:Double): Unit = assert(got >= goal, s"Accuracy ${got} is less than expected ${goal}.")
   def assertDoubleEquals(got:Double, goal:Double, epsilon:Double): Unit = assert(Math.abs(got-goal) < epsilon, s"Got: $got, expected: $goal")
