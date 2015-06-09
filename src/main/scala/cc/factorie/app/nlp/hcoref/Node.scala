@@ -37,6 +37,12 @@ import cc.factorie.app.nlp.coref.{WithinDocEntity, CrossDocEntity, CrossDocMenti
   */
 class Node[Vars <: NodeVariables[Vars]](val variables:Vars, val uniqueId: String)(implicit d: DiffList) extends CrossDocEntity {
 
+  override def hashCode = uniqueId.hashCode
+  override def equals(a:Any) = a match {
+    case other:Node[Vars] if this.variables.getClass == other.variables.getClass => other.uniqueId == this.uniqueId
+    case otw => false
+  }
+
 
   def mentions = leaves
 
