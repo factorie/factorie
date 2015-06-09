@@ -6,12 +6,25 @@ import cc.factorie._
 /**
  * Created by johnsullivan on 6/5/15.
  */
-trait TfIdf {
+trait TfIdf extends Idf {
   this: Tf with Idf =>
   type IdfCounts = Map[String, Double]
   type Document = Map[String, Double]
   type Corpus = Iterable[Document]
   type Term = String
+
+  def reweightCorpus(corpus: Corpus, thresholdOpt:Option[Int] = None) = {
+    val idfs = idfCounts(corpus)
+    corpus.map{ doc =>
+      val rawTfidf = doc.map { case (term, _) =>
+        term -> tfidf(term, doc, idfs)
+      }
+      thresholdOpt match {
+        case Some(threshold) => rawTfidf.toSeq.sortBy{case(_, v) => - v}.take(threshold).toMap
+        case None => rawTfidf
+      }
+    }
+  }
 
   def tfidf(term: Term, document: Document, idfCounts: IdfCounts) = tf(term, document) * idf(term, idfCounts)
 
