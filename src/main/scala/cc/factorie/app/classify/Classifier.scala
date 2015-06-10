@@ -156,13 +156,14 @@ class DecisionTreeClassifier[L<:DiscreteVar,F<:VectorVar](val tree:DTree, val la
   def predict(features: Tensor1) = DTree.score(features, tree)
 }
 
-class ID3DecisionTreeClassifier(implicit random: scala.util.Random) extends VectorClassifierTrainer {
+class DecisionTreeClassifierTrainer(treeTrainer: DecisionTreeTrainer)(implicit random: scala.util.Random) extends VectorClassifierTrainer {
   def train[L<:LabeledDiscreteVar,F<:VectorVar](labels:Iterable[L], l2f:L=>F): DecisionTreeClassifier[L,F] = {
     val labelSize = labels.head.domain.size
     val instances = labels.toSeq.map(label => DecisionTreeTrainer.Instance(l2f(label).value, new SingletonBinaryTensor1(labelSize, label.target.intValue), 1.0))
-    val treeTrainer = new ID3DecisionTreeTrainer // TODO We could make this a flexible choice later. -akm
     val dtree = treeTrainer.train(instances)
     new DecisionTreeClassifier(dtree, l2f)
   }
 }
 
+class ID3DecisionTreeClassifier(implicit random: scala.util.Random) extends DecisionTreeClassifierTrainer(new ID3DecisionTreeTrainer)
+class C45DecisionTreeClassifier(implicit random: scala.util.Random) extends DecisionTreeClassifierTrainer(new C45DecisionTreeTrainer)
