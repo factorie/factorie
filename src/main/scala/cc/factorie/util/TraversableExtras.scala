@@ -17,6 +17,7 @@ import scala.util.Random
 import scala.util.Sorting
 import scala.reflect.ClassTag
 import scala.annotation.tailrec
+import scala.collection.mutable
 
 private class SplitIterator[A](t:Traversable[A], pred:(A => Boolean)) extends Iterator[Traversable[A]] {
   var _first:Traversable[A] = null
@@ -215,5 +216,13 @@ final class TraversableExtras[A](val t: Traversable[A]) extends AnyVal {
     sampleProportionally(t1 => if (extractor(t1) == Double.NegativeInfinity) Double.NegativeInfinity else math.exp(extractor(t1) - maxValue))(random)
   }
 
+  def sampleUniformlyWithoutReplacement(take:Int)(implicit random:Random): Seq[A] = {
+    val s2 = t.toSeq
+    val indices = new mutable.HashSet[Int]
+    while (indices.size < take || indices.size < t.size) {
+      indices += random.nextInt(t.size)
+    }
+    indices.toSeq map s2.apply
+  }
 
 }
