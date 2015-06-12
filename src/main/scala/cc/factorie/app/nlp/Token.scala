@@ -156,6 +156,7 @@ class Token(val stringStart:Int, val stringEnd:Int) extends cc.factorie.app.chai
   /** Return true if the first character of the word is upper case. */
   def isCapitalized: Boolean = java.lang.Character.isUpperCase(string(0))
   def isPunctuation: Boolean = string.matches("\\p{Punct}+")
+  def isContraction: Boolean = string.contains("'") // todo this could probably be better
   /** Return true if any character of the word is lower case. */
   def containsLowerCase: Boolean = string.exists(c => java.lang.Character.isLowerCase(c))
   /** Return true if any character of the word is upper case. */
