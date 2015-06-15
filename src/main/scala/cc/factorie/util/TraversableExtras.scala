@@ -218,11 +218,15 @@ final class TraversableExtras[A](val t: Traversable[A]) extends AnyVal {
 
   def sampleUniformlyWithoutReplacement(take:Int)(implicit random:Random): Seq[A] = {
     val s2 = t.toSeq
-    val indices = new mutable.HashSet[Int]
-    while (indices.size < take || indices.size < t.size) {
-      indices += random.nextInt(t.size)
+    if(take > s2.size) {
+      s2
+    } else {
+      val indices = new mutable.HashSet[Int]
+      while (indices.size < take || indices.size < t.size) {
+        indices += random.nextInt(t.size)
+      }
+      indices.toSeq map s2.apply
     }
-    indices.toSeq map s2.apply
   }
 
 }
