@@ -33,11 +33,9 @@ import cc.factorie.util.{ScriptingUtils, BinarySerializer}
 import scala.language.postfixOps
 import scala.collection.mutable.ArrayBuffer
 import cc.factorie.la.Tensor1
-import scala.Some
 import cc.factorie.variable._
-import scala.Some
 import cc.factorie.app.classify.backend._
-import scala.Some
+import cc.factorie.app.nlp.lexicon._
 import scala.collection.mutable
 
 // Feature and Label classes
@@ -61,6 +59,9 @@ class NonBinaryFeatures(val labelName: String, val instanceName: String, val dom
 
 // A TUI for training, running and diagnosing classifiers
 object Classify {
+
+  val FactorieStopwords = StopWords
+  val CustomStopwords = CustomStopWords
 
   /* Sample Usages:
   *
@@ -148,25 +149,25 @@ object Classify {
       scala.io.Source.fromFile(f, opts.readTextEncoding.value).mkString
     }
 
-    def readStoplist(fileName: String): scala.collection.mutable.Set[String] = {
-      val stopListFile = new File(fileName)
-      val stopwords = new mutable.HashSet[String]()
-      fileToString(stopListFile).split("\n").foreach(stopwords +=)
+    def readStoplist(filename: String): TriePhraseLexicon = {
+      val stopwords = new TriePhraseLexicon("stopwords")
+      stopwords ++= scala.io.Source.fromFile(filename)
       stopwords
     }
 
     // Some global variables
     val segmenter = new cc.factorie.app.strings.RegexSegmenter(opts.readTextTokenRegex.value.r)
-    val stoplist =
-      if (opts.readTextStoplist.wasInvoked) {
-        readStoplist(opts.readTextStoplist.value)
-      } else if (opts.readTextExtraStopwords.wasInvoked) {
-        val stopWords = readStoplist(opts.readTextExtraStopwords.value)
-        cc.factorie.app.strings.Stopwords.asArray.foreach(stopWords +=)
-        stopWords
-      } else {
-        cc.factorie.app.strings.Stopwords.asSet
+    val stoplist: MutableLexicon =
+    // use your own list of stopwords
+      if (opts.readTextStoplist.wasInvoked) CustomStopwords(opts.readTextStoplist.value)
+      // use your own list in addition to FACTORIE's list of stopwords
+      else if (opts.readTextExtraStopwords.wasInvoked) {
+        FactorieStopwords.addFromFilename(opts.readTextExtraStopwords.value)
+        FactorieStopwords
       }
+      // use FACTORIE's stopwords
+      else FactorieStopwords
+
     val labels = new ArrayBuffer[Label]()
     val trainingLabels = new ArrayBuffer[Label]()
     val validationLabels = new ArrayBuffer[Label]()

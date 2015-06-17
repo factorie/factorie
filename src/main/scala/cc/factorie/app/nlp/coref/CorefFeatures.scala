@@ -15,7 +15,7 @@ package cc.factorie.app.nlp.coref
 
 import cc.factorie.app.nlp.phrase._
 import cc.factorie.app.nlp.wordnet.WordNet
-import cc.factorie.app.strings.Stopwords
+import cc.factorie.app.nlp.lexicon.StopWords
 import scala.collection.mutable
 import cc.factorie.app.nlp.phrase.{Number, Gender}
 import cc.factorie.app.nlp.ner.OntonotesEntityTypeDomain
@@ -72,7 +72,7 @@ class MentionCharacteristics(val mention: Mention) {
         Set.empty
       else {
         val alt1 = mention.phrase.value.map(_.string.trim).filter(_.exists(_.isLetter)) // tokens that have at least one letter character
-        val alt2 = alt1.filterNot(t => Stopwords.contains(t.toLowerCase)) // alt1 tokens excluding stop words
+        val alt2 = alt1.filterNot(t => StopWords.contains(t.toLowerCase)) // alt1 tokens excluding stop words
         val alt3 = alt1.filter(_.head.isUpper) // alt1 tokens that are capitalized
         val alt4 = alt2.filter(_.head.isUpper)
         Seq(alt1, alt2, alt3, alt4).map(_.map(_.head).mkString.toLowerCase).toSet

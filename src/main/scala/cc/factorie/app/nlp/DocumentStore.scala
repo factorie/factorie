@@ -2,6 +2,7 @@ package cc.factorie.app.nlp
 import cc.factorie.util._
 import cc.factorie.app.nlp.segment._
 import cc.factorie.app.nlp.pos._
+import cc.factorie.app.nlp.ner._
 import cc.factorie.app.nlp.parse._
 import cc.factorie.app.nlp.coref._
 import cc.factorie.app.nlp.phrase._
@@ -157,6 +158,24 @@ class DocumentCubbie extends Cubbie {
     }
   }
   object SectionPennPosTagsSlot { def apply(name:String) = new SectionPennPosTagsSlot(name) }
+
+  /** Store the BILOU CoNLL ner tags for every Token within a Section */
+  class SectionConllNerTagsSlot(name: String) extends IntSeqSlot(name) {
+    def :=(section: Section): this.type = {
+      this := new ArrayIntSeq(section.tokens.map(_.attr[BilouConllNerTag].intValue).toArray)
+      this
+    }
+    def =:(section: Section): this.type = {
+      val nerIndices = this.value; var i = 0
+      for (token <- section.tokens) {
+        token.attr += new BilouConllNerTag(token, BilouConllNerDomain.category(nerIndices(i)))
+        i += 1
+      }
+      section.document.annotators(classOf[BilouConllNerTag]) = this.getClass
+      this
+    }
+  }
+  object SectionConllNerTagsSlot { def apply(name: String) = new SectionConllNerTagsSlot(name) }
   
   /** Store the ParseTree for every Sentence within a Section. */
   class SectionParseTreesSlot(name:String) extends IntSeqSlot(name) {
@@ -285,17 +304,20 @@ class StandardSectionAnnotationsCubbie extends DocumentCubbie {
   val end = IntSlot("end")
   val ts = SectionTokensAndSentencesSlot("ts")
   val pp = SectionPosAndParseSlot("pp")
+  val ner = SectionConllNerTagsSlot("ner")
   def :=(section:Section): this.type = {
     start := section.stringStart
     end := section.stringEnd
     ts := section
     if (section.document.annotatorFor(classOf[PosTag]).isDefined && section.sentences.head.attr.contains(classOf[ParseTree])) pp := section
+    if (section.document.annotatorFor(classOf[NerTag]).isDefined) ner := section
     this
   }
   def =:(document:Document): this.type = {
     val section = new BasicSection(document, start.value, end.value); document += section
     section =: ts 
     if (pp.isDefined) section =: pp
+    if (ner.isDefined) section =: ner
     this
   }
 }
