@@ -18,7 +18,7 @@ import cc.factorie.app.nlp.phrase._
 import cc.factorie.app.nlp.pos._
 import cc.factorie.app.nlp.ner._
 import scala.collection.mutable.{HashMap, HashSet, ArrayBuffer}
-import cc.factorie.app.strings.Stopwords
+import cc.factorie.app.nlp.lexicon.StopWords
 import scala.collection.immutable.IndexedSeq
 import scala.collection.immutable.StringOps
 import cc.factorie.app.nlp.wordnet._
