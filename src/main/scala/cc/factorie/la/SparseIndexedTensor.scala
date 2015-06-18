@@ -131,7 +131,7 @@ trait ArraySparseIndexedTensor extends SparseIndexedTensor {
       case v:SingletonIndexedTensor => apply(v.singleIndex) * v.singleValue
       case v:ArraySparseIndexedTensor => {
         v._makeReadable()
-        val v1 = if (this.__npos < v.__npos) this else v
+        val v1 = if (this.__npos <= v.__npos) this else v
         val v2 = if (v.__npos < this.__npos) this else v
         var i = 0; var j = -1; var j2 = 0
         var result = 0.0
