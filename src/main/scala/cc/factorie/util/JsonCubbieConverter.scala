@@ -5,6 +5,10 @@ import org.json4s.JsonDSL._
 import scala.collection.mutable
 
 /**
+ * Methods for serializing and de-serializing cubbies to and from json. 
+ * Important Note: (As of May 28, 2015) Serialization/de-serialization of general list structures of ints and doubles
+ * (Seq[Int], Seq[Double], List[Int], List[Double, Array[Int], Array[Double], etc) is not supported. Instead, the 
+ * factorie optimized versions of these data structures, IntSeq and DoubleSeq must be used. *
  * @author John Sullivan
  */
 object JsonCubbieConverter {
@@ -12,8 +16,8 @@ object JsonCubbieConverter {
   def toJson(c:Cubbie):JObject = {
     def toJsonImpl(a:Any):JValue = a match {
       case null => JNull
-      case is:IntSeq => is._rawArray.map(toJsonImpl).toIterable  // we can do something cleverer here if we want
-      case ds:DoubleSeq => ds._rawArray.map(toJsonImpl).toIterable
+      case is:IntSeq => is._rawArray.slice(0,is.length).map(toJsonImpl).toIterable  // we can do something cleverer here if we want
+      case ds:DoubleSeq => ds._rawArray.slice(0,ds.length).map(toJsonImpl).toIterable
       case m:mutable.Map[_,_] =>
         m.toMap.map{case (k,v) => k.toString -> toJsonImpl(v)}
       case it:Iterable[_] =>

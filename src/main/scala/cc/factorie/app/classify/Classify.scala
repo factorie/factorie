@@ -33,11 +33,9 @@ import cc.factorie.util.{ScriptingUtils, BinarySerializer}
 import scala.language.postfixOps
 import scala.collection.mutable.ArrayBuffer
 import cc.factorie.la.Tensor1
-import scala.Some
 import cc.factorie.variable._
-import scala.Some
 import cc.factorie.app.classify.backend._
-import scala.Some
+import cc.factorie.app.nlp.lexicon._
 import scala.collection.mutable
 
 // Feature and Label classes
@@ -61,6 +59,9 @@ class NonBinaryFeatures(val labelName: String, val instanceName: String, val dom
 
 // A TUI for training, running and diagnosing classifiers
 object Classify {
+
+  val FactorieStopwords = StopWords
+  val CustomStopwords = CustomStopWords
 
   /* Sample Usages:
   *
@@ -104,7 +105,7 @@ object Classify {
       val readSVMLight = new CmdOption("read-svm-light", "instances", "FILE", "Filename from which to read the instances' labels and features in SVMLight format.")
       val readBinaryFeatures = new CmdOption("read-binary-features", true, "true|false", "If true, features will be binary as opposed to counts.  Default is true.")
 
-      val readTextDirs = new CmdOption("read-text-dirs", "textdir", "DIR...", "Directories from which to read text documents; tokens become features; directory name is the label.")
+      val readTextDirs = new CmdOption("read-text-dirs", "textdir", "DIR...", "Directories from which to read text documents; tokens become features; directory name is the label (or subdirectories if only one directory was specified).")
       val readTextLines = new CmdOption("read-text-lines", "textfile", "FILE.txt", "Filename from which to read the instances' labels and features; first word is the label value")
       val readTextTokenRegex = new CmdOption("read-text-token-regex", "\\p{Alpha}+", "REGEX", "Regular expression defining extent of text tokens.")
       val readTextSkipHeader = new CmdOption("read-text-skip-header", false, "true|false", "Skip text up until double newline.")
@@ -148,25 +149,25 @@ object Classify {
       scala.io.Source.fromFile(f, opts.readTextEncoding.value).mkString
     }
 
-    def readStoplist(fileName: String): scala.collection.mutable.Set[String] = {
-      val stopListFile = new File(fileName)
-      val stopwords = new mutable.HashSet[String]()
-      fileToString(stopListFile).split("\n").foreach(stopwords +=)
+    def readStoplist(filename: String): TriePhraseLexicon = {
+      val stopwords = new TriePhraseLexicon("stopwords")
+      stopwords ++= scala.io.Source.fromFile(filename)
       stopwords
     }
 
     // Some global variables
     val segmenter = new cc.factorie.app.strings.RegexSegmenter(opts.readTextTokenRegex.value.r)
-    val stoplist =
-      if (opts.readTextStoplist.wasInvoked) {
-        readStoplist(opts.readTextStoplist.value)
-      } else if (opts.readTextExtraStopwords.wasInvoked) {
-        val stopWords = readStoplist(opts.readTextExtraStopwords.value)
-        cc.factorie.app.strings.Stopwords.asArray.foreach(stopWords +=)
-        stopWords
-      } else {
-        cc.factorie.app.strings.Stopwords.asSet
+    val stoplist: MutableLexicon =
+    // use your own list of stopwords
+      if (opts.readTextStoplist.wasInvoked) CustomStopwords(opts.readTextStoplist.value)
+      // use your own list in addition to FACTORIE's list of stopwords
+      else if (opts.readTextExtraStopwords.wasInvoked) {
+        FactorieStopwords.addFromFilename(opts.readTextExtraStopwords.value)
+        FactorieStopwords
       }
+      // use FACTORIE's stopwords
+      else FactorieStopwords
+
     val labels = new ArrayBuffer[Label]()
     val trainingLabels = new ArrayBuffer[Label]()
     val validationLabels = new ArrayBuffer[Label]()
@@ -217,7 +218,13 @@ object Classify {
     // Read instances
     if (opts.readTextDirs.wasInvoked) {
       var numDocs = 0; var numDirs = 0
-      for (directory <- opts.readTextDirs.value.split(",")) {
+      var directories = opts.readTextDirs.value.split(",")
+      // if only one directory was provided, then need to read subdirectories instead (directories = subdirectories)
+      if (directories.length == 1){
+        directories = new File(directories(0)).listFiles().map(_.getPath)
+      }
+
+      for (directory <- directories) {
         val directoryFile = new File(directory)
         if (!directoryFile.exists) throw new IllegalArgumentException("Directory " + directory + " does not exist.")
         for (file <- new File(directory).listFiles; if file.isFile) {

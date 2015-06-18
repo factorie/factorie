@@ -14,7 +14,7 @@
 package cc.factorie.app.topics.lda
 import cc.factorie._
 import cc.factorie.directed._
-import cc.factorie.app.strings.Stopwords
+import cc.factorie.app.nlp.lexicon.StopWords
 import scala.collection.mutable.HashMap
 import java.io.{PrintWriter, FileWriter, File, BufferedReader, InputStreamReader, FileInputStream}
 import collection.mutable.{ArrayBuffer, HashSet, HashMap, LinkedHashMap}

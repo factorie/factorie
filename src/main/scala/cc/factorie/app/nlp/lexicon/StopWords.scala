@@ -14,7 +14,26 @@ package cc.factorie.app.nlp.lexicon
 import cc.factorie.app.nlp.lemma._
 import cc.factorie.app.strings._
 
-object StopWords extends PhraseLexicon("StopWords", nonWhitespaceClassesSegmenter, LowercaseLemmatizer) {
+class CustomStopWords extends TriePhraseLexicon("CustomStopWords", nonWhitespaceClassesSegmenter, LowercaseLemmatizer) {
+  def this(filename: String) = {
+    this()
+    this ++= scala.io.Source.fromFile(filename)
+  }
+  def this(words: Seq[String]) = {
+    this()
+    words.foreach { w => this += w }
+  }
+}
+
+object CustomStopWords {
+  def apply(filename: String) = new CustomStopWords(filename)
+}
+
+object StopWords extends TriePhraseLexicon("StopWords", nonWhitespaceClassesSegmenter, LowercaseLemmatizer) {
+  def addFromFilename(filename: String): Unit = {
+    this ++= scala.io.Source.fromFile(filename)
+  }
+
   this ++= 
 """a
 able

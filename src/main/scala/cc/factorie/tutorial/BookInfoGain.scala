@@ -44,7 +44,10 @@ object BookInfoGain {
     for (filename <- args) {
       val bookFile = new File(filename)
       if (!bookFile.exists) throw new IllegalArgumentException("Directory " + filename + " does not exist.")
-      "\\w+".r.findAllIn(Source.fromFile(bookFile).mkString).toSeq.grouped(500).foreach(words => docLabels += new Document(bookFile.getName, words.filter(!cc.factorie.app.strings.Stopwords.contains(_))).label)
+      "\\w+".r.findAllIn(Source.fromFile(bookFile).mkString)
+        .toSeq
+        .grouped(500)
+        .foreach(words => docLabels += new Document(bookFile.getName, words.filter(!cc.factorie.app.nlp.lexicon.StopWords.contains(_))).label)
     }
 
     val infogains = new classify.InfoGain(docLabels, (l: Label) => l.document)
