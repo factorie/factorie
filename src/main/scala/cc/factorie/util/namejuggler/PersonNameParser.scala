@@ -6,9 +6,9 @@
 
 package cc.factorie.util.namejuggler
 
-import StringUtils._
-import scala.MatchError
-import annotation.tailrec
+import cc.factorie.util.namejuggler.StringUtils._
+
+import scala.annotation.tailrec
 
 
 /**
@@ -21,7 +21,7 @@ import annotation.tailrec
  */
 object PersonNameParser {
 
-  import PersonNameFormat._
+  import cc.factorie.util.namejuggler.PersonNameFormat._
 
   private val splitFirst = """^(.*?)[ ]+(.*)$""".r
 
@@ -65,7 +65,11 @@ object PersonNameParser {
     // Brock, Stuart, Ph.D., III, M.D.   we even accept this!?
 
     val tokensByCommas = s.split(",").map(_.trim)
-    if (tokensByCommas.length == 1) {
+    
+    // edge case where s == ",", returns None as the name string
+    if (tokensByCommas.length == 0)
+      (None, Set.empty, None)
+    else if (tokensByCommas.length == 1) {
       stripSuffixesNoCommas(tokensByCommas(0), containsLowerCase, false, findHasFirstName(tokensByCommas(0)))
     }
     else if (tokensByCommas.length == 2) {
