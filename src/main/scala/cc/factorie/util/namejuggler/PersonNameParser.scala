@@ -280,6 +280,15 @@ object PersonNameParser {
      */
   }
 
+  def parseFullNameSafe(s: String): Option[PersonName] = {
+    try {
+      Some(parseFullName(s))
+    } catch {
+      case e: IllegalArgumentException =>
+        None
+    }
+  }
+  
   class PersonNameParsingException(s: String) extends Exception(s)
 
 
