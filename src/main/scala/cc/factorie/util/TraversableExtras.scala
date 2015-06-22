@@ -50,9 +50,6 @@ final class TraversableExtras[A](val t: Traversable[A]) extends AnyVal {
   def split(pred:(A => Boolean)):Iterator[Traversable[A]] = new SplitIterator[A](t, pred)
 
 
-
-
-
   def pairs:List[(A, A)] = {
     @tailrec
     def pairsHelper(build:List[(A, A)], xs:List[A]):List[(A, A)] = xs match {

@@ -10,6 +10,8 @@ class BagOfWords(initialWords: Iterable[String] = null, initialBag: Map[String, 
   def longest = _bag.keysIterator.toSeq.sortBy(_.length).lastOption.getOrElse("")
   def topWord = _bag.toSeq.sortBy(_._2).lastOption.map(_._1).getOrElse("")
 
+  def topWords(w:Int) = _bag.toSeq.sortBy(-_._2).take(w).map(_._1)
+
   var variable: BagOfWordsVariable = null
   protected var _l2Norm = 0.0
   protected var _l1Norm = 0.0
@@ -94,6 +96,7 @@ class BagOfWordsVariable(initialWords: Iterable[String] = Nil, initialMap: Map[S
     result.variable = this
     result
   }
+  def immutableMap:scala.collection.immutable.Map[String, Double] = _members.asHashMap.toMap
   def members: BagOfWords = _members
   def iterator = _members.iterator
   override def size = _members.size
