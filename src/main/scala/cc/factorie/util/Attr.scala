@@ -14,6 +14,7 @@
 package cc.factorie.util
 
 import scala.reflect.ClassTag
+import java.io._
 
 // TODO Why insist on AnyRef?  Why not just Any?  This would make app.nlp.DocumentProcessor a little cleaner. -akm
 
@@ -28,9 +29,9 @@ import scala.reflect.ClassTag
     Basic example usage: object foo extends Attr; foo.attr += "bar"; require(foo.attr[String] == "bar"); foo.attr.remove[String].
     
     @author Andrew McCallum */
-trait Attr {
+trait Attr extends Serializable {
   /** A collection of attributes, keyed by the attribute class. */
-  object attr {
+  object attr extends Serializable {
     private var _attr: Array[AnyRef] = new Array[AnyRef](2)
     /** The number of attributes present. */
     def length: Int = { var i = 0; while ((i < _attr.length) && (_attr(i) ne null)) i += 1; i }
@@ -159,6 +160,20 @@ trait Attr {
     }
    
     override def toString = values.mkString(" ")
+
+    @throws(classOf[IOException])
+    @throws(classOf[ClassNotFoundException])
+    private def writeObject(stream: ObjectOutputStream): Unit = {
+      stream.defaultWriteObject()
+      stream.writeObject(values)
+    }
+
+    @throws(classOf[IOException])
+    @throws(classOf[ClassNotFoundException])
+    private def readObject(stream: ObjectInputStream): Unit = {
+      stream.defaultReadObject()
+      stream.readObject().asInstanceOf[Seq[AnyRef]].foreach { value => attr += value }
+    }
 
   }
 
