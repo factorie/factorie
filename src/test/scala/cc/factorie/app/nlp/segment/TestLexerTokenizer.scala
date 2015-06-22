@@ -12,14 +12,30 @@
    limitations under the License. */
 package cc.factorie.app.nlp.segment
 
-import org.scalatest.junit.JUnitSuite
-import org.junit.Test
-import cc.factorie.app.nlp.{DocumentAnnotatorPipeline, DocumentAnnotator, Sentence, Document, Token}
+import cc.factorie.app.nlp.{Document, DocumentAnnotatorPipeline, Sentence, Token}
 import cc.factorie.util.FastLogging
+import org.junit.Test
+import org.scalatest.junit.JUnitSuite
 
-class TestTokenizer extends JUnitSuite with FastLogging {
+class TestLexerTokenizer extends JUnitSuite with FastLogging {
   
   def assertEquals(a: Any, b: Any): Unit = assert(a == b, "\"%s\" did not equal \"%s\"" format (a, b))
+
+  def checkDeterministicLexerTokenizer(src: String, trg: String): Unit = {
+    val tokens = runTokenizer(DeterministicTokenizer, src)
+    for (t <- tokens) {
+      assertEquals(t.string, src.substring(t.stringStart, t.stringEnd))
+    }
+    assertEquals("[" + tokens.map(_.string).mkString(", ") + "]", trg)
+  }
+
+  def checkDeterministicNormalizingTokenizer(tokenizer: DeterministicLexerTokenizer, src: String, trg: String): Unit = {
+    val tokens = runTokenizer(tokenizer, src)
+    for (t <- tokens) {
+      assertEquals(t.document.string.substring(t.stringStart, t.stringEnd), src.substring(t.stringStart, t.stringEnd))
+    }
+    assertEquals("[" + tokens.map(_.string).mkString(", ") + "]", trg)
+  }
 
   @Test def testSentenceSegmenter(): Unit = {
     val text =
@@ -36,7 +52,7 @@ class TestTokenizer extends JUnitSuite with FastLogging {
       I now use my iphone as an alarm clock and is the bluetooth source to play music in my car.
       """.stripMargin
     val d = new Document((1 to 2).map(_ => text).mkString("\n"))
-    DocumentAnnotatorPipeline(DeterministicTokenizer, DeterministicSentenceSegmenter).process(d)
+    DocumentAnnotatorPipeline(DeterministicNormalizingTokenizer, DeterministicSentenceSegmenter).process(d)
     assert(d.sentences.size > 0)
     d.sentences.map(_.string).foreach(s => logger.debug(s.toString))
   }
@@ -44,145 +60,178 @@ class TestTokenizer extends JUnitSuite with FastLogging {
   @Test def testSentenceSegmenterWithOneSentence() {
     val text = "The quick brown fox jumps over the lazy dog."
     val d = new Document(text)
-    DocumentAnnotatorPipeline(DeterministicTokenizer, DeterministicSentenceSegmenter).process(d)
+    DocumentAnnotatorPipeline(DeterministicNormalizingTokenizer, DeterministicSentenceSegmenter).process(d)
     assert(d.sentences.size == 1)
     assert(d.tokens.size == 10)
   }
 
-  private def runDeterministicTokenizer(src: String): Iterable[Token] = {
+  private def runTokenizer(tokenizer: DeterministicLexerTokenizer, src: String): Iterable[Token] = {
     val d = new Document(src)
-    DocumentAnnotatorPipeline(DeterministicTokenizer).process(d).tokens
+    DocumentAnnotatorPipeline(tokenizer).process(d).tokens
   }
 
-  @Test def testDeterministicTokenizer(): Unit = {
-    def check(src: String, trg: String): Unit = {
-      val tokens = runDeterministicTokenizer(src)
-      for (t <- tokens) {
-        assertEquals(t.string, src.substring(t.stringStart, t.stringEnd))
-      }
-      assertEquals("[" + tokens.map(_.string).mkString(", ") + "]", trg)
-    }
+  @Test def testDeterministicLexerTokenizer(): Unit = {
 
     // spaces
-    check(
+    checkDeterministicLexerTokenizer(
       src = "a b  c\n d \t\n\r\fe",
       trg = "[a, b, c, d, e]")
 
     // emoticons
-    check(
+    checkDeterministicLexerTokenizer(
       src = ":-)))) :----) :( :-) :--)",
       trg = "[:-)))), :----), :(, :-), :--)]")
     
     // URLs
-    check(
+    checkDeterministicLexerTokenizer(
       src = "|http://www.google.com|www.google.com|mailto:somebody@google.com|some-body@google+.com|",
       trg = "[|, http://www.google.com, |, www.google.com, |, mailto:somebody@google.com, |, some-body@google+.com, |]")
     
-    check(
+    checkDeterministicLexerTokenizer(
       src = "google.com index.html a.b.htm ab-cd.shtml",
       trg = "[google.com, index.html, a.b.htm, ab-cd.shtml]")
 
     // abbreviations
-    check(
+    checkDeterministicLexerTokenizer(
       src = "prof. ph.d. a. a.b. a.b a.b.c. men.cd ab.cd",
       trg = "[prof., ph.d., a., a.b., a.b, a.b.c., men, ., cd, ab, ., cd]")
 
     // consecutive punctuation
-    check(
+    checkDeterministicLexerTokenizer(
       src = "A..B!!C??D.!?E.!?.!?F..!!??",
       trg = "[A, .., B, !!, C, ??, D, .!?, E, .!?.!?, F, ..!!??]")
 
-    check(
+    checkDeterministicLexerTokenizer(
       src = ",,A---C*D**E~~~~F==",
       trg = "[,,, A, ---, C, *, D, **, E, ~~~~, F, ==]")
       // was: trg = "[,,, A, ---, C*D, **, E, ~~~~, F, ==]")
 
     // dots in numbers
     // Really?  Do we want this? -akm
-//    check(
+//    checkDeterministicLexerTokenizer(
 //      src = ".1 a.1 2.3 4,5 6:7 8-9 0/1 '2 3's 3'4 5'b a'6 a'b",
 //      trg = "[.1, a.1, 2.3, 4,5, 6:7, 8-9, 0/1, '2, 3's, 3'4, 5'b, a'6, a'b]")
 
-//    check(
+//    checkDeterministicLexerTokenizer(
 //      src = ".a a.3 4,a a:a a8-9 0/1a",
 //      trg = "[., a, a.3, 4, ,, a, a, :, a, a8-9, 0/1a]")
     
     // hyphens
-    check(
+    checkDeterministicLexerTokenizer(
       src = "dis-able cross-validation o-kay art-o-torium s-e-e art-work",
       trg = "[dis-able, cross-validation, o-kay, art-o-torium, s-e-e, art, -, work]")
     
     // apostrophies
-    check(
+    checkDeterministicLexerTokenizer(
       src = "he's we'd I'm you'll they're I've didn't did'nt",
       trg = "[he, 's, we, 'd, I, 'm, you, 'll, they, 're, I, 've, did, n't, did, 'nt]")
     
-    check(
+    checkDeterministicLexerTokenizer(
       src = "he'S DON'T gue'ss",
       trg = "[he, 'S, DO, N'T, gue, ', ss]")
       // Was: trg = "[he, 'S, DO, N'T, gue'ss]")
     
       // Really?  Do we want this? -akm
-//    check(
+//    checkDeterministicLexerTokenizer(
 //      src = "aint cannot don'cha d'ye i'mma dunno",
 //      trg = "[ai, nt, can, not, do, n', cha, d', ye, i, 'm, ma, du, n, no]")
 
-    check(
+    checkDeterministicLexerTokenizer(
       src = "$1 E2 L3 USD1 2KPW ||$1 USD1..",
       trg = "[$, 1, E2, L3, USD, 1, 2, KPW, |, |, $, 1, USD, 1, ..]")
     
-    check(
+    checkDeterministicLexerTokenizer(
       src = "1m 2mm 3kg 4oz",
       trg = "[1, m, 2, mm, 3, kg, 4, oz]")
     
-    check(
+    checkDeterministicLexerTokenizer(
       src = "1D 2nM 3CM 4LB",
       trg = "[1, D, 2, nM, 3, CM, 4, LB]")
     
-    check(
+    checkDeterministicLexerTokenizer(
       src = "(1){2}[3]<4>",
       trg = "[(, 1, ), {, 2, }, [, 3, ], <, 4, >]")
     
     // Really?  Do we want this? -akm
-//    check(
+//    checkDeterministicLexerTokenizer(
 //      src = "`a'b,c:d;e-f/g\"h'",
 //      trg = "[`, a'b, ,, c, :, d, ;, e, -, f, /, g, \", h, ']")
-//    check(
+//    checkDeterministicLexerTokenizer(
 //      src = "`a'b,c:d;e-f/g\"h'",
 //      trg = "[`, a'b, ,, c, :, d, ;, e, -, f, /, g, \", h, ']")
     
-    check(
+    checkDeterministicLexerTokenizer(
       src = "a@b #c$d%e&f|g",
       trg = "[a@b, #, c$, d, %, e, &, f, |, g]")
       // Was: trg = "[a@b, #, c, $, d, %, e, &, f, |, g]")
     
-    check(
+    checkDeterministicLexerTokenizer(
       src = "e.g., i.e, (e.g.,",
       trg = "[e.g., ,, i.e, ,, (, e.g., ,]")
     
-    check(
+    checkDeterministicLexerTokenizer(
       src = " \n \t",
       trg = "[]")
 
-    check(    
+    checkDeterministicLexerTokenizer(
       src = "\"John & Mary's dog,\" Jane thought (to herself).\n" + "\"What a #$%!\n" + "a- ``I like AT&T''.\"",
       trg = "[\", John, &, Mary, 's, dog, ,, \", Jane, thought, (, to, herself, ), ., \", What, a, #, $, %, !, a, -, ``, I, like, AT&T, '', ., \"]")
     
-    check(
+    checkDeterministicLexerTokenizer(
       src = "I said at 4:45pm.  Never 2am.",
       trg = "[I, said, at, 4:45, pm, ., Never, 2, am, .]")
     
-    check(
+    checkDeterministicLexerTokenizer(
       src = "I can't believe they wanna keep 40% of that.\"``Whatcha think?''\"I don't --- think so...,\"",
       trg = "[I, ca, n't, believe, they, wan, na, keep, 40, %, of, that, ., \", ``, What, cha, think, ?, '', \", I, do, n't, ---, think, so, ..., ,, \"]")
     
-    check(
+    checkDeterministicLexerTokenizer(
       src = "You `paid' US$170,000?!\nYou should've paid only$16.75.",
       trg = "[You, `, paid, ', US$, 170,000, ?!, You, should, 've, paid, only, $, 16.75, .]")
     
-    check(
+    checkDeterministicLexerTokenizer(
       src = " 1. Buy a new Chevrolet (37%-owned in the U.S..) . 15%",
       trg = "[1, ., Buy, a, new, Chevrolet, (, 37, %, -, owned, in, the, U.S., ., ), ., 15, %]")
+
+    checkDeterministicLexerTokenizer(
+      src = "A.  A.A.A.I.  and U.S. in U.S.. etc., but not A... or A..B iPhone 3G in Washington D.C.",
+      trg = "[A., A.A.A.I., and, U.S., in, U.S., ., etc., ,, but, not, A, ..., or, A, .., B, iPhone, 3, G, in, Washington, D.C.]"
+    )
+
+    checkDeterministicLexerTokenizer(
+      src = "AT&T but don't grab LAT&Eacute; and be sure not to grab PE&gym",
+      trg = "[AT&T, but, do, n't, grab, LAT&Eacute;, and, be, sure, not, to, grab, PE, &, gym]"
+    )
+
+    /* A useful string for checking various options to the tokenizer (but not checked here) */
+    checkDeterministicLexerTokenizer(
+      src = "2012-04-05 ethno-centric art-o-torium sure. thing",
+      trg = "[2012-04-05, ethno-centric, art-o-torium, sure, ., thing]"
+    )
+
+    checkDeterministicLexerTokenizer(
+      src = "Half of investors expect Greece to leave the euro zone.",
+      trg = "[Half, of, investors, expect, Greece, to, leave, the, euro, zone, .]"
+    )
+  }
+
+  @Test def testDeterministicNormalizingTokenizer(): Unit = {
+    checkDeterministicNormalizingTokenizer(DeterministicNormalizingTokenizer,
+      src = "''Going to the stor&eacute; to grab . . . some c&ouml;ff&eacute;&eacute; for \u20ac50. He`s right\u2026 &ndash; &amp; \u2154 \\*\\* -- &trade; &mdash; \u2015 \u0096 -- --- ..",
+      trg = "[\", Going, to, the, store, to, grab, ..., some, coffee, for, $, 50, ., He, ', s, right, ..., -, &, 2/3, **, --, (TM), --, --, -, --, --, ...]"
+    )
+  }
+
+  @Test def testDeterministicNormalizingHtmlTokenizer(): Unit = {
+    checkDeterministicNormalizingTokenizer(DeterministicNormalizingHtmlTokenizer,
+      src = "''Going to the stor&eacute; to grab . . . some c&ouml;ff&eacute;&eacute; for \u20ac50. He`s right\u2026 &ndash; &amp; \u2154 \\*\\* -- &trade; &mdash; \u2015 \u0096 -- --- ..",
+      trg = "[\", Going, to, the, store, to, grab, ..., some, coffee, for, $, 50, ., He, ', s, right, ..., -, &, 2/3, **, --, (TM), --, --, -, --, --, ...]"
+    )
+
+    checkDeterministicNormalizingTokenizer(DeterministicNormalizingHtmlTokenizer,
+      src = "<DOC id=\"AFP_ENG_20101231.0424\" type=\"story\" >\n<P>\nblah blah\n\n</P>\n<DOC id=\"AFP_ENG_20101231.0422\" type=\"story\" >",
+      trg = "[<DOC id=\"AFP_ENG_20101231.0424\" type=\"story\" >, <P>, blah, blah, </P>, <DOC id=\"AFP_ENG_20101231.0422\" type=\"story\" >]"
+    )
   }
 
   val testText2 =
@@ -290,14 +339,16 @@ class TestTokenizer extends JUnitSuite with FastLogging {
     docs.map(_.sentences.toSeq)
   }
 
-  @Test def testDeterministicTokenizerUnclosedLine(): Unit = {
+  /* We just want this to not cause a stack overflow exception */
+  @Test def testDeterministicLexerTokenizerUnclosedLine(): Unit = {
     val unclosedLine = "<" + ("x" * 1679)
-    val tokens = runDeterministicTokenizer(unclosedLine)
+    val tokens = runTokenizer(DeterministicTokenizer, unclosedLine)
   }
 
-  @Test def testDeterministicTokenizerLongLine(): Unit = {
+  /* We just want this to not cause a stack overflow exception */
+  @Test def testDeterministicLexerTokenizerLongLine(): Unit = {
     val hugeLine = """<meta content="Read Featured Article “YesAsia 2011 Bestsellers - Movies” by YumCha! Editorial Team mentioning Donnie Yen,Shawn Yue,Jung Woo Sung,Michelle Yeoh,Jiang Wen,Andy Lau,Kaneshiro Takeshi,Yamazaki Takashi,Benny Chan,Won Bin,Kim Jee Woon,Kimura Takuya,Tsui Hark,Su Chao Pin,Barbie Hsu,Wang Xue Qi,John Woo,Peter Chan, &quot;Villain (DVD) (English Subtitled) (Hong Kong Version)&quot;,&quot;Let The Bullets Fly (2010) (Blu-ray + DVD) (Hong Kong Version)&quot;,&quot;Villain (Blu-ray) (English Subtitled) (Hong Kong Version)&quot;,&quot;The Borrower Arrietty (DVD) (English Subtitled) (2-Disc Edition) (Hong Kong Version)&quot;,&quot;Shaolin (2011) (Blu-ray) (English Subtitled) (Hong Kong Version)&quot;,&quot;A Better Tomorrow (2010) (DVD) (First Press Limited Edition) (Korea Version)&quot;,&quot;Outrage (Blu-ray) (English Subtitled) (Hong Kong Version)&quot;,&quot;The Housemaid (2010) (DVD) (Single Disc) (Korea Version)&quot;,&quot;Bruce Lee My Brother (Blu-ray) (Hong Kong Version)&quot;,&quot;Space Battleship Yamato (DVD) (Collector&#039;s Edition) (First Press Limited Edition) (Japan Version)&quot;,&quot;I Saw the Devil (Blu-ray) (2-Disc) (Normal Edition) (Korea Version)&quot;,&quot;Natalie (DVD) (Hong Kong Version)&quot;,&quot;The Lady Shogun And Her Men (DVD) (English Subtitled) (Hong Kong Version)&quot;,&quot;Wu Xia (2011) (DVD) (Hong Kong Version)&quot;,&quot;The Borrower Arrietty (Blu-ray) (English Subtitled) (Hong Kong Version)&quot;,&quot;Whisper Of The Heart (Blu-ray) (English Subtitled) (Hong Kong Version)&quot;,&quot;The Housemaid (2010) (DVD) (English Subtitled) (Hong Kong Version)&quot;,&quot;Laputa: Castle in The Sky (Blu-ray) (Hong Kong Version)&quot;,&quot;A Better Tomorrow (2010) (DVD) (English Subtitled) (Hong Kong Version)&quot;,&quot;The Borrower Arrietty (Blu-ray) (Multi Audio &amp; Subtitled) (Region Free) (Japan Version)&quot;,&quot;Natalie (Blu-ray) (2D+3D Version) (Hong Kong Version)&quot;,&quot;The Lost Bladesman (DVD) (Hong Kong Version)&quot;,&quot;Haunters (Blu-ray + OST) (First Press Limited Edition) (Korea Version)&quot;,&quot;Cyrano Agency (DVD) (Single Disc) (Korea Version) &quot;,&quot;The Man From Nowhere (Blu-ray) (Normal Edition) (Korea Version)&quot;,&quot;Outrage (Blu-ray) (English Subtitled) (Japan Version)&quot;,&quot;Natalie 3D (DVD) (2-Disc) (First Press Limited Edition) (Korea Version)&quot;,&quot;Laputa: Castle in the Sky (Blu-ray) (Multi Audio &amp; Subtitled) (Region Free) (Japan Version)&quot;,&quot;Sex &amp; Zen: Extreme Ecstasy (Blu-ray) (2D + 3D Director&#039;s Cut) (Hong Kong Version)&quot;,&quot;A Moment to Remember (Blu-ray) (Director&#039;s Cut) (First Press Limited Edition) (Korea Version)&quot;,&quot;The Man From Nowhere (DVD) (English Subtitled) (Hong Kong Version)&quot;,&quot;A Bittersweet Life (Blu-ray) (Director&#039;s Cut) (Normal Edition) (First Press Limited Edition) (Korea Version)&quot;,&quot;The Lost Bladesman (Blu-ray) (Hong Kong Version)&quot;,&quot;Whisper Of The Heart (Blu-ray) (Multi Audio &amp; Subtitled) (Region Free) (Japan Version)&quot;,&quot;Wu Xia (2011) (Blu-ray) (Hong Kong Version)&quot;,&quot;Outrage (2-DVD Special Edition) (English Subtitled) (Hong Kong Version)&quot;,&quot;Reign Of Assassins (Blu-ray) (Hong Kong Version)&quot;,&quot;The Sorcerer And The White Snake (2011) (Blu-ray) (Hong Kong Version)&quot;,&quot;Space Battleship Yamato (Blu-ray) (English Subtitled) (Hong Kong Version)&quot;,&quot;The Man From Nowhere (DVD) (2-Disc) (Normal Edition) (Korea Version)&quot;,&quot;Norwegian Wood (2010) (Blu-ray) (English Subtitled) (Hong Kong Version)&quot;,&quot;What Women Want (2011) (DVD) (English Subtitled) (Hong Kong Version)&quot;,&quot;A Better Tomorrow (2010) (Blu-ray) (English Subtitled) (Hong Kong Version)&quot;,&quot;Secret Reunion (DVD) (Single Disc) (Korea Version)&quot;,&quot;Outrage (DVD) (English Subtitled) (Hong Kong Version)&quot;,&quot;Sex &amp; Zen: Extreme Ecstasy (DVD) (2D+3D Special Version) (Hong Kong Version)&quot;,&quot;The Borrower Arrietty (DVD) (English Subtitled) (Japan Version)&quot;,&quot;Detective Dee And The Mystery Of The Phantom Flame (Blu-ray) (Hong Kong Version)&quot;,&quot;Reign Of Assassins (DVD) (Hong Kong Version)&quot;,&quot;Detective Dee And The Mystery Of The Phantom Flame (DVD) (Hong Kong Version)&quot;,&quot;Secret Reunion (Blu-ray) (Limited Edition) (Korea Version)&quot;,&quot;Confessions (Blu-ray) (English Subtitled) (Hong Kong Version)&quot;,&quot;Confessions (DVD) (English Subtitled) (Hong Kong Version)&quot;,&quot;Tomorrow&#039;s Joe (Blu-ray) (Premium Edition) (Japan Version)&quot;,&quot;Tomorrow&#039;s Joe (DVD) (English Subtitled) (Taiwan Version)&quot;,&quot;Bruce Lee My Brother (DVD) (Hong Kong Version)&quot;,&quot;Haunters (DVD) (Single Disc) (Korea Version)&quot;,&quot;Shaolin (2011) (DVD) (2-Disc Edition) (Hong Kong Version)&quot;,&quot;The Lady Shogun and Her Men (DVD) (Deluxe Edition) (First Press Limited Edition) (Japan Version)&quot;,&quot;The Housemaid (2010) (Blu-ray) (First Press Limited Edition) (Korea Version)&quot;,&quot;Space Battleship Yamato (DVD) (2-Disc Edition) (English Subtitled) (Hong Kong Version)&quot;,&quot;Sex &amp; Zen: Extreme Ecstasy (DVD) (2D Director&#039;s Cut) (Hong Kong Version)&quot;,&quot;Norwegian Wood (2010) (DVD) (English Subtitled) (Hong Kong Version)&quot;,&quot;Tomorrow&#039;s Joe (DVD) (Standard Edition) (Japan Version)&quot;,&quot;The Lady Shogun And Her Men (Blu-ray) (English Subtitled) (Hong Kong Version)&quot;,&quot;What Women Want (2011) (Blu-ray) (English Subtitled) (Hong Kong Version)&quot;,&quot;The Sorcerer And The White Snake (2011) (DVD) (Hong Kong Version)&quot; and more customer and professional reviews, editors’ picks, and the latest in Asian Entertainment at YumCha! from YesAsia.com. - North America Site" name="description"/>^M"""
-    val tokens = runDeterministicTokenizer(hugeLine)
+    val tokens = runTokenizer(DeterministicTokenizer, hugeLine)
   }
   
   @Test def testRegexTokenizer(): Unit = {
@@ -305,9 +356,8 @@ class TestTokenizer extends JUnitSuite with FastLogging {
     assert(DeterministicTokenizer("Acme Inc.").toSeq == Seq("Acme", "Inc."))
     assert(DeterministicTokenizer("Oct. 24").toSeq == Seq("Oct.", "24"))
     assert(DeterministicTokenizer("Mr. Smith.").toSeq == Seq("Mr.", "Smith", "."))
-    //println(RegexTokenizer("MR. SMITH.").mkString(" "))
-    //assert(RegexTokenizer("MR. SMITH.").toSeq == Seq("MR.", "SMITH", ".")) // TODO It would be nice if this worked.
-    //assert(RegexTokenizer("mr. smith.").toSeq != Seq("mr.", "smith", ".")) // TODO Should this work? -akm
+    assert(DeterministicTokenizer("MR. SMITH.").toSeq == Seq("MR.", "SMITH", "."))
+    assert(DeterministicTokenizer("mr. smith.").toSeq == Seq("mr.", "smith", ".")) // TODO Should this work? -akm
   }
   
 }

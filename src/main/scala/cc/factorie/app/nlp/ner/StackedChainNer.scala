@@ -566,7 +566,49 @@ class StackedChainNer[L<:NerTag](labelDomain: CategoricalDomain[String],
   }
 }
 
+object StackedChainNer {
+  def initLexicons() : Unit = synchronized {
+    lexicon.iesl.Month.toString()
+    lexicon.iesl.Day.toString()
 
+    lexicon.iesl.PersonFirst.toString()
+    lexicon.iesl.PersonFirstHigh.toString()
+    lexicon.iesl.PersonFirstHighest.toString()
+    lexicon.iesl.PersonFirstMedium.toString()
+
+    lexicon.iesl.PersonLast.toString()
+    lexicon.iesl.PersonLastHigh.toString()
+    lexicon.iesl.PersonLastHighest.toString()
+    lexicon.iesl.PersonLastMedium.toString()
+
+    lexicon.iesl.PersonHonorific.toString()
+
+    lexicon.iesl.Company.toString()
+    lexicon.iesl.JobTitle.toString()
+    lexicon.iesl.OrgSuffix.toString()
+
+    lexicon.iesl.Country.toString()
+    lexicon.iesl.City.toString()
+    lexicon.iesl.PlaceSuffix.toString()
+    lexicon.iesl.USState.toString()
+    lexicon.iesl.Continents.toString()
+
+    lexicon.wikipedia.Person.toString()
+    lexicon.wikipedia.Event.toString()
+    lexicon.wikipedia.Location.toString()
+    lexicon.wikipedia.Organization.toString()
+    lexicon.wikipedia.ManMadeThing.toString()
+    lexicon.iesl.Demonym.toString()
+
+    lexicon.wikipedia.Book.toString()
+    lexicon.wikipedia.Business.toString()
+    lexicon.wikipedia.Film.toString()
+
+    lexicon.wikipedia.LocationAndRedirect.toString()
+    lexicon.wikipedia.PersonAndRedirect.toString()
+    lexicon.wikipedia.OrganizationAndRedirect.toString()
+  }
+}
 
 class ConllStackedChainNer(embeddingMap: SkipGramEmbedding,
                            embeddingDim: Int,
@@ -595,7 +637,7 @@ class OntonotesStackedChainNer(embeddingMap: SkipGramEmbedding,
     if (document.tokenCount > 0) {
       val doc = super.process(document)
       // Add and populated NerSpanList attr to the document
-      doc.attr.+=(new ner.OntonotesNerSpanBuffer(document.sections.flatMap(section => BilouOntonotesNerDomain.spanList(section))))
+      doc.attr.+= (new ner.OntonotesNerSpanBuffer() ++= document.sections.flatMap(section => BilouOntonotesNerDomain.spanList(section))) 
       doc
     } else document
   }
@@ -607,6 +649,8 @@ object NoEmbeddingsOntonotesStackedChainNer extends NoEmbeddingsOntonotesStacked
 class StackedChainNerOpts extends CmdOptions with SharedNLPCmdOptions{
   val trainFile =     new CmdOption("train", "eng.train", "FILE", "CoNLL formatted training file.")
   val testFile  =     new CmdOption("test",  "eng.testb", "FILE", "CoNLL formatted test file.")
+  val dataLoader  =   new CmdOption("data-loader", "conll2003", "STRING", "Data loader for this format.")
+  val encoding =      new CmdOption("encoding", "UTF-8", "STRING", "Encoding of input files.")
   val modelDir =      new CmdOption("model", "StackedNER.factorie", "FILE", "File for saving or loading model.")
   val runXmlDir =     new CmdOption("run-xml", "xml", "DIR", "Directory for reading NYTimes XML data on which to run saved model.")
   val brownClusFile = new CmdOption("brown", "", "FILE", "File containing brown clusters.")
@@ -620,6 +664,22 @@ class StackedChainNerOpts extends CmdOptions with SharedNLPCmdOptions{
   val embeddingDim = new CmdOption("embeddingDim", 100, "INT", "embedding dimension")
   val embeddingScale = new CmdOption("embeddingScale", 10.0, "FLOAT", "The scale of the embeddings")
   val useOffsetEmbedding = new CmdOption("useOffsetEmbeddings", true, "BOOLEAN", "Whether to use offset embeddings")
+}
+
+object ConllStackedChainNerTester extends App {
+  val opts = new StackedChainNerOpts
+  opts.parse(args)
+  val ner = new ConllStackedChainNer(null: SkipGramEmbedding, opts.embeddingDim.value, opts.embeddingScale.value, opts.useOffsetEmbedding.value)
+  val testPortionToTake =  if(opts.testPortion.wasInvoked) opts.testPortion.value.toDouble  else 1.0
+  val dataLoader = opts.dataLoader.value match {
+    case "conll2003" => load.LoadConll2003(BILOU=true)
+    case "conll2002" => load.LoadConll2002(BILOU=true)
+  }
+  val testDocsFull =  dataLoader.fromFilename(opts.testFile.value, encoding = opts.encoding.value)
+  val testDocs = testDocsFull.take((testDocsFull.length*testPortionToTake).floor.toInt)
+  
+  ner.deSerialize(new FileInputStream(opts.modelDir.value))
+  println(ner.test(testDocs))
 }
 
 object ConllStackedChainNerTrainer extends HyperparameterMain {
@@ -641,8 +701,13 @@ object ConllStackedChainNerTrainer extends HyperparameterMain {
 
     val trainPortionToTake = if(opts.trainPortion.wasInvoked) opts.trainPortion.value.toDouble  else 1.0
     val testPortionToTake =  if(opts.testPortion.wasInvoked) opts.testPortion.value.toDouble  else 1.0
-    val trainDocsFull = load.LoadConll2003(BILOU=true).fromFilename(opts.trainFile.value)
-    val testDocsFull =  load.LoadConll2003(BILOU=true).fromFilename(opts.testFile.value)
+    
+    val dataLoader = opts.dataLoader.value match {
+      case "conll2003" => load.LoadConll2003(BILOU=true)
+      case "conll2002" => load.LoadConll2002(BILOU=true)
+    } 
+    val trainDocsFull = dataLoader.fromFilename(opts.trainFile.value, encoding = opts.encoding.value)
+    val testDocsFull =  dataLoader.fromFilename(opts.testFile.value, encoding = opts.encoding.value)
 
     val trainDocs = trainDocsFull.take((trainDocsFull.length*trainPortionToTake).floor.toInt)
     val testDocs = testDocsFull.take((testDocsFull.length*testPortionToTake).floor.toInt)

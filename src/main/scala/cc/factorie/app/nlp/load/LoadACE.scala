@@ -13,7 +13,6 @@
 package cc.factorie.app.nlp.load
 import cc.factorie.app.nlp._
 
-
 import segment._
 
 import xml.{XML, NodeSeq}
@@ -40,7 +39,7 @@ object LoadACE {
     source.close()
     val doc = new Document(matchTag.replaceAllIn(sgmString, _ => "")).setName(sgm)
     doc.attr += new ACEFileIdentifier(sgm.dropRight(4) + ".apf.xml")
-    DeterministicTokenizer.process(doc)
+    DeterministicNormalizingTokenizer.process(doc)
     DeterministicSentenceSegmenter.process(doc)
 
     // trailing tokens should be in a sentence

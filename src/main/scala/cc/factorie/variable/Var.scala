@@ -39,7 +39,7 @@ package cc.factorie.variable
    even though its value may do so.  This prevents confusion between
    Model.factors(Var) and Model.factors(Iterable[Var]).
    @author Andrew McCallum */
-trait Var {
+trait Var extends Serializable {
   type Value <: Any
 
   /** Abstract method to return the value of this variable. */

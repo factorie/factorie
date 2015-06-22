@@ -59,7 +59,11 @@ object TaggedLDA {
       for (file <- new java.io.File(directory).listFiles; if file.isFile) {
         print("."); Console.flush()
         val text = scala.io.Source.fromFile(file).mkString
-        val doc = new TaggedDocument(WordSeqDomain, file.toString, tokenizer(text).map(_.toLowerCase).filter(!cc.factorie.app.strings.Stopwords.contains(_)).toIndexedSeq)
+        val doc = new TaggedDocument(
+          WordSeqDomain,
+          file.toString,
+          tokenizer(text).map(_.toLowerCase).filter(!cc.factorie.app.nlp.lexicon.StopWords.contains(_)).toIndexedSeq
+        )
         lda.addDocument(doc, random)
         for (tag <- tags) if (tag.matches(text)) {
           doc.tags += tag

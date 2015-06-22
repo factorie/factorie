@@ -40,11 +40,12 @@
  * The most commonly used factorie domain is the CategoricalDomain
  */
 package cc.factorie.tutorial
-object Tutorial90ParallelismAndHyperparameters extends App {
+
+object TutorialParallelismAndHyperparameters extends App {
   import cc.factorie._
   import cc.factorie.app.nlp.{ Document, Token }
   import cc.factorie.app.chain.ChainModel
-  import cc.factorie.app.nlp.segment.{ DeterministicSentenceSegmenter, DeterministicTokenizer }
+  import cc.factorie.app.nlp.segment.{ DeterministicSentenceSegmenter, DeterministicNormalizingTokenizer}
   import cc.factorie.optimize.Trainer
   import cc.factorie.variable.{ LabeledCategoricalVariable, BinaryFeatureVectorVariable, CategoricalVectorDomain, CategoricalDomain }
   import cc.factorie.infer.InferByBPChain
@@ -99,7 +100,7 @@ object Tutorial90ParallelismAndHyperparameters extends App {
     l => l.token,
     t => t.attr[Label])
   val document = new Document("The quick brown fox jumped over the lazy dog.")
-  DeterministicTokenizer.process(document)
+  DeterministicNormalizingTokenizer.process(document)
   DeterministicSentenceSegmenter.process(document)
   document.tokens.foreach(t => t.attr += new Label(t, "A"))
   LabelDomain.index("B")

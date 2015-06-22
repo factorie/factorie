@@ -17,7 +17,7 @@ package cc.factorie.util
  * Date: 3/8/13
  * Time: 7:59 AM
  */
-final class RWLock {
+final class RWLock extends Serializable {
   private val _lock = new java.util.concurrent.locks.ReentrantReadWriteLock
   @inline def readLock() { _lock.readLock().lock() }
   @inline def writeLock() { _lock.writeLock().lock() }

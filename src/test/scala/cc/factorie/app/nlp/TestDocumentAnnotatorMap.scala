@@ -44,7 +44,7 @@ class TestDocumentAnnotatorMap {
     }
     map += parser1
     map += segment.PlainTokenNormalizer
-    map += cc.factorie.app.nlp.segment.DeterministicTokenizer
+    map += cc.factorie.app.nlp.segment.DeterministicNormalizingTokenizer
     map += cc.factorie.app.nlp.segment.DeterministicSentenceSegmenter
     object wnLemma extends DocumentAnnotator {
       def prereqAttrs: Iterable[Class[_]] = List(classOf[PennPosTag])

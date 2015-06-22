@@ -19,8 +19,10 @@ import scala.collection.JavaConverters._
 // Replace this with AnyRefMap when we switch to Scala 2.11 -luke
 object JavaHashMap {
   def apply[K, V](): mutable.Map[K, V] = new java.util.HashMap[K, V]().asScala
+  def apply[K, V](size : Int): mutable.Map[K, V] = new java.util.HashMap[K, V](size).asScala
 }
 
 object JavaHashSet {
   def apply[K](): mutable.Set[K] = new java.util.HashSet[K]().asScala
+  def apply[K](size : Int): mutable.Set[K] = new java.util.HashSet[K](size).asScala
 }

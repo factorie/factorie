@@ -14,7 +14,7 @@
 package cc.factorie.app.topics.lda
 import cc.factorie._
 import cc.factorie.directed._
-import cc.factorie.app.strings.Stopwords
+import cc.factorie.app.nlp.lexicon.StopWords
 import scala.collection.mutable.HashMap
 import java.io.{PrintWriter, FileWriter, File, BufferedReader, InputStreamReader, FileInputStream}
 import collection.mutable.{ArrayBuffer, HashSet, HashMap, LinkedHashMap}
@@ -231,7 +231,7 @@ class LDA(val wordSeqDomain: CategoricalSeqDomain[String], numTopics: Int = 10, 
   }
   
   def maximizePhisAndThetas(): Unit = {
-    phis.foreach(_.value.zero())
+    phis.foreach(_.value.masses.zero())
     // TODO What about the priors on phis and theta?? -akm
     for (doc <- documents) {
       val len = doc.ws.length

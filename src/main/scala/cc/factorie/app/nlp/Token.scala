@@ -110,7 +110,7 @@ class Token(val stringStart:Int, val stringEnd:Int) extends cc.factorie.app.chai
   }
 
   // Common attributes, will return null if not present
-  def posTag = attr[cc.factorie.app.nlp.pos.PennPosTag] // Should we return the abstract PosTag here instead? -akm
+  def posTag = attr[cc.factorie.app.nlp.pos.PosTag]
   def nerTag = attr[cc.factorie.app.nlp.ner.NerTag]
   def lemma = attr[cc.factorie.app.nlp.lemma.TokenLemma]
   // Parse attributes, will throw exception if parse is not present
@@ -156,6 +156,7 @@ class Token(val stringStart:Int, val stringEnd:Int) extends cc.factorie.app.chai
   /** Return true if the first character of the word is upper case. */
   def isCapitalized: Boolean = java.lang.Character.isUpperCase(string(0))
   def isPunctuation: Boolean = string.matches("\\p{Punct}+")
+  def isContraction: Boolean = string.contains("'") // todo this could probably be better
   /** Return true if any character of the word is lower case. */
   def containsLowerCase: Boolean = string.exists(c => java.lang.Character.isLowerCase(c))
   /** Return true if any character of the word is upper case. */

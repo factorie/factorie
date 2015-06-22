@@ -4,7 +4,6 @@ import scala.io.Source
 import java.io._
 import java.util.zip.GZIPInputStream
 import cc.factorie.app.strings.{alphaSegmenter,wordSegmenter}
-import cc.factorie.app.strings.Stopwords
 import org.apache.commons.compress.compressors.CompressorStreamFactory
 import scala.xml.pull._
 import scala.collection.mutable.ArrayBuffer
