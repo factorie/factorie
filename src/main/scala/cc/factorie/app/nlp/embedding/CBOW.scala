@@ -140,7 +140,6 @@ object CBOW {
     opts.parse(args)
     val cbow = new CBOW(opts)
     if (opts.trainInput.wasInvoked) {
-      Vocabulary.opts.maxWikiPages.setValue(opts.maxWikiPages.value) // temporary kludge
       cbow.train(opts.trainInput.value)
       cbow.writeInputEmbeddings("embeddings.txt")
     } else if (opts.vocabInput.wasInvoked) {
