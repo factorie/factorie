@@ -59,9 +59,15 @@ object ConllNerDomain extends EnumDomain {
 class ConllNerTag(token:Token, initialCategory:String) extends NerTag(token, initialCategory) { def domain = ConllNerDomain }
 class LabeledConllNerTag(token:Token, initialCategory:String) extends ConllNerTag(token, initialCategory) with CategoricalLabeling[String]
 
-class ConllNerSpanLabel(span:TokenSpan, initialCategory:String) extends NerSpanLabel(span, initialCategory) { def domain = ConllNerDomain }
-class ConllNerSpan(section:Section, start:Int, length:Int, category:String) extends NerSpan(section, start, length) { val label = new ConllNerSpanLabel(this, category) }
-class ConllNerSpanBuffer extends TokenSpanBuffer[ConllNerSpan]
+class ConllNerSpanLabel(span:TokenSpan, initialCategory:String)
+  extends NerSpanLabel(span, initialCategory) with Serializable {
+  def domain = ConllNerDomain
+}
+class ConllNerSpan(section:Section, start:Int, length:Int, category:String)
+  extends NerSpan(section, start, length) with Serializable {
+  val label = new ConllNerSpanLabel(this, category)
+}
+class ConllNerSpanBuffer extends TokenSpanBuffer[ConllNerSpan] with Serializable
 //class ConllNerLabel(val token:Token, targetValue:String) extends NerLabel(targetValue) { def domain = ConllNerDomain }
 
 
@@ -76,11 +82,18 @@ object BioConllNerDomain extends CategoricalDomain[String] with BIO {
     new ConllNerSpanBuffer ++= boundaries.map(b => new ConllNerSpan(section, b._1, b._2, b._3))
   } 
 }
-class BioConllNerTag(token:Token, initialCategory:String) extends NerTag(token, initialCategory) { def domain = BioConllNerDomain }
-class LabeledBioConllNerTag(token:Token, initialCategory:String) extends BioConllNerTag(token, initialCategory) with CategoricalLabeling[String]
+class BioConllNerTag(token:Token, initialCategory:String) extends NerTag(token, initialCategory) with Serializable {
+  def domain = BioConllNerDomain
+}
+class LabeledBioConllNerTag(token:Token, initialCategory:String)
+  extends BioConllNerTag(token, initialCategory) with CategoricalLabeling[String] with Serializable
 // IobConllNerDomain is defined in app.nlp.package as val IobConllNerDomain = BioConllNerDomain
-class IobConllNerTag(token:Token, initialCategory:String) extends NerTag(token, initialCategory) { def domain = IobConllNerDomain }
-class LabeledIobConllNerTag(token:Token, initialCategory:String) extends IobConllNerTag(token, initialCategory) with CategoricalLabeling[String]
+class IobConllNerTag(token:Token, initialCategory:String)
+  extends NerTag(token, initialCategory) with Serializable {
+  def domain = IobConllNerDomain
+}
+class LabeledIobConllNerTag(token:Token, initialCategory:String)
+  extends IobConllNerTag(token, initialCategory) with CategoricalLabeling[String] with Serializable
 //class BioConllNerLabel(val token:Token, targetValue:String) extends NerLabel(targetValue) { def domain = BioConllNerDomain }
 
 
@@ -92,8 +105,11 @@ object BilouConllNerDomain extends CategoricalDomain[String] with BILOU {
     new ConllNerSpanBuffer ++= boundaries.map(b => new ConllNerSpan(section, b._1, b._2, b._3))
   } 
 }
-class BilouConllNerTag(token:Token, initialCategory:String) extends NerTag(token, initialCategory) { def domain = BilouConllNerDomain }
-class LabeledBilouConllNerTag(token:Token, initialCategory:String) extends BilouConllNerTag(token, initialCategory) with CategoricalLabeling[String]
+class BilouConllNerTag(token:Token, initialCategory:String) extends NerTag(token, initialCategory) with Serializable {
+  def domain = BilouConllNerDomain
+}
+class LabeledBilouConllNerTag(token:Token, initialCategory:String)
+  extends BilouConllNerTag(token, initialCategory) with CategoricalLabeling[String] with Serializable
 //class BilouConllNerLabel(val token:Token, targetValue:String) extends NerLabel(targetValue) { def domain = BilouConllNerDomain }
 
 

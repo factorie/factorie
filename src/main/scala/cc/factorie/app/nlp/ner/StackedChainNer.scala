@@ -618,6 +618,11 @@ class ConllStackedChainNer(embeddingMap: SkipGramEmbedding,
   override def process(document:Document): Document = {
     if (document.tokenCount > 0) {
       val doc = super.process(document)
+      // remove computer features
+      doc.tokens.foreach { token =>
+        if (token.attr.contains(classOf[ChainNerFeatures])) token.attr.remove[ChainNerFeatures]
+        if (token.attr.contains(classOf[ChainNer2Features])) token.attr.remove[ChainNer2Features]
+      }
       // Add and populated NerSpanList attr to the document 
       doc.attr.+=(new ner.ConllNerSpanBuffer ++= document.sections.flatMap(section => BilouConllNerDomain.spanList(section)))
       doc
