@@ -3,7 +3,7 @@ import cc.factorie.variable.CategoricalDomain
 import scala.io.Source
 import java.io._
 import java.util.zip.GZIPInputStream
-import cc.factorie.app.strings.alphaSegmenter
+import cc.factorie.app.strings.{alphaSegmenter,wordSegmenter}
 import cc.factorie.app.strings.Stopwords
 import org.apache.commons.compress.compressors.CompressorStreamFactory
 import scala.xml.pull._
@@ -99,6 +99,35 @@ object Vocabulary {
           }
         }
       }
+      case name if name.endsWith(".csv") =>
+        val maxStringCount = Long.MaxValue // 10000000 //Int.MaxValue
+        val charset = java.nio.charset.Charset.forName(encoding)
+        val codec = new scala.io.Codec(charset)
+        codec.onMalformedInput(java.nio.charset.CodingErrorAction.IGNORE)
+        val lineIterator = Source.fromFile(file)(codec).getLines()
+        val cleaningRegex = "\"\\d+\"|<[^>]+>|&[a-z]{3,4};".r
+        new Iterator[String] {
+          var stringCount:Long = 0L
+          var lineCount:Long = 0L
+          def hasNext: Boolean = lineIterator.hasNext && stringCount < maxStringCount
+          def next(): String = {
+            val sb = new StringBuffer
+            var lineEnd = false
+            try {
+              while (lineIterator.hasNext && !lineEnd) {
+                val line = lineIterator.next()
+                lineCount += 1
+                if (line.length > 0) sb.append(line)
+                if (!line.endsWith("\\")) lineEnd = true
+              }
+            } catch {
+              case e:Exception => System.err.println("Caught at line "+lineCount+" exception\n"+e)
+            }
+            stringCount += 1
+            if (stringCount % 1000 == 0) print("\r"+stringCount)
+            cleaningRegex.replaceAllIn(sb.toString, " ")
+          }
+        }
       case name if name.startsWith("enwiki") && name.endsWith(".xml.bz2") =>
         val docIterator = cc.factorie.app.nlp.load.LoadWikipediaPlainText.fromCompressedFile(file, opts.maxWikiPages.value)
         new Iterator[String] {
