@@ -218,6 +218,21 @@ limitations under the License.
                       <execute />
                     </action>
                   </pluginExecution>
+                  <pluginExecution>
+                  	<pluginExecutionFilter>
+                  		<groupId>edu.umass.cs.iesl</groupId>
+                  		<artifactId>
+                  			jflex-scala-maven-plugin
+                  		</artifactId>
+                  		<versionRange>[1.6.1,)</versionRange>
+                  		<goals>
+                  			<goal>generate</goal>
+                  		</goals>
+                  	</pluginExecutionFilter>
+                  	<action>
+                  		<ignore></ignore>
+                  	</action>
+                  </pluginExecution>
                 </pluginExecutions>
               </lifecycleMappingMetadata>
             </configuration>

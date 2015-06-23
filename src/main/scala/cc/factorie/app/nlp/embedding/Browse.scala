@@ -42,6 +42,7 @@ object Browse {
     val maskedDotSimilarity: (DenseTensor1,DenseTensor1)=>Double = (t1,t2) => asymmetricDotSimilarity(t1, t2) //
     val maskedDotSimilarity2: (DenseTensor1,DenseTensor1)=>Double = (t1,t2) => asymmetricDotSimilarity2(t1, t2) //
     val euclideanSimilarity: (DenseTensor1,DenseTensor1)=>Double = (t1,t2) => 1.0 / t1.euclideanDistance(t2) // inverse of Euclidean distance
+    var count = 10
     for (line <- io.Source.stdin.getLines()) {
       //val query = embeddings.getOrElse(line.stripLineEnd, null)
       //val query = line.split("\\s+").map(word => embeddings.getOrElse(word, null)).filter(_ eq null).foldLeft(new DenseTensor1(dim))((a,b) => {b += a; b})
@@ -51,7 +52,6 @@ object Browse {
         if (t1.length != t2.length) println(s"embedding.Browse t1=${t1.length} t2=${t2.length}")
         t1.cosineSimilarity(t2)
       }
-      var count = 10
       var operation = 1 // 1 for addition, -1 for subtraction
       for (word <- queryWords) {
         if (word.matches("\\d+")) count = word.toInt
@@ -78,7 +78,8 @@ object Browse {
           }
         }
       }
-      if (true || query.oneNorm != 0.0) {
+      if (query.oneNorm != 0.0) {
+        println("QUERY: "+line)
         val top = new cc.factorie.util.TopN[String](count)
         for (tuple <- embeddings) top += (0, similarity(query, tuple._2), tuple._1)
         for (entry <- top) 

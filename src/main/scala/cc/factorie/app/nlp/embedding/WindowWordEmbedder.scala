@@ -9,24 +9,35 @@ import java.io._
 import scala.collection.mutable.{ArrayOps,ArrayBuffer}
 import java.util.zip.GZIPOutputStream
 import java.util.zip.GZIPInputStream
+import javax.xml.stream._
+import javax.xml.stream.events._
+import javax.xml.stream.util._
+import java.text.NumberFormat
+import java.util.Locale
+import org.apache.commons.compress.compressors.CompressorStreamFactory
+import scala.xml.pull._
+import scala.io.Source
+import cc.factorie.app.strings.{alphaSegmenter,wordSegmenter}
 
 class WindowWordEmbedderOptions extends cc.factorie.util.CmdOptions {
-  val input = new CmdOption("input", List("enwiki-latest-pages-articles.xml.bz2"), "TXTFILE", "Text files from which to read training data.  Works with *.txt.gz and Wikipedia enwiki*.xmlgz2.")
+  val vocabInput = new CmdOption("vocab-input", List("enwiki-latest-pages-articles.xml.bz2"), "TXTFILE", "Text files from which to read documents and words for building the vocabulary.  Works with *.txt.gz, Wikipedia enwiki*.xmlgz2, and a few other formats.")
+  val trainInput = new CmdOption("train-input", List("enwiki-latest-pages-articles.xml.bz2"), "TXTFILE", "Text files from which to read documents and words for training the embeddings.  Works with *.txt.gz, Wikipedia enwiki*.xmlgz2, and a few other formats.")
   val dims = new CmdOption("dims", 50, "INT", "Dimensionality of the embedding vectors.")
-  //val margin = new CmdOption("margin", 0.1, "DOUBLE", "Margin for WSABIE training.")
-  //val loss = new CmdOption("loss", "wsabie", "STRING", "Loss function; options are wsabie and log.")
   val seed = new CmdOption("seed", 0, "INT", "Seed for random number generator.")
   val minContext = new CmdOption("min-context", 2, "INT", "Skip training windows that end up with fewer context words after randomized removal of common context words.")
   val window =  new CmdOption("window", 5, "INT", "The number of words on either side of the target to include in the context window.")
   val normalizeX = new CmdOption("normalize-x", false, "BOOL", "If true, normalize input context by the number of context words in the training example.")
   val vocabulary = new CmdOption("vocabulary", "vocabulary.txt", "FILE", "Filename in which to find the words, one per line, each preceded by its count.")
   val negative = new CmdOption("negative", 3, "INT", "The number of NCE negative examples to use for each positive example.")
-  val maxWikiPages = new CmdOption("max-wiki-pages", Long.MaxValue, "LONG", "Read no more than this number of Wikipedia pages.  Default is Int.MaxValue.")
+  val maxDocuments = new CmdOption("max-documents", Long.MaxValue, "LONG", "Read no more than this number of documents or Wikipedia pages.  Default is Int.MaxValue.")
   val separateIO = new CmdOption("separate-io", false, "BOOLEAN", "If TRUE, parameterize input embeddings (U) separately from output embeddings (V).  Default is FALSE.")
   val checkGradient = new CmdOption("check-gradient", false, "BOOLEAN", "If TRUE, test the value/gradient calculation for every parameter for every example after the first 50000 example.  (Slow.)  Default is FALSE.")
   val outputExamples = new CmdOption("output-examples", "examples.txt.gz", "FILE", "Save the training targets/contexts in this file, one per line.")
   val useAliasSampling = new CmdOption("alias-sampling", false, "BOOLEAN", "Sample negative examples using alias sampling vs. power-law approximation.")
   val powerForCounts = new CmdOption("power-for-counts", 0.75, "DOUBLE", "Power to raise counts to when computing proportions for exact alias sampling.")
+
+  val vocabMinCount = new CmdOption("vocab-min-count", 200, "INT", "Words with count smaller than this will be discarded when building the vocabulary.  Default is 200.")
+  val vocabSkipProb = new CmdOption("vocab-skip-prob", 0.0, "DOUBLE", "The probabilty that each word string will be skipped in the indexing and counting when building the vocabulary.  Helps efficiently cull words occurring ~1 times.")
 }
 
 trait WindowWordEmbedderExample extends Example {
@@ -38,64 +49,52 @@ trait WindowWordEmbedderExample extends Example {
 abstract class WordEmbedder(val opts:WindowWordEmbedderOptions) extends Parameters {
   val dims = opts.dims.value
   val random = new Random(opts.seed.value)
-  val domain = new CategoricalDomain[String]
-  lazy val sampler = new cc.factorie.util.Alias(domain.counts.asArray.map(_.toDouble).map(math.pow(_, opts.powerForCounts.value)))(random)
-  def makeNegativeSamples: Array[Int] =
-    if (opts.useAliasSampling.value) {
-      val len = opts.negative.value
-      val ret = new Array[Int](len)
-      var i = 0
-      while (i < len) {
-        ret(i) = sampler.sample()
-        i += 1
-      }
-      ret
-    } else {
-      val len = opts.negative.value
-      val ret = new Array[Int](len)
-      var i = 0
-      while (i < len) {
-        var r = random.nextDouble()
-        r = r * r * r // Rely on fact that domain is ordered by frequency, so we want to over-sample the earlier entries
-        ret(i) = (r * domain.size).toInt // TODO Make this better match a Ziph distribution!
-        i += 1
-      }
-      ret
-    }
-  // Read in the vocabulary 
-  for (splitLine <- io.Source.fromFile(opts.vocabulary.value).getLines().map(_.split(' '))) domain.indexWithCount(splitLine(1), splitLine(0).toInt)
-  domain.freeze()
-  println("Vocabulary size "+domain.size)
-  println("Vocabulary total count "+domain.countsTotal)
+  val domain = new CategoricalDomain[String]; domain.gatherCounts = true 
+
+  val maxDomainSize = initDomain()
   // Initialize both input and output embedding vectors
-  private val _inputEmbedding = Array.fill(domain.size)(Weights(new DenseTensor1(dims).fill(() => random.nextDouble()/dims/10 - 0.5/dims/10))) // TODO How should vectors be initialized? /10 good?
+  private val _inputEmbedding = Array.fill(maxDomainSize)(Weights(new DenseTensor1(dims).fill(() => random.nextDouble()/dims/10 - 0.5/dims/10))) // TODO How should vectors be initialized? /10 good?
+  private val _outputEmbedding = if (opts.separateIO.value) Array.fill(maxDomainSize)(Weights(new DenseTensor1(dims).fill(() => random.nextDouble()/dims/10 - 0.5/dims/10))) else _inputEmbedding // TODO How should vectors be initialized? /10 good?
+  private val _discardProb = new Array[Double](maxDomainSize)
+
   def inputEmbedding(i:Int) = _inputEmbedding(i).value
   def inputWeights(i:Int) = _inputEmbedding(i)
   def inputEmbedding(word:String) = { val index = domain.index(word); if (index >= 0) _inputEmbedding(index).value else null }
-  private val _outputEmbedding = if (opts.separateIO.value) Array.fill(domain.size)(Weights(new DenseTensor1(dims).fill(() => random.nextDouble()/dims/10 - 0.5/dims/10))) else _inputEmbedding // TODO How should vectors be initialized? /10 good?
   def outputEmbedding(i:Int) = _outputEmbedding(i).value
   def outputWeights(i:Int) = _outputEmbedding(i)
   def outputEmbedding(word:String) = { val index = domain.index(word); if (index >= 0) _outputEmbedding(index).value else null }
   
-  private val _discardProb = new Array[Double](domain.size)
   def discardProb(wordIndex: Int): Double = {
     var result = _discardProb(wordIndex)
+    println("discardProb "+result)
     if (result != 0.0) return result
     result = 1.0 - math.sqrt(0.0001/(domain.count(wordIndex).toDouble / domain.countsTotal.toDouble))
     _discardProb(wordIndex) = result
+    println("discardProb again "+result)
     result
   }
   def discard(wordIndex:Int): Boolean = random.nextDouble() < discardProb(wordIndex)
+  def discardProbReset(): Unit = { java.util.Arrays.fill(_discardProb, 0.0) }
+    
+  /** Initialize the vocabulary into this.domain, either by the incrementalVocabMaxSize or by reading the vocabulary from a file. */
+  def initDomain(): Int = {
+    // Read in the vocabulary 
+    for (splitLine <- io.Source.fromFile(opts.vocabulary.value).getLines().map(_.split(' '))) domain.indexWithCount(splitLine(1), splitLine(0).toInt)
+    println("Vocabulary size "+domain.size)
+    println("Vocabulary total count "+domain.countsTotal)
+    domain.freeze()
+    domain.size
+  }
   
-  private def stringToWordIndices(string:String): cc.factorie.util.IntArrayBuffer = {
+  def stringToWordIndices(string:String): cc.factorie.util.IntArrayBuffer = {
     val wordIndices = new cc.factorie.util.IntArrayBuffer(string.length/4) // guessing average word length > 4
-    for (word <- Vocabulary.stringToWords(string)) {
+    for (word <- stringToWords(string)) {
       val wordIndex = domain.index(word)
       if (wordIndex >= 0) wordIndices += wordIndex
     }
     wordIndices
   }
-  private def stringToExamples(string:String): Iterable[WindowWordEmbedderExample] = {
+  def stringToExamples(string:String): Iterable[WindowWordEmbedderExample] = {
     val wordIndices = stringToWordIndices(string)
     if (wordIndices.length > opts.window.value) { // TODO was > 2*opts.window.value
       val array = wordIndices._rawArray
@@ -116,7 +115,7 @@ abstract class WordEmbedder(val opts:WindowWordEmbedderOptions) extends Paramete
     //val trainer = new HogwildTrainer(parameters, optimizer, logEveryN=50000)
     //val trainer = new cc.factorie.app.nlp.embeddings.LiteHogwildTrainer(parameters, optimizer)
     val trainer = new OnlineTrainer(parameters, optimizer, logEveryN=50000)
-    for (filename <- filenames; string <- Vocabulary.fileToStringIterator(new File(filename))) {
+    for (filename <- filenames; string <- fileToStringIterator(new File(filename))) {
       val examples = stringToExamples(string)
       //println("CBOW.train examples.size = "+examples.size)
       wordCount += examples.size
@@ -126,7 +125,7 @@ abstract class WordEmbedder(val opts:WindowWordEmbedderOptions) extends Paramete
         println("finished.")
       }
       trainer.processExamples(examples)
-      if (wordCount > nextWordCountLog) { println(s"Trained on ${wordCount/1000000}m contexts."); nextWordCountLog += wordCountLogIncrement } 
+      if (wordCount > nextWordCountLog) { println(s" Trained on ${wordCount/1000000}m contexts."); nextWordCountLog += wordCountLogIncrement } 
       if (wordCount > nextWordCountShapshot && !opts.outputExamples.wasInvoked) {
         val fn = f"embeddings-${wordCount/1000000}%04dm"
         println("Writing intermediate embeddings to "+fn)
@@ -143,6 +142,33 @@ abstract class WordEmbedder(val opts:WindowWordEmbedderOptions) extends Paramete
     for (i <- 0 until domain.size) top += (i, query.cosineSimilarity(_outputEmbedding(i).value), domain.category(i))
     top
   }
+  
+  /** Return a list of vocabulary indices to use a negative training examples, sampled according to a function of their counts. */
+  def makeNegativeSamples: Array[Int] = {
+    if (opts.useAliasSampling.value) {
+      val len = opts.negative.value
+      val ret = new Array[Int](len)
+      var i = 0
+      while (i < len) {
+        ret(i) = negativeSampler.sample()
+        i += 1
+      }
+      ret
+    } else {
+      val len = opts.negative.value
+      val ret = new Array[Int](len)
+      var i = 0
+      while (i < len) {
+        var r = random.nextDouble()
+        r = r * r * r // Rely on fact that domain is ordered by frequency, so we want to over-sample the earlier entries
+        ret(i) = (r * domain.size).toInt // TODO Make this better match a Ziph distribution!
+        i += 1
+      }
+      ret
+    }
+  }
+  lazy val negativeSampler = new cc.factorie.util.Alias(domain.counts.asArray.map(_.toDouble).map(math.pow(_, opts.powerForCounts.value)))(random)
+
   
   /** Interactive browsing of nearest neighbors */
   def browse(): Unit = {
@@ -168,11 +194,193 @@ abstract class WordEmbedder(val opts:WindowWordEmbedderOptions) extends Paramete
     }    
   }
   
+  /** Read text to build up vocabulary and write the vocabulary to the filename specified by --vocabulary. */
+  def buildVocabulary(filenames:Seq[String]): Unit = {
+    // Recursively gather all files listed on command line
+    val files = opts.vocabInput.value.flatMap(filename => recurseFiles(new File(filename)))
+    // Set up a String map to gather counts
+    val domain = new CategoricalDomain[String]
+    domain.gatherCounts = true
+    val printInterval = 100
+    val random = new scala.util.Random(0)
+    val skipThreshold = 1.0 - opts.vocabSkipProb.value
+    var printAtCount = printInterval
+    var wordCount = 0
+    var docCount = 0
+    // From all files, segment contents into words, and count them
+    files.foreach(file => {
+      println("Vocabulary reading "+file.getName())
+      for (line <- fileToStringIterator(file)) {
+        if (docCount >= printAtCount) {
+          print("\r"+NumberFormat.getNumberInstance(Locale.US).format(docCount)+" articles, "+NumberFormat.getNumberInstance(Locale.US).format(wordCount)+" tokens, "+NumberFormat.getNumberInstance(Locale.US).format(domain.size)+" vocabulary")
+          //print(s"\r$wikipediaArticleCount articles\t$wordCount words") ; 
+          printAtCount += printInterval
+        }
+        for (word <- stringToWords(line)) {
+          //println("Vocabulary read word "+word)
+          wordCount += 1
+          if (skipThreshold == 0.0 || random.nextDouble() < skipThreshold) // Randomly sample to avoid words appearing only ~1 times.
+            domain.index(new String(word)) // to avoid memory leak: http://stackoverflow.com/questions/15612157/substring-method-in-string-class-causes-memory-leak
+        }
+      }
+    })
+    println(s"Read $docCount documents")
+    println(s"Read ${domain.countsTotal} tokens, ${domain.size} types.")
+    // Get rid of words occurring less than 10 times
+    domain.trimBelowCount(opts.vocabMinCount.value, preserveCounts = true)
+    println(s"Trimed to ${domain.countsTotal} tokens, ${domain.size} types.")
+    // Serialize the results
+    println("Sorting...")
+    writeVocabulary(opts.vocabulary.value)
+    println("Done writing vocabulary.")
+  }
+  
+  def writeVocabulary(filename:String): Unit = {
+    val sorted = domain.categories.map(c => (domain.count(c), c)).sortBy(-_._1)
+    val out = new PrintWriter(filename)
+    for ((count, word) <- sorted)
+      out.println("%d %s".format(count, word))
+    out.close()
+  }
+  
+  /** Given a document's string contents, return an iterator over the individual word tokens in the document */
+  def stringToWords(string:String): Iterator[String] = {
+    //alphaSegmenter(string).filter(word => !Stopwords.contains(word.toLowerCase))
+    alphaSegmenter(string)
+  }
+  
+  /** Given a file, return an iterator over the string contents of each "document".
+      Returns nil if the filename suffix is not handled.
+   */
+  def fileToStringIterator(file:File, encoding:String = "UTF8"): Iterator[String] = {
+    file.getName match {
+      // Plain text file
+      case name if name.endsWith(".txt") => Source.fromFile(file, encoding).getLines()
+      // Compressed text
+      case name if name.endsWith(".txt.gz") => {
+        val lineIterator = Source.fromInputStream(new GZIPInputStream(new FileInputStream(file)), encoding).getLines()
+        var lineCount = 0
+        new Iterator[String] {
+          def hasNext: Boolean = lineIterator.hasNext && lineCount < opts.maxDocuments.value
+          def next(): String = {
+            lineCount += 1
+            val sb = new StringBuffer
+            var emptyLine = false
+            while (lineIterator.hasNext && !emptyLine) {
+              val line = lineIterator.next()
+              if (line.length > 0) sb.append(line)
+              else emptyLine = true
+            }
+            sb.toString
+          }
+        }
+      }
+      case name if name.endsWith(".csv") =>
+        val charset = java.nio.charset.Charset.forName(encoding)
+        val codec = new scala.io.Codec(charset)
+        codec.onMalformedInput(java.nio.charset.CodingErrorAction.IGNORE)
+        val lineIterator = Source.fromFile(file)(codec).getLines()
+        val cleaningRegex = "\"\\d+\"|<[^>]+>|&[a-z]{3,4};".r
+        new Iterator[String] {
+          var stringCount:Long = 0L
+          var lineCount:Long = 0L
+          def hasNext: Boolean = lineIterator.hasNext && stringCount < opts.maxDocuments.value //maxStringCount
+          def next(): String = {
+            val sb = new StringBuffer
+            var lineEnd = false
+            try {
+              while (lineIterator.hasNext && !lineEnd) {
+                val line = lineIterator.next()
+                lineCount += 1
+                if (line.length > 0) sb.append(line)
+                if (!line.endsWith("\\")) lineEnd = true
+              }
+            } catch {
+              case e:Exception => System.err.println("Caught at line "+lineCount+" exception\n"+e)
+            }
+            stringCount += 1
+            if (stringCount % 1000 == 0) print("\r"+stringCount)
+            cleaningRegex.replaceAllIn(sb.toString, " ")
+          }
+        }
+      case name if name.startsWith("enwiki") && name.endsWith(".xml.bz2") =>
+        var wikipediaArticleCount = 0
+        val docIterator = cc.factorie.app.nlp.load.LoadWikipediaPlainText.fromCompressedFile(file, opts.maxDocuments.value)
+        new Iterator[String] {
+          def hasNext: Boolean = docIterator.hasNext
+          def next(): String = { wikipediaArticleCount += 1; val doc = docIterator.next(); /*println(doc.name);*/ doc.string }
+        }
+      // bz2 compress wikipedia XML
+      case name if name.startsWith("deprecated enwiki") && name.endsWith(".xml.bz2") => {
+        var wikipediaArticleCount = 0
+        val input = new CompressorStreamFactory().createCompressorInputStream(CompressorStreamFactory.BZIP2, new FileInputStream(file))
+        val xml = new scala.xml.pull.XMLEventReader(Source.fromInputStream(input))
+        //val xml = XMLInputFactory.newInstance().createXMLEventReader(new InputStreamReader(input))
+        val cleaningRegex = List(
+            "\\{\\{[^\\}]*\\}\\}", // Remove everything {{inside}}
+            "\\{\\|[^\\}]*\\|\\}", // Remove everything {|inside|}
+            "(?<!\\[)\\[(?!\\[)[^\\]]*\\]", // Remove everything [inside] but not [[inside]]
+            "\\[\\[(?:File|Image):[^\\]]+\\|", // Remove [[File:WilliamGodwin.jpg|left|thumb|[
+            "wikt:|nbsp;|ndash;|br/",
+            "Category:"
+            ).mkString("|").r
+        new Iterator[String] {
+          def hasNext: Boolean = {
+            val result = xml.hasNext && wikipediaArticleCount < opts.maxDocuments.value // Artificially stopping early
+            if (!result) { /*xml.close();*/ xml.stop(); input.close(); println(getClass.getName+": fileToStringIterator closing.") }
+            result
+          }
+          def next(): String = {
+            var done = false
+            var insidePage = false
+            var insideText = false
+            var insideRef = false
+            var insideComment = false
+            val sb = new StringBuffer
+            while (xml.hasNext && !done) {
+              xml.next() match {
+                //case e => println(e)
+                case EvElemStart(_, "page", _, _) => { insidePage = true }
+                case EvElemEnd(_, "page") => { insidePage = false; done = true }
+                case EvElemStart(_, "text", _, _) => { insideText = true }
+                case EvElemEnd(_, "text") => { insideText = false; done = true }
+                case EvText(t) if insideText => {
+                  if (t.startsWith("!--") && !t.endsWith("--")) insideComment = true
+                  else if (t.endsWith("--")) insideComment = false
+                  else if (t.startsWith("ref") && !t.endsWith("/")) insideRef = true
+                  else if (t == "/ref") insideRef = false
+                  else if (!insideRef && !insideComment && !t.startsWith("ref ") && !t.startsWith("#REDIRECT")) { sb append t; sb append ' ' }
+                }
+                case _ => // ignore all other tags
+              }
+            }
+            var s = cleaningRegex.replaceAllIn(sb.toString, " ")
+            s = s.trim; if (s.length > 0) { wikipediaArticleCount += 1; return s } else { /*println(s"Skipping at $wikipediaArticleCount");*/ return next() }
+            s
+          }
+        }
+      }
+      case _ => throw new Error("Unknown suffix on document name "+file.getName())
+    }
+  }
+
+  // Recursively descend directory, returning a list of files.
+  def recurseFiles(directory:File): Seq[File] = {
+    if (!directory.exists) throw new Error("File "+directory+" does not exist")
+    if (directory.isFile) return List(directory)
+    val result = new scala.collection.mutable.ArrayBuffer[File]
+    for (entry <- directory.listFiles) {
+      if (entry.isFile) result += entry
+      else if (entry.isDirectory) result ++= recurseFiles(entry)
+    }
+    result
+  }
+  
     
   def writeExamples(inputFilenames:Array[String]): Unit = {
     val dataWriter = if (opts.outputExamples.wasInvoked) new OutputStreamWriter(new GZIPOutputStream(new FileOutputStream(opts.outputExamples.value)), "UTF-8") else null
     var examplesWrittenCount = 0
-    for (filename <- inputFilenames; string <- Vocabulary.fileToStringIterator(new File(filename)); example <- stringToExamples(string)) {
+    for (filename <- inputFilenames; string <- fileToStringIterator(new File(filename)); example <- stringToExamples(string)) {
       examplesWrittenCount += 1
       dataWriter.write(s"$examplesWrittenCount\t${example.outputIndices.map(domain.category(_)).mkString(" ")}\t${example.inputIndices.map(i => domain.category(i)).mkString("\t")}\n")
     }
@@ -234,3 +442,50 @@ abstract class WordEmbedder(val opts:WindowWordEmbedderOptions) extends Paramete
 }
 
 
+trait IncrementalVocabularyOptions extends WindowWordEmbedderOptions {
+  val incrementalVocabMaxSize = new CmdOption("incremental-vocab-max-size", 100000, "INT", "When invoked this turns on incremental vocabulary building during training, allowing the vocabulary to grow up to this limit.")
+  val incrementalVocabMinCount = new CmdOption("incremental-vocab-min-count", 100, "INT", "When doing incremental vocabulary building, don't actually assign a word an embedding vector until it has been seen this many times.")
+}
+
+
+trait IncrementalVocabulary extends WordEmbedder {
+  lazy val incrementalVocabulary = new CategoricalDomain[String]
+  incrementalVocabulary.gatherCounts = true
+  
+  override  def initDomain(): Int = {
+    domain.freeze()
+    opts.asInstanceOf[IncrementalVocabularyOptions].incrementalVocabMaxSize.value
+  }
+  
+  // Since the vocabulary and counts are growing, we can't just always use the same cached word counts, but must recalcuate them every once in a while
+  private var _lastDiscardProbResetCount = 0L
+  override def discardProb(wordIndex: Int): Double = {
+    if (domain.countsTotal < 1000000) return 0.0000001
+    if (domain.countsTotal - _lastDiscardProbResetCount > 10000) {
+      discardProbReset()
+      _lastDiscardProbResetCount = domain.countsTotal
+    }
+    return super.discardProb(wordIndex)
+  }
+
+
+  override def stringToWordIndices(string:String): cc.factorie.util.IntArrayBuffer = {
+    val wordIndices = new cc.factorie.util.IntArrayBuffer(string.length/4) // guessing average word length > 4
+    for (word <- stringToWords(string)) {
+      var wordIndex = domain.index(word)
+      if (wordIndex == -1) {
+        // The word doesn't yet have an embedding vector
+        val vi = incrementalVocabulary.index(word) // increment its count in the vocabulary of words that don't yet have an embedding
+        if (incrementalVocabulary.count(vi) > opts.asInstanceOf[IncrementalVocabularyOptions].incrementalVocabMinCount.value && domain.size < opts.asInstanceOf[IncrementalVocabularyOptions].incrementalVocabMaxSize.value) {
+          domain.unfreeze()
+          wordIndex = domain.index(word) // If the count is now above threshold and there is room to grow, then put then give the word an embedding
+          domain.freeze()
+        }
+      }
+      if (wordIndex >= 0) wordIndices += wordIndex
+    }
+    //println("IncrementalVocabulary "+wordIndices.toSeq)
+    wordIndices
+  }
+
+}
