@@ -40,6 +40,43 @@ abstract class CorefSampler[Vars <: NodeVariables[Vars]](override val model:Core
 
 }
 
+trait AutoStoppingAcceptSampler[Vars <: NodeVariables[Vars]] extends CorefSampler[Vars] {
+  this: PairGenerator[Vars] with MoveGenerator[Vars] =>
+
+  def autoStopAcceptThreshold:Int
+
+  private var proposalIdx = 0
+  private var lastRejected = 0
+  private var runOfRejectedProposals = 0
+
+  proposalHooks += {p:Proposal[(Node[Vars], Node[Vars])] =>
+    proposalIdx += 1
+    if(p.diff.isEmpty) { // the proposal was rejected
+      if(proposalIdx - 1 == lastRejected) { // we rejected the last proposal as well
+        runOfRejectedProposals += 1
+      } else {
+        runOfRejectedProposals = 1
+      }
+      lastRejected = proposalIdx
+    }
+  }
+
+  override def infer(): Unit = {
+    beforeInferHook
+
+    while(proposalIdx < iterations && runOfRejectedProposals < autoStopAcceptThreshold) {
+      process(nextContext)
+    }
+    if(proposalIdx == iterations) {
+      println("Stopping at max iterations of %d steps" format proposalIdx)
+    } else {
+      println("Stopping automatically after %d steps" format proposalIdx)
+    }
+    afterInferHook
+  }
+
+}
+
 trait AutoStoppingSampler[Vars <: NodeVariables[Vars]] extends CorefSampler[Vars] {
   this: PairGenerator[Vars] with MoveGenerator[Vars] =>
 

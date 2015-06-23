@@ -141,7 +141,6 @@ object CBOW {
     opts.parse(args)
     val cbow = if (opts.incrementalVocabMaxSize.wasInvoked) new CBOW(opts) with IncrementalVocabulary else new CBOW(opts)
     if (opts.trainInput.wasInvoked) {
-      //Vocabulary.opts.maxWikiPages.setValue(opts.maxWikiPages.value) // temporary kludge
       cbow.train(opts.trainInput.value)
       cbow.writeInputEmbeddings("embeddings.txt")
       if (opts.incrementalVocabMaxSize.wasInvoked) cbow.writeVocabulary(opts.vocabulary.value)
