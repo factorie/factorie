@@ -133,7 +133,7 @@ class CategoricalDomain[C] extends DiscreteDomain(0) with IndexedSeq[Categorical
       and also (whether or not 'gatherCounts' is true') 
       increment by 'count' the number of times this Domain says the category has been seen.
       If the category is not already in this CategoricalDomain and 'frozen' is false,
-      and 'mazSize' will not be exceeded,
+      and 'maxSize' will not be exceeded,
       then add the category to this CategoricalDomain.
       This method is thread-safe so that multiple threads may read and index data simultaneously. */
   def indexWithCount(category:C, count:Int): Int = {
@@ -141,9 +141,15 @@ class CategoricalDomain[C] extends DiscreteDomain(0) with IndexedSeq[Categorical
     this synchronized { _increment(i, count) }
     i
   }
-  /** Like index, but throw an exception if the category is not already there. */
+  /** Like indexOnly, but throw an exception if the category is not already there. */
   def getIndex(category:C): Int = lock.withReadLock({
-    (if(_indices.containsKey(category)) _indices.get(category) else throw new Error("Category not present; use index() to cause the creation of a new value.")).intValue
+    val v = __indices.get(category)
+    if (v ne null) v.intValue else throw new Error("Category not present; use index() to cause the creation of a new value.")
+  })
+  /** Like indexOnly, but return -1 if the category is not already there. */
+  def indexOrNegativeOne(category:C): Int = lock.withReadLock({
+    val v = __indices.get(category)
+    if (v eq null) -1 else { v.intValue }
   })
   override def freeze(): Unit = {
     _frozen = true

@@ -10,7 +10,7 @@ import cc.factorie.util.DoubleAccumulator
 import scala.collection.mutable.{ArrayOps,ArrayBuffer}
 import java.util.zip.GZIPOutputStream
 
-class CBOWOptions extends WindowWordEmbedderOptions {
+class CBOWOptions extends WindowWordEmbedderOptions with IncrementalVocabularyOptions {
   val margin = new CmdOption("margin", 0.1, "DOUBLE", "Margin for WSABIE training.")
   val loss = new CmdOption("loss", "wsabie", "STRING", "Loss function; options are wsabie and log.")
 }
@@ -19,7 +19,7 @@ object CBOWExample {
   def apply(model:CBOW, wordIndices:Array[Int], centerPosition:Int, window:Int): Option[CBOWExample] = {
     val targetId = wordIndices(centerPosition)
     if (model.discard(targetId)) {     // Skip some of the most common target words
-      //println("CBOWExample skipping "+model.domain.category(array(target))+"  "+discardProb)
+      //println("CBOWExample skipping "+model.domain.category(targetId))
       return None
     }
     val context = new IntArrayBuffer(window*2)
@@ -133,15 +133,17 @@ class CBOW(override val opts:CBOWOptions) extends WordEmbedder(opts) {
 }
 
 
+
 object CBOW {
 
   def main(args:Array[String]): Unit = {
     val opts = new CBOWOptions
     opts.parse(args)
-    val cbow = new CBOW(opts)
+    val cbow = if (opts.incrementalVocabMaxSize.wasInvoked) new CBOW(opts) with IncrementalVocabulary else new CBOW(opts)
     if (opts.trainInput.wasInvoked) {
       cbow.train(opts.trainInput.value)
       cbow.writeInputEmbeddings("embeddings.txt")
+      if (opts.incrementalVocabMaxSize.wasInvoked) cbow.writeVocabulary(opts.vocabulary.value)
     } else if (opts.vocabInput.wasInvoked) {
       cbow.buildVocabulary(opts.vocabInput.value)
     } else {
