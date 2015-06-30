@@ -188,7 +188,7 @@ class LabeledBioOntonotesNerTag(token:Token, initialCategory:String)
   extends BioOntonotesNerTag(token, initialCategory) with CategoricalLabeling[String] with Serializable
 class IobOntonotesNerTag(token:Token, initialCategory:String)
   extends NerTag(token, initialCategory) with Serializable { def domain = BioOntonotesNerDomain }
-class LabeledIobOntonotesNerTag(token:Token, initialCategory:String) 
+class LabeledIobOntonotesNerTag(token:Token, initialCategory:String)
   extends IobOntonotesNerTag(token, initialCategory) with CategoricalLabeling[String] with Serializable
 //class BioOntonotesNerLabel(val token:Token, targetValue:String) extends NerLabel(targetValue) { def domain = BioOntonotesNerDomain }
 
