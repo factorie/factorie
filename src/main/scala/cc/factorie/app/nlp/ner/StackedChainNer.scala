@@ -614,7 +614,16 @@ class ConllStackedChainNer(embeddingMap: SkipGramEmbedding,
                            embeddingDim: Int,
                            scale: Double,
                            useOffsetEmbedding: Boolean,
-                           url: java.net.URL=null) extends StackedChainNer[BilouConllNerTag](BilouConllNerDomain, (t, s) => new BilouConllNerTag(t, s), l => l.token, embeddingMap, embeddingDim, scale, useOffsetEmbedding, url) {
+                           url: java.net.URL=null)
+  extends StackedChainNer[BilouConllNerTag](
+    BilouConllNerDomain,
+    (t, s) => new BilouConllNerTag(t, s),
+    l => l.token,
+    embeddingMap,
+    embeddingDim,
+    scale,
+    useOffsetEmbedding,
+    url) with Serializable {
   override def process(document:Document): Document = {
     if (document.tokenCount > 0) {
       val doc = super.process(document)
@@ -630,14 +639,23 @@ class ConllStackedChainNer(embeddingMap: SkipGramEmbedding,
   }
 }
 //object ConllStackedChainNer extends ConllStackedChainNer(SkipGramEmbedding, 100, 1.0, true, ClasspathURL[ConllStackedChainNer](".factorie"))
-class NoEmbeddingsConllStackedChainNer(url:java.net.URL) extends ConllStackedChainNer(null, 0, 0.0, false, url)
-object NoEmbeddingsConllStackedChainNer extends NoEmbeddingsConllStackedChainNer(ClasspathURL[NoEmbeddingsConllStackedChainNer](".factorie"))
+class NoEmbeddingsConllStackedChainNer(url:java.net.URL) extends ConllStackedChainNer(null, 0, 0.0, false, url) with Serializable
+object NoEmbeddingsConllStackedChainNer extends NoEmbeddingsConllStackedChainNer(ClasspathURL[NoEmbeddingsConllStackedChainNer](".factorie")) with Serializable
 
 class OntonotesStackedChainNer(embeddingMap: SkipGramEmbedding,
                                embeddingDim: Int,
                                scale: Double,
                                useOffsetEmbedding: Boolean,
-                               url: java.net.URL=null) extends StackedChainNer[BilouOntonotesNerTag](BilouOntonotesNerDomain, (t, s) => new BilouOntonotesNerTag(t, s), l => l.token, embeddingMap, embeddingDim, scale, useOffsetEmbedding, url) {
+                               url: java.net.URL=null)
+  extends StackedChainNer[BilouOntonotesNerTag](
+    BilouOntonotesNerDomain,
+    (t, s) => new BilouOntonotesNerTag(t, s),
+    l => l.token,
+    embeddingMap,
+    embeddingDim,
+    scale,
+    useOffsetEmbedding,
+    url) with Serializable {
   override def process(document:Document): Document = {
     if (document.tokenCount > 0) {
       val doc = super.process(document)
@@ -648,8 +666,8 @@ class OntonotesStackedChainNer(embeddingMap: SkipGramEmbedding,
   }
 }
 
-class NoEmbeddingsOntonotesStackedChainNer(url:java.net.URL) extends OntonotesStackedChainNer(null, 0, 0.0, false, url)
-object NoEmbeddingsOntonotesStackedChainNer extends NoEmbeddingsOntonotesStackedChainNer(ClasspathURL[NoEmbeddingsOntonotesStackedChainNer](".factorie"))
+class NoEmbeddingsOntonotesStackedChainNer(url:java.net.URL) extends OntonotesStackedChainNer(null, 0, 0.0, false, url) with Serializable
+object NoEmbeddingsOntonotesStackedChainNer extends NoEmbeddingsOntonotesStackedChainNer(ClasspathURL[NoEmbeddingsOntonotesStackedChainNer](".factorie")) with Serializable
 
 class StackedChainNerOpts extends CmdOptions with SharedNLPCmdOptions{
   val trainFile =     new CmdOption("train", "eng.train", "FILE", "CoNLL formatted training file.")

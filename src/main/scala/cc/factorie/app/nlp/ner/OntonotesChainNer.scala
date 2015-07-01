@@ -15,7 +15,7 @@ import cc.factorie._
 import model._
 import variable._
 import cc.factorie.app.nlp._
-import java.io.{BufferedInputStream, BufferedOutputStream, File}
+import java.io.{Serializable, BufferedInputStream, BufferedOutputStream, File}
 import cc.factorie.util.{Logger, BinarySerializer, CubbieConversions}
 import cc.factorie.optimize.{Trainer, LikelihoodExample}
 import cc.factorie.infer.{InferByBPChain, DiscreteProposalMaximizer, MaximizeByBPChain}
@@ -24,7 +24,7 @@ import cc.factorie.model.{DotTemplateWithStatistics2, TemplateModel, DotTemplate
 
 /** A simple named entity recognizer, trained on Ontonotes data.
     It does not have sufficient features to be state-of-the-art. */
-class BasicOntonotesNER extends DocumentAnnotator {
+class BasicOntonotesNER extends DocumentAnnotator with Serializable {
   private val logger = Logger.getLogger(this.getClass.getName)
 
   def this(url:java.net.URL) = {
@@ -406,8 +406,8 @@ class BasicOntonotesNER extends DocumentAnnotator {
 }
 
 /** The default NER1 with parameters loaded from resources in the classpath. */
-object BasicOntonotesNERWSJ extends BasicOntonotesNER(cc.factorie.util.ClasspathURL[BasicOntonotesNER]("-WSJ.factorie"))
-object BasicOntonotesNER extends BasicOntonotesNER(cc.factorie.util.ClasspathURL[BasicOntonotesNER]("-Ontonotes.factorie"))
+object BasicOntonotesNERWSJ extends BasicOntonotesNER(cc.factorie.util.ClasspathURL[BasicOntonotesNER]("-WSJ.factorie")) with Serializable
+object BasicOntonotesNER extends BasicOntonotesNER(cc.factorie.util.ClasspathURL[BasicOntonotesNER]("-Ontonotes.factorie")) with Serializable
 
 object BasicOntonotesNERTrainer {
   def main(args:Array[String]): Unit = {
