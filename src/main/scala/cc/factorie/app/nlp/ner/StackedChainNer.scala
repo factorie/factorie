@@ -243,7 +243,7 @@ class StackedChainNer[L<:NerTag](labelDomain: CategoricalDomain[String],
 
   def initFeatures(document:Document, vf:Token=>CategoricalVectorVar[String]): Unit = {
     count=count+1
-    val tokenSequence = document.tokens.toSeq
+    val tokenSequence = document.tokens.toIndexedSeq
     /* This now does a lot of lemmatizing. It might be worth adding an extra
      * method to the lookup which pulls out the lemmatized form and creates it 
      * using the lexicon's lemmatizer if it isn't there.
@@ -368,7 +368,7 @@ class StackedChainNer[L<:NerTag](labelDomain: CategoricalDomain[String],
   def initSecondaryFeatures(document:Document, extraFeatures : Boolean = false): Unit = {
 
     document.tokens.foreach(t => t.attr[ChainNer2Features] ++= t.prevWindow(2).zipWithIndex.map(t2 => "PREVLABEL" + t2._2 + "="+t2._1.attr[L].categoryValue))
-    document.tokens.foreach(t => t.attr[ChainNer2Features] += "PREVLABELCON=" + t.prev.attr[L].categoryValue + "&" + t.string)
+    document.tokens.foreach(t => if (t.hasPrev) t.attr[ChainNer2Features] += "PREVLABELCON=" + t.prev.attr[L].categoryValue + "&" + t.string)
 
     for(t <- document.tokens) {
       if (t.sentenceHasPrev) {
