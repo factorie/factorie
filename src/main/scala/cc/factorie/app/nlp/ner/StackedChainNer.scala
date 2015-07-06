@@ -27,6 +27,7 @@ import cc.factorie.optimize.{ParameterAveraging, AdaGrad}
 import cc.factorie.variable._
 import cc.factorie.optimize.Trainer
 import cc.factorie.la.WeightsMapAccumulator
+import cc.factorie.util.JavaHashMap
 import scala.reflect.ClassTag
 
 
@@ -379,8 +380,6 @@ class StackedChainNer[L<:NerTag](labelDomain: CategoricalDomain[String],
       }
     }
 
-    val extendedPrediction = new scala.collection.mutable.HashMap[String, List[String]]
-
     if(extraFeatures) {
       val sequences = getSequences(document)
       val tokenToLabelMap = new scala.collection.mutable.HashMap[String, List[String]]
@@ -426,13 +425,22 @@ class StackedChainNer[L<:NerTag](labelDomain: CategoricalDomain[String],
       }
     }
 
+    val extendedPrediction = JavaHashMap[String, collection.mutable.Map[String,Int]]()
+    val surfaceFormCount = JavaHashMap[String,Int]()
     for(token <- document.tokens) {
-      if(extendedPrediction.contains(token.string))
-        labelDomain.categories.map(str => token.attr[ChainNer2Features] += str + "=" + history(extendedPrediction(token.string), str) )
-      if(extendedPrediction.contains(token.string))
-        extendedPrediction(token.string) = extendedPrediction(token.string) ++ List(token.attr[L].categoryValue)
-      else
-        extendedPrediction(token.string) = List(token.attr[L].categoryValue)
+      val tokenStr = token.string
+      if(extendedPrediction.contains(tokenStr)) {
+        labelDomain.categories.map(str => token.attr[ChainNer2Features] += str + "=" + history(extendedPrediction(token.string).getOrElse(str,0), surfaceFormCount.getOrElse(tokenStr,0)) )
+        val map = extendedPrediction(tokenStr)
+        val count = map.getOrElse(token.attr[L].categoryValue,0) + 1
+        map.put(token.attr[L].categoryValue,count)
+        surfaceFormCount.put(tokenStr,surfaceFormCount.getOrElse(tokenStr,0) + 1)
+      } else {
+        val map = JavaHashMap[String,Int]()
+        map.put(token.attr[L].categoryValue,1)
+        extendedPrediction.put(tokenStr,map)
+        surfaceFormCount.put(tokenStr,1)
+      }
     }
 
     if (clusters.size > 0) {
@@ -469,6 +477,10 @@ class StackedChainNer[L<:NerTag](labelDomain: CategoricalDomain[String],
 
   def history(list : List[String], category : String) : String = {
     (round( 10.0 * ((list.count(_ == category).toDouble / list.length.toDouble)/3)) / 10.0).toString
+  }
+
+  def history(count : Int, total : Int) : String = {
+    (round( 10.0 * ((count.toDouble / total)/3.0)) / 10.0).toString
   }
 
   def train(trainDocuments: Seq[Document],testDocuments: Seq[Document], rate: Double, delta: Double): Double = {
