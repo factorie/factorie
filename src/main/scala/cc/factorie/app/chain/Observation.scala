@@ -100,7 +100,7 @@ object Observations {
   // Change the implementation to avoid Observation.next, and instead only use observations.apply(Int).
 
   def addNeighboringFeatureConjunctions[A<:Observation[A]](observations:IndexedSeq[A], vf:A=>CategoricalVectorVar[String], offsetConjunctions:Seq[Int]*): Unit =
-    addNeighboringFeatureConjunctions(observations, vf, null.asInstanceOf[String], offsetConjunctions:_*)
+    addNeighboringFeatureConjunctions(observations, vf, null.asInstanceOf[Regex], offsetConjunctions:_*)
   def addNeighboringFeatureConjunctions[A<:Observation[A]](observations:IndexedSeq[A], vf:A=>CategoricalVectorVar[String], regex:String, offsetConjunctions:Seq[Int]*): Unit = {
     val pattern = regex.r
     addNeighboringFeatureConjunctions[A](observations, vf, pattern, offsetConjunctions:_*)
