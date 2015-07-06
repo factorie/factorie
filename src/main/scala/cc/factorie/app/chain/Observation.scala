@@ -102,7 +102,7 @@ object Observations {
   def addNeighboringFeatureConjunctions[A<:Observation[A]](observations:IndexedSeq[A], vf:A=>CategoricalVectorVar[String], offsetConjunctions:Seq[Int]*): Unit =
     addNeighboringFeatureConjunctions(observations, vf, null.asInstanceOf[Regex], offsetConjunctions:_*)
   def addNeighboringFeatureConjunctions[A<:Observation[A]](observations:IndexedSeq[A], vf:A=>CategoricalVectorVar[String], regex:String, offsetConjunctions:Seq[Int]*): Unit = {
-    val pattern = regex.r
+    val pattern = if (regex != null ) regex.r else null
     addNeighboringFeatureConjunctions[A](observations, vf, pattern, offsetConjunctions:_*)
   }
     /** Add new features created as conjunctions of existing features, with the given offsets, but only add features matching regex pattern. */
