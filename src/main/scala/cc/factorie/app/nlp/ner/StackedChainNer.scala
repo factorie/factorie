@@ -207,23 +207,18 @@ class StackedChainNer[L<:NerTag](labelDomain: CategoricalDomain[String],
   var bP = false
   var ss = 10.0
 
-  def prevWindowNum(t:Token, n:Int): IndexedSeq[(Int,Token)] = t.prevWindow(n).map(x => (t.prevWindow(n).indexOf(x),x)).toIndexedSeq
-  def nextWindowNum(t:Token, n:Int): IndexedSeq[(Int,Token)] = t.nextWindow(n).map(x => (t.nextWindow(n).indexOf(x),x)).toIndexedSeq
-
   def prefix( prefixSize : Int, cluster : String ) : String = if(cluster.size > prefixSize) cluster.substring(0, prefixSize) else cluster
 
   def addContextFeatures[A<:Observation[A]](t : Token, from : Token, vf:Token=>CategoricalVectorVar[String]) : Unit = {
-    vf(t) ++= prevWindowNum(from,2).map(t2 => "CONTEXT="+simplifyDigits(t2._2.string).toLowerCase + "@-" + t2._1)
-    vf(t) ++= nextWindowNum(from, 2).map(t2 => "CONTEXT="+simplifyDigits(t2._2.string).toLowerCase + "@" + t2._1)
-    for(t2 <- prevWindowNum(from,2)) {
-      if(clusters.contains(t2._2.string)) {
-        vf(t) += ("CONTEXTPATH="+prefix(4, clusters(t2._2.string)) + ("@-" + t2._1.toString))
-      }
+    val prevWindow = from.prevWindow(2).zipWithIndex
+    val nextWindow = from.nextWindow(2).zipWithIndex
+    vf(t) ++= prevWindow.map { case (t2, idx) =>
+      if (clusters.contains(t2.string)) vf(t) += ("CONTEXTPATH="+prefix(4, clusters(t2.string)) + ("@-" + idx.toString))
+      "CONTEXT="+simplifyDigits(t2.string).toLowerCase + "@-" + idx
     }
-
-    for(t2 <- nextWindowNum(from, 2)) {
-      if(clusters.contains(t2._2.string))
-        vf(t) += ("CONTEXTPATH="+prefix(4, clusters(t2._2.string)) + ("@" + t2._1.toString))
+    vf(t) ++= nextWindow.map { case (t2, idx) =>
+      if (clusters.contains(t2.string)) vf(t) += ("CONTEXTPATH="+prefix(4, clusters(t2.string)) + ("@" + idx.toString))
+      "CONTEXT="+simplifyDigits(t2.string).toLowerCase + "@" + idx
     }
   }
 
@@ -371,12 +366,14 @@ class StackedChainNer[L<:NerTag](labelDomain: CategoricalDomain[String],
   }
 
   def initSecondaryFeatures(document:Document, extraFeatures : Boolean = false): Unit = {
-    document.tokens.foreach(t => t.attr[ChainNer2Features] ++= prevWindowNum(t,2).map(t2 => "PREVLABEL" + t2._1 + "="+t2._2.attr[L].categoryValue))
-    document.tokens.foreach(t => t.attr[ChainNer2Features] ++= prevWindowNum(t,1).map(t2 => "PREVLABELCON="+t2._2.attr[L].categoryValue+"&"+t.string))
+
+    document.tokens.foreach(t => t.attr[ChainNer2Features] ++= t.prevWindow(2).zipWithIndex.map(t2 => "PREVLABEL" + t2._2 + "="+t2._1.attr[L].categoryValue))
+    document.tokens.foreach(t => t.attr[ChainNer2Features] += "PREVLABELCON=" + t.prev.attr[L].categoryValue + "&" + t.string)
+
     for(t <- document.tokens) {
-      if(t.sentenceHasPrev) {
-        t.attr[ChainNer2Features] ++= prevWindowNum(t,2).map(t2 => "PREVLABELLCON="+t.sentencePrev.attr[L].categoryValue+"&"+t2._2.string)
-        t.attr[ChainNer2Features] ++= nextWindowNum(t,2).map(t2 => "PREVLABELLCON="+t.sentencePrev.attr[L].categoryValue+"&"+t2._2.string)
+      if (t.sentenceHasPrev) {
+        t.attr[ChainNer2Features] ++= t.prevWindow(2).map(t2 => "PREVLABELLCON=" + t.sentencePrev.attr[L].categoryValue + "&" + t2.string)
+        t.attr[ChainNer2Features] ++= t.nextWindow(2).map(t2 => "PREVLABELLCON=" + t.sentencePrev.attr[L].categoryValue + "&" + t2.string)
       }
     }
 
