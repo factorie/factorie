@@ -379,13 +379,14 @@ class StackedChainNer[L<:NerTag](labelDomain: CategoricalDomain[String],
       }
     }
 
-    val sequences = getSequences(document)
-    val tokenToLabelMap = new scala.collection.mutable.HashMap[String, List[String]]
     val extendedPrediction = new scala.collection.mutable.HashMap[String, List[String]]
-    val sequenceToLabelMap = new scala.collection.mutable.HashMap[String, List[String]]
-    val subsequencesToLabelMap = new scala.collection.mutable.HashMap[String, List[String]]
 
     if(extraFeatures) {
+      val sequences = getSequences(document)
+      val tokenToLabelMap = new scala.collection.mutable.HashMap[String, List[String]]
+      val sequenceToLabelMap = new scala.collection.mutable.HashMap[String, List[String]]
+      val subsequencesToLabelMap = new scala.collection.mutable.HashMap[String, List[String]]
+
       for (token <- document.tokens) {
         if(tokenToLabelMap.contains(token.string))
           tokenToLabelMap(token.string) = tokenToLabelMap(token.string) ++ List(token.attr[L].categoryValue)
@@ -424,6 +425,7 @@ class StackedChainNer[L<:NerTag](labelDomain: CategoricalDomain[String],
         }
       }
     }
+
     for(token <- document.tokens) {
       if(extendedPrediction.contains(token.string))
         labelDomain.categories.map(str => token.attr[ChainNer2Features] += str + "=" + history(extendedPrediction(token.string), str) )
@@ -433,21 +435,21 @@ class StackedChainNer[L<:NerTag](labelDomain: CategoricalDomain[String],
         extendedPrediction(token.string) = List(token.attr[L].categoryValue)
     }
 
-    for(token <- document.tokens) {
-      val rawWord = token.string
-      if(token.hasPrev && clusters.size > 0) {
-        if(clusters.contains(rawWord))
-          token.attr[ChainNer2Features] ++= List(4,6,10,20).map("BROWNCON="+token.prev.attr[L].categoryValue + "&" + prefix(_,clusters(rawWord)))
-        if(token.hasNext) {
-          var nextRawWord = token.next.string
-          if(clusters.contains(nextRawWord))
-            token.attr[ChainNer2Features] ++= List(4,6,10,20).map("BROWNCON="+token.prev.attr[L].categoryValue + "&" + prefix(_,clusters(nextRawWord)))
-          if(token.next.hasNext && clusters.contains(token.next.next.string)) {
-            nextRawWord = token.next.next.string
-            token.attr[ChainNer2Features] ++= List(4,6,10,20).map("BROWNCON="+token.prev.attr[L].categoryValue + "&" + prefix(_,clusters(nextRawWord)))
-          }
-        }
+    if (clusters.size > 0) {
+      for(token <- document.tokens) {
+        val rawWord = token.string
         if(token.hasPrev) {
+          if(clusters.contains(rawWord))
+            token.attr[ChainNer2Features] ++= List(4,6,10,20).map("BROWNCON="+token.prev.attr[L].categoryValue + "&" + prefix(_,clusters(rawWord)))
+          if(token.hasNext) {
+            var nextRawWord = token.next.string
+            if(clusters.contains(nextRawWord))
+              token.attr[ChainNer2Features] ++= List(4,6,10,20).map("BROWNCON="+token.prev.attr[L].categoryValue + "&" + prefix(_,clusters(nextRawWord)))
+            if(token.next.hasNext && clusters.contains(token.next.next.string)) {
+              nextRawWord = token.next.next.string
+              token.attr[ChainNer2Features] ++= List(4,6,10,20).map("BROWNCON="+token.prev.attr[L].categoryValue + "&" + prefix(_,clusters(nextRawWord)))
+            }
+          }
           var prevRawWord = token.prev.string
           if(clusters.contains(prevRawWord))
             token.attr[ChainNer2Features] ++= List(4,6,10,20).map("BROWNCON="+token.prev.attr[L].categoryValue + "&" + prefix(_,clusters(prevRawWord)))
