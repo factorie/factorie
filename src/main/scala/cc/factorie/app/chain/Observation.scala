@@ -144,7 +144,7 @@ object Observations {
     var t2 = t.next(offset); if ((t2 ne null) && (t2.position < seqStart || t2.position >= seqEnd)) t2 = null.asInstanceOf[A]  // Don't add features beyond the boundaries of the Seq given in addNeighboringFeatureConjunctions
     val adding: Seq[String] =
       if (t2 eq null) { if (/*t.position +*/ offset < 0) List("<START>") else List("<END>") }
-      else if (regex != null) vf(t2).activeCategories.filter(str => regex.findFirstIn(str).size > 0) // Only include features that match pattern
+      else if (regex != null) vf(t2).activeCategories.filter(str => regex.findFirstIn(str).nonEmpty) // Only include features that match pattern
       else vf(t2).activeCategories
     if (existing != null) {
       for (e <- existing; a <- adding) { val elt = (a,offset); if (!e.contains(elt)) result += (a,offset) :: e }
