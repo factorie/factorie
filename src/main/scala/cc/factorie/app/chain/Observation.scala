@@ -101,9 +101,12 @@ object Observations {
 
   def addNeighboringFeatureConjunctions[A<:Observation[A]](observations:IndexedSeq[A], vf:A=>CategoricalVectorVar[String], offsetConjunctions:Seq[Int]*): Unit =
     addNeighboringFeatureConjunctions(observations, vf, null.asInstanceOf[String], offsetConjunctions:_*)
-  /** Add new features created as conjunctions of existing features, with the given offsets, but only add features matching regex pattern. */
   def addNeighboringFeatureConjunctions[A<:Observation[A]](observations:IndexedSeq[A], vf:A=>CategoricalVectorVar[String], regex:String, offsetConjunctions:Seq[Int]*): Unit = {
     val pattern = regex.r
+    addNeighboringFeatureConjunctions[A](observations, vf, pattern, offsetConjunctions:_*)
+  }
+    /** Add new features created as conjunctions of existing features, with the given offsets, but only add features matching regex pattern. */
+  def addNeighboringFeatureConjunctions[A<:Observation[A]](observations:IndexedSeq[A], vf:A=>CategoricalVectorVar[String], regex:Regex, offsetConjunctions:Seq[Int]*): Unit = {
     val size = observations.size
     if (size == 0) return
     val seqStart = observations.head.position
@@ -116,7 +119,7 @@ object Observations {
       val thisTokenNewFeatures = newFeatures(i)
       for (offsets <- offsetConjunctions)
         thisTokenNewFeatures ++=
-          appendConjunctions(token, seqStart, seqEnd, vf, pattern, null, offsets)
+          appendConjunctions(token, seqStart, seqEnd, vf, regex, null, offsets)
             .map { list =>
             list.sortBy { case (f, o) => o + f }.map { case (f, o) => if (o == 0) f else f + "@" + o }.mkString("_&_")
           }

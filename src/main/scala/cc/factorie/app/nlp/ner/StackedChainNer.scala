@@ -45,6 +45,9 @@ class StackedChainNer[L<:NerTag](labelDomain: CategoricalDomain[String],
                                  scale: Double,
                                  useOffsetEmbedding: Boolean,
                                  url: java.net.URL=null)(implicit m: ClassTag[L]) extends DocumentAnnotator {
+
+  val FEATURE_PREFIX = "^[^@]*$".r
+
   object NERModelOpts {
     val argsList = new scala.collection.mutable.HashMap[String, String]()
     argsList += ("scale" -> scale.toString)
@@ -307,7 +310,7 @@ class StackedChainNer[L<:NerTag](labelDomain: CategoricalDomain[String],
         features += "CLUS="+prefix(20,clusters(rawWord))
       }
     }
-    for (sentence <- document.sentences) cc.factorie.app.chain.Observations.addNeighboringFeatureConjunctions(sentence.tokens, vf, "^[^@]*$", List(0), List(1), List(2), List(-1), List(-2))
+    for (sentence <- document.sentences) cc.factorie.app.chain.Observations.addNeighboringFeatureConjunctions(sentence.tokens, vf, FEATURE_PREFIX, List(0), List(1), List(2), List(-1), List(-2))
     // Add features for character n-grams between sizes 2 and 5
     document.tokens.foreach(t => if (t.string.matches("[A-Za-z]+")) vf(t) ++= t.charNGrams(2,5).map(n => "NGRAM="+n))
     // Add features from window of 4 words before and after
