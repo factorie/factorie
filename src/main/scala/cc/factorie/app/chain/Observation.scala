@@ -17,6 +17,8 @@ import scala.collection.mutable.ArrayBuffer
 import cc.factorie.util.Attr
 import cc.factorie.variable.{AbstractChainLink, CategoricalVectorVar}
 
+import scala.util.matching.Regex
+
 /** A element of the input sequence to a linear-chain (CRF) having a string.  Its corresponding label will be an Attr attribute. */
 trait Observation[+This<:Observation[This]] extends AbstractChainLink[This] with Attr {
   this: This =>
@@ -58,10 +60,10 @@ object Observations {
     // Put the new features in the Token
     for (i <- 0 until size) vf(observations(i)) ++= extraFeatures(i)
   }
-  
+
   /** Return null if index i is out of range. */
   private def safeApply[A](s:Seq[A], i:Int): A = if (i < 0 || i > s.length-1) null.asInstanceOf[A] else s(i)
-  
+
   /** Add feature to each Observation. */
   def addFeatures[A<:Observation[A]](observations:Seq[A], vf:A=>CategoricalVectorVar[String], f1:A=>String, i1:Int): Unit = {
     for (i <- 0 until observations.length) {
@@ -80,7 +82,7 @@ object Observations {
       if (s1 != null && s2 != null) vf(o) += (s1 + "@" + i1 + "_&_" + s2 + "@" + i2)
     }
   }
-  
+
   /** Add trinary conjunction feature to each Observation. */
   def addFeatures[A<:Observation[A]](observations:Seq[A], vf:A=>CategoricalVectorVar[String], f1:A=>String, i1:Int, f2:A=>String, i2:Int, f3:A=>String, i3:Int): Unit = {
     for (i <- 0 until observations.length) {
@@ -92,15 +94,16 @@ object Observations {
     }
   }
 
-  
+
   // TODO Note that the methods below do not obey Sentence boundaries:  they will add offset conjunctions across the sentence boundary, 
   // even if "observations" contains only the words in the a Sentence.
   // Change the implementation to avoid Observation.next, and instead only use observations.apply(Int).
-  
+
   def addNeighboringFeatureConjunctions[A<:Observation[A]](observations:IndexedSeq[A], vf:A=>CategoricalVectorVar[String], offsetConjunctions:Seq[Int]*): Unit =
     addNeighboringFeatureConjunctions(observations, vf, null.asInstanceOf[String], offsetConjunctions:_*)
   /** Add new features created as conjunctions of existing features, with the given offsets, but only add features matching regex pattern. */
   def addNeighboringFeatureConjunctions[A<:Observation[A]](observations:IndexedSeq[A], vf:A=>CategoricalVectorVar[String], regex:String, offsetConjunctions:Seq[Int]*): Unit = {
+    val pattern = regex.r
     val size = observations.size
     if (size == 0) return
     val seqStart = observations.head.position
@@ -112,8 +115,11 @@ object Observations {
       val token = observations(i)
       val thisTokenNewFeatures = newFeatures(i)
       for (offsets <- offsetConjunctions)
-        thisTokenNewFeatures ++= appendConjunctions(token, seqStart, seqEnd, vf, regex, null, offsets).map(list => list.sortBy({case(f,o)=>o+f}).map({case(f,o)=> if (o == 0) f else f+"@"+o}).mkString("_&_"))
-      
+        thisTokenNewFeatures ++=
+          appendConjunctions(token, seqStart, seqEnd, vf, pattern, null, offsets)
+            .map { list =>
+            list.sortBy { case (f, o) => o + f }.map { case (f, o) => if (o == 0) f else f + "@" + o }.mkString("_&_")
+          }
       // TODO "f+o" is doing string concatenation, consider something faster
       i += 1
     }
@@ -129,13 +135,13 @@ object Observations {
   }
   // Recursive helper function for previous method, expanding out cross-product of conjunctions in tree-like fashion.
   // 't' is the Token to which we are adding features; 'existing' is the list of features already added; 'offsets' is the list of offsets yet to be added
-  private def appendConjunctions[A<:Observation[A]](t:A, seqStart:Int, seqEnd:Int, vf:A=>CategoricalVectorVar[String], regex:String, existing:ArrayBuffer[List[(String,Int)]], offsets:Seq[Int]): ArrayBuffer[List[(String,Int)]] = {
+  private def appendConjunctions[A<:Observation[A]](t:A, seqStart:Int, seqEnd:Int, vf:A=>CategoricalVectorVar[String], regex:Regex, existing:ArrayBuffer[List[(String,Int)]], offsets:Seq[Int]): ArrayBuffer[List[(String,Int)]] = {
     val result = new ArrayBuffer[List[(String,Int)]]
     val offset: Int = offsets.head
     var t2 = t.next(offset); if ((t2 ne null) && (t2.position < seqStart || t2.position >= seqEnd)) t2 = null.asInstanceOf[A]  // Don't add features beyond the boundaries of the Seq given in addNeighboringFeatureConjunctions
-    val adding: Seq[String] = 
+    val adding: Seq[String] =
       if (t2 eq null) { if (/*t.position +*/ offset < 0) List("<START>") else List("<END>") }
-      else if (regex != null) vf(t2).activeCategories.filter(str => str.matches(regex)) // Only include features that match pattern 
+      else if (regex != null) vf(t2).activeCategories.filter(str => regex.findFirstIn(str).size > 0) // Only include features that match pattern
       else vf(t2).activeCategories
     if (existing != null) {
       for (e <- existing; a <- adding) { val elt = (a,offset); if (!e.contains(elt)) result += (a,offset) :: e }
@@ -144,11 +150,11 @@ object Observations {
     }
     if (offsets.size == 1) result
     else appendConjunctions(t, seqStart, seqEnd, vf, regex, result, offsets.drop(1))
-  }  
-  
-  
-  
-  
+  }
+
+
+
+
   /** Extract a collection contiguous non-"background" labels
       @author Tim Vieira, Andrew McCallum */
   def extractContiguous[T](s:Seq[T], labeler:T=>String, background:String = "O"): Seq[(String,Seq[T])] = {
@@ -164,7 +170,7 @@ object Observations {
         } else {
           if (entity.length > 0) result += ((prevLabel, entity))
           entity = new ArrayBuffer
-          entity += token 
+          entity += token
         }
       } else {
         if (entity.length > 0) result += ((prevLabel, entity))
