@@ -129,8 +129,8 @@ class CategoricalDomain[C] extends DiscreteDomain(0) with IndexedSeq[Categorical
     if (gatherCounts && i != -1) incrementCount(i)
     i
   }
-  /** Return the integer associated with the category, 
-      and also (whether or not 'gatherCounts' is true') 
+  /** Return the integer associated with the category,
+      and also (whether or not 'gatherCounts' is true')
       increment by 'count' the number of times this Domain says the category has been seen.
       If the category is not already in this CategoricalDomain and 'frozen' is false,
       and 'maxSize' will not be exceeded,
@@ -155,8 +155,8 @@ class CategoricalDomain[C] extends DiscreteDomain(0) with IndexedSeq[Categorical
     _frozen = true
   }
 
-  def +=(x:C) : Unit = this.value(x)
-  def ++=(xs:Traversable[C]) : Unit = xs.foreach(this.index(_))
+  def +=(x:C) : Unit = this.index(x)
+  def ++=(xs:Traversable[C]) : Unit = xs.foreach(this += _)
   /** Wipe the domain, its elements, indices and counts clean */
   def clear(): Unit = { _frozen = false; _elements.clear(); lock.withWriteLock { _indices.clear(); _clear() } }
   // Separate argument types preserves return collection type
