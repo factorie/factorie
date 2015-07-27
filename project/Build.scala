@@ -75,7 +75,9 @@ object Dependencies {
   val resolutionRepos = Seq(
     "Scala tools" at "https://oss.sonatype.org/content/groups/scala-tools",
     "OSS snapshots" at "https://oss.sonatype.org/content/repositories/snapshots",
-    "OSS releases" at "https://oss.sonatype.org/content/repositories/releases"
+    "OSS releases" at "https://oss.sonatype.org/content/repositories/releases",
+    "Umass Releases" at "https://dev-iesl.cs.umass.edu/nexus/content/repositories/public",
+    "Umass Snapshots" at "https://dev-iesl.cs.umass.edu/nexus/content/repositories/public-snapshots"
   )
 
   object CompileDependencies {
@@ -96,6 +98,6 @@ object Dependencies {
 
   object Resources {
     // This may be brittle, but intransitive() avoids creating a circular dependency.
-    val nlpresources = "cc.factorie.app.nlp" % "all-models" % "1.0.0" % "with-nlp-resources" intransitive()
+    val nlpresources = "cc.factorie.app.nlp" % "all-models" % "1.0.0-SNAPSHOT" % "with-nlp-resources" intransitive()
   }
 }
