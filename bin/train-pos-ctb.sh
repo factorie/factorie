@@ -18,4 +18,4 @@ cutoff="--cutoff=2"
 model="--model=$MODELNAME"
 
 
-java -classpath target/factorie-1.1-SNAPSHOT-nlp-jar-with-dependencies.jar -Xmx$MEMORY -Dfile.encoding=UTF-8 cc.factorie.app.nlp.pos.CtbChainPosTrainer $trainDir $testDir $hinge $save $iters $cutoff $model
+java -classpath target/factorie-1.2-SNAPSHOT-nlp-jar-with-dependencies.jar -Xmx$MEMORY -Dfile.encoding=UTF-8 cc.factorie.app.nlp.pos.CtbChainPosTrainer $trainDir $testDir $hinge $save $iters $cutoff $model
