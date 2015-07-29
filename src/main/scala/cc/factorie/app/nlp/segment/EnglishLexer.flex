@@ -116,6 +116,7 @@ import cc.factorie.util.JavaHashMap
 // we require at least one character inside the tag, otherwise it's REPEATED_PUNC
 SGML1 = <\/?[A-Za-z!].*?[^%]>
 SGML2 = <\/?[A-Za-z!]>
+SGML3 = <[a-zA-Z0-9]+\s[a-zA-Z0-9]+=\"[^\"]+\">
 
 /* TODO make this list complete */
 HTML_SYMBOL = &(HT|TL|UR|LR|QC|QL|QR|amp|copy|reg|trade|odq|nbsp|cdq|lt|gt|#[0-9A-Za-z]+);
@@ -277,7 +278,8 @@ CATCHALL = \P{C}
 %%
 
 {SGML1} |
-{SGML2}   { printDebug("SGML"); if(tokenizeSgml) tok(isSgml=true) else null}
+{SGML2} |
+{SGML3}  { printDebug("SGML"); if(tokenizeSgml) tok(isSgml=true) else null}
 
 &amp; { printDebug("AMPERSAND"); if(normalizeAmpersand || normalizeHtmlSymbol) tok(NORMALIZED_AMPERSAND) else tok() }
 
