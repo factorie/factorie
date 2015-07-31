@@ -4,7 +4,7 @@ import cc.factorie.app.nlp._
 import scala.util.parsing.combinator.{ImplicitConversions, Parsers}
 import cc.factorie.app.nlp.pos.PennPosTag
 import scala.util.parsing.input.{Reader, Position}
-import java.util.GregorianCalendar
+import java.util.{GregorianCalendar}
 import scala.collection.mutable.ArrayBuffer
 import cc.factorie.app.nlp.lemma.TokenLemma
 
@@ -207,6 +207,8 @@ object DatePhraseFinder extends DocumentAnnotator with Parsers with ImplicitConv
       if (year >= 0) s += year
       s.trim
     }
+
+    def toLocatedDate = LocatedDate(toJavaDate, this.document.name, characterOffsets._1, characterOffsets._2)
   }
 
   def parseAll(tokens: Iterable[Token]) = {
@@ -226,3 +228,5 @@ object DatePhraseFinder extends DocumentAnnotator with Parsers with ImplicitConv
   }
 
 }
+
+case class LocatedDate(date:java.util.Date, docId:String, startOffset:Int, endOffset:Int)

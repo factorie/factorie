@@ -71,6 +71,19 @@ class SetVariable[A]() extends SetVar[A] /*with VarAndValueGenericDomain[SetVari
   final def -=(x:A): Unit = remove(x)(null)
   final def ++=(xs:Iterable[A]): Unit = xs.foreach(add(_)(null))
   final def --=(xs:Iterable[A]): Unit = xs.foreach(remove(_)(null))
+  final def ++(other:SetVariable[A])(implicit d:DiffList): SetVariable[A] = {
+    val res = new SetVariable[A]
+    res addAll this.value
+    res addAll other.value
+    res
+  }
+  final def --(other:SetVariable[A])(implicit d:DiffList): SetVariable[A] = {
+    val res = new SetVariable[A]
+    res addAll this.value
+    res removeAll other.value
+    res
+  }
+
   case class SetVariableAddDiff(added: A) extends Diff {
     def variable: SetVariable[A] = SetVariable.this
     def redo() = _members += added //if (_members.contains(added)) throw new Error else
