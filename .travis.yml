@@ -9,10 +9,18 @@
 #    - ./sbt compile
 #jdk:
 #    - oraclejdk8
-language: java
-before_install:
+
+script:
     - export MAVEN_OPTS="-Xmx2469m -XX:MaxPermSize=512m"
-after_script:
+    - mvn clean install
     - ./sbt compile
 jdk:
     - oraclejdk8
+
+#language: java
+#before_install:
+#    - export MAVEN_OPTS="-Xmx2469m -XX:MaxPermSize=512m"
+#after_script:
+#    - ./sbt compile
+#jdk:
+#    - oraclejdk8
