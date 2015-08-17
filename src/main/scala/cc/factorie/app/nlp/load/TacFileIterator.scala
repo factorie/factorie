@@ -16,9 +16,9 @@ object TACDocTypes {
   object TACDocumentType {
     def fromFilePath(f:File):TACDocumentType = {
       val path = f.getAbsolutePath.toLowerCase
-      if(path.contains("discussion_forums")) {
+      if(path.contains("discussion_forums") || path.contains("mpdf")) {
         DiscussionForum
-      } else if(path.contains("newswire")) {
+      } else if(path.contains("newswire") || path.contains("nw")) {
         Newswire
       } else if(path.contains("web")) {
         WebDocument
@@ -53,7 +53,7 @@ case class DocStringWithId(id:String, docString:String, sourceFilename:String, d
 class TacStringIterator(lines:Iterator[String], filename:String="", typeIdx:Option[Int]=None) extends Iterator[DocStringWithId] {
   private val docEndString = """</doc>"""
   private val webDocStartString = """<DOC>"""
-  private val docIdRegex = """(?i)<DOC ID="([^"]+)"[^>]*>""".r
+  private val docIdRegex = """(?i)<DOC (?:DOC)?ID="([^"]+)"[^>]*>""".r
   private val webDocIdRegex = """(?i)<DOCID> ([^ ]+) </DOCID>""".r
 
   private var docBuffer = new StringBuilder()
@@ -108,12 +108,16 @@ class TacFileIterator(tacDocFile:File) extends Iterator[DocStringWithId] {
   /** we use scanner here so that when we recreate the lines by adding \n we don't change
     * the character count on documents that may use crlf to delimit lines
     */
-  private val iter = new TacStringIterator(new Scanner(if(tacDocFile.getName.endsWith(".gz")) {
+  
+  private val stringIter = new Scanner(if(tacDocFile.getName.endsWith(".gz")) {
     new GZIPInputStream(new FileInputStream(tacDocFile))
   } else {
     new FileInputStream(tacDocFile)
-  }).useDelimiter("\n").asScala, tacDocFile.getAbsolutePath)
-
+  }).useDelimiter("\n").asScala
+  
+  private val firstElem = if (stringIter.hasNext) Iterator(stringIter.next()).filterNot(_.startsWith("<?xml")) else Iterator()
+  
+  private val iter = new TacStringIterator(firstElem ++ stringIter, tacDocFile.getAbsolutePath)
 
   def hasNext = iter.hasNext
   def next() = iter.next()
