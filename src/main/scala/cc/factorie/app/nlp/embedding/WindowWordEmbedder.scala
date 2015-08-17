@@ -19,7 +19,7 @@ import scala.xml.pull._
 import scala.io.Source
 import cc.factorie.app.strings.{alphaSegmenter,wordSegmenter}
 
-class WindowWordEmbedderOptions extends cc.factorie.util.CmdOptions {
+class WindowWordEmbedderOptions extends cc.factorie.util.DefaultCmdOptions {
   val vocabInput = new CmdOption("vocab-input", List("enwiki-latest-pages-articles.xml.bz2"), "TXTFILE", "Text files from which to read documents and words for building the vocabulary.  Works with *.txt.gz, Wikipedia enwiki*.xmlgz2, and a few other formats.")
   val trainInput = new CmdOption("train-input", List("enwiki-latest-pages-articles.xml.bz2"), "TXTFILE", "Text files from which to read documents and words for training the embeddings.  Works with *.txt.gz, Wikipedia enwiki*.xmlgz2, and a few other formats.")
   val parametersSave = new CmdOption("parameters-save", "parameters.gz", "FILE", "If invoked, save the parameters after training to this filename in compressed binary format.")
