@@ -53,7 +53,7 @@ case class DocStringWithId(id:String, docString:String, sourceFilename:String, d
 class TacStringIterator(lines:Iterator[String], filename:String="", typeIdx:Option[Int]=None) extends Iterator[DocStringWithId] {
   private val docEndString = """</doc>"""
   private val webDocStartString = """<DOC>"""
-  private val docIdRegex = """(?i)<DOC (?:DOC)?ID="([^"]+)"[^>]*>""".r
+  private val docIdRegex = """(?i)<DOC +(?:DOC)?ID="([^"]+)"[^>]*>""".r
   private val webDocIdRegex = """(?i)<DOCID> ([^ ]+) </DOCID>""".r
 
   private var docBuffer = new StringBuilder()
