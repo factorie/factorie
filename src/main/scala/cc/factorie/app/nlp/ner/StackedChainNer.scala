@@ -387,9 +387,9 @@ class StackedChainNer[L<:NerTag](labelDomain: CategoricalDomain[String],
 
     if(extraFeatures) {
       val sequences = getSequences(document)
-      val tokenToLabelMap = new scala.collection.mutable.HashMap[String, List[String]]
-      val sequenceToLabelMap = new scala.collection.mutable.HashMap[String, List[String]]
-      val subsequencesToLabelMap = new scala.collection.mutable.HashMap[String, List[String]]
+      val tokenToLabelMap = JavaHashMap[String,List[String]]()
+      val sequenceToLabelMap = JavaHashMap[String,List[String]]()
+      val subsequencesToLabelMap = JavaHashMap[String,List[String]]()
 
       for (token <- document.tokens) {
         if(tokenToLabelMap.contains(token.string))
