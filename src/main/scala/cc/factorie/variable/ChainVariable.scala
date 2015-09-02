@@ -91,13 +91,13 @@ trait ChainLink[This<:ChainLink[This,C],C<:Chain[C,This]] extends AbstractChainL
   def chainBefore: IndexedSeq[This] = _chain.links.take(_position)
   def prevWindow(n:Int): Seq[This] = {
     var i = math.max(_position-n,  0)
-    val res = new collection.mutable.ListBuffer[This]
+    val res = new collection.mutable.ArrayBuffer[This]
     while (i <= math.max(_position-1, 0)) {res.append(chain(i)) ;i += 1}
     res
   }
   def nextWindow(n:Int): Seq[This] = {
     var i = math.min(_position+1,  _chain.length-1)
-    val res = new collection.mutable.ListBuffer[This]
+    val res = new collection.mutable.ArrayBuffer[This]
     while (i <= math.min(_position+n, _chain.length-1)) {res.append(chain(i)) ;i += 1}
     res
   }

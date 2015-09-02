@@ -190,16 +190,6 @@ class BasicOntonotesNER extends DocumentAnnotator {
       if (word.length > 5) { features += "P="+cc.factorie.app.strings.prefix(word, 4); features += "S="+cc.factorie.app.strings.suffix(word, 4) }
       if (token.isPunctuation) features += "PUNCTUATION"
       if (lexicon.NumberWords.containsLemmatizedWord(word)) features += "#WORD"
-      if (lexicon.iesl.Money.containsLemmatizedWord(word)) features += "MONEY"
-      if (lexicon.iesl.PersonFirst.containsLemmatizedWord(word)) features += "PERSON-FIRST"
-      if (lexicon.iesl.Month.containsLemmatizedWord(word)) features += "MONTH"
-      if (lexicon.iesl.PersonLast.containsLemmatizedWord(word)) features += "PERSON-LAST"
-      if (lexicon.iesl.PersonHonorific.containsLemmatizedWord(word)) features += "PERSON-HONORIFIC"
-      if (lexicon.iesl.Company.contains(token)) features += "COMPANY"
-      if (lexicon.iesl.Country.contains(token)) features += "COUNTRY"
-      if (lexicon.iesl.City.contains(token)) features += "CITY"
-      if (lexicon.iesl.PlaceSuffix.contains(token)) features += "PLACE-SUFFIX"
-      if (lexicon.iesl.USState.contains(token)) features += "USSTATE"
       //features ++= token.prevWindow(4).map(t2 => "PREVWINDOW="+simplifyDigits(t2.string).toLowerCase)
       //features ++= token.nextWindow(4).map(t2 => "NEXTWINDOW="+simplifyDigits(t2.string).toLowerCase)
     }

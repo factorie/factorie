@@ -27,6 +27,7 @@ import cc.factorie.optimize.{ParameterAveraging, AdaGrad}
 import cc.factorie.variable._
 import cc.factorie.optimize.Trainer
 import cc.factorie.la.WeightsMapAccumulator
+import cc.factorie.util.JavaHashMap
 import scala.reflect.ClassTag
 
 
@@ -44,6 +45,10 @@ class StackedChainNer[L<:NerTag](labelDomain: CategoricalDomain[String],
                                  scale: Double,
                                  useOffsetEmbedding: Boolean,
                                  url: java.net.URL=null)(implicit m: ClassTag[L]) extends DocumentAnnotator {
+
+  val FEATURE_PREFIX_REGEX = "^[^@]*$".r
+  val ALPHA_REGEX = "[A-Za-z]+".r
+
   object NERModelOpts {
     val argsList = new scala.collection.mutable.HashMap[String, String]()
     argsList += ("scale" -> scale.toString)
@@ -206,23 +211,18 @@ class StackedChainNer[L<:NerTag](labelDomain: CategoricalDomain[String],
   var bP = false
   var ss = 10.0
 
-  def prevWindowNum(t:Token, n:Int): IndexedSeq[(Int,Token)] = t.prevWindow(n).map(x => (t.prevWindow(n).indexOf(x),x)).toIndexedSeq
-  def nextWindowNum(t:Token, n:Int): IndexedSeq[(Int,Token)] = t.nextWindow(n).map(x => (t.nextWindow(n).indexOf(x),x)).toIndexedSeq
-
   def prefix( prefixSize : Int, cluster : String ) : String = if(cluster.size > prefixSize) cluster.substring(0, prefixSize) else cluster
 
   def addContextFeatures[A<:Observation[A]](t : Token, from : Token, vf:Token=>CategoricalVectorVar[String]) : Unit = {
-    vf(t) ++= prevWindowNum(from,2).map(t2 => "CONTEXT="+simplifyDigits(t2._2.string).toLowerCase + "@-" + t2._1)
-    vf(t) ++= nextWindowNum(from, 2).map(t2 => "CONTEXT="+simplifyDigits(t2._2.string).toLowerCase + "@" + t2._1)
-    for(t2 <- prevWindowNum(from,2)) {
-      if(clusters.contains(t2._2.string)) {
-        vf(t) += ("CONTEXTPATH="+prefix(4, clusters(t2._2.string)) + ("@-" + t2._1.toString))
-      }
+    val prevWindow = from.prevWindow(2).zipWithIndex
+    val nextWindow = from.nextWindow(2).zipWithIndex
+    vf(t) ++= prevWindow.map { case (t2, idx) =>
+      if (clusters.contains(t2.string)) vf(t) += ("CONTEXTPATH="+prefix(4, clusters(t2.string)) + ("@-" + idx.toString))
+      "CONTEXT="+simplifyDigits(t2.string).toLowerCase + "@-" + idx
     }
-
-    for(t2 <- nextWindowNum(from, 2)) {
-      if(clusters.contains(t2._2.string))
-        vf(t) += ("CONTEXTPATH="+prefix(4, clusters(t2._2.string)) + ("@" + t2._1.toString))
+    vf(t) ++= nextWindow.map { case (t2, idx) =>
+      if (clusters.contains(t2.string)) vf(t) += ("CONTEXTPATH="+prefix(4, clusters(t2.string)) + ("@" + idx.toString))
+      "CONTEXT="+simplifyDigits(t2.string).toLowerCase + "@" + idx
     }
   }
 
@@ -247,7 +247,7 @@ class StackedChainNer[L<:NerTag](labelDomain: CategoricalDomain[String],
 
   def initFeatures(document:Document, vf:Token=>CategoricalVectorVar[String]): Unit = {
     count=count+1
-    val tokenSequence = document.tokens.toSeq
+    val tokenSequence = document.tokens.toIndexedSeq
     /* This now does a lot of lemmatizing. It might be worth adding an extra
      * method to the lookup which pulls out the lemmatized form and creates it 
      * using the lexicon's lemmatizer if it isn't there.
@@ -311,9 +311,13 @@ class StackedChainNer[L<:NerTag](labelDomain: CategoricalDomain[String],
         features += "CLUS="+prefix(20,clusters(rawWord))
       }
     }
-    for (sentence <- document.sentences) cc.factorie.app.chain.Observations.addNeighboringFeatureConjunctions(sentence.tokens, vf, "^[^@]*$", List(0), List(1), List(2), List(-1), List(-2))
-    // Add features for character n-grams between sizes 2 and 5
-    document.tokens.foreach(t => if (t.string.matches("[A-Za-z]+")) vf(t) ++= t.charNGrams(2,5).map(n => "NGRAM="+n))
+    for (sentence <- document.sentences)
+      cc.factorie.app.chain.Observations.addNeighboringFeatureConjunctions(sentence.tokens, vf, FEATURE_PREFIX_REGEX, List(0), List(1), List(2), List(-1), List(-2))
+
+    document.tokens.foreach { t =>
+      if (ALPHA_REGEX.findFirstIn(t.string).nonEmpty) vf(t) ++= t.charNGrams(2,5).map(n => "NGRAM="+n)
+    }
+
     // Add features from window of 4 words before and after
     document.tokens.foreach(t => vf(t) ++= t.prevWindow(4).map(t2 => "PREVWINDOW="+simplifyDigits(t2.string).toLowerCase))
     document.tokens.foreach(t => vf(t) ++= t.nextWindow(4).map(t2 => "NEXTWINDOW="+simplifyDigits(t2.string).toLowerCase))
@@ -370,22 +374,23 @@ class StackedChainNer[L<:NerTag](labelDomain: CategoricalDomain[String],
   }
 
   def initSecondaryFeatures(document:Document, extraFeatures : Boolean = false): Unit = {
-    document.tokens.foreach(t => t.attr[ChainNer2Features] ++= prevWindowNum(t,2).map(t2 => "PREVLABEL" + t2._1 + "="+t2._2.attr[L].categoryValue))
-    document.tokens.foreach(t => t.attr[ChainNer2Features] ++= prevWindowNum(t,1).map(t2 => "PREVLABELCON="+t2._2.attr[L].categoryValue+"&"+t.string))
+
+    document.tokens.foreach(t => t.attr[ChainNer2Features] ++= t.prevWindow(2).zipWithIndex.map(t2 => "PREVLABEL" + t2._2 + "="+t2._1.attr[L].categoryValue))
+    document.tokens.foreach(t => if (t.hasPrev) t.attr[ChainNer2Features] += "PREVLABELCON=" + t.prev.attr[L].categoryValue + "&" + t.string)
+
     for(t <- document.tokens) {
-      if(t.sentenceHasPrev) {
-        t.attr[ChainNer2Features] ++= prevWindowNum(t,2).map(t2 => "PREVLABELLCON="+t.sentencePrev.attr[L].categoryValue+"&"+t2._2.string)
-        t.attr[ChainNer2Features] ++= nextWindowNum(t,2).map(t2 => "PREVLABELLCON="+t.sentencePrev.attr[L].categoryValue+"&"+t2._2.string)
+      if (t.sentenceHasPrev) {
+        t.attr[ChainNer2Features] ++= t.prevWindow(2).map(t2 => "PREVLABELLCON=" + t.sentencePrev.attr[L].categoryValue + "&" + t2.string)
+        t.attr[ChainNer2Features] ++= t.nextWindow(2).map(t2 => "PREVLABELLCON=" + t.sentencePrev.attr[L].categoryValue + "&" + t2.string)
       }
     }
 
-    val sequences = getSequences(document)
-    val tokenToLabelMap = new scala.collection.mutable.HashMap[String, List[String]]
-    val extendedPrediction = new scala.collection.mutable.HashMap[String, List[String]]
-    val sequenceToLabelMap = new scala.collection.mutable.HashMap[String, List[String]]
-    val subsequencesToLabelMap = new scala.collection.mutable.HashMap[String, List[String]]
-
     if(extraFeatures) {
+      val sequences = getSequences(document)
+      val tokenToLabelMap = JavaHashMap[String,List[String]]()
+      val sequenceToLabelMap = JavaHashMap[String,List[String]]()
+      val subsequencesToLabelMap = JavaHashMap[String,List[String]]()
+
       for (token <- document.tokens) {
         if(tokenToLabelMap.contains(token.string))
           tokenToLabelMap(token.string) = tokenToLabelMap(token.string) ++ List(token.attr[L].categoryValue)
@@ -424,30 +429,40 @@ class StackedChainNer[L<:NerTag](labelDomain: CategoricalDomain[String],
         }
       }
     }
+
+    val extendedPrediction = JavaHashMap[String, collection.mutable.Map[String,Int]]()
+    val surfaceFormCount = JavaHashMap[String,Int]()
     for(token <- document.tokens) {
-      if(extendedPrediction.contains(token.string))
-        labelDomain.categories.map(str => token.attr[ChainNer2Features] += str + "=" + history(extendedPrediction(token.string), str) )
-      if(extendedPrediction.contains(token.string))
-        extendedPrediction(token.string) = extendedPrediction(token.string) ++ List(token.attr[L].categoryValue)
-      else
-        extendedPrediction(token.string) = List(token.attr[L].categoryValue)
+      val tokenStr = token.string
+      if(extendedPrediction.contains(tokenStr)) {
+        labelDomain.categories.map(str => token.attr[ChainNer2Features] += str + "=" + history(extendedPrediction(token.string).getOrElse(str,0), surfaceFormCount.getOrElse(tokenStr,0)) )
+        val map = extendedPrediction(tokenStr)
+        val count = map.getOrElse(token.attr[L].categoryValue,0) + 1
+        map.put(token.attr[L].categoryValue,count)
+        surfaceFormCount.put(tokenStr,surfaceFormCount.getOrElse(tokenStr,0) + 1)
+      } else {
+        val map = JavaHashMap[String,Int]()
+        map.put(token.attr[L].categoryValue,1)
+        extendedPrediction.put(tokenStr,map)
+        surfaceFormCount.put(tokenStr,1)
+      }
     }
 
-    for(token <- document.tokens) {
-      val rawWord = token.string
-      if(token.hasPrev && clusters.size > 0) {
-        if(clusters.contains(rawWord))
-          token.attr[ChainNer2Features] ++= List(4,6,10,20).map("BROWNCON="+token.prev.attr[L].categoryValue + "&" + prefix(_,clusters(rawWord)))
-        if(token.hasNext) {
-          var nextRawWord = token.next.string
-          if(clusters.contains(nextRawWord))
-            token.attr[ChainNer2Features] ++= List(4,6,10,20).map("BROWNCON="+token.prev.attr[L].categoryValue + "&" + prefix(_,clusters(nextRawWord)))
-          if(token.next.hasNext && clusters.contains(token.next.next.string)) {
-            nextRawWord = token.next.next.string
-            token.attr[ChainNer2Features] ++= List(4,6,10,20).map("BROWNCON="+token.prev.attr[L].categoryValue + "&" + prefix(_,clusters(nextRawWord)))
-          }
-        }
+    if (clusters.size > 0) {
+      for(token <- document.tokens) {
+        val rawWord = token.string
         if(token.hasPrev) {
+          if(clusters.contains(rawWord))
+            token.attr[ChainNer2Features] ++= List(4,6,10,20).map("BROWNCON="+token.prev.attr[L].categoryValue + "&" + prefix(_,clusters(rawWord)))
+          if(token.hasNext) {
+            var nextRawWord = token.next.string
+            if(clusters.contains(nextRawWord))
+              token.attr[ChainNer2Features] ++= List(4,6,10,20).map("BROWNCON="+token.prev.attr[L].categoryValue + "&" + prefix(_,clusters(nextRawWord)))
+            if(token.next.hasNext && clusters.contains(token.next.next.string)) {
+              nextRawWord = token.next.next.string
+              token.attr[ChainNer2Features] ++= List(4,6,10,20).map("BROWNCON="+token.prev.attr[L].categoryValue + "&" + prefix(_,clusters(nextRawWord)))
+            }
+          }
           var prevRawWord = token.prev.string
           if(clusters.contains(prevRawWord))
             token.attr[ChainNer2Features] ++= List(4,6,10,20).map("BROWNCON="+token.prev.attr[L].categoryValue + "&" + prefix(_,clusters(prevRawWord)))
@@ -467,6 +482,10 @@ class StackedChainNer[L<:NerTag](labelDomain: CategoricalDomain[String],
 
   def history(list : List[String], category : String) : String = {
     (round( 10.0 * ((list.count(_ == category).toDouble / list.length.toDouble)/3)) / 10.0).toString
+  }
+
+  def history(count : Int, total : Int) : String = {
+    (round( 10.0 * ((count.toDouble / total)/3.0)) / 10.0).toString
   }
 
   def train(trainDocuments: Seq[Document],testDocuments: Seq[Document], rate: Double, delta: Double): Double = {
