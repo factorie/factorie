@@ -29,7 +29,8 @@ import scala.collection.mutable
     Token constructors that include a tokenString automatically append the tokenString to the Document's string.
     @param stringStart The offset into the Document string of the first character of the Token.
     @param stringEnd The offset into the Document string of the character immediately after the last character of the Token. */
-class Token(val stringStart:Int, val stringEnd:Int) extends cc.factorie.app.chain.Observation[Token] with ChainLink[Token,Section] with DocumentSubstring with Attr {
+class Token(val stringStart:Int, val stringEnd:Int)
+  extends cc.factorie.app.chain.Observation[Token] with ChainLink[Token,Section] with DocumentSubstring with Attr with Serializable {
   assert(stringStart <= stringEnd)
 //  override def _setChainPosition(c:Section, p:Int): Unit = {
 //    super._setChainPosition(c, p)

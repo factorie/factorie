@@ -37,7 +37,12 @@ import scala.reflect.ClassTag
  * PER      f1=0.940327 p=0.955329 r=0.925788 (tp=1497 fp=70 fn=120 true=1617 pred=1567)
  *
  */
-class ConllChainNer(url: java.net.URL=null) extends ChainNer[BilouConllNerTag](BilouConllNerDomain, (t, s) => new BilouConllNerTag(t, s), l => l.token, url) {
+class ConllChainNer(url: java.net.URL=null)
+  extends ChainNer[BilouConllNerTag](
+    BilouConllNerDomain,
+    (t, s) => new BilouConllNerTag(t, s),
+    l => l.token,
+    url) with Serializable {
   def loadDocs(fileName: String): Seq[Document] = cc.factorie.app.nlp.load.LoadConll2003(BILOU=true).fromFilename(fileName)
   override def process(document:Document): Document = {
     if (document.tokenCount > 0) {
@@ -49,7 +54,7 @@ class ConllChainNer(url: java.net.URL=null) extends ChainNer[BilouConllNerTag](B
 }
 
 //TODO this serialized model doesn't exist yet?
-object ConllChainNer extends ConllChainNer(cc.factorie.util.ClasspathURL[ConllChainNer](".factorie"))
+object ConllChainNer extends ConllChainNer(cc.factorie.util.ClasspathURL[ConllChainNer](".factorie")) with Serializable
 
 
 /**

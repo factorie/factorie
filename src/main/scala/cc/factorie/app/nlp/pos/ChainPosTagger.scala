@@ -108,7 +108,7 @@ abstract class ChainPosTagger[A<:PosTag](val tagConstructor:(Token)=>A)(implicit
   def initPOSFeatures(sentence: Sentence): Unit
 }
 
-class WSJChainPosTagger extends ChainPosTagger((t:Token) => new PennPosTag(t, 0)) {
+class WSJChainPosTagger extends ChainPosTagger((t:Token) => new PennPosTag(t, 0)) with Serializable {
   def this(url: java.net.URL) = {
     this()  
     deserialize(url.openConnection().getInputStream)
@@ -144,7 +144,7 @@ class WSJChainPosTagger extends ChainPosTagger((t:Token) => new PennPosTag(t, 0)
 }
 object WSJChainPosTagger extends WSJChainPosTagger(ClasspathURL[WSJChainPosTagger](".factorie"))
 
-class OntonotesChainPosTagger extends ChainPosTagger((t:Token) => new PennPosTag(t, 0)) {
+class OntonotesChainPosTagger extends ChainPosTagger((t:Token) => new PennPosTag(t, 0)) with Serializable {
   def this(url: java.net.URL) = {
     this()  
     deserialize(url.openConnection().getInputStream)
@@ -178,7 +178,7 @@ class OntonotesChainPosTagger extends ChainPosTagger((t:Token) => new PennPosTag
     addNeighboringFeatureConjunctions(sentence.tokens, (t: Token) => t.attr[PosFeatures], "W=[^@]*$", List(-2), List(-1), List(1), List(-2,-1), List(-1,0))
   }
 }
-object OntonotesChainPosTagger extends OntonotesChainPosTagger(ClasspathURL[OntonotesChainPosTagger](".factorie"))
+object OntonotesChainPosTagger extends OntonotesChainPosTagger(ClasspathURL[OntonotesChainPosTagger](".factorie")) with Serializable
 
 
 class ChainPosTrainer[A<:PosTag, B<:ChainPosTagger[A]](taggerConstructor: () => B, loadingMethod:(String) => Seq[Document])(implicit ct:ClassTag[A]) extends HyperparameterMain {

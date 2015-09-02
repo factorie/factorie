@@ -17,7 +17,8 @@ import cc.factorie.variable._
 import scala.collection.mutable
 
 /** A sub-sequence of Tokens within a Section (which is in turn part of a Document). */
-class TokenSpan(theSection:Section, initialStart:Int, initialLength:Int) extends SpanVariable[Section,Token](theSection, initialStart, initialLength) with Attr with Ordered[TokenSpan] {
+class TokenSpan(theSection:Section, initialStart:Int, initialLength:Int)
+  extends SpanVariable[Section,Token](theSection, initialStart, initialLength) with Attr with Ordered[TokenSpan] with Serializable {
   def this(tokens:Seq[Token]) = this(tokens.head.section, tokens.head.positionInSection, tokens.size)
   /** The Document Section of which this TokenSpan is a subsequence. */
   final def section = chain  // Just a convenient alias
@@ -140,7 +141,7 @@ trait TokenSpanCollection[S<:TokenSpan] extends SpanVarCollection[S, Section, To
 class TokenSpanList[S<:TokenSpan](spans:Iterable[S]) extends SpanVarList[S, Section, Token](spans) with TokenSpanCollection[S]
 
 /** A mutable collection of TokenSpans, with various methods to returns filtered sub-sets of spans based on position and class. */
-class TokenSpanBuffer[S<:TokenSpan] extends SpanVarBuffer[S, Section, Token] with TokenSpanCollection[S]
+class TokenSpanBuffer[S<:TokenSpan] extends SpanVarBuffer[S, Section, Token] with TokenSpanCollection[S] with Serializable
 
 // Cubbie storage
 
