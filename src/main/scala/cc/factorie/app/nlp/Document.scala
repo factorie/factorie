@@ -68,7 +68,7 @@ trait DocumentSubstring {
     "for (section <- document.sections) section.tokens.someMethodOnSeq()...".  
     
     @author Andrew McCallum */
-class Document extends DocumentSubstring with Attr with UniqueId {
+class Document extends DocumentSubstring with Attr with UniqueId with Serializable {
   /** Create a new Document, initializing it to have contents given by the argument. */
   def this(stringContents:String) = { this(); _string = stringContents }
   /** Return the "name" assigned to this Document by the 'setName' method.

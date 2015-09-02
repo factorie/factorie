@@ -34,7 +34,7 @@ object FactorieBuild extends Build {
     settings(
       organization := "cc.factorie_2.11",
       version := "1.2-SNAPSHOT",
-      scalaVersion := "2.11.2",
+      scalaVersion := "2.11.7",
       // no verbose deprecation warnings, octal escapes in jflex file are too many
       scalacOptions := Seq("-unchecked", "-encoding", "utf8"),
       resolvers ++= resolutionRepos,
