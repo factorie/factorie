@@ -98,6 +98,6 @@ object Dependencies {
 
   object Resources {
     // This may be brittle, but intransitive() avoids creating a circular dependency.
-    val nlpresources = "cc.factorie.app.nlp" % "all-models" % "1.0.0-SNAPSHOT" % "with-nlp-resources" intransitive()
+    val nlpresources = "cc.factorie.app.nlp" % "all-models" % "1.0.0" % "with-nlp-resources" intransitive()
   }
 }
