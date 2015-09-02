@@ -93,7 +93,7 @@ object Dependencies {
   }
 
   object TestDependencies {
-    val scalatest = "org.scalatest" % "scalatest_2.11" % "2.2.2" % "test"
+    val scalatest = "org.scalatest" % "scalatest_2.11" % "2.2.2" % Test
   }
 
   object Resources {
