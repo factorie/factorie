@@ -7,6 +7,19 @@ import org.scalatest.junit._
 class TestCategoricalDomain extends JUnitSuite with cc.factorie.util.FastLogging {
 
   @Test
+  def testAdditionsWithCounting(): Unit = {
+    val domain = new CategoricalDomain[String](List("yes", "no"))
+    domain.freeze()
+    assert(domain.size == 2) // domain should have 2 categories
+    assert(domain.count("yes") == 0) // nothing should be counted yet
+    domain.gatherCounts = true
+    domain ++= List("yes") // ++= should increment the count
+    assert(domain.count("yes") == 1)
+    domain += "yes"  // += should also increment the count
+    assert(domain.count("yes") == 2)
+  }
+
+  @Test
   def testCategoricalDomain(): Unit = {
 
     object FootSizeDomain extends CategoricalDomain[String] {

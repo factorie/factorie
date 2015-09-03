@@ -281,7 +281,7 @@ abstract class JobQueueExecutor(memory: Int, className: String, cores: Int = 1) 
  */
 class QSubExecutor(memory: Int, className: String, cores: Int = 1) extends JobQueueExecutor(memory, className, cores) {
   import sys.process._
-  def runJob(script: String, logFile: String) { s"qsub -pe blake $cores -sync y -l mem_token=${memory}G -cwd -j y -o $logFile -S /bin/sh $script".!! }
+  def runJob(script: String, logFile: String) { s"qsub -pe blake $cores -sync y -l mem_token=${memory}G -l mem_free=${memory}G -cwd -j y -o $logFile -S /bin/sh $script".!! }
 }
 
 /**

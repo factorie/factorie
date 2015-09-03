@@ -22,12 +22,14 @@ import cc.factorie.app.strings.{alphaSegmenter,wordSegmenter}
 class WindowWordEmbedderOptions extends cc.factorie.util.CmdOptions {
   val vocabInput = new CmdOption("vocab-input", List("enwiki-latest-pages-articles.xml.bz2"), "TXTFILE", "Text files from which to read documents and words for building the vocabulary.  Works with *.txt.gz, Wikipedia enwiki*.xmlgz2, and a few other formats.")
   val trainInput = new CmdOption("train-input", List("enwiki-latest-pages-articles.xml.bz2"), "TXTFILE", "Text files from which to read documents and words for training the embeddings.  Works with *.txt.gz, Wikipedia enwiki*.xmlgz2, and a few other formats.")
+  val parametersSave = new CmdOption("parameters-save", "parameters.gz", "FILE", "If invoked, save the parameters after training to this filename in compressed binary format.")
+  val parametersLoad = new CmdOption("parameters-load", "parameters.gz", "FILE", "If invoked, load the parameters at initialization time from this filename containing compressed binary embedding parameters.")
   val dims = new CmdOption("dims", 50, "INT", "Dimensionality of the embedding vectors.")
   val seed = new CmdOption("seed", 0, "INT", "Seed for random number generator.")
   val minContext = new CmdOption("min-context", 2, "INT", "Skip training windows that end up with fewer context words after randomized removal of common context words.")
   val window =  new CmdOption("window", 5, "INT", "The number of words on either side of the target to include in the context window.")
   val normalizeX = new CmdOption("normalize-x", false, "BOOL", "If true, normalize input context by the number of context words in the training example.")
-  val vocabulary = new CmdOption("vocabulary", "vocabulary.txt", "FILE", "Filename in which to find the words, one per line, each preceded by its count.")
+  val vocabulary = new CmdOption("vocabulary", "vocabulary.txt", "FILE", "Filename from which to initialize or save the collection of all word types, one per line, each preceded by its count.")
   val negative = new CmdOption("negative", 3, "INT", "The number of NCE negative examples to use for each positive example.")
   val maxDocuments = new CmdOption("max-documents", Long.MaxValue, "LONG", "Read no more than this number of documents or Wikipedia pages.  Default is Int.MaxValue.")
   val separateIO = new CmdOption("separate-io", false, "BOOLEAN", "If TRUE, parameterize input embeddings (U) separately from output embeddings (V).  Default is FALSE.")
@@ -63,14 +65,16 @@ abstract class WordEmbedder(val opts:WindowWordEmbedderOptions) extends Paramete
   def outputEmbedding(i:Int) = _outputEmbedding(i).value
   def outputWeights(i:Int) = _outputEmbedding(i)
   def outputEmbedding(word:String) = { val index = domain.index(word); if (index >= 0) _outputEmbedding(index).value else null }
+  // TODO Should this be here, or should we let subclasses handle this? -akm
+  if (opts.parametersLoad.wasInvoked) loadParameters(new File(opts.parametersLoad.value))
   
   def discardProb(wordIndex: Int): Double = {
     var result = _discardProb(wordIndex)
-    println("discardProb "+result)
+    //println("discardProb "+result)
     if (result != 0.0) return result
     result = 1.0 - math.sqrt(0.0001/(domain.count(wordIndex).toDouble / domain.countsTotal.toDouble))
     _discardProb(wordIndex) = result
-    println("discardProb again "+result)
+    //println("discardProb again "+result)
     result
   }
   def discard(wordIndex:Int): Boolean = random.nextDouble() < discardProb(wordIndex)
@@ -105,17 +109,32 @@ abstract class WordEmbedder(val opts:WindowWordEmbedderOptions) extends Paramete
   }
   def newExample(model:WordEmbedder, wordIndices:Array[Int], centerPosition:Int, window:Int): Option[WindowWordEmbedderExample]
   
-  def train(filenames:Seq[String]): Unit = {
+  def train(files:Seq[File]): Unit = {
+    //val strings = for (filename <- filenames; string <- fileToStringIterator(new File(filename))) yield string
+    val strings = files.iterator.flatMap(f => fileToStringIterator(f))
+    train(strings)
+  }
+
+  
+  /** Train the parameters of the embedding given an iterator over the string contents of "documents",
+      which could be large textual documents like Wikipedia pages or short documents like tweets or titles.
+
+      Every snapshotIncrement training examples, write the embedding parameters to a file 
+      named, for example, embeddings-0010m, for the 10 millionth training window.
+      If you don't want incremental saving of parameter snapshots, set snapshotIncrement to a negative number. 
+
+      Every logIncrement print to stdout how many training windows we have trained on so far.
+      If you don't want any logging, set logIncrement to a negative number.
+*/
+  def train(strings:Iterator[String], snapshotIncrement:Int = 10000000, logIncrement:Int = 1000000): Unit = {
     if (opts.outputExamples.wasInvoked) println("Writing data examples to "+opts.outputExamples.value)
     var wordCount = 0
-    val wordCountLogIncrement = 1000000; var nextWordCountLog = wordCountLogIncrement
-    val wordCountSnapshotIncrement = 10000000; var nextWordCountShapshot = wordCountSnapshotIncrement
+    var nextWordCountLog = logIncrement
+    var nextWordCountShapshot = snapshotIncrement
     val optimizer = new AdaGrad()
     optimizer.initializeWeights(this.parameters)
-    //val trainer = new HogwildTrainer(parameters, optimizer, logEveryN=50000)
-    //val trainer = new cc.factorie.app.nlp.embeddings.LiteHogwildTrainer(parameters, optimizer)
     val trainer = new OnlineTrainer(parameters, optimizer, logEveryN=50000)
-    for (filename <- filenames; string <- fileToStringIterator(new File(filename))) {
+    for (string <- strings) {
       val examples = stringToExamples(string)
       //println("CBOW.train examples.size = "+examples.size)
       wordCount += examples.size
@@ -125,15 +144,17 @@ abstract class WordEmbedder(val opts:WindowWordEmbedderOptions) extends Paramete
         println("finished.")
       }
       trainer.processExamples(examples)
-      if (wordCount > nextWordCountLog) { println(s" Trained on ${wordCount/1000000}m contexts."); nextWordCountLog += wordCountLogIncrement } 
-      if (wordCount > nextWordCountShapshot && !opts.outputExamples.wasInvoked) {
+      if (logIncrement > 0 && wordCount > nextWordCountLog) { println(s" Trained on ${wordCount/1000000}m contexts."); nextWordCountLog += logIncrement } 
+      if (snapshotIncrement > 0 && wordCount > nextWordCountShapshot && !opts.outputExamples.wasInvoked) {
         val fn = f"embeddings-${wordCount/1000000}%04dm"
         println("Writing intermediate embeddings to "+fn)
         writeInputEmbeddings(fn)
-        nextWordCountShapshot += wordCountSnapshotIncrement
+        nextWordCountShapshot += snapshotIncrement
       }
     }
+    if (opts.parametersSave.wasInvoked) saveParameters(new File(opts.parametersSave.value))
   }
+
 
   /** Return a ranked list of domain index/word by their gated output vector's similarity the query vector.
     The query vector is assumed to be already gated.  The output vectors are gated on the fly here. */
@@ -387,7 +408,7 @@ abstract class WordEmbedder(val opts:WindowWordEmbedderOptions) extends Paramete
     dataWriter.close()
   }
 
-  // Writing to a file embeddings in textual format
+  // Writing embedding parameters to a file in textual format
   def writeInputEmbeddings(filename:String): Unit = {
     val out = new PrintWriter(filename)
     for (i <- 0 until domain.size)
@@ -395,15 +416,20 @@ abstract class WordEmbedder(val opts:WindowWordEmbedderOptions) extends Paramete
     out.close()
   }
   def writeOutputEmbeddings(filename:String): Unit = {
-    val out = new PrintWriter(filename)
+    val os = new FileOutputStream(filename)
+    writeOutputEmbeddings(os)
+    os.close()
+  }
+  def writeOutputEmbeddings(out:OutputStream): Unit = {
+    val pw = new PrintWriter(out)
     for (i <- 0 until domain.size)
-      out.println("%s\t%s".format(domain.category(i), outputEmbedding(i).mkString(" ")))
-    out.close()
+      pw.println("%s\t%s".format(domain.category(i), outputEmbedding(i).mkString(" ")))
+    pw.flush()
   }
   
-  // Save and load 
-  def saveParameters(filename:String): Unit = {
-    val out = new DataOutputStream(new GZIPOutputStream(new FileOutputStream(filename)))
+  // Save and load embedding parameters in a compressed binary format
+  def saveParameters(file:File): Unit = {
+    val out = new DataOutputStream(new GZIPOutputStream(new FileOutputStream(file)))
     saveParameters(out)
     out.close()
   }
@@ -420,8 +446,8 @@ abstract class WordEmbedder(val opts:WindowWordEmbedderOptions) extends Paramete
       i += 1
     }
   }
-  def loadParameters(filename:String): Unit = {
-    val in = new DataInputStream(new GZIPInputStream(new FileInputStream(filename)))
+  def loadParameters(file:File): Unit = {
+    val in = new DataInputStream(new GZIPInputStream(new FileInputStream(file)))
     loadParameters(in)
     in.close()
   }
