@@ -1,25 +1,22 @@
 package cc.factorie.app.nlp.embedding
-import cc.factorie.variable.CategoricalDomain
-import cc.factorie.model._
-import cc.factorie.la._
-import cc.factorie.optimize._
-import cc.factorie.util.{Alias, IntArrayBuffer, DoubleAccumulator}
-import scala.util.Random
 import java.io._
-import scala.collection.mutable.{ArrayOps,ArrayBuffer}
-import java.util.zip.GZIPOutputStream
-import java.util.zip.GZIPInputStream
-import javax.xml.stream._
-import javax.xml.stream.events._
-import javax.xml.stream.util._
 import java.text.NumberFormat
 import java.util.Locale
-import org.apache.commons.compress.compressors.CompressorStreamFactory
-import scala.xml.pull._
-import scala.io.Source
-import cc.factorie.app.strings.{alphaSegmenter,wordSegmenter}
+import java.util.zip.{GZIPInputStream, GZIPOutputStream}
 
-class WindowWordEmbedderOptions extends cc.factorie.util.CmdOptions {
+import cc.factorie.app.strings.alphaSegmenter
+import cc.factorie.la._
+import cc.factorie.model._
+import cc.factorie.optimize._
+import cc.factorie.variable.CategoricalDomain
+import org.apache.commons.compress.compressors.CompressorStreamFactory
+
+import scala.collection.mutable.ArrayBuffer
+import scala.io.Source
+import scala.util.Random
+import scala.xml.pull._
+
+class WindowWordEmbedderOptions extends cc.factorie.util.DefaultCmdOptions {
   val vocabInput = new CmdOption("vocab-input", List("enwiki-latest-pages-articles.xml.bz2"), "TXTFILE", "Text files from which to read documents and words for building the vocabulary.  Works with *.txt.gz, Wikipedia enwiki*.xmlgz2, and a few other formats.")
   val trainInput = new CmdOption("train-input", List("enwiki-latest-pages-articles.xml.bz2"), "TXTFILE", "Text files from which to read documents and words for training the embeddings.  Works with *.txt.gz, Wikipedia enwiki*.xmlgz2, and a few other formats.")
   val parametersSave = new CmdOption("parameters-save", "parameters.gz", "FILE", "If invoked, save the parameters after training to this filename in compressed binary format.")
@@ -214,7 +211,8 @@ abstract class WordEmbedder(val opts:WindowWordEmbedderOptions) extends Paramete
       printPrompt()
     }    
   }
-  
+
+  var docCount = 0
   /** Read text to build up vocabulary and write the vocabulary to the filename specified by --vocabulary. */
   def buildVocabulary(filenames:Seq[String]): Unit = {
     // Recursively gather all files listed on command line
@@ -227,7 +225,7 @@ abstract class WordEmbedder(val opts:WindowWordEmbedderOptions) extends Paramete
     val skipThreshold = 1.0 - opts.vocabSkipProb.value
     var printAtCount = printInterval
     var wordCount = 0
-    var docCount = 0
+    //var docCount = 0
     // From all files, segment contents into words, and count them
     files.foreach(file => {
       println("Vocabulary reading "+file.getName())
@@ -252,7 +250,13 @@ abstract class WordEmbedder(val opts:WindowWordEmbedderOptions) extends Paramete
     println(s"Trimed to ${domain.countsTotal} tokens, ${domain.size} types.")
     // Serialize the results
     println("Sorting...")
-    writeVocabulary(opts.vocabulary.value)
+    //the line below results in writing an empty vocabulary
+    //writeVocabulary(opts.vocabulary.value)
+    val sorted = domain.categories.map(c => (domain.count(c), c)).sortBy(-_._1)
+    val out = new PrintWriter(opts.vocabulary.value)
+    for ((count, word) <- sorted)
+      out.println("%d %s".format(count, word))
+    out.close()
     println("Done writing vocabulary.")
   }
   
@@ -325,11 +329,11 @@ abstract class WordEmbedder(val opts:WindowWordEmbedderOptions) extends Paramete
           }
         }
       case name if name.startsWith("enwiki") && name.endsWith(".xml.bz2") =>
-        var wikipediaArticleCount = 0
+        //var wikipediaArticleCount = 0
         val docIterator = cc.factorie.app.nlp.load.LoadWikipediaPlainText.fromCompressedFile(file, opts.maxDocuments.value)
         new Iterator[String] {
           def hasNext: Boolean = docIterator.hasNext
-          def next(): String = { wikipediaArticleCount += 1; val doc = docIterator.next(); /*println(doc.name);*/ doc.string }
+          def next(): String = { docCount += 1; val doc = docIterator.next(); /*println(doc.name);*/ doc.string }
         }
       // bz2 compress wikipedia XML
       case name if name.startsWith("deprecated enwiki") && name.endsWith(".xml.bz2") => {

@@ -75,7 +75,9 @@ object Dependencies {
   val resolutionRepos = Seq(
     "Scala tools" at "https://oss.sonatype.org/content/groups/scala-tools",
     "OSS snapshots" at "https://oss.sonatype.org/content/repositories/snapshots",
-    "OSS releases" at "https://oss.sonatype.org/content/repositories/releases"
+    "OSS releases" at "https://oss.sonatype.org/content/repositories/releases",
+    "Umass Releases" at "https://dev-iesl.cs.umass.edu/nexus/content/repositories/public",
+    "Umass Snapshots" at "https://dev-iesl.cs.umass.edu/nexus/content/repositories/public-snapshots"
   )
 
   object CompileDependencies {
@@ -91,7 +93,7 @@ object Dependencies {
   }
 
   object TestDependencies {
-    val scalatest = "org.scalatest" % "scalatest_2.11" % "2.2.2" % "test"
+    val scalatest = "org.scalatest" % "scalatest_2.11" % "2.2.2" % Test
   }
 
   object Resources {

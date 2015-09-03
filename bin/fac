@@ -18,8 +18,8 @@ if [ -e $factorienlpdir ] ; then
   cp=$cp:$factorienlpdir/src/main/resources:$factorienlpdir/target/classes
 fi 
 
-factoriejar=$factoriedir/target/factorie_2.11-1.2-SNAPSHOT-jar-with-dependencies.jar
-factorienlpjar=$factoriedir/target/factorie_2.11-1.2-SNAPSHOT-nlp-jar-with-dependencies.jar
+factoriejar=$factoriedir/target/factorie-1.2-SNAPSHOT-jar-with-dependencies.jar
+factorienlpjar=$factoriedir/target/factorie-1.2-SNAPSHOT-nlp-jar-with-dependencies.jar
 
 if [ -e $factorienlpjar ] ; then
   cp=$cp:$factorienlpjar

@@ -15,7 +15,7 @@ import cc.factorie._
 import model._
 import variable._
 import cc.factorie.app.nlp._
-import java.io.{BufferedInputStream, BufferedOutputStream, File}
+import java.io.{Serializable, BufferedInputStream, BufferedOutputStream, File}
 import cc.factorie.util.{Logger, BinarySerializer, CubbieConversions}
 import cc.factorie.optimize.{Trainer, LikelihoodExample}
 import cc.factorie.infer.{InferByBPChain, DiscreteProposalMaximizer, MaximizeByBPChain}
@@ -24,7 +24,7 @@ import cc.factorie.model.{DotTemplateWithStatistics2, TemplateModel, DotTemplate
 
 /** A simple named entity recognizer, trained on Ontonotes data.
     It does not have sufficient features to be state-of-the-art. */
-class BasicOntonotesNER extends DocumentAnnotator {
+class BasicOntonotesNER extends DocumentAnnotator with Serializable {
   private val logger = Logger.getLogger(this.getClass.getName)
 
   def this(url:java.net.URL) = {
@@ -190,16 +190,6 @@ class BasicOntonotesNER extends DocumentAnnotator {
       if (word.length > 5) { features += "P="+cc.factorie.app.strings.prefix(word, 4); features += "S="+cc.factorie.app.strings.suffix(word, 4) }
       if (token.isPunctuation) features += "PUNCTUATION"
       if (lexicon.NumberWords.containsLemmatizedWord(word)) features += "#WORD"
-      if (lexicon.iesl.Money.containsLemmatizedWord(word)) features += "MONEY"
-      if (lexicon.iesl.PersonFirst.containsLemmatizedWord(word)) features += "PERSON-FIRST"
-      if (lexicon.iesl.Month.containsLemmatizedWord(word)) features += "MONTH"
-      if (lexicon.iesl.PersonLast.containsLemmatizedWord(word)) features += "PERSON-LAST"
-      if (lexicon.iesl.PersonHonorific.containsLemmatizedWord(word)) features += "PERSON-HONORIFIC"
-      if (lexicon.iesl.Company.contains(token)) features += "COMPANY"
-      if (lexicon.iesl.Country.contains(token)) features += "COUNTRY"
-      if (lexicon.iesl.City.contains(token)) features += "CITY"
-      if (lexicon.iesl.PlaceSuffix.contains(token)) features += "PLACE-SUFFIX"
-      if (lexicon.iesl.USState.contains(token)) features += "USSTATE"
       //features ++= token.prevWindow(4).map(t2 => "PREVWINDOW="+simplifyDigits(t2.string).toLowerCase)
       //features ++= token.nextWindow(4).map(t2 => "NEXTWINDOW="+simplifyDigits(t2.string).toLowerCase)
     }
@@ -406,8 +396,8 @@ class BasicOntonotesNER extends DocumentAnnotator {
 }
 
 /** The default NER1 with parameters loaded from resources in the classpath. */
-object BasicOntonotesNERWSJ extends BasicOntonotesNER(cc.factorie.util.ClasspathURL[BasicOntonotesNER]("-WSJ.factorie"))
-object BasicOntonotesNER extends BasicOntonotesNER(cc.factorie.util.ClasspathURL[BasicOntonotesNER]("-Ontonotes.factorie"))
+object BasicOntonotesNERWSJ extends BasicOntonotesNER(cc.factorie.util.ClasspathURL[BasicOntonotesNER]("-WSJ.factorie")) with Serializable
+object BasicOntonotesNER extends BasicOntonotesNER(cc.factorie.util.ClasspathURL[BasicOntonotesNER]("-Ontonotes.factorie")) with Serializable
 
 object BasicOntonotesNERTrainer {
   def main(args:Array[String]): Unit = {
