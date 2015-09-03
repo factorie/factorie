@@ -3,7 +3,7 @@ package cc.factorie.app.bib.hcoref
 import java.io.File
 import scala.io.Source
 import cc.factorie.util.{VectorUtils, DefaultCmdOptions}
-import scala.collection.mutable
+import scala.collection.JavaConverters._
 
 /**
  * @author John Sullivan
@@ -12,7 +12,7 @@ trait Keystore {
   def dimensionality:Int
   def retrieve(key:String):Option[Array[Double]]
 
-  val missingKeys = mutable.HashMap[String, Int]().withDefaultValue(0)
+  val missingKeys = new java.util.concurrent.ConcurrentHashMap[String, Int]().asScala.withDefaultValue(0)
 
   import VectorUtils._
   def generateVector(keys:Iterable[String]):Array[Double] = keys.flatMap{ key =>
