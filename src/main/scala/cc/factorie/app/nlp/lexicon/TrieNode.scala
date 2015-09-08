@@ -123,7 +123,7 @@ class TrieNode(val label : String, var root : TrieNode, val sep : String, val de
     if (phrase.length <= index) {
       emit = true
       exactEmit = true
-      if (output == -1) {
+      if ((output == -1) && (outputSet == null)) {
         output = depth
       } else {
         if (outputSet == null) { constructSet }
@@ -166,7 +166,7 @@ class TrieNode(val label : String, var root : TrieNode, val sep : String, val de
 
   private def constructSet() : Unit = {
     outputSet = JavaHashSet[Int](3)
-    outputSet.add(output)
+    if (output != -1) { outputSet.add(output) }
     output = -1
   }
   
