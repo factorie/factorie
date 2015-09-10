@@ -33,10 +33,8 @@ import scala.collection.mutable.Set
  * An implementation of the Aho-Corasick (1975) string matching automaton.
  */
 class AhoCorasick(val sep : String) extends Serializable {
-  private val logger = Logger.getLogger("cc.factorie.app.nlp.lexicon.AhoCorasick")
-  
   val root : TrieNode = new TrieNode(sep)
-  private var constructed : Boolean = false
+  @transient private var constructed : Boolean = false
   
   /** Construct an instance from a Seq of phrases. */
   def this(sep : String, lexicon : Seq[Seq[String]]) = { this(sep); this ++= lexicon }
@@ -163,7 +161,7 @@ class AhoCorasick(val sep : String) extends Serializable {
 
   /** Adds a Seq of phrases into the current Trie, and fixes the failure transitions. */
   def ++=(input : Seq[Seq[String]]) : Unit = synchronized {
-    logger.log(Logger.INFO)("Appending to automaton")
+    AhoCorasick.logger.log(Logger.INFO)("Appending to automaton")
     for (e <- input) { root.add(e,0) }
     setTransitions()
   }
@@ -192,8 +190,13 @@ class AhoCorasick(val sep : String) extends Serializable {
   override def toString() : String = { "Aho-Corasick automaton containing " + size() + " phrases." }
   
   /** Serialization methods. Reconstructing the Trie from a source is usually faster. */
-  def writeObject(out : java.io.ObjectOutputStream) : Unit = { out.defaultWriteObject() }
-  def readObject(in : java.io.ObjectInputStream) : Unit = { in.defaultReadObject(); setTransitions() }
+  @throws(classOf[java.io.IOException])
+  @throws(classOf[ClassNotFoundException])
+  private def readObject(in: java.io.ObjectInputStream): Unit = { in.defaultReadObject(); constructed = false; setTransitions() }
+}
+
+object AhoCorasick {
+  private val logger = Logger.getLogger("cc.factorie.app.nlp.lexicon.AhoCorasick")
 }
 
 /**
