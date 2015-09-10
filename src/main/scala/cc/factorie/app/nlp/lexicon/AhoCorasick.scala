@@ -34,7 +34,7 @@ import scala.collection.mutable.Set
  */
 class AhoCorasick(val sep : String) extends Serializable {
   val root : TrieNode = new TrieNode(sep)
-  private var constructed : Boolean = false
+  @transient private var constructed : Boolean = false
   
   /** Construct an instance from a Seq of phrases. */
   def this(sep : String, lexicon : Seq[Seq[String]]) = { this(sep); this ++= lexicon }
