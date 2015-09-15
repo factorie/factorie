@@ -195,6 +195,8 @@ class Node[Vars <: NodeVariables[Vars]](val variables:Vars, val uniqueId: String
       case None => Unit
     }
     newParent match {
+      case Some(ment) if ment.isMention =>
+        throw new IllegalStateException("We should never be making a mention a parent, but we tried to make %s %s's parent".format(ment, this))
       case Some(nParent) => {
         parentRef.set(nParent)(d)
         propagateAddition(this.variables)(d)
