@@ -18,7 +18,7 @@ import cc.factorie.util.DoubleAccumulator
 class SkipGramNegSamplingEmbeddingModel(override val opts: EmbeddingOpts) extends WordEmbeddingModel(opts) {
   val negative = opts.negative.value
   val window = opts.window.value
-  val rng = new util.Random
+  val rng = new util.Random(5) // set rng seed
   val sample = opts.sample.value.toDouble
   override def process(doc: String): Int = {
     // given a document, below line splits by space and converts each word to Int (by vocab.getId) and filters out words not in vocab
