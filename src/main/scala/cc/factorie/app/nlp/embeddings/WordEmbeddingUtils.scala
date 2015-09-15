@@ -75,7 +75,7 @@ class FastLineReader(file: String, skipBytes: Long = 0, encoding: String = "UTF8
 }
 
 object TensorUtils {
-  val rng = new Random
+  val rng = new Random(5) // fix the seed
   def cosineDistance(x: Tensor1, y: Tensor1): Double = {
     val xnorm = x.twoNorm
     val ynorm = y.twoNorm
