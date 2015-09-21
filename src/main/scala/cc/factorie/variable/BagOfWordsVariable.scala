@@ -5,7 +5,8 @@ import scala.collection.mutable.{LinkedHashMap, HashMap}
 /**
  * @author John Sullivan
  */
-class BagOfWords(initialWords: Iterable[String] = null, initialBag: Map[String, Double] = null) {
+@SerialVersionUID(1)
+class BagOfWords(initialWords: Iterable[String] = null, initialBag: Map[String, Double] = null) extends Serializable{
 
   def longest = _bag.keysIterator.toSeq.sortBy(_.length).lastOption.getOrElse("")
   def topWord = _bag.toSeq.sortBy(_._2).lastOption.map(_._1).getOrElse("")

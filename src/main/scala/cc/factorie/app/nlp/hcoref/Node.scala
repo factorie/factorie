@@ -35,12 +35,14 @@ import cc.factorie.app.nlp.coref.{WithinDocEntity, CrossDocEntity, CrossDocMenti
   * represent attributes on the nodes; after a move, the nodes may propogate their
   * attributes to their parents after being moved (user specified)
   */
-class Node[Vars <: NodeVariables[Vars]](val variables:Vars, val uniqueId: String)(implicit d: DiffList) extends CrossDocEntity {
+@SerialVersionUID(1l)
+class Node[Vars <: NodeVariables[Vars]](val variables:Vars, val uniqueId: String)(implicit d: DiffList) extends CrossDocEntity with Serializable {
 
-  override def hashCode = uniqueId.hashCode
+
+  override def hashCode = Option(uniqueId).map(_.hashCode).getOrElse(super.hashCode)
   override def equals(a:Any) = a match {
-    case other:Node[Vars] if this.variables.getClass == other.variables.getClass => other.uniqueId == this.uniqueId
-    case otw => false
+    case other:Node[Vars] if Option(this.uniqueId).isDefined && Option(other.uniqueId).isDefined && this.variables.getClass == other.variables.getClass => other.uniqueId == this.uniqueId
+    case otw => super.equals(a)
   }
 
 
@@ -222,6 +224,8 @@ class Node[Vars <: NodeVariables[Vars]](val variables:Vars, val uniqueId: String
       oldParent.get.children.head.alterParent(oldParent.get.getParent)(d)
     }
   }
+
+  override def toString = s"Node($uniqueId, $variables)"
 }
 
 object Node {
@@ -253,20 +257,26 @@ object Node {
 }
 
 
+@SerialVersionUID(1l)
 class Mention[Vars <: NodeVariables[Vars]](v:Vars, id: String, var withinDocEntityId:String = null)(implicit d:DiffList) extends Node[Vars](v, id)(d) with CrossDocMention {
 
   def entity = root
   def string = this.toString
 
+  def mark:Unit = ()
+
   def this(variables:Vars)(implicit d:DiffList) = this(variables, java.util.UUID.randomUUID.toString)(d)
   override final val size = 1
-  override final val leaves = this :: Nil
+  override final val leaves = List(this)
   override final val isMentionVar = new IsMention(true)
   override final val mentionCountVar = new MentionCount(1)
   mentionsVar += this
+
+  override def toString = s"Mention($uniqueId, $variables)"
 }
 
-trait NodeVariables[Self <: NodeVariables[Self]] extends SelfVariable[Self] {
+@SerialVersionUID(1l)
+trait NodeVariables[Self <: NodeVariables[Self]] extends SelfVariable[Self] with Serializable {
 
   this: Self =>
 
