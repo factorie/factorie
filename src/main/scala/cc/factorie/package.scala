@@ -42,6 +42,15 @@ package object factorie extends CubbieConversions {
     def toCountBag:Map[String, Double] = s.groupBy(identity).mapValues(_.size.toDouble)
   }
 
+  implicit class WordBagExtras(m:Map[String, Double]) {
+    def longest = m.keysIterator.toSeq.sortBy(_.length).lastOption.getOrElse("")
+    def topWord = m.toSeq.sortBy(_._2).lastOption.map(_._1).getOrElse("")
+
+    def topBag(w:Int) = m.toSeq.sortBy(-_._2).take(w)
+    def topWords(w:Int) = topBag(w).map(_._1)
+
+  }
+
   implicit class BufferedReaderExtras(rdr:BufferedReader) {
 
     /** Returns an iterator over the lines of the buffered reader's contents.

@@ -1,5 +1,7 @@
 package cc.factorie.variable
 
+import scala.collection.generic.CanBuildFrom
+import scala.collection.mutable
 import scala.collection.mutable.{LinkedHashMap, HashMap}
 
 /**
@@ -11,7 +13,9 @@ class BagOfWords(initialWords: Iterable[String] = null, initialBag: Map[String, 
   def longest = _bag.keysIterator.toSeq.sortBy(_.length).lastOption.getOrElse("")
   def topWord = _bag.toSeq.sortBy(_._2).lastOption.map(_._1).getOrElse("")
 
-  def topWords(w:Int) = _bag.toSeq.sortBy(-_._2).take(w).map(_._1)
+  def topBag(w:Int) = _bag.toSeq.sortBy(-_._2).take(w)
+  def topWords(w:Int) = topBag(w).map(_._1)
+
 
   var variable: BagOfWordsVariable = null
   protected var _l2Norm = 0.0
@@ -84,6 +88,9 @@ class BagOfWords(initialWords: Iterable[String] = null, initialBag: Map[String, 
   }
   def removeBag(that: BagOfWords) = for ((k, v) <- that.iterator) this -=(k, v)
   def contains(other:BagOfWords) = this._bag.keySet.intersect(other._bag.keySet).size > 0
+
+  def l2Normalize = _bag.mapValues(_ / l2Norm).toMap
+  def l1Normalize = _bag.mapValues(_ / l2Norm).toMap
 }
 
 class BagOfWordsVariable(initialWords: Iterable[String] = Nil, initialMap: Map[String, Double] = null) extends Var with Iterable[(String, Double)] {
@@ -178,5 +185,33 @@ class BagOfWordsVariable(initialWords: Iterable[String] = Nil, initialMap: Map[S
     def redo() = _members.removeBag(removed)
     def undo() = _members.addBag(removed)
     override def toString = "BagOfWordsVariableRemoveBagDiff of " + removed + " from " + BagOfWordsVariable.this
+  }
+}
+
+object BagOfWordsVariable {
+  implicit object IterStringBagBuilder extends CanBuildFrom[Iterable[(String, Double)], (String, Double), BagOfWordsVariable] {
+    override def apply(from: Iterable[(String, Double)]) =
+      new mutable.Builder[(String, Double), BagOfWordsVariable]  {
+        private val bag = new BagOfWordsVariable(Nil, from.groupBy(_._1).mapValues(_.map(_._2).sum))
+      def +=(elem: (String, Double)): this.type = {
+        bag.+=(elem._1, elem._2)
+        this
+      }
+      def result() = bag
+      def clear() {bag.clear()}
+    }
+
+    override def apply() =
+      new mutable.Builder[(String, Double), BagOfWordsVariable] {
+        private val bag = new BagOfWordsVariable()
+        override def +=(elem: (String, Double)) = {
+          bag.+=(elem._1, elem._2)
+          this
+        }
+
+        override def result() = bag
+
+        override def clear() {bag.clear()}
+      }
   }
 }
