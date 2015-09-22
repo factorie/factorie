@@ -192,7 +192,7 @@ object BagOfWordsVariable {
   implicit object IterStringBagBuilder extends CanBuildFrom[Iterable[(String, Double)], (String, Double), BagOfWordsVariable] {
     override def apply(from: Iterable[(String, Double)]) =
       new mutable.Builder[(String, Double), BagOfWordsVariable]  {
-        private val bag = new BagOfWordsVariable(Nil, from.groupBy(_._1).mapValues(_.map(_._2).sum))
+        private val bag = new BagOfWordsVariable
       def +=(elem: (String, Double)): this.type = {
         bag.+=(elem._1, elem._2)
         this
