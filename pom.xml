@@ -400,6 +400,9 @@ limitations under the License.
       </profile>
       <profile>
         <id>jar-with-dependencies</id>
+        <properties>
+          <package.type>jar</package.type>
+        </properties>
         <build>
           <plugins>
             <!-- Assembles the jar and other release formats (tarball, etc.). -->
@@ -427,6 +430,9 @@ limitations under the License.
       </profile>
       <profile>
         <id>nlp-jar-with-dependencies</id>
+        <properties>
+          <package.type>jar</package.type>
+        </properties>
         <repositories>
           <repository>
             <id>dev-iesl.cs.umass.edu-snapshots</id>
@@ -473,6 +479,9 @@ limitations under the License.
       </profile>
       <profile>
         <id>coverage-check</id>
+        <properties>
+          <package.type>jar</package.type>
+        </properties>
         <build>
           <plugins>
             <plugin>
@@ -495,7 +504,9 @@ limitations under the License.
       </profile>
         <profile>
           <id>sonatype-release</id>
-
+          <properties>
+            <package.type>jar</package.type>
+          </properties>
           <distributionManagement>
             <snapshotRepository>
               <id>ossrh</id>
