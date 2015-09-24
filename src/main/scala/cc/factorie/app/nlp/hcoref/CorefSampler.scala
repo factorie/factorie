@@ -106,3 +106,14 @@ trait AutoStoppingSampler[Vars <: NodeVariables[Vars]] extends CorefSampler[Vars
     afterInferHook
   }
 }
+
+/**
+ * Trait for exposing proposalHooks to [[java.lang.Runnable]]
+ */
+trait RunnableHook[Vars <: NodeVariables[Vars]] {
+  this: CorefSampler[Vars] =>
+
+  def runnable:java.lang.Runnable
+
+  proposalHooks += {_ => runnable.run()}
+}
