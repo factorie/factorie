@@ -13,12 +13,12 @@
 package cc.factorie.la
 
 import cc.factorie._
-import cc.factorie.la._
-import scala.util.Random
-import org.junit._
-import org.junit.Assert._
 import cc.factorie.util.FastSorting
-import languageFeature.postfixOps
+import org.junit.Assert._
+import org.junit._
+
+import scala.languageFeature.postfixOps
+import scala.util.Random
 
 class TestTensor extends cc.factorie.util.FastLogging {
 

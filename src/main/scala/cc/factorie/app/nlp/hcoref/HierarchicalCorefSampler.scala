@@ -12,8 +12,8 @@
    limitations under the License. */
 package cc.factorie.app.nlp.hcoref
 
-import scala.util.Random
 import scala.reflect.ClassTag
+import scala.util.Random
 
 /**
  * @author John Sullivan

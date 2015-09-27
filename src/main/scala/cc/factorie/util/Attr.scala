@@ -13,8 +13,9 @@
 
 package cc.factorie.util
 
-import scala.reflect.ClassTag
 import java.io._
+
+import scala.reflect.ClassTag
 
 // TODO Why insist on AnyRef?  Why not just Any?  This would make app.nlp.DocumentProcessor a little cleaner. -akm
 

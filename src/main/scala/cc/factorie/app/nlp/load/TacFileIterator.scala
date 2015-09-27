@@ -1,8 +1,9 @@
 package cc.factorie.app.nlp.load
 
 import java.io._
-import java.util.zip.GZIPInputStream
 import java.util.Scanner
+import java.util.zip.GZIPInputStream
+
 import cc.factorie.app.nlp.Document
 
 object TACDocTypes {

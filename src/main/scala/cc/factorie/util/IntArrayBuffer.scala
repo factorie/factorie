@@ -11,9 +11,8 @@
    See the License for the specific language governing permissions and
    limitations under the License. */
 package cc.factorie.util
-import scala.collection.IndexedSeq
-import scala.collection.Seq
-import compat.Platform.arraycopy
+import scala.collection.{IndexedSeq, Seq}
+import scala.compat.Platform.arraycopy
 
 /** Embeds an efficient array of Ints, with convenient _append, _prepend, etc. */
 trait ProtectedIntArrayBuffer { 

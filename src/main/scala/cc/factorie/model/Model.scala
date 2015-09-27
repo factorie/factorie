@@ -13,14 +13,11 @@
 
 package cc.factorie.model
 
-import cc.factorie.la._
 import cc.factorie.util.SingletonIndexedSeq
-import scala.collection.mutable.{ArrayBuffer,HashMap,LinkedHashSet,ListBuffer}
-import scala.collection.immutable.ListSet
-import scala.collection.mutable.Set
-import scala.collection.generic.Growable
 import cc.factorie.variable._
-import cc.factorie.util.SingletonIndexedSeq
+
+import scala.collection.immutable.ListSet
+import scala.collection.mutable.{ArrayBuffer, HashMap, LinkedHashSet, Set}
 import scala.reflect.ClassTag
 
 /** In FACTORIE a Model is a source of factors.

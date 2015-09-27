@@ -13,11 +13,10 @@
 
 package cc.factorie.util
 
-import scala.util.Random
-import scala.util.Sorting
-import scala.reflect.ClassTag
 import scala.annotation.tailrec
 import scala.collection.mutable
+import scala.reflect.ClassTag
+import scala.util.{Random, Sorting}
 
 private class SplitIterator[A](t:Traversable[A], pred:(A => Boolean)) extends Iterator[Traversable[A]] {
   var _first:Traversable[A] = null

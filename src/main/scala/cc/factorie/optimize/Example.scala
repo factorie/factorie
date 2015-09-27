@@ -13,12 +13,12 @@
 package cc.factorie.optimize
 
 import cc.factorie._
-import cc.factorie.util._
+import cc.factorie.app.classify.backend.OptimizablePredictor
+import cc.factorie.infer.{Infer, Maximize}
 import cc.factorie.la._
 import cc.factorie.model._
-import cc.factorie.infer.{FactorMarginal, Maximize, Infer}
+import cc.factorie.util._
 import cc.factorie.variable._
-import cc.factorie.app.classify.backend.{OptimizablePredictor, Classifier}
 
 /**
  * Main abstraction over a training example. It can compute a value and a gradient,

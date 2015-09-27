@@ -23,8 +23,8 @@ package cc.factorie.tutorial
 object TutorialFactors extends App {
   import cc.factorie._
   import cc.factorie.la._
-  import cc.factorie.variable._
   import cc.factorie.model._
+  import cc.factorie.variable._
 
     // First we'll create some variables for us as Factor neighbors. 
     val v1 = new IntegerVariable(1)

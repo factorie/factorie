@@ -15,8 +15,9 @@
 package cc.factorie.app.nlp.phrase
 
 import cc.factorie.app.nlp._
+import cc.factorie.app.nlp.load.{BILOUChunkTag, BILOUNestedChunkTag, ChunkTag}
+
 import scala.collection.mutable.ListBuffer
-import cc.factorie.app.nlp.load.{ChunkTag, BILOUNestedChunkTag, BILOUChunkTag}
 import scala.reflect.ClassTag
 
 /** User: cellier

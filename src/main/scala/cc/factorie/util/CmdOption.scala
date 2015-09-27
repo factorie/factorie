@@ -14,9 +14,7 @@
 
 
 package cc.factorie.util
-import scala.reflect.ClassTag
-import scala.collection.mutable.{HashMap,HashSet,ArrayBuffer}
-import cc.factorie._
+import scala.collection.mutable.{ArrayBuffer, HashMap}
 import scala.reflect.runtime.universe._
 
 /** Concrete version is implemented as an inner class of @see CmdOptions.

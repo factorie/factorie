@@ -13,11 +13,11 @@
 
 package cc.factorie.model
 
-import scala.collection.mutable.Set
-import cc.factorie.variable.{Var, DiscreteVar}
 import cc.factorie._
-
 import cc.factorie.util.SingletonIndexedSeq
+import cc.factorie.variable.{DiscreteVar, Var}
+
+import scala.collection.mutable.Set
 
 // Factor Templates are able to create factors in a factor graph on-the-fly as necessary.
 // A factor template specifies:

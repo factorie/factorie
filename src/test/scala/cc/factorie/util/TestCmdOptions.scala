@@ -1,6 +1,6 @@
 package cc.factorie.util
 
-import org.scalatest.{Matchers, FlatSpec}
+import org.scalatest.{FlatSpec, Matchers}
 
 /**
  * @author John Sullivan

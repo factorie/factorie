@@ -12,13 +12,14 @@
    limitations under the License. */
 package cc.factorie.app.nlp.hcoref
 
-import cc.factorie.db.mongo.{LazyCubbieConverter, MongoCubbieCollection, MutableCubbieCollection}
 import cc.factorie.db.mongo.MongoCubbieImplicits._
-import scala.collection.mutable
-import com.mongodb.DB
-import scala.reflect.ClassTag
+import cc.factorie.db.mongo.{LazyCubbieConverter, MongoCubbieCollection, MutableCubbieCollection}
 import cc.factorie.util.{ArrayDoubleSeq, Cubbie}
-import cc.factorie.variable.{DenseDoubleBagVariable, Var, BagOfWordsVariable}
+import cc.factorie.variable.{BagOfWordsVariable, DenseDoubleBagVariable, Var}
+import com.mongodb.DB
+
+import scala.collection.mutable
+import scala.reflect.ClassTag
 
 /**
  * User: escher

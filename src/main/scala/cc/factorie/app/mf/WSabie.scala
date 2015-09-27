@@ -14,9 +14,9 @@ package cc.factorie.app.mf
 
 import cc.factorie._
 import cc.factorie.la.WeightsMapAccumulator
-import util.DoubleAccumulator
-import cc.factorie.variable.DiscreteDomain
 import cc.factorie.model.Parameters
+import cc.factorie.util.DoubleAccumulator
+import cc.factorie.variable.DiscreteDomain
 
 /**
  * User: apassos

@@ -12,9 +12,7 @@
    limitations under the License. */
 
 package cc.factorie.la
-import cc.factorie._
 import cc.factorie.util._
-import java.lang.IllegalStateException
 
 // TODO Finish this implementation
 class ConcatenatedTensor(theTensors:Seq[Tensor]) extends ReadOnlyTensor with Tensor1 with DenseDoubleSeq {

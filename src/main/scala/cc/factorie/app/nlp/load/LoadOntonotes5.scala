@@ -12,14 +12,13 @@
    limitations under the License. */
 package cc.factorie.app.nlp.load
 
-import scala.io.Source
 import cc.factorie.app.nlp._
-import cc.factorie.app.nlp.pos.{LabeledPennPosTag, PennPosTag}
+import cc.factorie.app.nlp.lemma.TokenLemma
 import cc.factorie.app.nlp.ner._
 import cc.factorie.app.nlp.parse.ParseTree
-import cc.factorie.app.nlp.lemma.TokenLemma
+import cc.factorie.app.nlp.pos.LabeledPennPosTag
 
-import java.io.PrintWriter
+import scala.io.Source
 
 /* Loader for the OntoNotes 5 data
    @author Brian Martin, Andrew McCallum

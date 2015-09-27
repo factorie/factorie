@@ -13,9 +13,7 @@
 
 package cc.factorie.variable
 
-import cc.factorie
 import cc.factorie.model._
-import scala.Some
 
 /** Typically Variable instances hold their value internally.
     Alternatively, variable values can be stored in an Assignment: a

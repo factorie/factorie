@@ -14,13 +14,13 @@
 package cc.factorie.infer
 
 import cc.factorie.la._
-import scala.collection.mutable.ArrayBuffer
-import scala.collection.Set
-import cc.factorie.util.{DoubleSeq, RangeIntSeq, SparseDoubleSeq}
-import scala.collection.mutable
-import cc.factorie.variable._
-import cc.factorie.model._
 import cc.factorie.maths
+import cc.factorie.model._
+import cc.factorie.util.{DoubleSeq, RangeIntSeq, SparseDoubleSeq}
+import cc.factorie.variable._
+
+import scala.collection.{Set, mutable}
+import scala.collection.mutable.ArrayBuffer
 
 trait BPRing {
   def sum(a: Double, b: Double): Double

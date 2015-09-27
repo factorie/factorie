@@ -1,7 +1,8 @@
 package cc.factorie.app.nlp.hcoref
 
+import cc.factorie.infer.{Proposal, SettingsSampler}
 import cc.factorie.variable.{DiffList, SettingIterator}
-import cc.factorie.infer.{SettingsSampler, Proposal}
+
 import scala.collection.mutable
 
 trait Verbosity {

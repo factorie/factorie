@@ -12,12 +12,12 @@
    limitations under the License. */
 package cc.factorie.app.nlp.coref
 
-import cc.factorie.app.nlp.{DocumentAnnotatorPipeline, MutableDocumentAnnotatorMap, Document}
-import cc.factorie.app.nlp.wordnet.WordNet
-import cc.factorie.util.{Trackable, HyperparameterMain, TimingCollector, Trackers}
-import cc.factorie.app.nlp.phrase._
 import cc.factorie.app.nlp.load.LoadConll2011
 import cc.factorie.app.nlp.ner.{ConllChainNer, NerTag}
+import cc.factorie.app.nlp.phrase._
+import cc.factorie.app.nlp.wordnet.WordNet
+import cc.factorie.app.nlp.{Document, DocumentAnnotatorPipeline, MutableDocumentAnnotatorMap}
+import cc.factorie.util.{HyperparameterMain, TimingCollector, Trackable, Trackers}
 
 /** Trainers for Coreference Systems*/
 trait ForwardCorefTrainerOpts extends CorefTrainerOpts{
@@ -305,8 +305,8 @@ object StructuredCorefOptimizer{
     println("Best l1: " + opts.l1.value + " best lr: " + opts.learningRate.value)
     println("Running best configuration...")
     opts.serialize.setValue("StructuredCoref.factorie")
-    import scala.concurrent.duration._
     import scala.concurrent.Await
+    import scala.concurrent.duration._
     Await.result(qs.execute(opts.values.flatMap(_.unParse).toArray), 6.hours)
     println("Done")
   }
@@ -328,8 +328,8 @@ object ForwardCorefOptimizer{
     println("Best rate: " + opts.learningRate.value + " best l1: " + opts.numTrainingIterations.value)
     opts.serialize.setValue("ForwardCoref.factorie")
     println("Running best configuration...")
-    import scala.concurrent.duration._
     import scala.concurrent.Await
+    import scala.concurrent.duration._
     Await.result(qs.execute(opts.values.flatMap(_.unParse).toArray), 6.hours)
     println("Done")
   }

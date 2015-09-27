@@ -14,7 +14,6 @@
 
 
 package cc.factorie.la
-import cc.factorie._
 
 class ArrayFromTensors(theTensors:Seq[Tensor]) {
   //def this(theTemplates:Iterable[DotTemplate]) = this(theTemplates.map(_.weightsSet))

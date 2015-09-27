@@ -11,12 +11,14 @@
    See the License for the specific language governing permissions and
    limitations under the License. */
 package cc.factorie.tutorial
-import scala.io.Source
 import java.io.File
+
 import cc.factorie._
-import app.classify
-import cc.factorie.variable.{LabeledCategoricalVariable, BinaryFeatureVectorVariable, CategoricalVectorDomain, CategoricalDomain}
+import cc.factorie.app.classify
 import cc.factorie.app.classify.backend.OnlineLinearMulticlassTrainer
+import cc.factorie.variable.{BinaryFeatureVectorVariable, CategoricalDomain, CategoricalVectorDomain, LabeledCategoricalVariable}
+
+import scala.io.Source
 
 /** Demonstration of calculating class-word information gain where data coming from book-length */
 object BookInfoGain {

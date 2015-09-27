@@ -12,8 +12,10 @@
    limitations under the License. */
 
 package cc.factorie.app.nlp.load
-import cc.factorie.app.nlp._
 import java.io.File
+
+import cc.factorie.app.nlp._
+
 import scala.util.matching.Regex 
 
 /** Create Documents from plain text files.

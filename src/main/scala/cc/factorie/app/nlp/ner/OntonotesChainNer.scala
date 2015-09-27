@@ -11,16 +11,15 @@
    See the License for the specific language governing permissions and
    limitations under the License. */
 package cc.factorie.app.nlp.ner
+import java.io.{BufferedInputStream, BufferedOutputStream, File, Serializable}
+
 import cc.factorie._
-import model._
-import variable._
 import cc.factorie.app.nlp._
-import java.io.{Serializable, BufferedInputStream, BufferedOutputStream, File}
-import cc.factorie.util.{Logger, BinarySerializer, CubbieConversions}
-import cc.factorie.optimize.{Trainer, LikelihoodExample}
-import cc.factorie.infer.{InferByBPChain, DiscreteProposalMaximizer, MaximizeByBPChain}
-import cc.factorie.variable.{BinaryFeatureVectorVariable, CategoricalVectorDomain, DiscreteVar}
-import cc.factorie.model.{DotTemplateWithStatistics2, TemplateModel, DotTemplate2}
+import cc.factorie.infer.{DiscreteProposalMaximizer, InferByBPChain, MaximizeByBPChain}
+import cc.factorie.model.{DotTemplate2, DotTemplateWithStatistics2, TemplateModel, _}
+import cc.factorie.optimize.{LikelihoodExample, Trainer}
+import cc.factorie.util.{BinarySerializer, CubbieConversions, Logger}
+import cc.factorie.variable.{BinaryFeatureVectorVariable, CategoricalVectorDomain, DiscreteVar, _}
 
 /** A simple named entity recognizer, trained on Ontonotes data.
     It does not have sufficient features to be state-of-the-art. */

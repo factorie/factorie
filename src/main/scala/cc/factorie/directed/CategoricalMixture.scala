@@ -13,10 +13,10 @@
 
 package cc.factorie.directed
 
+import cc.factorie.infer.{DiscreteSummary1, Maximize, SimpleDiscreteMarginal1, Summary}
+import cc.factorie.model.Model
 import cc.factorie.util.SortedSparseCounts
 import cc.factorie.variable._
-import cc.factorie.model.Model
-import cc.factorie.infer.{DiscreteSummary1, Summary, SimpleDiscreteMarginal1, Maximize}
 
 class CategoricalMixture[A] extends DirectedFamily3[CategoricalVariable[A],Mixture[ProportionsVariable],DiscreteVariable] {
   case class Factor(override val _1:CategoricalVariable[A], override val _2:Mixture[ProportionsVariable], override val _3:DiscreteVariable) extends super.Factor(_1, _2, _3) with DiscreteGeneratingFactor with MixtureFactor {

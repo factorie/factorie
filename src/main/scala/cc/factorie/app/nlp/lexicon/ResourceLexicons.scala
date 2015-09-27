@@ -12,11 +12,8 @@
    limitations under the License. */
 package cc.factorie.app.nlp.lexicon
 
+import cc.factorie.app.nlp.lemma.{Lemmatizer, LowercaseLemmatizer}
 import cc.factorie.app.strings.StringSegmenter
-import cc.factorie.app.nlp.lemma.{Lemmatizer,LowercaseLemmatizer}
-import scala.io.Source
-import java.io.File
-import java.util.jar.JarFile
 import cc.factorie.util.ClasspathURL
 
 // Several standard lexicons available through the factorie-nlp-lexicons.jar

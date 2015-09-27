@@ -13,10 +13,9 @@
 
 package cc.factorie.util
 
-import collection.mutable
-import util.parsing.json.JSON
 import cc.factorie.la.Tensor
-import java.nio.{DoubleBuffer, ByteBuffer}
+
+import scala.collection.mutable
 import scala.reflect._
 
 /**

@@ -14,8 +14,6 @@
 package cc.factorie.variable
 
 import cc.factorie.la._
-import java.io._
-import java.util.zip.{GZIPInputStream, GZIPOutputStream}
 import cc.factorie.util.Cubbie
 import cc.factorie.variable
 

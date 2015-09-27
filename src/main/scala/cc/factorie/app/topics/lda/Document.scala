@@ -12,11 +12,11 @@
    limitations under the License. */
 
 package cc.factorie.app.topics.lda
-import cc.factorie._
-import cc.factorie.directed._
-import scala.collection.mutable.ArrayBuffer
-import java.io.{File,Reader,StringReader,InputStreamReader,FileInputStream,BufferedReader,PrintWriter}
+import java.io.{BufferedReader, File, FileInputStream, InputStreamReader, PrintWriter, Reader, StringReader}
+
 import cc.factorie.variable._
+
+import scala.collection.mutable.ArrayBuffer
 
 /** The abstract document variable required by LDA. */
 trait Doc extends SeqBreaks {
@@ -102,8 +102,9 @@ class Document(val domain:CategoricalSeqDomain[String], var name:String, tokens:
 }
 
 object Document {
+  import cc.factorie.app.nlp.lexicon.{StopWords, TriePhraseLexicon}
   import cc.factorie.app.strings.{StringSegmenter, alphaSegmenter}
-  import cc.factorie.app.nlp.lexicon.{TriePhraseLexicon, StopWords}
+
   import scala.util.control.Breaks._
   def addWords(doc:Document,
       reader:Reader, 

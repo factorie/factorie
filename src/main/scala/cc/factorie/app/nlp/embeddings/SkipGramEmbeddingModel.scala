@@ -11,8 +11,8 @@
    See the License for the specific language governing permissions and
    limitations under the License. */
 package cc.factorie.app.nlp.embeddings
+import cc.factorie.la.WeightsMapAccumulator
 import cc.factorie.optimize.Example
-import cc.factorie.la.{DenseTensor1,WeightsMapAccumulator}
 import cc.factorie.util.DoubleAccumulator
 
 class SkipGramNegSamplingEmbeddingModel(override val opts: EmbeddingOpts) extends WordEmbeddingModel(opts) {

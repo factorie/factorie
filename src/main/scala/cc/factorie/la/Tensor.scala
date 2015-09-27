@@ -13,6 +13,7 @@
 
 package cc.factorie.la
 import cc.factorie.util._
+
 import scala.util.Random
 
 

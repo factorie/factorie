@@ -11,10 +11,10 @@
    See the License for the specific language governing permissions and
    limitations under the License. */
 package cc.factorie.app.nlp.embeddings
-import cc.factorie.optimize.{ GradientOptimizer, Trainer, Example }
 import cc.factorie.la.SmartGradientAccumulator
-import cc.factorie.util.{ LocalDoubleAccumulator, Threading }
 import cc.factorie.model.WeightsSet
+import cc.factorie.optimize.{Example, GradientOptimizer, Trainer}
+import cc.factorie.util.{LocalDoubleAccumulator, Threading}
 
 class LiteHogwildTrainer(val weightsSet: WeightsSet, val optimizer: GradientOptimizer, val nThreads: Int = Runtime.getRuntime.availableProcessors(), val maxIterations: Int = 3)
   extends Trainer {

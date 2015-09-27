@@ -12,14 +12,13 @@
    limitations under the License. */
 package cc.factorie.app.nlp.coref
 
-import cc.factorie.app.nlp._
-import cc.factorie.app.nlp.phrase._
-import cc.factorie.app.nlp.pos.PennPosDomain
-import scala.collection.mutable.ArrayBuffer
-import cc.factorie.app.nlp.Token
+import cc.factorie.app.nlp.{Token, _}
 import cc.factorie.app.nlp.ner.BilouConllNerTag
-import cc.factorie.app.nlp.pos.PennPosTag
+import cc.factorie.app.nlp.phrase._
+import cc.factorie.app.nlp.pos.{PennPosDomain, PennPosTag}
+
 import scala.Option.option2Iterable
+import scala.collection.mutable.ArrayBuffer
 
 /** Trait for objects that return a list of Phrases given a Document 
     whose annotations includes those classes listed in prereqAttrs.

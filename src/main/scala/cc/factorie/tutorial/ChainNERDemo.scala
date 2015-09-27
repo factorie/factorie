@@ -12,11 +12,12 @@
    limitations under the License. */
 
 package cc.factorie.tutorial
-import cc.factorie._
 import java.io.File
+
+import cc.factorie._
+import cc.factorie.infer.{BP, BPSummary, GibbsSampler, IteratedConditionalModes}
+import cc.factorie.model.{DotTemplateWithStatistics1, DotTemplateWithStatistics2, Parameters, TemplateModel}
 import cc.factorie.variable._
-import cc.factorie.model.{Parameters, DotTemplateWithStatistics2, DotTemplateWithStatistics1, TemplateModel}
-import cc.factorie.infer.{BPSummary, BP, IteratedConditionalModes, GibbsSampler}
 
 /** A demonstration of training a linear-chain CRF for named entity recognition.
     Prints various diagnostics suitable to a demo.
@@ -184,8 +185,8 @@ object ChainNERDemo {
   }
 
   def load(filename:String) : Seq[Sentence] = {
-    import scala.io.Source
     import scala.collection.mutable.ArrayBuffer
+    import scala.io.Source
     var wordCount = 0
     var sentences = new ArrayBuffer[Sentence]
     val source = Source.fromFile(new File(filename))

@@ -13,9 +13,9 @@
 package cc.factorie.app.nlp.segment
 
 import cc.factorie.app.nlp._
-import scala.collection.mutable.ArrayBuffer
+
 import scala.collection.mutable
-import scala.Some
+import scala.collection.mutable.ArrayBuffer
 
 /**
  * User: apassos

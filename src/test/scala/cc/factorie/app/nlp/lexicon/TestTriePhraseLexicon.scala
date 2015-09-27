@@ -1,7 +1,7 @@
 package cc.factorie.app.nlp.lexicon
 
-import org.scalatest.junit.JUnitSuite
 import org.junit.Test
+import org.scalatest.junit.JUnitSuite
 
 /**
  * @author Kate Silverstein 

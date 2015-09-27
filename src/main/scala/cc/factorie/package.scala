@@ -12,12 +12,14 @@
    limitations under the License. */
 
 package cc
-import scala.util.Random
-import cc.factorie.util._
-import scala.language.implicitConversions
-import cc.factorie.model.IterableSingleFactor
-import scala.reflect.runtime.universe._
 import java.io.BufferedReader
+
+import cc.factorie.model.IterableSingleFactor
+import cc.factorie.util._
+
+import scala.language.implicitConversions
+import scala.reflect.runtime.universe._
+import scala.util.Random
 
 package object factorie extends CubbieConversions {
   var random = new Random(0)

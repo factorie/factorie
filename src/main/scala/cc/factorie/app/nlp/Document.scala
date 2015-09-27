@@ -12,12 +12,12 @@
    limitations under the License. */
 
 package cc.factorie.app.nlp
-import scala.collection.mutable.ArrayBuffer
-import scala.collection.mutable
-import cc.factorie.util.{Cubbie, Attr}
-import cc.factorie.variable.CategoricalVar
-import cc.factorie.util.UniqueId
 import cc.factorie.app.nlp.coref.WithinDocCoref
+import cc.factorie.util.{Attr, UniqueId}
+import cc.factorie.variable.CategoricalVar
+
+import scala.collection.mutable
+import scala.collection.mutable.ArrayBuffer
 
 /** A portion of the string contents of a Document.
     @author Andrew McCallum */

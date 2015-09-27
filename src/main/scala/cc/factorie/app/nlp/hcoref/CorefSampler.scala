@@ -13,9 +13,10 @@
 package cc.factorie.app.nlp.hcoref
 
 import cc.factorie.infer.{Proposal, SettingsSampler}
-import scala.util.Random
 import cc.factorie.util.Hooks1
+
 import scala.reflect.ClassTag
+import scala.util.Random
 
 /**
  * User:harshal, John Sullivan

@@ -12,12 +12,13 @@
    limitations under the License. */
 package cc.factorie.app.nlp.hcoref
 
+import cc.factorie.Cubbie
+import cc.factorie.app.nlp.coref.{CrossDocEntity, CrossDocMention}
+import cc.factorie.util.Hooks1
+import cc.factorie.variable._
+
 import scala.annotation.tailrec
 import scala.collection.mutable
-import cc.factorie.variable._
-import cc.factorie.Cubbie
-import cc.factorie.util.Hooks1
-import cc.factorie.app.nlp.coref.{WithinDocEntity, CrossDocEntity, CrossDocMention}
 
 /**
  * @author harshal, Jack Sullivan

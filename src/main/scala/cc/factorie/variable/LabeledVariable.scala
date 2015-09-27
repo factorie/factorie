@@ -13,11 +13,11 @@
 
 package cc.factorie.variable
 
-import cc.factorie.util.Attr
 import cc.factorie._
 import cc.factorie.model.TupleTemplateWithStatistics2
+import cc.factorie.util.Attr
+
 import scala.reflect._
-import scala.reflect.runtime.universe._
 
 // Naming explanation:
 // Variables in "aimer/target" pairs, used for labeled data for training.

@@ -12,22 +12,21 @@
    limitations under the License. */
 package cc.factorie.app.nlp.parse
 
-import cc.factorie.app.nlp._
-import cc.factorie._
-import cc.factorie.app.nlp.pos.PennPosTag
-import scala.collection.mutable.{HashMap, ArrayBuffer}
-import scala.util.parsing.json.JSON
-import scala.annotation.tailrec
 import java.io._
-import cc.factorie.util.{Logger, BinarySerializer, FileUtils}
-import scala._
-import cc.factorie.optimize._
-import scala.concurrent.Await
-import cc.factorie.variable.{LabeledCategoricalVariable, BinaryFeatureVectorVariable, CategoricalVectorDomain, CategoricalDomain}
-import scala.collection.mutable
+
+import cc.factorie._
 import cc.factorie.app.classify.backend._
-import scala.Some
-import scala.Some
+import cc.factorie.app.nlp._
+import cc.factorie.app.nlp.pos.PennPosTag
+import cc.factorie.optimize._
+import cc.factorie.util.{BinarySerializer, FileUtils, Logger}
+import cc.factorie.variable.{BinaryFeatureVectorVariable, CategoricalDomain, CategoricalVectorDomain, LabeledCategoricalVariable}
+
+import scala.annotation.tailrec
+import scala.collection.mutable
+import scala.collection.mutable.{ArrayBuffer, HashMap}
+import scala.concurrent.Await
+import scala.util.parsing.json.JSON
 
 /** Default transition-based dependency parser. */
 class TransitionBasedParser extends DocumentAnnotator {

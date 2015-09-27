@@ -12,10 +12,9 @@
    limitations under the License. */
 
 package cc.factorie.app.nlp
-import cc.factorie._
-import scala.collection.mutable.ArrayBuffer
-import cc.factorie.util.{Cubbie, Attr}
-import cc.factorie.variable.{StringVariable, ChainLink, CategoricalValue}
+import cc.factorie.util.{Attr, Cubbie}
+import cc.factorie.variable.{CategoricalValue, ChainLink, StringVariable}
+
 import scala.collection.mutable
 
 // There are two ways to create Tokens and add them to Sentences and/or Documents:

@@ -13,8 +13,8 @@
 package cc.factorie.optimize
 
 import cc.factorie.la._
-import cc.factorie.util.{DenseDoubleSeq, DoubleSeq, RangeIntSeq}
 import cc.factorie.model.{Weights, WeightsMap, WeightsSet}
+import cc.factorie.util.{DenseDoubleSeq, DoubleSeq, RangeIntSeq}
 
 /**
  * Implements the Regularized Dual Averaging algorithm of Xiao with support for Group Lasso,

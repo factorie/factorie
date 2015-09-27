@@ -142,12 +142,11 @@ package cc.factorie.tutorial
 
 object TutorialLearningAndOptimization extends App {
   import cc.factorie._
-  import variable._
-  import cc.factorie.app.nlp._
   import cc.factorie.app.chain._
-  import cc.factorie.optimize.Trainer
+  import cc.factorie.app.nlp._
   import cc.factorie.infer.{GibbsSampler, InferByBPChain}
-  import cc.factorie.optimize.OnlineTrainer
+  import cc.factorie.optimize.{OnlineTrainer, Trainer}
+  import variable._
 
   implicit val random = new scala.util.Random(0)
 

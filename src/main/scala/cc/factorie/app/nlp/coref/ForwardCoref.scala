@@ -13,15 +13,17 @@
 
 package cc.factorie.app.nlp.coref
 
-import cc.factorie.app.nlp.wordnet.WordNet
-import cc.factorie.app.nlp.{Token, Document, DocumentAnnotator}
-import java.util.concurrent.ExecutorService
-import cc.factorie.optimize._
 import java.io._
-import cc.factorie.util._
-import scala.collection.mutable.ArrayBuffer
+import java.util.concurrent.ExecutorService
+
 import cc.factorie.app.nlp.phrase._
 import cc.factorie.app.nlp.pos.PennPosTag
+import cc.factorie.app.nlp.wordnet.WordNet
+import cc.factorie.app.nlp.{Document, DocumentAnnotator, Token}
+import cc.factorie.optimize._
+import cc.factorie.util._
+
+import scala.collection.mutable.ArrayBuffer
 
 /**Forward Coreference on Proper Noun, Pronoun and Common Noun Mentions*/
 class ParseForwardCoref extends ForwardCoref {

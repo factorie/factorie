@@ -13,7 +13,8 @@
 package cc.factorie.db.mongo
 
 import cc.factorie.util.Cubbie
-import annotation.tailrec
+
+import scala.annotation.tailrec
 import scala.collection.{Map => GenericMap}
 import scala.reflect.ClassTag
 

@@ -1,7 +1,7 @@
 package cc.factorie.util
 
-import org.scalatest._
 import cc.factorie.db.mongo.MongoCubbieConverter
+import org.scalatest._
 
 /**
  * @author John Sullivan

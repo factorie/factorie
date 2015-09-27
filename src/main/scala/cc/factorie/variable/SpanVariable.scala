@@ -13,12 +13,10 @@
 
 package cc.factorie.variable
 
-import scala.collection.mutable.{ArrayBuffer, HashMap, HashSet, ListBuffer, FlatHashTable,DoubleLinkedList}
-import scala.reflect.ClassTag
-import scala.util.Random
-import scala.util.Sorting
-import cc.factorie.variable._
 import cc.factorie.util.ImmutableArrayIndexedSeq
+
+import scala.collection.mutable.ArrayBuffer
+import scala.reflect.ClassTag
 
 /** An immutable value indicating a subsequence of a Chain 
     (and also whether this span is to be considered present or "active" now).

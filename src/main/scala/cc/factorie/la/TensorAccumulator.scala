@@ -12,8 +12,8 @@
    limitations under the License. */
 package cc.factorie.la
 
-import cc.factorie.util.{DoubleAccumulator, LocalDoubleAccumulator, Accumulator}
 import cc.factorie.model.{Weights, WeightsMap}
+import cc.factorie.util.{Accumulator, DoubleAccumulator, LocalDoubleAccumulator}
 
 // NOTE: we don't implement Accumulator[WeightsMap] because contravariance
 trait WeightsMapAccumulator {

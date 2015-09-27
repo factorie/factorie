@@ -12,11 +12,11 @@
    limitations under the License. */
 package cc.factorie.app.nlp.load
 
-import cc.factorie.app.nlp.{Document,Sentence,Token,UnknownDocumentAnnotator}
-import scala.io.Source
-import cc.factorie.variable._
 import cc.factorie.app.nlp.pos.PennPosTag
-import scala.Predef._
+import cc.factorie.app.nlp.{Document, Sentence, Token, UnknownDocumentAnnotator}
+import cc.factorie.variable._
+
+import scala.io.Source
 
 /**
  * @author John Sullivan

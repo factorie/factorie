@@ -1,15 +1,15 @@
 package cc.factorie.app.nlp
-import cc.factorie.util._
-import cc.factorie.app.nlp.segment._
-import cc.factorie.app.nlp.pos._
+import java.io.File
+
+import cc.factorie.app.nlp.coref._
 import cc.factorie.app.nlp.ner._
 import cc.factorie.app.nlp.parse._
-import cc.factorie.app.nlp.coref._
 import cc.factorie.app.nlp.phrase._
-import com.mongodb._
-import org.bson.types.BasicBSONList
+import cc.factorie.app.nlp.pos._
+import cc.factorie.app.nlp.segment._
 import cc.factorie.db.mongo.MongoCubbieCollection
-import java.io.File
+import cc.factorie.util._
+import com.mongodb._
 
 /** A Cubbie with custom slot classes for storing various nlp.Document annotations. */
 class DocumentCubbie extends Cubbie {

@@ -12,8 +12,6 @@
    limitations under the License. */
 package cc.factorie.optimize
 
-import cc.factorie._
-import cc.factorie.la._
 import cc.factorie.model.{WeightsMap, WeightsSet}
 
 /** Base trait for optimizers that update weights according to a gradient.

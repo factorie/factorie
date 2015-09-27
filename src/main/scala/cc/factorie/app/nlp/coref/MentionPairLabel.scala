@@ -12,10 +12,11 @@
    limitations under the License. */
 package cc.factorie.app.nlp.coref
 
-import cc.factorie.la.{SparseTensor, GrowableSparseBinaryTensor1}
-import cc.factorie.variable.{LabeledCategoricalVariable, BinaryFeatureVectorVariable}
+import cc.factorie.app.nlp.Token
+import cc.factorie.la.{GrowableSparseBinaryTensor1, SparseTensor}
+import cc.factorie.variable.{BinaryFeatureVectorVariable, LabeledCategoricalVariable}
+
 import scala.collection.mutable
-import cc.factorie.app.nlp.{Token}
 
 /** Contains two possible mention sets:
  *    Lexical & Conventional

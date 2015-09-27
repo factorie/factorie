@@ -12,7 +12,6 @@
    limitations under the License. */
 
 package cc.factorie.la
-import cc.factorie._
 import cc.factorie.util._
 
 /** A sparse Tensor that stores an array of indices having non-zero values and an aligned sized array storing those values. */

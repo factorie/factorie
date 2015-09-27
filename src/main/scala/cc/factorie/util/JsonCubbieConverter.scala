@@ -1,7 +1,8 @@
 package cc.factorie.util
 
-import org.json4s._
 import org.json4s.JsonDSL._
+import org.json4s._
+
 import scala.collection.mutable
 
 /**

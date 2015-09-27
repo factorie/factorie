@@ -12,8 +12,8 @@
    limitations under the License. */
 package cc.factorie.app.nlp.segment
 
-import org.junit.Test
 import org.junit.Assert._
+import org.junit.Test
 
 /**
  * User: apassos

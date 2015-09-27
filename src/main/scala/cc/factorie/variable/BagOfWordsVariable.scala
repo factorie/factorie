@@ -2,7 +2,7 @@ package cc.factorie.variable
 
 import scala.collection.generic.CanBuildFrom
 import scala.collection.mutable
-import scala.collection.mutable.{LinkedHashMap, HashMap}
+import scala.collection.mutable.LinkedHashMap
 
 /**
  * @author John Sullivan

@@ -1,10 +1,10 @@
 package cc.factorie.app.bib.hcoref
 
-import cc.factorie.util.{EvaluatableClustering, DefaultCmdOptions}
 import cc.factorie.app.nlp.hcoref._
-import com.mongodb.{MongoClient, DB}
-import cc.factorie.variable.{DiffList, Var}
-import scala.io.Source
+import cc.factorie.util.{DefaultCmdOptions, EvaluatableClustering}
+import cc.factorie.variable.DiffList
+import com.mongodb.MongoClient
+
 import scala.util.Random
 
 /**

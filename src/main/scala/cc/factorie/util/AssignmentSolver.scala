@@ -12,8 +12,8 @@
    limitations under the License. */
 package cc.factorie.util
 
-import cc.factorie._
 import cc.factorie.la.Tensor2
+
 import scala.annotation.tailrec
 
 /**

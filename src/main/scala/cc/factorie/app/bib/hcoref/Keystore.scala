@@ -1,9 +1,11 @@
 package cc.factorie.app.bib.hcoref
 
 import java.io.File
-import scala.io.Source
-import cc.factorie.util.{VectorUtils, DefaultCmdOptions}
+
+import cc.factorie.util.{DefaultCmdOptions, VectorUtils}
+
 import scala.collection.JavaConverters._
+import scala.io.Source
 
 /**
  * @author John Sullivan

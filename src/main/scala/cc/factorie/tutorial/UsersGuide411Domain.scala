@@ -20,7 +20,7 @@
 package cc.factorie.tutorial
 object TutorialDomain extends App {
   import cc.factorie._
-  import cc.factorie.variable.{ DoubleDomain, DoubleVariable, DiscreteDomain, DiffList }
+  import cc.factorie.variable.{DiffList, DiscreteDomain, DoubleDomain, DoubleVariable}
   /*&
    * In FACTORIE every Variable has a Domain that specifies the range of values the Variable can take.
    * Domains have a type member 'Value' which indicates the type of these values.

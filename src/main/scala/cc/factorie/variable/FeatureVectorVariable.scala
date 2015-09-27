@@ -14,6 +14,7 @@
 package cc.factorie.variable
 
 import cc.factorie.la._
+
 import scala.util.hashing.MurmurHash3
 
 /** A super trait for feature vectors, both (a) those based on CategoricalDomain[C] and

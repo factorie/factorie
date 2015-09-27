@@ -14,11 +14,13 @@
 
 package cc.factorie.tutorial
 import java.io.File
-import scala.collection.mutable.ArrayBuffer
+
 import cc.factorie._
-import variable._
 import cc.factorie.app.classify._
 import cc.factorie.app.classify.backend.{BatchLinearMulticlassTrainer, OnlineLinearMulticlassTrainer}
+import cc.factorie.variable._
+
+import scala.collection.mutable.ArrayBuffer
 
 object DocumentClassifier1 {
   

@@ -12,10 +12,9 @@
    limitations under the License. */
 
 package cc.factorie.tutorial
-import cc.factorie.directed._
-import cc.factorie.directed.{Discrete, MaximizeDirichletByMomentMatching, Dirichlet}
-import cc.factorie.variable._
+import cc.factorie.directed.{Dirichlet, Discrete, MaximizeDirichletByMomentMatching, _}
 import cc.factorie.infer.Maximize
+import cc.factorie.variable._
 
 /** Simple demonstration of Dirichlet-distributed proportions generating Discrete values. */
 object DirichletDemo {

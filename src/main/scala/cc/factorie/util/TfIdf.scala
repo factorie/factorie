@@ -1,6 +1,7 @@
 package cc.factorie.util
 
-import java.io.{FileWriter, BufferedWriter, BufferedReader, FileReader}
+import java.io.{BufferedReader, BufferedWriter, FileReader, FileWriter}
+
 import cc.factorie._
 
 /**

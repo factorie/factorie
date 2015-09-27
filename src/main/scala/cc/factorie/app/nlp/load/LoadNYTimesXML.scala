@@ -13,8 +13,10 @@
 
 package cc.factorie.app.nlp.load
 import java.io.File
-import scala.xml._
+
 import cc.factorie.app.nlp.Document
+
+import scala.xml._
 
 /** Load a Document from a single NYTimes article in the XML format released by NYTimes and described in
     Evan Sandhaus (2008), "The New York Times Annotated Corpus," Linguistic Data Consortium, Philadelphia. */

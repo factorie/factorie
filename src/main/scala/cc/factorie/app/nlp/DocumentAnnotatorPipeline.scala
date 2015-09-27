@@ -15,7 +15,6 @@ package cc.factorie.app.nlp
 import cc.factorie.util.FastLogging
 
 import scala.reflect.ClassTag
-import cc.factorie.app.nlp.phrase.ParseAndNerBasedPhraseFinder
 
 /**User: apassos
  * Date: 8/7/13

@@ -14,11 +14,11 @@
 package cc.factorie.app.nlp.parse
 
 import cc.factorie.app.nlp._
-import java.lang.StringBuffer
-import collection.mutable.ArrayBuffer
+import cc.factorie.app.nlp.phrase.{Phrase, PhraseList}
 import cc.factorie.variable._
-import cc.factorie.app.nlp.phrase.{PhraseList, Phrase}
+
 import scala.collection.mutable
+import scala.collection.mutable.ArrayBuffer
 
 // Representation for a dependency parse
 

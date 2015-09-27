@@ -1,12 +1,14 @@
 package cc.factorie.app.nlp.phrase
 
+import java.util.GregorianCalendar
+
 import cc.factorie.app.nlp._
-import scala.util.parsing.combinator.{ImplicitConversions, Parsers}
-import cc.factorie.app.nlp.pos.PennPosTag
-import scala.util.parsing.input.{Reader, Position}
-import java.util.{GregorianCalendar}
-import scala.collection.mutable.ArrayBuffer
 import cc.factorie.app.nlp.lemma.TokenLemma
+import cc.factorie.app.nlp.pos.PennPosTag
+
+import scala.collection.mutable.ArrayBuffer
+import scala.util.parsing.combinator.{ImplicitConversions, Parsers}
+import scala.util.parsing.input.{Position, Reader}
 
 /**
  * Finds and parses all kinds of dates in a document, Basic formats were taken from http://en.wikipedia.org/wiki/Calendar_date.

@@ -12,17 +12,18 @@
    limitations under the License. */
 package cc.factorie.app.nlp.phrase
 
-import cc.factorie.app.nlp._
-
 import java.io._
-import cc.factorie.util.{HyperparameterMain, BinarySerializer}
-import cc.factorie.variable._
-import cc.factorie.optimize.Trainer
+
 import cc.factorie.app.chain.ChainModel
 import cc.factorie.app.chain.Observations._
-import scala.io.Source
+import cc.factorie.app.nlp._
 import cc.factorie.app.nlp.load._
 import cc.factorie.app.nlp.pos.PennPosTag
+import cc.factorie.optimize.Trainer
+import cc.factorie.util.{BinarySerializer, HyperparameterMain}
+import cc.factorie.variable._
+
+import scala.io.Source
 import scala.reflect.ClassTag
 
 
@@ -225,8 +226,8 @@ object ChainChunkerOptimizer {
     println("Best l1: " + opts.l1.value + " best l2: " + opts.l2.value)
     opts.saveModel.setValue(true)
     println("Running best configuration...")
-    import scala.concurrent.duration._
     import scala.concurrent.Await
+    import scala.concurrent.duration._
     Await.result(qs.execute(opts.values.flatMap(_.unParse).toArray), 5.hours)
     println("Done")
   }

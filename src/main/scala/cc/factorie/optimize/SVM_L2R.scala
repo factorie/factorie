@@ -12,8 +12,7 @@
    limitations under the License. */
 package cc.factorie.optimize
 
-import cc.factorie.la.Tensor1
-import cc.factorie.la.DenseTensor1
+import cc.factorie.la.{DenseTensor1, Tensor1}
 
 
 /**

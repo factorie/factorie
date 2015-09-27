@@ -12,7 +12,6 @@
    limitations under the License. */
 package cc.factorie.util
 import scala.language.existentials
-import scala.Error
 import scala.reflect.ClassTag
 
 object ClasspathURL {

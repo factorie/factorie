@@ -6,12 +6,12 @@
 
 package cc.factorie.util.namejuggler
 
-import io.Source
-import annotation.tailrec
-import collection.mutable
-import scala.Predef._
+import cc.factorie.util.namejuggler.StringUtils._
 import org.apache.commons.lang.StringEscapeUtils
-import StringUtils._
+
+import scala.annotation.tailrec
+import scala.collection.mutable
+import scala.io.Source
 
 /**
  * @author <a href="mailto:dev@davidsoergel.com">David Soergel</a>

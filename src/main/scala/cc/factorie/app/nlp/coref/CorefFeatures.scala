@@ -13,12 +13,12 @@
 
 package cc.factorie.app.nlp.coref
 
-import cc.factorie.app.nlp.phrase._
-import cc.factorie.app.nlp.wordnet.WordNet
 import cc.factorie.app.nlp.lexicon.StopWords
-import scala.collection.mutable
-import cc.factorie.app.nlp.phrase.{Number, Gender}
 import cc.factorie.app.nlp.ner.OntonotesEntityTypeDomain
+import cc.factorie.app.nlp.phrase.{Gender, Number, _}
+import cc.factorie.app.nlp.wordnet.WordNet
+
+import scala.collection.mutable
 
 /** Various lazily-evaluated cached characteristics of a Mention, typically attached to a Mention as an attr. */
 class MentionCharacteristics(val mention: Mention) {

@@ -12,7 +12,6 @@
    limitations under the License. */
 
 package cc.factorie.la
-import cc.factorie._
 import cc.factorie.util._
 
 /** An lazy product of a Vector and a scalar.

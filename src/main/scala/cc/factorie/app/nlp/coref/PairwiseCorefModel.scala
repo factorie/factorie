@@ -12,15 +12,14 @@
    limitations under the License. */
 package cc.factorie.app.nlp.coref
 
-import cc.factorie._
-import cc.factorie.la
-import cc.factorie.util.DoubleAccumulator
-import cc.factorie.la.{SparseBinaryTensor, DenseTensor1, WeightsMapAccumulator, Tensor1}
-import cc.factorie.optimize.{OptimizableObjectives, PredictorExample, Example}
 import java.io._
-import cc.factorie.util.BinarySerializer
-import cc.factorie.variable.{VectorDomain, DiscreteDomain, CategoricalVectorDomain, CategoricalDomain}
+
+import cc.factorie.{la, _}
+import cc.factorie.la.{DenseTensor1, SparseBinaryTensor, Tensor1, WeightsMapAccumulator}
 import cc.factorie.model.Parameters
+import cc.factorie.optimize.{Example, OptimizableObjectives, PredictorExample}
+import cc.factorie.util.{BinarySerializer, DoubleAccumulator}
+import cc.factorie.variable.{CategoricalDomain, CategoricalVectorDomain, DiscreteDomain, VectorDomain}
 
 trait CorefModel extends Parameters {
   val MentionPairFeaturesDomain = new CategoricalVectorDomain[String] {

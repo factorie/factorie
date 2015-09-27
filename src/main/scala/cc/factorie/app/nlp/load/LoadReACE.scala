@@ -11,20 +11,17 @@
    See the License for the specific language governing permissions and
    limitations under the License. */
 package cc.factorie.app.nlp.load
-import cc.factorie.app.nlp._
-
-import ner.ConllNerSpan
-import xml.{XML, NodeSeq}
 import java.io.File
-import cc.factorie.app.nlp.Document
-import cc.factorie.app.nlp.Sentence
-import cc.factorie.app.nlp.Token
-import cc.factorie.app.nlp.UnknownDocumentAnnotator
-import cc.factorie.app.nlp.pos.PennPosTag
-import scala.Array.fallbackCanBuildFrom
+
+import cc.factorie.app.nlp.{Document, Sentence, Token, UnknownDocumentAnnotator, _}
 import cc.factorie.app.nlp.coref.Mention
+import cc.factorie.app.nlp.ner.ConllNerSpan
 import cc.factorie.app.nlp.phrase.Phrase
+import cc.factorie.app.nlp.pos.PennPosTag
 import cc.factorie.variable.SetVariable
+
+import scala.Array.fallbackCanBuildFrom
+import scala.xml.{NodeSeq, XML}
 
 trait ReACEMentionIdentifiers {
   val mId: Option[String]

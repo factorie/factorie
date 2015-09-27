@@ -12,13 +12,15 @@
    limitations under the License. */
 package cc.factorie.app.topics.lda
 
-import scala.collection.mutable.{ArrayBuffer}
 import java.io.File
+import java.util.Date
+
 import cc.factorie.app.nlp.lexicon.StopWords
 import cc.factorie.app.strings.alphaSegmenter
-import java.util.Date
 import cc.factorie.directed._
 import cc.factorie.variable._
+
+import scala.collection.mutable.ArrayBuffer
 
 // An implementation of Topics-over-Time [Wang, McCallum, KDD 2006]
 // TODO Not yet finished; needs the appropriate CollapsedGibbsSampler handler

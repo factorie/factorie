@@ -12,9 +12,8 @@
    limitations under the License. */
 package cc.factorie.util
 
-import scala.collection.mutable._
 import scala.Iterable
-import scala.Tuple2
+import scala.collection.mutable._
 
 /** A generic trait for clustering solution containers that can be evaluated.
     @author Andrew McCallum */

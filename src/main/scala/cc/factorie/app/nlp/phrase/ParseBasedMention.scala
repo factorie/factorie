@@ -13,12 +13,12 @@
 
 package cc.factorie.app.nlp.phrase
 
-import scala.collection.mutable.ArrayBuffer
 import cc.factorie.app.nlp._
-import cc.factorie.app.nlp.parse.ParseTree
+import cc.factorie.app.nlp.coref.{ConllProperNounPhraseFinder, Mention, MentionList}
 import cc.factorie.app.nlp.ner._
-import scala.Some
-import cc.factorie.app.nlp.coref.{ConllProperNounPhraseFinder, MentionList, Mention}
+import cc.factorie.app.nlp.parse.ParseTree
+
+import scala.collection.mutable.ArrayBuffer
 
 
 class ParseBasedMentionList(spans:Iterable[Mention]) extends MentionList(spans)

@@ -1,11 +1,12 @@
 package cc.factorie.app.bib.hcoref
 
 import cc.factorie.app.nlp.hcoref._
-import cc.factorie.util.{DoubleSeq, Cubbie}
+import cc.factorie.util.namejuggler.{NonemptyString, PersonNameWithDerivations}
+import cc.factorie.util.{Cubbie, DoubleSeq}
 import cc.factorie.variable.Var
 import com.mongodb.DB
+
 import scala.collection.mutable
-import cc.factorie.util.namejuggler.{NonemptyString, PersonNameWithDerivations}
 
 /**
  * @author John Sullivan

@@ -12,22 +12,22 @@
    limitations under the License. */
 
 package cc.factorie.app.nlp.ner
-import cc.factorie._
-import app.strings._
-import cc.factorie.util.{ClasspathURL, CmdOptions, HyperparameterMain, BinarySerializer}
-import cc.factorie.app.nlp._
-import cc.factorie.app.chain._
-import scala.io._
 import java.io._
-import scala.math.round
-import scala.collection.mutable.ListBuffer
+
+import cc.factorie._
+import cc.factorie.app.chain._
+import cc.factorie.app.nlp._
 import cc.factorie.app.nlp.embeddings._
-import cc.factorie.model.DotFamilyWithStatistics2
-import cc.factorie.optimize.{ParameterAveraging, AdaGrad}
-import cc.factorie.variable._
-import cc.factorie.optimize.Trainer
+import cc.factorie.app.strings._
 import cc.factorie.la.WeightsMapAccumulator
-import cc.factorie.util.JavaHashMap
+import cc.factorie.model.DotFamilyWithStatistics2
+import cc.factorie.optimize.{AdaGrad, ParameterAveraging, Trainer}
+import cc.factorie.util.{BinarySerializer, ClasspathURL, CmdOptions, HyperparameterMain, JavaHashMap}
+import cc.factorie.variable._
+
+import scala.collection.mutable.ListBuffer
+import scala.io._
+import scala.math.round
 import scala.reflect.ClassTag
 
 
@@ -789,8 +789,8 @@ object ConllStackedChainNerOptimizer {
       println("Got results: " + result.mkString(" "))
       opts.saveModel.setValue(true)
       println("Running best configuration...")
-      import scala.concurrent.duration._
       import scala.concurrent.Await
+      import scala.concurrent.duration._
       Await.result(qs.execute(opts.values.flatMap(_.unParse).toArray), 5.hours)
       println("Done")
     }

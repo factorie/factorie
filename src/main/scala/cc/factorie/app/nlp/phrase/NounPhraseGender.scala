@@ -13,9 +13,10 @@
 package cc.factorie.app.nlp.phrase
 
 import cc.factorie.app.nlp._
-import cc.factorie.variable.{EnumDomain, CategoricalVariable}
+import cc.factorie.app.nlp.coref.{Mention, PronounSets}
+import cc.factorie.variable.{CategoricalVariable, EnumDomain}
+
 import scala.reflect.ClassTag
-import cc.factorie.app.nlp.coref.{PronounSets, Mention, WithinDocCoref, MentionList}
 
 object GenderDomain extends EnumDomain {
   val UNKNOWN,     // uncertain 

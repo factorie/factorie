@@ -12,6 +12,7 @@
    limitations under the License. */
 package cc.factorie.app.nlp.segment
 import cc.factorie.app.nlp._
+
 import scala.reflect.ClassTag
 
 /** Clean up Token.string according to various standard practices.

@@ -14,11 +14,9 @@
 
 
 package cc.factorie.tutorial
-import cc.factorie._
-import cc.factorie.directed._
-import cc.factorie.directed.Discrete
-import cc.factorie.variable.{DenseProportions1, ProportionsVariable, DiscreteVariable, DiscreteDomain}
+import cc.factorie.directed.{Discrete, _}
 import cc.factorie.infer.Maximize
+import cc.factorie.variable.{DenseProportions1, DiscreteDomain, DiscreteVariable, ProportionsVariable}
 
 /** A simple example of generating data by rolling a die, then re-estimating the parameters of the die from that data. */
 object MultinomialDemo {

@@ -11,11 +11,12 @@
    See the License for the specific language governing permissions and
    limitations under the License. */
 package cc.factorie.app.nlp.embeddings
-import cc.factorie.la._
-import scala.util.Random
-import java.io.{FileReader, BufferedReader, FileInputStream, InputStreamReader}
-import java.nio.charset.Charset
+import java.io.{BufferedReader, FileInputStream, InputStreamReader}
 import java.util.zip.GZIPInputStream
+
+import cc.factorie.la._
+
+import scala.util.Random
 
 class FastWordReader(file: String, encoding: String = "UTF8") extends Iterator[String] {
   private var in = file.endsWith(".gz") match {

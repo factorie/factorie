@@ -13,9 +13,10 @@
 package cc.factorie.app.nlp
 
 import java.io._
-import cc.factorie.app.nlp.parse._
-import java.net.{ServerSocket,Socket,SocketException}
+import java.net.{ServerSocket, Socket, SocketException}
+
 import cc.factorie.app.nlp.coref.MentionList
+import cc.factorie.app.nlp.parse._
 
 /** A command-line driver for DocumentAnnotators.
     Launch on the command-line, specifying which NLP pipeline steps you want, 

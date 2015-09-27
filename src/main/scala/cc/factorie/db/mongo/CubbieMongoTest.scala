@@ -13,7 +13,8 @@
 package cc.factorie.db.mongo
 
 import cc.factorie.util.Cubbie
-import com.mongodb.{MongoClient, Mongo}
+import com.mongodb.MongoClient
+
 import scala.reflect.classTag
 
 /**
@@ -22,7 +23,6 @@ import scala.reflect.classTag
 object CubbieMongoTest {
 
   import MongoCubbieImplicits._
-  import MongoCubbieConverter._
 
   def main(args: Array[String]) {
 

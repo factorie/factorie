@@ -11,12 +11,12 @@
    See the License for the specific language governing permissions and
    limitations under the License. */
 package cc.factorie.app.nlp.lemma
-import cc.factorie._
+import java.io.{FileInputStream, InputStream}
+
 import cc.factorie.app.nlp._
-import cc.factorie.app.nlp.pos.{PennPosTag,PennPosDomain}
-import java.io.{FileInputStream,InputStream}
-import cc.factorie.util.ClasspathURL
+import cc.factorie.app.nlp.pos.{PennPosDomain, PennPosTag}
 import cc.factorie.app.nlp.wordnet.WordNet
+import cc.factorie.util.ClasspathURL
 
 // TODO Rather than reading the WordNet files here, I think this object should simply depend on newly-written methods in wordnet.WordNet. -akm 
 

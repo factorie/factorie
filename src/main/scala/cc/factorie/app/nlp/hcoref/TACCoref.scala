@@ -1,20 +1,22 @@
 package cc.factorie.app.nlp.hcoref
 
 import java.io._
-import scala.io.Source
-import cc.factorie._
-import cc.factorie.util.{VectorUtils, EvaluatableClustering, NonValidatingXML}
-import cc.factorie.app.nlp._
-import cc.factorie.app.nlp.pos.OntonotesForwardPosTagger
-import cc.factorie.app.nlp.ner.NoEmbeddingsConllStackedChainNer
-import cc.factorie.app.nlp.coref.ParseForwardCoref
-import cc.factorie.app.nlp.parse.OntonotesTransitionBasedParser
-import scala.util.Random
-import cc.factorie.app.nlp.segment.{DeterministicNormalizingTokenizer, DeterministicSentenceSegmenter}
-import cc.factorie.app.nlp.phrase.Phrase
-import cc.factorie.variable.{DenseDoubleBagVariable, CategoricalDomain, BagOfWordsVariable}
 import java.util.zip.GZIPInputStream
+
+import cc.factorie._
+import cc.factorie.app.nlp._
+import cc.factorie.app.nlp.coref.ParseForwardCoref
+import cc.factorie.app.nlp.ner.NoEmbeddingsConllStackedChainNer
+import cc.factorie.app.nlp.parse.OntonotesTransitionBasedParser
+import cc.factorie.app.nlp.phrase.Phrase
+import cc.factorie.app.nlp.pos.OntonotesForwardPosTagger
+import cc.factorie.app.nlp.segment.{DeterministicNormalizingTokenizer, DeterministicSentenceSegmenter}
+import cc.factorie.util.{NonValidatingXML, VectorUtils}
+import cc.factorie.variable.{BagOfWordsVariable, CategoricalDomain, DenseDoubleBagVariable}
+
 import scala.collection.mutable.{ArrayBuffer, HashMap}
+import scala.io.Source
+import scala.util.Random
 
 /**
  * @author John Sullivan
@@ -495,7 +497,6 @@ class EmbeddingExample(val words:IndexedSeq[String],val space:EmbeddingSpace){
 }
 
 object Embeddings{
-  import VectorUtils._
   //val test = Seq("vldb","emnlp","icml","nips","icvpr","acl","relation extraction","database","knowledge base","entity","coreference","graphical model","approach","face","physics","machine learning","cryptography","graphics","networks","learning","amccallum","elearnedmiller","amoore","speytonjones","ablum","tmitchell","dkarger")
 
   def writeEmbedding(file:File,space:EmbeddingSpace){

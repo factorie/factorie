@@ -1,11 +1,11 @@
 package cc.factorie.app.nlp.pos
 
 import java.io._
-import java.util.{HashSet, HashMap}
+import java.util.{HashMap, HashSet}
 
 import cc.factorie.app.chain.Observations._
 import cc.factorie.app.nlp.{Document, Sentence, Token}
-import cc.factorie.util.{ClasspathURL, BinarySerializer}
+import cc.factorie.util.{BinarySerializer, ClasspathURL}
 
 /**
  * Created by Oskar Singer on 10/6/14.

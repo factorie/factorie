@@ -12,10 +12,10 @@
    limitations under the License. */
 
 package cc.factorie.app.nlp
-import cc.factorie._
 import cc.factorie.util.Attr
-import scala.collection.mutable.ArrayBuffer
 import cc.factorie.variable.Chain
+
+import scala.collection.mutable.ArrayBuffer
 
 /** A part of a Document, delineated by character offsets into the Document's string,
     and which can hold a sequence of Tokens and a sequence of Sentences.

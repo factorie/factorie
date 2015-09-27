@@ -13,10 +13,11 @@
 package cc.factorie.app.nlp.hcoref
 
 import cc.factorie._
-import scala.reflect.ClassTag
-import cc.factorie.optimize.{SampleRankTrainer, ParameterAveraging, MIRA}
 import cc.factorie.model.TupleTemplateWithStatistics2
-import cc.factorie.variable.{BooleanValue, BagOfWordsVariable}
+import cc.factorie.optimize.{MIRA, ParameterAveraging, SampleRankTrainer}
+import cc.factorie.variable.{BagOfWordsVariable, BooleanValue}
+
+import scala.reflect.ClassTag
 
 /**
  * @author John Sullivan

@@ -6,9 +6,9 @@
 
 package cc.factorie.util.namejuggler
 
-import StringUtils._
-import cc.factorie.app.nlp.lexicon.iesl.{PersonFirstHighest, PersonFirstHigh}
 import cc.factorie.app.nlp.lexicon.TrieUnionLexicon
+import cc.factorie.app.nlp.lexicon.iesl.{PersonFirstHigh, PersonFirstHighest}
+import cc.factorie.util.namejuggler.StringUtils._
 
 object PersonNameFormat {
 

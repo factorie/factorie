@@ -13,10 +13,8 @@
 
 package cc.factorie.infer
 
-import cc.factorie.directed._
-import scala.collection.mutable.HashMap
-import cc.factorie.variable._
 import cc.factorie.model.Model
+import cc.factorie.variable._
 
 /** An inferencer for mean field inference.
     Note that this is not just the set of marginals for the Q distribution (that is the embedded Summary);

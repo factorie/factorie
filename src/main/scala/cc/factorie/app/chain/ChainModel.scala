@@ -13,18 +13,17 @@
 
 package cc.factorie.app.chain
 
-import cc.factorie.la
-import cc.factorie.maths
-import cc.factorie.la._
-import scala.collection.mutable.{ListBuffer, ArrayBuffer}
 import java.io._
-import cc.factorie.util.{DoubleAccumulator, BinarySerializer}
-import cc.factorie.variable._
-import scala.reflect.ClassTag
-import cc.factorie.la.{SparseIndexedTensor1, WeightsMapAccumulator}
+
+import cc.factorie.la.{SparseIndexedTensor1, WeightsMapAccumulator, _}
+import cc.factorie.{la, maths}
 import cc.factorie.model._
 import cc.factorie.optimize.Example
-import scala.Some
+import cc.factorie.util.{BinarySerializer, DoubleAccumulator}
+import cc.factorie.variable._
+
+import scala.collection.mutable.{ArrayBuffer, ListBuffer}
+import scala.reflect.ClassTag
 
 // TODO We should add the ability to explicitly permit and forbid label transitions
 // Was Label <: LabeledMutableDiscreteVar
