@@ -58,7 +58,9 @@ object HierCorefDemo {
     }
   }
 
-  class WikiCorefModel(namesWeight:Double, namesShift: Double, contextWeight:Double, contextShift: Double, mentionsWeight:Double, mentionsShift: Double, distanceWeight:Double, distanceShift:Double)  extends CorefModel[WikiCorefVars] {
+  class WikiCorefModel(namesWeight:Double, namesShift: Double, contextWeight:Double, contextShift: Double, mentionsWeight:Double, mentionsShift: Double, distanceWeight:Double, distanceShift:Double)
+    extends CorefModel[WikiCorefVars]
+    with DirectScoringModel[WikiCorefVars] {
     this += new ChildParentCosineDistance(namesWeight, namesShift, {w:WikiCorefVars => w.names}, "names") {this.debugOff()}
     this += new ChildParentCosineDistance(contextWeight, contextShift, {w:WikiCorefVars => w.context}, "context") {this.debugOff()}
     this += new ChildParentCosineDistance(mentionsWeight, mentionsShift, {w:WikiCorefVars => w.mentions}, "mentions") {this.debugOff()}
@@ -119,7 +121,8 @@ object HierCorefDemo {
       with AutoStoppingSampler[WikiCorefVars]
       with CanopyPairGenerator[WikiCorefVars]
       with NoSplitMoveGenerator[WikiCorefVars]
-      with DebugCoref[WikiCorefVars] {
+      with DebugCoref[WikiCorefVars]
+      with PostSampler[WikiCorefVars, WikiCorefModel] {
       def autoStopThreshold = 10000
       val logger = Logger.default
 

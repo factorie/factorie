@@ -24,11 +24,12 @@ trait DirectScoringModel[Vars <: NodeVariables[Vars]] extends CorefModel[Vars] {
  * PostSampler provides a suite of methods to change the structure of the trees to work better as
  * hierarchical summaries rather than coreference hypotheses
  */
-trait PostSampler[Vars <: NodeVariables[Vars]] {
-  this: PairGenerator[Vars] with MoveGenerator[Vars] =>
+trait PostSampler[Vars <: NodeVariables[Vars], Model <: DirectScoringModel[Vars]] {
+  this: CorefSampler[Vars] with MoveGenerator[Vars] =>
 
-  def model:DirectScoringModel[Vars]
   implicit val random:Random
+
+  def scoreDist(n1:Node[Vars], n2:Node[Vars]) = model.asInstanceOf[Model].scoreDistance(n1, n2)
 
   def postSample: Unit = {
     var branches = mentions.flatMap(_.getParent).toSet.toSeq //mentions.collect {case m if !m.isMention && m.getParent.isDefined => m.parent}.toSet.toSeq
@@ -49,7 +50,7 @@ trait PostSampler[Vars <: NodeVariables[Vars]] {
       val bIter = branches.iterator
       while(bIter.hasNext && (!(maxScore > 0.0 && maxl1 > 0.0 && maxl2 > 0.0) || !(candidates.length > threshold))) {
         val branch = bIter.next()
-        val score = model.scoreDistance(orphan, branch)
+        val score = scoreDist(orphan, branch)
         candidates += branch
 
         //println(curIdx, maxIdx, branch, score, maxScore)
@@ -98,7 +99,7 @@ trait PostSampler[Vars <: NodeVariables[Vars]] {
             j <- i + 1 until threshold;
             n1 = orphans(i);
             n2 = orphans(j);
-            score = model.scoreDistance(n1, n2)
+            score = scoreDist(n1, n2)
             if score > scoreThresh) yield {
           (n1, n2, score)
         }
@@ -124,7 +125,7 @@ trait PostSampler[Vars <: NodeVariables[Vars]] {
          j <- i + 1 until math.min(ns.size, threshold);
          n1 = ns(i);
          n2 = ns(j);
-         s = model.scoreDistance(n1, n2)) yield {(n1, n2, s)}).sortBy(_._3)
+         s = scoreDist(n1, n2)) yield {(n1, n2, s)}).sortBy(_._3)
 
   def dropInRoots: Unit = {
     val roots = mentions.map(_.root).filterNot(_.isMention).toSeq
@@ -228,7 +229,7 @@ trait PostSampler[Vars <: NodeVariables[Vars]] {
       }
     }
     def dropNode(candidates:Seq[Node[Vars]], node:Node[Vars]): Unit = {
-      val (s, newParent) = (candidates.map(c => model.scoreDistance(c, node) -> c) ++ node.getParent.map(p => model.scoreDistance(p, node) -> p)).sortBy(-_._1).head
+      val (s, newParent) = (candidates.map(c => scoreDist(c, node) -> c) ++ node.getParent.map(p => scoreDist(p, node) -> p)).sortBy(-_._1).head
       println ("giving %s to %s as a child with score %.4f".format(node, newParent, s))
       if(newParent != node.parent) {
         node.alterParent(Some(newParent))(null)
