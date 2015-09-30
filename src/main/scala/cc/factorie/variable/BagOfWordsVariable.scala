@@ -189,29 +189,40 @@ class BagOfWordsVariable(initialWords: Iterable[String] = Nil, initialMap: Map[S
 }
 
 object BagOfWordsVariable {
-  implicit object IterStringBagBuilder extends CanBuildFrom[Iterable[(String, Double)], (String, Double), BagOfWordsVariable] {
-    override def apply(from: Iterable[(String, Double)]) =
-      new mutable.Builder[(String, Double), BagOfWordsVariable]  {
-        private val bag = new BagOfWordsVariable
-      def +=(elem: (String, Double)): this.type = {
-        bag.+=(elem._1, elem._2)
-        this
-      }
-      def result() = bag
-      def clear() {bag.clear()}
-    }
+  implicit object IterStringDoubleBagBuilder extends CanBuildFrom[Iterable[(String, Double)], (String, Double), BagOfWordsVariable] {
+    def apply(from: Iterable[(String, Double)]):mutable.Builder[(String, Double), BagOfWordsVariable] = apply()
 
-    override def apply() =
+    def apply() =
       new mutable.Builder[(String, Double), BagOfWordsVariable] {
         private val bag = new BagOfWordsVariable()
-        override def +=(elem: (String, Double)) = {
+        def +=(elem: (String, Double)) = {
           bag.+=(elem._1, elem._2)
           this
         }
 
-        override def result() = bag
+        def result() = bag
 
-        override def clear() {bag.clear()}
+        def clear() {bag.clear()}
       }
   }
+  implicit object MapBagBuilder extends CanBuildFrom[Map[String, Double], (String, Double), BagOfWordsVariable] {
+    def apply(from: Map[String, Double]) = IterStringDoubleBagBuilder(from)
+
+    def apply() = IterStringDoubleBagBuilder()
+  }
+  
+  implicit object IterStringBagBuilder extends CanBuildFrom[Iterable[String], String, BagOfWordsVariable] {
+    def apply(from: Iterable[String]) = apply()
+
+    def apply() = new mutable.Builder[String, BagOfWordsVariable] {
+      private val bag = new BagOfWordsVariable
+      def +=(elem: String): this.type = {bag += elem; this}
+
+      def result() = bag
+
+      def clear() {bag.clear()}
+    }
+  }
+
+  def toBagOfWords[A](a:A)(implicit cbf:CanBuildFrom[A, _, BagOfWordsVariable]):BagOfWordsVariable = cbf(a).result()
 }
