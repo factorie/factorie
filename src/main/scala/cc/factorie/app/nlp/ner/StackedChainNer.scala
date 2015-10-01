@@ -37,14 +37,14 @@ class TokenSequence[T<:NerTag](token: Token)(implicit m: ClassTag[T]) extends co
   def key = this.mkString("-")
 }
 
-class StackedChainNer[L<:NerTag](labelDomain: CategoricalDomain[String],
+abstract class StackedChainNer[S <: NerSpan : ClassTag, L<:NerTag ](labelDomain: CategoricalDomain[String],
                                  newLabel: (Token, String) => L,
                                  labelToToken: L => Token,
                                  embeddingMap: SkipGramEmbedding,
                                  embeddingDim: Int,
                                  scale: Double,
                                  useOffsetEmbedding: Boolean,
-                                 url: java.net.URL=null)(implicit m: ClassTag[L]) extends DocumentAnnotator {
+                                 url: java.net.URL=null)(implicit m: ClassTag[L]) extends NerAnnotator[S, L] {
 
   val FEATURE_PREFIX_REGEX = "^[^@]*$".r
   val ALPHA_REGEX = "[A-Za-z]+".r
@@ -62,8 +62,8 @@ class StackedChainNer[L<:NerTag](labelDomain: CategoricalDomain[String],
     }
   }
 
-  def process(document:Document): Document = {
-    if (document.tokenCount == 0) return document
+  def annotateTokens(document: Document) =
+  if(document.tokenCount > 0) {
     if (!document.tokens.head.attr.contains(m.runtimeClass))
       document.tokens.map(token => token.attr += newLabel(token, "O"))
     if (!document.tokens.head.attr.contains(classOf[ChainNerFeatures])) {
@@ -78,10 +78,11 @@ class StackedChainNer[L<:NerTag](labelDomain: CategoricalDomain[String],
     }
     process(document,useModel2 = true)
     document
+  } else {
+    document
   }
+
   def prereqAttrs = Seq(classOf[Sentence])
-  def postAttrs = Seq(m.runtimeClass).asInstanceOf[Seq[Class[_]]]
-  def tokenAnnotationString(token:Token): String = token.attr[L].categoryValue
 
   object ChainNer2FeaturesDomain extends CategoricalVectorDomain[String]
   class ChainNer2Features(val token:Token) extends BinaryFeatureVectorVariable[String] {
@@ -633,24 +634,10 @@ class ConllStackedChainNer(embeddingMap: SkipGramEmbedding,
                            embeddingDim: Int,
                            scale: Double,
                            useOffsetEmbedding: Boolean,
-                           url: java.net.URL=null)
-  extends StackedChainNer[BilouConllNerTag](
-    BilouConllNerDomain,
-    (t, s) => new BilouConllNerTag(t, s),
-    l => l.token,
-    embeddingMap,
-    embeddingDim,
-    scale,
-    useOffsetEmbedding,
-    url) with Serializable {
-  override def process(document:Document): Document = {
-    if (document.tokenCount > 0) {
-      val doc = super.process(document)
-      // Add and populated NerSpanList attr to the document 
-      doc.attr.+=(new ner.ConllNerSpanBuffer ++= document.sections.flatMap(section => BilouConllNerDomain.spanList(section)))
-      doc
-    } else document
-  }
+                           url: java.net.URL=null) extends StackedChainNer[ConllNerSpan, BilouConllNerTag](BilouConllNerDomain, (t, s) => new BilouConllNerTag(t, s), l => l.token, embeddingMap, embeddingDim, scale, useOffsetEmbedding, url) {
+  def newSpan(sec: Section, start: Int, length: Int, category: String) = new ConllNerSpan(sec, start, length, category)
+
+  def newBuffer = new ConllNerSpanBuffer
 }
 //object ConllStackedChainNer extends ConllStackedChainNer(SkipGramEmbedding, 100, 1.0, true, ClasspathURL[ConllStackedChainNer](".factorie"))
 class NoEmbeddingsConllStackedChainNer(url:java.net.URL) extends ConllStackedChainNer(null, 0, 0.0, false, url) with Serializable
@@ -660,28 +647,14 @@ class OntonotesStackedChainNer(embeddingMap: SkipGramEmbedding,
                                embeddingDim: Int,
                                scale: Double,
                                useOffsetEmbedding: Boolean,
-                               url: java.net.URL=null)
-  extends StackedChainNer[BilouOntonotesNerTag](
-    BilouOntonotesNerDomain,
-    (t, s) => new BilouOntonotesNerTag(t, s),
-    l => l.token,
-    embeddingMap,
-    embeddingDim,
-    scale,
-    useOffsetEmbedding,
-    url) with Serializable {
-  override def process(document:Document): Document = {
-    if (document.tokenCount > 0) {
-      val doc = super.process(document)
-      // Add and populated NerSpanList attr to the document
-      doc.attr.+= (new ner.OntonotesNerSpanBuffer() ++= document.sections.flatMap(section => BilouOntonotesNerDomain.spanList(section))) 
-      doc
-    } else document
-  }
+                               url: java.net.URL=null) extends StackedChainNer[OntonotesNerSpan, BilouOntonotesNerTag](BilouOntonotesNerDomain, (t, s) => new BilouOntonotesNerTag(t, s), l => l.token, embeddingMap, embeddingDim, scale, useOffsetEmbedding, url) {
+
+  def newSpan(sec: Section, start: Int, length: Int, category: String) = new OntonotesNerSpan(sec, start, length, category)
+  def newBuffer = new OntonotesNerSpanBuffer
 }
 
-class NoEmbeddingsOntonotesStackedChainNer(url:java.net.URL) extends OntonotesStackedChainNer(null, 0, 0.0, false, url) with Serializable
-object NoEmbeddingsOntonotesStackedChainNer extends NoEmbeddingsOntonotesStackedChainNer(ClasspathURL[NoEmbeddingsOntonotesStackedChainNer](".factorie")) with Serializable
+class NoEmbeddingsOntonotesStackedChainNer(url:java.net.URL) extends OntonotesStackedChainNer(null, 0, 0.0, false, url)
+object NoEmbeddingsOntonotesStackedChainNer extends NoEmbeddingsOntonotesStackedChainNer(ClasspathURL[NoEmbeddingsOntonotesStackedChainNer](".factorie"))
 
 class StackedChainNerOpts extends CmdOptions with SharedNLPCmdOptions{
   val trainFile =     new CmdOption("train", "eng.train", "FILE", "CoNLL formatted training file.")

@@ -19,7 +19,7 @@ import cc.factorie.app.nlp.phrase.Phrase
 
 /** A dead-simple deterministic coreference system that operates only on named entities
     and resolves coreference only by exact string match. */
-object DeterministicNamedCoref extends DeterministicNamedCoref(ConllProperNounPhraseFinder)
+object DeterministicNamedCoref extends DeterministicNamedCoref(ConllPhraseFinder)
 
 class DeterministicNamedCoref(phraseFinder:MentionPhraseFinder) extends DocumentAnnotator {
   def prereqAttrs: Seq[Class[_]] = phraseFinder.prereqAttrs ++ Seq(classOf[PennPosTag])

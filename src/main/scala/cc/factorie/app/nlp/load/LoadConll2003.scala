@@ -69,7 +69,7 @@ case class LoadConll2003(BILOU:Boolean = false, verbose:Boolean = false) extends
         document.annotators(classOf[Token]) = UnknownDocumentAnnotator.getClass // register that we have token boundaries
         document.annotators(classOf[Sentence]) = UnknownDocumentAnnotator.getClass // register that we have sentence boundaries
         document.annotators(classOf[pos.PennPosTag]) = UnknownDocumentAnnotator.getClass // register that we have POS tags
-        document.annotators(classOf[LabeledIobConllNerTag]) = UnknownDocumentAnnotator.getClass // register that we have IOB NER tags
+        document.annotators(classOf[LabeledBioConllNerTag]) = UnknownDocumentAnnotator.getClass // register that we have IOB NER tags
         if (BILOU) document.annotators(classOf[LabeledBilouConllNerTag]) = UnknownDocumentAnnotator.getClass // register that we have BILOU NER tags
       } else {
         val fields = line.split(' ')
@@ -79,7 +79,7 @@ case class LoadConll2003(BILOU:Boolean = false, verbose:Boolean = false) extends
         val ner = fields(3).stripLineEnd
         if (sentence.length > 0) document.appendString(" ")
         val token = new Token(sentence, word)
-        token.attr += new LabeledIobConllNerTag(token, ner)
+        token.attr += new LabeledBioConllNerTag(token, ner)
         token.attr += new cc.factorie.app.nlp.pos.PennPosTag(token, partOfSpeech)
       }
     }

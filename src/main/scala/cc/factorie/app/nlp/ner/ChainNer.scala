@@ -37,52 +37,53 @@ import scala.reflect.ClassTag
  * PER      f1=0.940327 p=0.955329 r=0.925788 (tp=1497 fp=70 fn=120 true=1617 pred=1567)
  *
  */
-class ConllChainNer(url: java.net.URL=null)
-  extends ChainNer[BilouConllNerTag](
-    BilouConllNerDomain,
-    (t, s) => new BilouConllNerTag(t, s),
-    l => l.token,
-    url) with Serializable {
+class ConllChainNer(url: java.net.URL=null)(implicit ct:ClassTag[ConllNerSpan]) extends ChainNer[ConllNerSpan, BilouConllNerTag](BilouConllNerDomain, (t, s) => new BilouConllNerTag(t, s), l => l.token, url) {
   def loadDocs(fileName: String): Seq[Document] = cc.factorie.app.nlp.load.LoadConll2003(BILOU=true).fromFilename(fileName)
-  override def process(document:Document): Document = {
-    if (document.tokenCount > 0) {
-      val doc = super.process(document)
-      doc.attr.+=(new ConllNerSpanBuffer ++= document.sections.flatMap(section => BilouConllNerDomain.spanList(section)))
-      doc
-    } else document
-  }
+
+  def newSpan(sec: Section, start: Int, length: Int, category: String) = new ConllNerSpan(sec, start, length, category)
+
+  def newBuffer = new ConllNerSpanBuffer
 }
 
 //TODO this serialized model doesn't exist yet?
 object ConllChainNer extends ConllChainNer(cc.factorie.util.ClasspathURL[ConllChainNer](".factorie")) with Serializable
 
 
+class OntonotesChainNer(url: java.net.URL=null)(implicit ct:ClassTag[OntonotesNerSpan]) extends ChainNer[OntonotesNerSpan, BilouOntonotesNerTag](BilouOntonotesNerDomain, (t, s) => new BilouOntonotesNerTag(t, s), l => l.token, url) {
+  def newBuffer = new OntonotesNerSpanBuffer()
+
+  def newSpan(sec: Section, start: Int, length: Int, category: String) = new OntonotesNerSpan(sec, start, length, category)
+}
+
+// todo a serialized model for this does not exist
+object OntonotesChainNer extends OntonotesChainNer(cc.factorie.util.ClasspathURL[OntonotesChainNer](".factorie"))
+
 /**
  * A base class for finite-state named entity recognizers
  */
-abstract class ChainNer[L<:NerTag](labelDomain: CategoricalDomain[String],
+abstract class ChainNer[S<: NerSpan, L<:NerTag](labelDomain: CategoricalDomain[String],
                                    newLabel: (Token, String) => L,
                                    labelToToken: L => Token,
-                                   url: java.net.URL=null)(implicit m: ClassTag[L]) extends DocumentAnnotator {
+                                   url: java.net.URL=null)(implicit m: ClassTag[L], s: ClassTag[S]) extends NerAnnotator[S, L] {
 
-  //DocumentAnnotator methods
-  def tokenAnnotationString(token: Token): String = token.attr[L].categoryValue
   def prereqAttrs = Seq(classOf[Sentence])
-  def postAttrs = Seq(m.runtimeClass).asInstanceOf[Seq[Class[_]]]
-  def process(document: Document): Document = {
-    if (document.tokenCount == 0) return document
-    if (!document.tokens.head.attr.contains(m.runtimeClass))
-      document.tokens.map(token => token.attr += newLabel(token, "O"))
-    if (!document.tokens.head.attr.contains(classOf[ChainNERFeatures])) {
-      document.tokens.map(token => {token.attr += new ChainNERFeatures(token)})
-      addFeatures(document, (t:Token)=>t.attr[ChainNERFeatures])
+
+  def annotateTokens(document: Document) =
+    if(document.tokenCount > 0) {
+      if (!document.tokens.head.attr.contains(m.runtimeClass))
+        document.tokens.map(token => token.attr += newLabel(token, "O"))
+      if (!document.tokens.head.attr.contains(classOf[ChainNERFeatures])) {
+        document.tokens.map(token => {token.attr += new ChainNERFeatures(token)})
+        addFeatures(document, (t:Token)=>t.attr[ChainNERFeatures])
+      }
+      for (sentence <- document.sentences if sentence.tokens.size > 0) {
+        val vars = sentence.tokens.map(_.attr[L]).toSeq
+        model.maximize(vars)(null)
+      }
+      document
+    } else {
+      document
     }
-    for (sentence <- document.sentences if sentence.tokens.size > 0) {
-      val vars = sentence.tokens.map(_.attr[L]).toSeq
-      model.maximize(vars)(null)
-    }
-    document
-  }
 
   object ChainNERFeaturesDomain extends CategoricalVectorDomain[String]
   class ChainNERFeatures(val token: Token) extends BinaryFeatureVectorVariable[String] {
