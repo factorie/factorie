@@ -348,7 +348,43 @@ limitations under the License.
               <configuration>
                 <instructions>
                   <Bundle-SymbolicName>${pom.groupId}</Bundle-SymbolicName>
-                  <Import-Package></Import-Package>
+                  <Import-Package>
+                    scala,
+                    scala.collection,
+                    scala.collection.concurrent,
+                    scala.collection.convert,
+                    scala.collection.generic,
+                    scala.collection.immutable,
+                    scala.collection.mutable,
+                    scala.collection.parallel,
+                    scala.collection.parallel.immutable,
+                    scala.collection.parallel.mutable,
+                    scala.collection.script,
+                    scala.compat,
+                    scala.concurrent,
+                    scala.concurrent.duration,
+                    scala.io,
+                    scala.math,
+                    scala.reflect,
+                    scala.runtime,
+                    scala.sys,
+                    scala.sys.process,
+                    scala.util,
+                    scala.util.control,
+                    scala.util.hashing,
+                    scala.util.matching,
+                    scala.util.parsing.combinator,
+                    scala.annotation,
+                    scala.annotation.meta,
+                    scala.annotation.unchecked,
+                    scala.beans,
+                    scala.concurrent.forkjoin,
+                    scala.concurrent.impl,
+                    scala.concurrent.util,
+                    scala.ref,
+                    scala.reflect.macros.internal,
+                    scala.text
+                  </Import-Package>
                   <Export-Package>
                     cc.factorie,
                     cc.factorie.app,
