@@ -14,9 +14,10 @@
 
 
 package cc.factorie.util
-import scala.reflect.ClassTag
-import scala.collection.mutable.{HashMap,HashSet,ArrayBuffer}
-import cc.factorie._
+
+import java.io.File
+
+import scala.collection.mutable.{HashMap, ArrayBuffer}
 import scala.reflect.runtime.universe._
 
 /** Concrete version is implemented as an inner class of @see CmdOptions.
@@ -205,7 +206,9 @@ class CmdOptions {
         case t if t =:= typeOf[List[String]] => processList(identity).asInstanceOf[T]
         case t if t =:= typeOf[List[Int]] => processList(_.toInt).asInstanceOf[T]
         case t if t =:= typeOf[List[Double]] => processList(_.toDouble).asInstanceOf[T]
+        case t if t =:= typeOf[List[File]] => processList(FileUtils.fromString).asInstanceOf[T]
         case t if t =:= typeOf[Char] => args(index).head.asInstanceOf[T]
+        case t if t =:= typeOf[File] => FileUtils.fromString(args(index)).asInstanceOf[T]
         case t if t =:= typeOf[String] => args(index).asInstanceOf[T]
         case t if t =:= typeOf[Short] => args(index).toShort.asInstanceOf[T]
         case t if t =:= typeOf[Int] => args(index).toInt.asInstanceOf[T]
