@@ -6,13 +6,16 @@ package cc.factorie.app.nlp.ner
  */
 
 import java.io._
+import java.net.URL
+import java.nio.file.Path
+import cc.factorie._
 import cc.factorie.app.nlp._
-import cc.factorie.util.BinarySerializer
+import cc.factorie.app.nlp.lexicon.{LexiconsProvider, Lexicon, StaticLexicons}
+import cc.factorie.util._
 import cc.factorie.variable._
 import cc.factorie.app.chain.ChainModel
 import cc.factorie.optimize.{Trainer, AdaGrad, ParameterAveraging}
 import cc.factorie.app.chain.SegmentEvaluation
-import cc.factorie.util.JavaHashMap
 import scala.reflect.ClassTag
 
 /**
@@ -37,12 +40,14 @@ import scala.reflect.ClassTag
  * PER      f1=0.940327 p=0.955329 r=0.925788 (tp=1497 fp=70 fn=120 true=1617 pred=1567)
  *
  */
-class ConllChainNer(url: java.net.URL=null)
+
+class ConllChainNer(implicit mp:ModelProvider[ConllChainNer, URL], lexMp:ModelProvider[Lexicon, URL])
   extends ChainNer[BilouConllNerTag](
     BilouConllNerDomain,
     (t, s) => new BilouConllNerTag(t, s),
     l => l.token,
-    url) with Serializable {
+    mp.provide,
+    lexMp.provide) with Serializable {
   def loadDocs(fileName: String): Seq[Document] = cc.factorie.app.nlp.load.LoadConll2003(BILOU=true).fromFilename(fileName)
   override def process(document:Document): Document = {
     if (document.tokenCount > 0) {
@@ -54,8 +59,7 @@ class ConllChainNer(url: java.net.URL=null)
 }
 
 //TODO this serialized model doesn't exist yet?
-object ConllChainNer extends ConllChainNer(cc.factorie.util.ClasspathURL[ConllChainNer](".factorie")) with Serializable
-
+object ConllChainNer extends ConllChainNer()(ModelProvider.classpath(), ModelProvider.classpathDir) with Serializable
 
 /**
  * A base class for finite-state named entity recognizers
@@ -63,12 +67,13 @@ object ConllChainNer extends ConllChainNer(cc.factorie.util.ClasspathURL[ConllCh
 abstract class ChainNer[L<:NerTag](labelDomain: CategoricalDomain[String],
                                    newLabel: (Token, String) => L,
                                    labelToToken: L => Token,
-                                   url: java.net.URL=null)(implicit m: ClassTag[L]) extends DocumentAnnotator {
+                                   url: java.net.URL=null,
+                                   lexiconRoot: URL)(implicit m: ClassTag[L]) extends DocumentAnnotator {
 
   //DocumentAnnotator methods
   def tokenAnnotationString(token: Token): String = token.attr[L].categoryValue
   def prereqAttrs = Seq(classOf[Sentence])
-  def postAttrs = Seq(m.runtimeClass).asInstanceOf[Seq[Class[_]]]
+  def postAttrs = Seq(m.runtimeClass)
   def process(document: Document): Document = {
     if (document.tokenCount == 0) return document
     if (!document.tokens.head.attr.contains(m.runtimeClass))
@@ -120,15 +125,10 @@ abstract class ChainNer[L<:NerTag](labelDomain: CategoricalDomain[String],
     is.close()
   }
 
-  object Demonyms extends lexicon.PhraseLexicon("iesl/demonyms") {
-    for (line <- io.Source.fromInputStream(lexicon.ClasspathResourceLexicons.getClass.getResourceAsStream("iesl/demonyms.txt")).getLines()) {
-      val fields = line.trim.split(" ?\t ?") // TODO The currently checked in version has extra spaces in it; when this is fixed, use simply: ('\t')
-      for (phrase <- fields.drop(1)) this += phrase
-    }
-  }
-
-  def prefix( prefixSize : Int, cluster : String ) : String = if(cluster.size > prefixSize) cluster.substring(0, prefixSize) else cluster
+  def prefix( prefixSize : Int, cluster : String ) : String = if(cluster.length > prefixSize) cluster.substring(0, prefixSize) else cluster
   val clusters = JavaHashMap[String, String]()
+
+  val lexicon = new StaticLexicons()(LexiconsProvider.classpath)
 
   def addFeatures(document: Document, vf: Token => CategoricalVectorVar[String]): Unit = {
     document.annotators(classOf[ChainNERFeatures]) = ChainNer.this.getClass
@@ -157,7 +157,7 @@ abstract class ChainNer[L<:NerTag](labelDomain: CategoricalDomain[String],
     lexicon.iesl.Country.tagText(tokenSequence,vf, "COUNTRY")
     lexicon.iesl.City.tagText(tokenSequence,vf, "CITY")
     lexicon.iesl.PlaceSuffix.tagText(tokenSequence,vf, "PLACE-SUFFIX")
-    lexicon.iesl.USState.tagText(tokenSequence,vf, "USSTATE")
+    lexicon.iesl.UsState.tagText(tokenSequence,vf, "USSTATE")
     lexicon.iesl.Continents.tagText(tokenSequence,vf, "CONTINENT")
 
     lexicon.wikipedia.Person.tagText(tokenSequence,vf, "WIKI-PERSON")
@@ -332,7 +332,7 @@ object ConllChainNerTrainer extends cc.factorie.util.HyperparameterMain {
     val opts = new ChainNerOpts
     implicit val random = new scala.util.Random(0)
     opts.parse(args)
-    val ner = new ConllChainNer
+    val ner = new ConllChainNer()(ModelProvider.empty, ModelProvider.classpathDir)
     if (opts.brownClusFile.wasInvoked) {
       println(s"Reading brown cluster file: ${opts.brownClusFile.value}")
       for (line <- scala.io.Source.fromFile(opts.brownClusFile.value).getLines()) {

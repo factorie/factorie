@@ -7,12 +7,16 @@
 package cc.factorie.util.namejuggler
 
 import StringUtils._
-import cc.factorie.app.nlp.lexicon.iesl.{PersonFirstHighest, PersonFirstHigh}
 import cc.factorie.app.nlp.lexicon.TrieUnionLexicon
+import cc.factorie.app.nlp.lexicon.iesl.{PersonFirstHighest, PersonFirstHigh}
+import cc.factorie.util.ModelProvider
+import cc.factorie.util.FileResource._
 
 object PersonNameFormat {
 
-  private lazy val nameLexicon = new TrieUnionLexicon("first names", PersonFirstHighest, PersonFirstHigh)
+  //todo fix this
+  @deprecated("The classpath based provider here is unsafe, it should be moved to the constructor", "10/05/15")
+  private lazy val nameLexicon = new TrieUnionLexicon("first names", new PersonFirstHighest()(ModelProvider.classpath()), new PersonFirstHigh()(ModelProvider.classpath()))
 
   // http://notes.ericwillis.com/2009/11/common-name-prefixes-titles-and-honorifics/
   // ** add map from expanded versions, e.g. Professor, Senator, etc.

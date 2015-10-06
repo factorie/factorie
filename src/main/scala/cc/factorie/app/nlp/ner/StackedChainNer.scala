@@ -12,9 +12,14 @@
    limitations under the License. */
 
 package cc.factorie.app.nlp.ner
+
+import java.net.URL
+import java.nio.file.Path
+
 import cc.factorie._
 import app.strings._
-import cc.factorie.util.{ClasspathURL, CmdOptions, HyperparameterMain, BinarySerializer}
+import cc.factorie.app.nlp.lexicon.{LexiconsProvider, Lexicon, StaticLexicons}
+import cc.factorie.util._
 import cc.factorie.app.nlp._
 import cc.factorie.app.chain._
 import scala.io._
@@ -27,7 +32,6 @@ import cc.factorie.optimize.{ParameterAveraging, AdaGrad}
 import cc.factorie.variable._
 import cc.factorie.optimize.Trainer
 import cc.factorie.la.WeightsMapAccumulator
-import cc.factorie.util.JavaHashMap
 import scala.reflect.ClassTag
 
 
@@ -44,7 +48,8 @@ class StackedChainNer[L<:NerTag](labelDomain: CategoricalDomain[String],
                                  embeddingDim: Int,
                                  scale: Double,
                                  useOffsetEmbedding: Boolean,
-                                 url: java.net.URL=null)(implicit m: ClassTag[L]) extends DocumentAnnotator {
+                                 url: java.net.URL=null,
+                                 lexFile:URL)(implicit m: ClassTag[L]) extends DocumentAnnotator {
 
   val FEATURE_PREFIX_REGEX = "^[^@]*$".r
   val ALPHA_REGEX = "[A-Za-z]+".r
@@ -53,13 +58,6 @@ class StackedChainNer[L<:NerTag](labelDomain: CategoricalDomain[String],
     val argsList = new scala.collection.mutable.HashMap[String, String]()
     argsList += ("scale" -> scale.toString)
     argsList += ("embeddingDim" -> embeddingDim.toString)
-  }
-
-  object Demonyms extends lexicon.PhraseLexicon("iesl/demonyms") {
-    for (line <- io.Source.fromInputStream(lexicon.ClasspathResourceLexicons.getClass.getResourceAsStream("iesl/demonyms.txt")).getLines()) {
-      val fields = line.trim.split(" ?\t ?") // TODO The currently checked in version has extra spaces in it; when this is fixed, use simply: ('\t')
-      for (phrase <- fields.drop(1)) this += phrase
-    }
   }
 
   def process(document:Document): Document = {
@@ -245,6 +243,8 @@ class StackedChainNer[L<:NerTag](labelDomain: CategoricalDomain[String],
     }
   }
 
+  val lexicon = new StaticLexicons()(LexiconsProvider.classpath)
+
   def initFeatures(document:Document, vf:Token=>CategoricalVectorVar[String]): Unit = {
     count=count+1
     val tokenSequence = document.tokens.toIndexedSeq
@@ -274,7 +274,7 @@ class StackedChainNer[L<:NerTag](labelDomain: CategoricalDomain[String],
     lexicon.iesl.Country.tagText(tokenSequence,vf, "COUNTRY")
     lexicon.iesl.City.tagText(tokenSequence,vf, "CITY")
     lexicon.iesl.PlaceSuffix.tagText(tokenSequence,vf, "PLACE-SUFFIX")
-    lexicon.iesl.USState.tagText(tokenSequence,vf, "USSTATE")
+    lexicon.iesl.UsState.tagText(tokenSequence,vf, "USSTATE")
     lexicon.iesl.Continents.tagText(tokenSequence,vf, "CONTINENT")
 
     lexicon.wikipedia.Person.tagText(tokenSequence,vf, "WIKI-PERSON")
@@ -585,55 +585,10 @@ class StackedChainNer[L<:NerTag](labelDomain: CategoricalDomain[String],
   }
 }
 
-object StackedChainNer {
-  def initLexicons() : Unit = synchronized {
-    lexicon.iesl.Month.toString()
-    lexicon.iesl.Day.toString()
-
-    lexicon.iesl.PersonFirst.toString()
-    lexicon.iesl.PersonFirstHigh.toString()
-    lexicon.iesl.PersonFirstHighest.toString()
-    lexicon.iesl.PersonFirstMedium.toString()
-
-    lexicon.iesl.PersonLast.toString()
-    lexicon.iesl.PersonLastHigh.toString()
-    lexicon.iesl.PersonLastHighest.toString()
-    lexicon.iesl.PersonLastMedium.toString()
-
-    lexicon.iesl.PersonHonorific.toString()
-
-    lexicon.iesl.Company.toString()
-    lexicon.iesl.JobTitle.toString()
-    lexicon.iesl.OrgSuffix.toString()
-
-    lexicon.iesl.Country.toString()
-    lexicon.iesl.City.toString()
-    lexicon.iesl.PlaceSuffix.toString()
-    lexicon.iesl.USState.toString()
-    lexicon.iesl.Continents.toString()
-
-    lexicon.wikipedia.Person.toString()
-    lexicon.wikipedia.Event.toString()
-    lexicon.wikipedia.Location.toString()
-    lexicon.wikipedia.Organization.toString()
-    lexicon.wikipedia.ManMadeThing.toString()
-    lexicon.iesl.Demonym.toString()
-
-    lexicon.wikipedia.Book.toString()
-    lexicon.wikipedia.Business.toString()
-    lexicon.wikipedia.Film.toString()
-
-    lexicon.wikipedia.LocationAndRedirect.toString()
-    lexicon.wikipedia.PersonAndRedirect.toString()
-    lexicon.wikipedia.OrganizationAndRedirect.toString()
-  }
-}
-
 class ConllStackedChainNer(embeddingMap: SkipGramEmbedding,
                            embeddingDim: Int,
                            scale: Double,
-                           useOffsetEmbedding: Boolean,
-                           url: java.net.URL=null)
+                           useOffsetEmbedding: Boolean)(implicit mp:ModelProvider[ConllStackedChainNer, URL], lexMp:ModelProvider[Lexicon, URL])
   extends StackedChainNer[BilouConllNerTag](
     BilouConllNerDomain,
     (t, s) => new BilouConllNerTag(t, s),
@@ -642,7 +597,7 @@ class ConllStackedChainNer(embeddingMap: SkipGramEmbedding,
     embeddingDim,
     scale,
     useOffsetEmbedding,
-    url) with Serializable {
+    mp.provide, lexMp.provide) with Serializable {
   override def process(document:Document): Document = {
     if (document.tokenCount > 0) {
       val doc = super.process(document)
@@ -653,14 +608,13 @@ class ConllStackedChainNer(embeddingMap: SkipGramEmbedding,
   }
 }
 //object ConllStackedChainNer extends ConllStackedChainNer(SkipGramEmbedding, 100, 1.0, true, ClasspathURL[ConllStackedChainNer](".factorie"))
-class NoEmbeddingsConllStackedChainNer(url:java.net.URL) extends ConllStackedChainNer(null, 0, 0.0, false, url) with Serializable
-object NoEmbeddingsConllStackedChainNer extends NoEmbeddingsConllStackedChainNer(ClasspathURL[NoEmbeddingsConllStackedChainNer](".factorie")) with Serializable
+class NoEmbeddingsConllStackedChainNer()(implicit mp:ModelProvider[NoEmbeddingsConllStackedChainNer, URL], lexMp:ModelProvider[Lexicon, URL]) extends ConllStackedChainNer(null, 0, 0.0, false)(mp, lexMp) with Serializable
+object NoEmbeddingsConllStackedChainNer extends NoEmbeddingsConllStackedChainNer()(ModelProvider.classpath(), ModelProvider.classpathDir) with Serializable
 
 class OntonotesStackedChainNer(embeddingMap: SkipGramEmbedding,
                                embeddingDim: Int,
                                scale: Double,
-                               useOffsetEmbedding: Boolean,
-                               url: java.net.URL=null)
+                               useOffsetEmbedding: Boolean)(implicit mp:ModelProvider[ConllStackedChainNer, URL], lexMp:ModelProvider[Lexicon, URL])
   extends StackedChainNer[BilouOntonotesNerTag](
     BilouOntonotesNerDomain,
     (t, s) => new BilouOntonotesNerTag(t, s),
@@ -669,7 +623,7 @@ class OntonotesStackedChainNer(embeddingMap: SkipGramEmbedding,
     embeddingDim,
     scale,
     useOffsetEmbedding,
-    url) with Serializable {
+    mp.provide, lexMp.provide) with Serializable {
   override def process(document:Document): Document = {
     if (document.tokenCount > 0) {
       val doc = super.process(document)
@@ -680,15 +634,15 @@ class OntonotesStackedChainNer(embeddingMap: SkipGramEmbedding,
   }
 }
 
-class NoEmbeddingsOntonotesStackedChainNer(url:java.net.URL) extends OntonotesStackedChainNer(null, 0, 0.0, false, url) with Serializable
-object NoEmbeddingsOntonotesStackedChainNer extends NoEmbeddingsOntonotesStackedChainNer(ClasspathURL[NoEmbeddingsOntonotesStackedChainNer](".factorie")) with Serializable
+class NoEmbeddingsOntonotesStackedChainNer()(implicit mp:ModelProvider[NoEmbeddingsConllStackedChainNer, URL], lexMp:ModelProvider[Lexicon, URL]) extends OntonotesStackedChainNer(null, 0, 0.0, false)(mp, lexMp) with Serializable
+object NoEmbeddingsOntonotesStackedChainNer extends NoEmbeddingsOntonotesStackedChainNer()(ModelProvider.classpath(), ModelProvider.classpathDir) with Serializable
 
 class StackedChainNerOpts extends CmdOptions with SharedNLPCmdOptions{
   val trainFile =     new CmdOption("train", "eng.train", "FILE", "CoNLL formatted training file.")
   val testFile  =     new CmdOption("test",  "eng.testb", "FILE", "CoNLL formatted test file.")
   val dataLoader  =   new CmdOption("data-loader", "conll2003", "STRING", "Data loader for this format.")
   val encoding =      new CmdOption("encoding", "UTF-8", "STRING", "Encoding of input files.")
-  val modelDir =      new CmdOption("model", "StackedNER.factorie", "FILE", "File for saving or loading model.")
+  val modelDir =      new CmdOption[File]("model", new File("StackedNER.factorie"), "FILE", "File for saving or loading model.")
   val runXmlDir =     new CmdOption("run-xml", "xml", "DIR", "Directory for reading NYTimes XML data on which to run saved model.")
   val brownClusFile = new CmdOption("brown", "", "FILE", "File containing brown clusters.")
   val aggregateTokens = new CmdOption("aggregate", true, "BOOLEAN", "Turn on context aggregation feature.")
@@ -706,7 +660,7 @@ class StackedChainNerOpts extends CmdOptions with SharedNLPCmdOptions{
 object ConllStackedChainNerTester extends App {
   val opts = new StackedChainNerOpts
   opts.parse(args)
-  val ner = new ConllStackedChainNer(null: SkipGramEmbedding, opts.embeddingDim.value, opts.embeddingScale.value, opts.useOffsetEmbedding.value)
+  val ner = new ConllStackedChainNer(null: SkipGramEmbedding, opts.embeddingDim.value, opts.embeddingScale.value, opts.useOffsetEmbedding.value)(opts.modelDir.value.toURI.toURL, ModelProvider.classpathDir)
   val testPortionToTake =  if(opts.testPortion.wasInvoked) opts.testPortion.value.toDouble  else 1.0
   val dataLoader = opts.dataLoader.value match {
     case "conll2003" => load.LoadConll2003(BILOU=true)
@@ -715,7 +669,6 @@ object ConllStackedChainNerTester extends App {
   val testDocsFull =  dataLoader.fromFilename(opts.testFile.value, encoding = opts.encoding.value)
   val testDocs = testDocsFull.take((testDocsFull.length*testPortionToTake).floor.toInt)
   
-  ner.deSerialize(new FileInputStream(opts.modelDir.value))
   println(ner.test(testDocs))
 }
 
@@ -724,7 +677,7 @@ object ConllStackedChainNerTrainer extends HyperparameterMain {
     // Parse command-line
     val opts = new StackedChainNerOpts
     opts.parse(args)
-    val ner = new ConllStackedChainNer(null: SkipGramEmbedding, opts.embeddingDim.value, opts.embeddingScale.value, opts.useOffsetEmbedding.value)
+    val ner = new ConllStackedChainNer(null: SkipGramEmbedding, opts.embeddingDim.value, opts.embeddingScale.value, opts.useOffsetEmbedding.value)(ModelProvider.empty, ModelProvider.classpathDir)
 
     ner.aggregate = opts.aggregateTokens.wasInvoked
 

@@ -11,12 +11,18 @@
    See the License for the specific language governing permissions and
    limitations under the License. */
 package cc.factorie.app.nlp.ner
+
+import java.net.URL
+import java.nio.file.Path
+
 import cc.factorie._
+import cc.factorie.app.nlp.lexicon._
 import model._
 import variable._
 import cc.factorie.app.nlp._
 import java.io.{Serializable, BufferedInputStream, BufferedOutputStream, File}
-import cc.factorie.util.{Logger, BinarySerializer, CubbieConversions}
+import cc.factorie.util.{ModelProvider, Logger, BinarySerializer, CubbieConversions}
+import cc.factorie.util.FileResource._
 import cc.factorie.optimize.{Trainer, LikelihoodExample}
 import cc.factorie.infer.{InferByBPChain, DiscreteProposalMaximizer, MaximizeByBPChain}
 import cc.factorie.variable.{BinaryFeatureVectorVariable, CategoricalVectorDomain, DiscreteVar}
@@ -24,14 +30,13 @@ import cc.factorie.model.{DotTemplateWithStatistics2, TemplateModel, DotTemplate
 
 /** A simple named entity recognizer, trained on Ontonotes data.
     It does not have sufficient features to be state-of-the-art. */
-class BasicOntonotesNER extends DocumentAnnotator with Serializable {
+class BasicOntonotesNER()(implicit mp:ModelProvider[BasicOntonotesNER, URL], lexMp:ModelProvider[Lexicon, URL]) extends DocumentAnnotator with Serializable {
   private val logger = Logger.getLogger(this.getClass.getName)
 
-  def this(url:java.net.URL) = {
-    this()
-    logger.debug("NER2 loading from "+url)
-    deserialize(url.openConnection.getInputStream)
-  }
+  logger.debug("NER2 loading from " + mp.provide)
+  deserialize(mp.provide.openConnection.getInputStream)
+  logger.debug("Loading lexicons from " +lexMp.provide)
+  val lexicon = new StaticLexicons()(LexiconsProvider.classpath)
 
   object FeaturesDomain extends CategoricalVectorDomain[String]
   class FeaturesVariable(val token:Token) extends BinaryFeatureVectorVariable[String] {
@@ -172,8 +177,8 @@ class BasicOntonotesNER extends DocumentAnnotator with Serializable {
   def bpPredictDocument(document:Document): Unit = {
     for (sentence <- document.sentences) MaximizeByBPChain(sentence.tokens.toIndexedSeq.map(_.attr[BilouOntonotesNerTag]), model3)
   }
- 
-  
+
+
   // Feature creation
   def addFeatures(document:Document): Unit = {
     document.annotators(classOf[FeaturesVariable]) = this.getClass
@@ -189,7 +194,7 @@ class BasicOntonotesNER extends DocumentAnnotator with Serializable {
       features += "WS="+word+"&"+shape // word conjoined with shape
       if (word.length > 5) { features += "P="+cc.factorie.app.strings.prefix(word, 4); features += "S="+cc.factorie.app.strings.suffix(word, 4) }
       if (token.isPunctuation) features += "PUNCTUATION"
-      if (lexicon.NumberWords.containsLemmatizedWord(word)) features += "#WORD"
+      if (NumberWords.containsLemmatizedWord(word)) features += "#WORD"
       //features ++= token.prevWindow(4).map(t2 => "PREVWINDOW="+simplifyDigits(t2.string).toLowerCase)
       //features ++= token.nextWindow(4).map(t2 => "NEXTWINDOW="+simplifyDigits(t2.string).toLowerCase)
     }
@@ -204,7 +209,7 @@ class BasicOntonotesNER extends DocumentAnnotator with Serializable {
     lexicon.iesl.Country.tagText(tokenSequence,extractFeature, "COUNTRY")
     lexicon.iesl.City.tagText(tokenSequence,extractFeature, "CITY")
     lexicon.iesl.PlaceSuffix.tagText(tokenSequence,extractFeature, "PLACE-SUFFIX")
-    lexicon.iesl.USState.tagText(tokenSequence,extractFeature, "USSTATE")
+    lexicon.iesl.UsState.tagText(tokenSequence,extractFeature, "USSTATE")
     for (section <- document.sections)
       cc.factorie.app.chain.Observations.addNeighboringFeatureConjunctions(section.tokens, (t:Token)=>t.attr[FeaturesVariable], Seq(0), Seq(-1), Seq(-2), Seq(1), Seq(2))
   }
@@ -366,7 +371,7 @@ class BasicOntonotesNER extends DocumentAnnotator with Serializable {
     // Add a Token to the Queue and also to the internal hash
     override def +=(token:Token): this.type = {
       val str = token.string
-      if (java.lang.Character.isUpperCase(str(0)) && !lexicon.StopWords.containsWord(str.toLowerCase)) { // Only add capitalized, non-stopword Tokens
+      if (java.lang.Character.isUpperCase(str(0)) && !StopWords.containsWord(str.toLowerCase)) { // Only add capitalized, non-stopword Tokens
         super.+=(token)
         hash.getOrElseUpdate(token.string, new scala.collection.mutable.Queue[Token]) += token
         if (debugPrintCount % 1000 == 0) println("HashedTokenQueue %20s %20s  %-20s  %s true=%-10s  pred=%-10s  freq=%-5s  %s".format(token.getPrev.map(_.string).getOrElse(null), token.string, token.getNext.map(_.string).getOrElse(null), if (token.attr[LabeledBilouOntonotesNerTag].valueIsTarget) " " else "*", token.attr[LabeledBilouOntonotesNerTag].target.categoryValue, token.attr[BilouOntonotesNerTag].categoryValue, mostFrequentLabel(hash(token.string)).baseCategoryValue, hash(token.string).map(_.attr[BilouOntonotesNerTag].categoryValue).mkString(" ")))
@@ -396,14 +401,14 @@ class BasicOntonotesNER extends DocumentAnnotator with Serializable {
 }
 
 /** The default NER1 with parameters loaded from resources in the classpath. */
-object BasicOntonotesNERWSJ extends BasicOntonotesNER(cc.factorie.util.ClasspathURL[BasicOntonotesNER]("-WSJ.factorie")) with Serializable
-object BasicOntonotesNER extends BasicOntonotesNER(cc.factorie.util.ClasspathURL[BasicOntonotesNER]("-Ontonotes.factorie")) with Serializable
+object BasicOntonotesNERWSJ extends BasicOntonotesNER()(ModelProvider.classpath("-WSJ.factorie"), ModelProvider.classpathDir)
+object BasicOntonotesNER extends BasicOntonotesNER()(ModelProvider.classpath("-Ontonotes.factorie"), ModelProvider.classpathDir)
 
 object BasicOntonotesNERTrainer {
   def main(args:Array[String]): Unit = {
     implicit val random = new scala.util.Random(0)
     if (args.length != 3) throw new Error("Usage: trainfile testfile savemodelfile")
-    val ner = new BasicOntonotesNER
+    val ner = new BasicOntonotesNER()(ModelProvider.empty, ModelProvider.classpathDir)
     ner.train(args(0), args(1))
     ner.serialize(args(2))
   }

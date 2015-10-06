@@ -22,7 +22,6 @@ import scala.collection.mutable.{ListBuffer, ArrayBuffer, HashMap}
 import scala.io.Source
 import java.io.File
 import cc.factorie.app.chain.Observation
-import scala.io.Codec.charset2codec
 
 /** The general interface to a lexicon.  Both WordLexicon and PhraseLexicon are subclasses.
     @author Andrew McCallum */
@@ -86,6 +85,7 @@ object Lexicon {
 /** A lexicon containing single words or multi-word phrases.
   * @author Kate Silverstein
   */
+@deprecated("Use TriePhraseLexicon instead", "Before 10/1/15")
 class PhraseLexicon(val name: String, val tokenizer: StringSegmenter = cc.factorie.app.strings.nonWhitespaceSegmenter, val lemmatizer: Lemmatizer = LowercaseLemmatizer) extends MutableLexicon {
   def this(file: File) = { this(file.toString, cc.factorie.app.strings.nonWhitespaceSegmenter, LowercaseLemmatizer); this.++=(Source.fromFile(file)(scala.io.Codec.UTF8))}
   val wordTree = new SuffixTree(false)
@@ -138,7 +138,7 @@ class UnionLexicon(val name: String, val members: PhraseLexicon*) extends Mutabl
   def contains[T<:Observation[T]](query: T): Boolean = members.exists(_.contains(query))
   def contains[T<:Observation[T]](query: Seq[T]): Boolean = members.exists(_.contains(query))
   def +=(s:String): Unit = {throw new Error("method not implemented for UnionLexicon")}
-  override def toString(): String = {
+  override def toString: String = {
     var st = "UNION { "
     members.foreach(st += _.toString()+" , ")
     st += " } "
@@ -156,7 +156,7 @@ class TriePhraseLexicon(val name: String, val tokenizer: StringSegmenter = cc.fa
   
   def +=(phrase:String): Unit = synchronized {
     val words: Seq[String] = tokenizer(phrase).toSeq
-    trie += words.map(lemmatizer.lemmatize(_))
+    trie += words.map(lemmatizer.lemmatize)
   }
   
   /** All a lines from the input Source to this lexicon.  Source is assumed to contain multiple newline-separated lexicon entries.
@@ -207,7 +207,7 @@ class TriePhraseLexicon(val name: String, val tokenizer: StringSegmenter = cc.fa
  * A union lexicon of multiple TriePhraseLexicons.
  * Has similar semantics to the TriePhraseLexicon.
  */
-class TrieUnionLexicon(val name: String, val members: TriePhraseLexicon*) extends MutableLexicon {
+class TrieUnionLexicon[L <: TriePhraseLexicon](val name: String, val members: L*) extends MutableLexicon {
   def tokenizer: StringSegmenter = members.head.tokenizer
   def lemmatizer: Lemmatizer = members.head.lemmatizer
   def containsLemmatizedWord(word: String): Boolean = members.exists(_.containsLemmatizedWord(word))
@@ -263,6 +263,7 @@ class ChainUnionLexicon(val name: String, val members:Lexicon*) extends Lexicon 
 /** A Lexicon that can only hold single-word lexicon entries, but which is efficient for this case.
     with methods to check whether a String or Token (or more generally a cc.factorie.app.chain.Observation) is in the list.
     @author Andrew McCallum */
+@deprecated("Use TriePhraseLexicon instead", "Before 10/1/15")
 class ChainWordLexicon(val name:String, val tokenizer:StringSegmenter = cc.factorie.app.strings.nonWhitespaceSegmenter, val lemmatizer:Lemmatizer = LowercaseLemmatizer) extends MutableLexicon {
   val contents = new scala.collection.mutable.HashSet[String]
   def +=(phrase:String): Unit = {
@@ -280,6 +281,7 @@ class MultiWordException(msg:String) extends Exception(msg)
 
 /** A list of words or phrases, with methods to check whether a String, Seq[String], or Token (or more generally a cc.factorie.app.chain.Observation) is in the list.
     @author Andrew McCallum */
+@deprecated("Use TriePhraseLexicon instead", "Before 10/1/15")
 class ChainPhraseLexicon(val name:String, val tokenizer:StringSegmenter = cc.factorie.app.strings.nonWhitespaceSegmenter, val lemmatizer:Lemmatizer = LowercaseLemmatizer) extends MutableLexicon {
   // The next two constructors are there just to support legacy usage, and should ultimately be removed.
   /** Populate lexicon from file, with one entry per line, consisting of space-separated tokens. */

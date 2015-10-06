@@ -13,6 +13,10 @@
 
 package cc.factorie.app.nlp.coref
 
+import java.net.URL
+import java.nio.file.Path
+
+import cc.factorie.app.nlp.lexicon.{LexiconsProvider, Lexicon, StaticLexicons}
 import cc.factorie.app.nlp.wordnet.WordNet
 import cc.factorie.app.nlp.{Token, Document, DocumentAnnotator}
 import java.util.concurrent.ExecutorService
@@ -22,6 +26,8 @@ import cc.factorie.util._
 import scala.collection.mutable.ArrayBuffer
 import cc.factorie.app.nlp.phrase._
 import cc.factorie.app.nlp.pos.PennPosTag
+
+import scala.io.Source
 
 /**Forward Coreference on Proper Noun, Pronoun and Common Noun Mentions*/
 class ParseForwardCoref extends ForwardCoref {
@@ -305,9 +311,14 @@ abstract class CorefSystem[CoreferenceStructure] extends DocumentAnnotator with 
     }
   }
 
+
+  // todo fix this
+  @deprecated("This exists to preserve prior behavior, it should be a constructor argument", "10/5/15")
+  val lexicon = new StaticLexicons()(LexiconsProvider.classpath)
+
   def train(trainDocs: Seq[Document], testDocs: Seq[Document], wn: WordNet, rng: scala.util.Random, saveModelBetweenEpochs: Boolean,saveFrequency: Int,filename: String, learningRate: Double = 1.0): Double =  {
     val optimizer = if (options.useAverageIterate) new AdaGrad(learningRate) with ParameterAveraging else if (options.useAdaGradRDA) new AdaGradRDA(rate = learningRate,l1 = options.l1) else new AdaGrad(rate = learningRate)
-    for(doc <- trainDocs; mention <- doc.targetCoref.mentions) mention.attr += new MentionCharacteristics(mention)
+    for(doc <- trainDocs; mention <- doc.targetCoref.mentions) mention.attr += new MentionCharacteristics(mention, lexicon)
     preprocessCorpus(trainDocs)
     |**("Training Structure Generated")
     var i = 0
@@ -350,7 +361,7 @@ abstract class CorefSystem[CoreferenceStructure] extends DocumentAnnotator with 
       val predCoref = doc.coref
 
       predCoref.resetPredictedMapping()
-      for(mention <- predCoref.mentions) if(mention.attr[MentionCharacteristics] eq null) mention.attr += new MentionCharacteristics(mention)
+      for(mention <- predCoref.mentions) if(mention.attr[MentionCharacteristics] eq null) mention.attr += new MentionCharacteristics(mention, lexicon)
 
       infer(predCoref)
 
