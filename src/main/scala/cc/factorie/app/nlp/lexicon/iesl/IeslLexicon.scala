@@ -1,6 +1,6 @@
 package cc.factorie.app.nlp.lexicon.iesl
 
-import cc.factorie.app.nlp.lexicon.ProvidedTriePhraseLexicon
+import cc.factorie.app.nlp.lexicon.{TriePhraseLexicon, ProvidedTriePhraseLexicon}
 import cc.factorie.util.ModelProvider
 
 import scala.io.Source
@@ -27,7 +27,9 @@ class PersonLastHighest()(implicit mp: ModelProvider[PersonLastHighest, Source])
 class PersonLastHigh()(implicit mp: ModelProvider[PersonLastHigh, Source]) extends ProvidedTriePhraseLexicon[PersonLastHigh]
 class PersonLastMedium()(implicit mp: ModelProvider[PersonLastMedium, Source]) extends ProvidedTriePhraseLexicon[PersonLastMedium]
 class Say()(implicit mp: ModelProvider[Say, Source]) extends ProvidedTriePhraseLexicon[Say]
-class Demonym()(implicit mp: ModelProvider[Demonym, Source]) extends ProvidedTriePhraseLexicon[Demonym]
+class Demonym()(implicit mp: ModelProvider[Demonym, Source]) extends TriePhraseLexicon(classOf[Demonym].getName) {
+  mp.provide.getLines().flatMap(_.trim.split("\t")).foreach(this.+=)
+}
 
 class DemonymMap()(implicit mp:ModelProvider[Demonym, Source]) extends scala.collection.mutable.HashMap[String,String] {
   mp.provide.getLines().foreach { line =>
