@@ -7,7 +7,6 @@ package cc.factorie.app.nlp.ner
 
 import java.io._
 import java.net.URL
-import java.nio.file.Path
 import cc.factorie._
 import cc.factorie.app.nlp._
 import cc.factorie.app.nlp.lexicon.{LexiconsProvider, Lexicon, StaticLexicons}
@@ -16,7 +15,7 @@ import cc.factorie.variable._
 import cc.factorie.app.chain.ChainModel
 import cc.factorie.optimize.{Trainer, AdaGrad, ParameterAveraging}
 import cc.factorie.app.chain.SegmentEvaluation
-import scala.reflect.ClassTag
+import scala.reflect.{ClassTag, classTag}
 
 /**
  * NER tagger for the CoNLL 2003 corpus
@@ -40,54 +39,61 @@ import scala.reflect.ClassTag
  * PER      f1=0.940327 p=0.955329 r=0.925788 (tp=1497 fp=70 fn=120 true=1617 pred=1567)
  *
  */
-
 class ConllChainNer(implicit mp:ModelProvider[ConllChainNer, URL], lexMp:ModelProvider[Lexicon, URL])
-  extends ChainNer[BilouConllNerTag](
+  extends ChainNer[ConllNerSpan, BilouConllNerTag](
     BilouConllNerDomain,
     (t, s) => new BilouConllNerTag(t, s),
     l => l.token,
     mp.provide,
     lexMp.provide) with Serializable {
   def loadDocs(fileName: String): Seq[Document] = cc.factorie.app.nlp.load.LoadConll2003(BILOU=true).fromFilename(fileName)
-  override def process(document:Document): Document = {
-    if (document.tokenCount > 0) {
-      val doc = super.process(document)
-      doc.attr.+=(new ConllNerSpanBuffer ++= document.sections.flatMap(section => BilouConllNerDomain.spanList(section)))
-      doc
-    } else document
-  }
+
+  def newSpan(sec: Section, start: Int, length: Int, category: String) = new ConllNerSpan(sec, start, length, category)
+
+  def newBuffer = new ConllNerSpanBuffer
 }
 
 //TODO this serialized model doesn't exist yet?
 object ConllChainNer extends ConllChainNer()(ModelProvider.classpath(), ModelProvider.classpathDir) with Serializable
 
+class OntonotesChainNer()(implicit sCt:ClassTag[OntonotesNerSpan], tCt:ClassTag[BilouOntonotesNerTag], mp:ModelProvider[OntonotesChainNer, URL], lexMp:ModelProvider[Lexicon, URL])
+  extends ChainNer[OntonotesNerSpan, BilouOntonotesNerTag](BilouOntonotesNerDomain, (t, s) => new BilouOntonotesNerTag(t, s), l => l.token, mp.provide, lexMp.provide) {
+  def newBuffer = new OntonotesNerSpanBuffer()
+
+  def newSpan(sec: Section, start: Int, length: Int, category: String) = new OntonotesNerSpan(sec, start, length, category)
+}
+
+// todo a serialized model for this does not exist
+object OntonotesChainNer extends OntonotesChainNer()(classTag[OntonotesNerSpan], classTag[BilouOntonotesNerTag], ModelProvider.classpath(), ModelProvider.classpathDir)
+
 /**
  * A base class for finite-state named entity recognizers
  */
-abstract class ChainNer[L<:NerTag](labelDomain: CategoricalDomain[String],
+abstract class ChainNer[S<: NerSpan, L<:NerTag](labelDomain: CategoricalDomain[String],
                                    newLabel: (Token, String) => L,
                                    labelToToken: L => Token,
                                    url: java.net.URL=null,
-                                   lexiconRoot: URL)(implicit m: ClassTag[L]) extends DocumentAnnotator {
+                                   lexiconRoot: URL)(implicit m: ClassTag[L], s: ClassTag[S]) extends NerAnnotator[S, L] {
 
-  //DocumentAnnotator methods
-  def tokenAnnotationString(token: Token): String = token.attr[L].categoryValue
   def prereqAttrs = Seq(classOf[Sentence])
-  def postAttrs = Seq(m.runtimeClass)
-  def process(document: Document): Document = {
-    if (document.tokenCount == 0) return document
-    if (!document.tokens.head.attr.contains(m.runtimeClass))
-      document.tokens.map(token => token.attr += newLabel(token, "O"))
-    if (!document.tokens.head.attr.contains(classOf[ChainNERFeatures])) {
-      document.tokens.map(token => {token.attr += new ChainNERFeatures(token)})
-      addFeatures(document, (t:Token)=>t.attr[ChainNERFeatures])
+
+  def annotateTokens(document: Document) =
+    if(document.tokenCount > 0) {
+      if (!document.tokens.head.attr.contains(m.runtimeClass))
+        document.tokens.map(token => token.attr += newLabel(token, "O"))
+      if (!document.tokens.head.attr.contains(classOf[ChainNERFeatures])) {
+        document.tokens.map(token => {token.attr += new ChainNERFeatures(token)})
+        addFeatures(document, (t:Token)=>t.attr[ChainNERFeatures])
+      }
+      document.sentences.collect {
+        case sentence if sentence.nonEmpty =>
+          val vars = sentence.tokens.map(_.attr[L]).toSeq
+          model.maximize(vars)(null)
+      }
+      document
+    } else {
+      document
     }
-    for (sentence <- document.sentences if sentence.tokens.size > 0) {
-      val vars = sentence.tokens.map(_.attr[L]).toSeq
-      model.maximize(vars)(null)
-    }
-    document
-  }
 
   object ChainNERFeaturesDomain extends CategoricalVectorDomain[String]
   class ChainNERFeatures(val token: Token) extends BinaryFeatureVectorVariable[String] {
@@ -182,7 +188,7 @@ abstract class ChainNer[L<:NerTag](labelDomain: CategoricalDomain[String],
       features += s"W=$word"
       features += s"SHAPE=${cc.factorie.app.strings.stringShape(rawWord, 2)}"
       if (token.isPunctuation) features += "PUNCTUATION"
-      if (clusters.size > 0 && clusters.contains(rawWord)) {
+      if (clusters.nonEmpty && clusters.contains(rawWord)) {
         features += "CLUS="+prefix(4,clusters(rawWord))
         features += "CLUS="+prefix(6,clusters(rawWord))
         features += "CLUS="+prefix(10,clusters(rawWord))
@@ -250,7 +256,7 @@ abstract class ChainNer[L<:NerTag](labelDomain: CategoricalDomain[String],
     val trainLabels = labels(trainDocs).toIndexedSeq
     val testLabels = labels(testDocs).toIndexedSeq
 
-    val examples = trainDocs.flatMap(_.sentences.filter(_.length > 1).map(sentence => new model.ChainLikelihoodExample(sentence.tokens.map(_.attr[L with LabeledMutableDiscreteVar])))).toSeq
+    val examples = trainDocs.flatMap(_.sentences.filter(_.length > 1).map(sentence => new model.ChainLikelihoodExample(sentence.tokens.map(_.attr[L with LabeledMutableDiscreteVar]))))
     val optimizer = new AdaGrad(rate=rate, delta=delta) with ParameterAveraging
 
     def evaluate(){
@@ -341,8 +347,8 @@ object ConllChainNerTrainer extends cc.factorie.util.HyperparameterMain {
       }
     }
     assert(opts.train.wasInvoked && opts.test.wasInvoked, "No train/test data file provided.")
-    val trainPortionToTake = if(opts.trainPortion.wasInvoked) opts.trainPortion.value.toDouble  else 1.0
-    val testPortionToTake =  if(opts.testPortion.wasInvoked) opts.testPortion.value.toDouble  else 1.0
+    val trainPortionToTake = if(opts.trainPortion.wasInvoked) opts.trainPortion.value else 1.0
+    val testPortionToTake =  if(opts.testPortion.wasInvoked) opts.testPortion.value else 1.0
     val trainDocsFull = ner.loadDocs(opts.train.value)
     val testDocsFull = ner.loadDocs(opts.test.value)
     val trainDocs = trainDocsFull.take((trainDocsFull.length*trainPortionToTake).floor.toInt)

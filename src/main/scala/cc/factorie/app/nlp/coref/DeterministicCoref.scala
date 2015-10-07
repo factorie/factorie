@@ -881,7 +881,7 @@ object DeterministicCoref extends DocumentAnnotator {
 
     // Mention detection method number 1
     if (false) {
-      if (doc.coref.mentions.isEmpty) (ConllProperNounPhraseFinder(doc) ++ PronounFinder(doc) ++ NnpPosNounPhraseFinder(doc) ++ AcronymNounPhraseFinder(doc)).distinct.foreach(phrase => doc.getCoref.addMention(phrase))
+      if (doc.coref.mentions.isEmpty) (ConllPhraseFinder(doc) ++ PronounFinder(doc) ++ NnpPosNounPhraseFinder(doc) ++ AcronymNounPhraseFinder(doc)).distinct.foreach(phrase => doc.getCoref.addMention(phrase))
       doc.coref.mentions.foreach(mention => NounPhraseEntityTypeLabeler.process(mention.phrase))
       doc.coref.mentions.foreach(mention => NounPhraseGenderLabeler.process(mention.phrase))
       doc.coref.mentions.foreach(mention => NounPhraseNumberLabeler.process(mention.phrase))
