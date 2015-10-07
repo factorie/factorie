@@ -12,6 +12,8 @@
    limitations under the License. */
 package cc.factorie.app.nlp.lexicon
 
+import java.net.URL
+
 import cc.factorie.app.nlp.lexicon.{iesl => Iesl, uscensus => Uscensus, wikipedia => Wikipedia, ssdi => Ssdi, mandarin => Mandarin}
 import cc.factorie.app.strings.StringSegmenter
 import cc.factorie.app.nlp.lemma.{Lemmatizer,LowercaseLemmatizer}
@@ -58,6 +60,12 @@ object LexiconsProvider {
   }
 
   implicit def provideFile(f:File):LexiconsProvider = fromFile(f,false)
+  implicit def provideURL(u:URL):LexiconsProvider = new LexiconsProvider {
+    implicit def provide[L:ClassTag]: ModelProvider[L, Source] = new ModelProvider[L, Source] {
+      def provide:Source = Source.fromURL(u)(io.Codec.UTF8)
+    }
+  }
+
 
   @deprecated("This exists to preserve legacy functionality", "10/05/15")
   def classpath:LexiconsProvider = new LexiconsProvider {
@@ -74,7 +82,9 @@ trait ProvidedLexicon[L] {
 
   def provider:ModelProvider[L, Source]
 
-  this.++=(provider.provide)
+  synchronized {
+    this.++=(provider.provide)
+  }
 }
 
 abstract class ProvidedTriePhraseLexicon[L]()(implicit val provider:ModelProvider[L, Source], ct:ClassTag[L]) extends TriePhraseLexicon(ct.runtimeClass.getName) with ProvidedLexicon[L]

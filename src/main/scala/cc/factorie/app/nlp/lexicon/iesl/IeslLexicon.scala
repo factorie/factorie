@@ -28,13 +28,17 @@ class PersonLastHigh()(implicit mp: ModelProvider[PersonLastHigh, Source]) exten
 class PersonLastMedium()(implicit mp: ModelProvider[PersonLastMedium, Source]) extends ProvidedTriePhraseLexicon[PersonLastMedium]
 class Say()(implicit mp: ModelProvider[Say, Source]) extends ProvidedTriePhraseLexicon[Say]
 class Demonym()(implicit mp: ModelProvider[Demonym, Source]) extends TriePhraseLexicon(classOf[Demonym].getName) {
-  mp.provide.getLines().flatMap(_.trim.split("\t")).foreach(this.+=)
+  synchronized {
+    mp.provide.getLines().flatMap(_.trim.split("\t")).foreach(this.+=)
+  }
 }
 
 class DemonymMap()(implicit mp:ModelProvider[Demonym, Source]) extends scala.collection.mutable.HashMap[String,String] {
-  mp.provide.getLines().foreach { line =>
-    val entries = line.trim.split("\t")
-    val value = entries.head
-    entries.foreach(e => this.update(e, value))
+  synchronized {
+    mp.provide.getLines().foreach { line =>
+      val entries = line.trim.split("\t")
+      val value = entries.head
+      entries.foreach(e => this.update(e, value))
+    }
   }
 }
