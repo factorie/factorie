@@ -19,7 +19,6 @@ import java.nio.file.Path
 import cc.factorie.app.nlp.lexicon.{LexiconsProvider, Lexicon, StaticLexicons}
 import cc.factorie.la.{SparseTensor, GrowableSparseBinaryTensor1}
 import cc.factorie.util.ModelProvider
-import cc.factorie.util.FileResource._
 import cc.factorie.variable.{LabeledCategoricalVariable, BinaryFeatureVectorVariable}
 import scala.collection.mutable
 import cc.factorie.app.nlp.Token

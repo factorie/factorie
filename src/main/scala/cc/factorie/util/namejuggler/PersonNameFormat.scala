@@ -10,7 +10,6 @@ import StringUtils._
 import cc.factorie.app.nlp.lexicon.TrieUnionLexicon
 import cc.factorie.app.nlp.lexicon.iesl.{PersonFirstHighest, PersonFirstHigh}
 import cc.factorie.util.ModelProvider
-import cc.factorie.util.FileResource._
 
 object PersonNameFormat {
 

@@ -13,31 +13,24 @@
 package cc.factorie.app.nlp.lexicon
 
 import java.net.URL
+import java.nio.file.Path
 
 import cc.factorie.app.nlp.lexicon.{iesl => Iesl, uscensus => Uscensus, wikipedia => Wikipedia, ssdi => Ssdi, mandarin => Mandarin}
 import cc.factorie.app.strings.StringSegmenter
 import cc.factorie.app.nlp.lemma.{Lemmatizer,LowercaseLemmatizer}
 import scala.io.Source
-import java.io.File
+import java.io.{InputStream, File}
 import cc.factorie.util.{ModelProvider, ClasspathURL}
 
 import scala.reflect.{ClassTag, classTag}
 import scala.language.implicitConversions
 
-class LexiconModelProvider[Lexicon](relativeRoot:File)(implicit ct:ClassTag[Lexicon]) extends ModelProvider[Lexicon, Source] {
-  final def lexiconName = ct.runtimeClass.getName.zipWithIndex.flatMap {
-    case (u, 0) => u.toLower.toString
-    case (u, _) if u.isUpper => "-" + u.toLower
-    case (l, _) => l.toString}.mkString("") + ".txt"
-
-  final def provide: Source = Source.fromFile(relativeRoot.toPath.resolve(lexiconName).toFile)
-}
-
 trait LexiconsProvider {
-  implicit def provide[L : ClassTag]:ModelProvider[L, Source]
+  implicit def provide[L : ClassTag]:ModelProvider[L]
 }
 
 object LexiconsProvider {
+  import cc.factorie.util.ISAble._
 
   private def lexiconNamePieces[L:ClassTag]:Seq[String] = {
     val arr = classTag[L].runtimeClass.getName.split("""\.""").map(_.toLowerCase.stripSuffix("$"))
@@ -54,23 +47,29 @@ object LexiconsProvider {
 
 
   def fromFile(f:File, useFullPath:Boolean = false):LexiconsProvider = new LexiconsProvider {
-    override implicit def provide[L : ClassTag]: ModelProvider[L, Source] = new ModelProvider[L, Source] {
-      def provide: Source = Source.fromFile(f.toPath.resolve(if(useFullPath) fullLexiconName[L] else shortLexiconName[L]).toFile)
+    override implicit def provide[L : ClassTag]: ModelProvider[L] = new ModelProvider[L] {
+      private val path = f.toPath.resolve(if(useFullPath) fullLexiconName[L] else shortLexiconName[L])
+      val coordinates = path.toString
+      val provide:InputStream = buffered(path)
     }
   }
 
+  implicit def providePath(p:Path):LexiconsProvider = fromFile(p.toFile, false)
   implicit def provideFile(f:File):LexiconsProvider = fromFile(f,false)
   implicit def provideURL(u:URL):LexiconsProvider = new LexiconsProvider {
-    implicit def provide[L:ClassTag]: ModelProvider[L, Source] = new ModelProvider[L, Source] {
-      def provide:Source = Source.fromURL(u)(io.Codec.UTF8)
+    implicit def provide[L:ClassTag]: ModelProvider[L] = new ModelProvider[L] {
+      val provide: InputStream = buffered(u)
+      val coordinates: String = u.toString
     }
   }
 
 
   @deprecated("This exists to preserve legacy functionality", "10/05/15")
   def classpath:LexiconsProvider = new LexiconsProvider {
-    implicit def provide[L : ClassTag]: ModelProvider[L, Source] = new ModelProvider[L, Source] {
-      def provide: Source = Source.fromURL(ClasspathURL.fromDirectory[Lexicon](fullLexiconName[L]))(io.Codec.UTF8)
+    implicit def provide[L : ClassTag]: ModelProvider[L] = new ModelProvider[L] {
+      private val url = ClasspathURL.fromDirectory[Lexicon](shortLexiconName[L])
+      val coordinates: String = url.toString
+      val provide: InputStream = buffered(url)
     }
   }
 }
@@ -80,14 +79,14 @@ object LexiconsProvider {
 trait ProvidedLexicon[L] {
   this: MutableLexicon =>
 
-  def provider:ModelProvider[L, Source]
+  def provider:ModelProvider[L]
 
   synchronized {
     this.++=(provider.provide)
   }
 }
 
-abstract class ProvidedTriePhraseLexicon[L]()(implicit val provider:ModelProvider[L, Source], ct:ClassTag[L]) extends TriePhraseLexicon(ct.runtimeClass.getName) with ProvidedLexicon[L]
+abstract class ProvidedTriePhraseLexicon[L]()(implicit val provider:ModelProvider[L], ct:ClassTag[L]) extends TriePhraseLexicon(ct.runtimeClass.getName) with ProvidedLexicon[L]
 
 class StaticLexicons()(implicit lp:LexiconsProvider) {
 

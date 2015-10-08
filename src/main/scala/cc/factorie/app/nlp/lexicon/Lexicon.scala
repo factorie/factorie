@@ -20,7 +20,7 @@ import cc.factorie.app.nlp.lemma.{Lemmatizer,LowercaseLemmatizer,NoopLemmatizer}
 import cc.factorie.variable.CategoricalVectorVar
 import scala.collection.mutable.{ListBuffer, ArrayBuffer, HashMap}
 import scala.io.Source
-import java.io.File
+import java.io.{InputStream, File}
 import cc.factorie.app.chain.Observation
 
 /** The general interface to a lexicon.  Both WordLexicon and PhraseLexicon are subclasses.
@@ -65,6 +65,8 @@ trait MutableLexicon extends Lexicon {
   def ++=(phrases:String): this.type = ++=(Source.fromString(phrases))
   /** All a lines from the input File to this lexicon.  File contains multiple newline-separated lexicon entries */
   def ++=(file:File, enc:String = "UTF-8"): this.type = ++=(Source.fromFile(file, enc))
+  /** Add all lines from the InputStream to this lexicon */
+  def ++=(is:InputStream): this.type = this.++=(Source.fromInputStream(is)(io.Codec.UTF8))
 }
 
 /** Support for constructing Lexicons

@@ -39,13 +39,13 @@ import scala.reflect.{ClassTag, classTag}
  * PER      f1=0.940327 p=0.955329 r=0.925788 (tp=1497 fp=70 fn=120 true=1617 pred=1567)
  *
  */
-class ConllChainNer(implicit mp:ModelProvider[ConllChainNer, URL], lexMp:ModelProvider[Lexicon, URL])
+class ConllChainNer(implicit mp:ModelProvider[ConllChainNer], lexicons:StaticLexicons)
   extends ChainNer[ConllNerSpan, BilouConllNerTag](
     BilouConllNerDomain,
     (t, s) => new BilouConllNerTag(t, s),
     l => l.token,
     mp.provide,
-    lexMp.provide) with Serializable {
+    lexicons) with Serializable {
   def loadDocs(fileName: String): Seq[Document] = cc.factorie.app.nlp.load.LoadConll2003(BILOU=true).fromFilename(fileName)
 
   def newSpan(sec: Section, start: Int, length: Int, category: String) = new ConllNerSpan(sec, start, length, category)
@@ -54,17 +54,17 @@ class ConllChainNer(implicit mp:ModelProvider[ConllChainNer, URL], lexMp:ModelPr
 }
 
 //TODO this serialized model doesn't exist yet?
-object ConllChainNer extends ConllChainNer()(ModelProvider.classpath(), ModelProvider.classpathDir) with Serializable
+object ConllChainNer extends ConllChainNer()(ModelProvider.classpath(), new StaticLexicons()(LexiconsProvider.classpath)) with Serializable
 
-class OntonotesChainNer()(implicit sCt:ClassTag[OntonotesNerSpan], tCt:ClassTag[BilouOntonotesNerTag], mp:ModelProvider[OntonotesChainNer, URL], lexMp:ModelProvider[Lexicon, URL])
-  extends ChainNer[OntonotesNerSpan, BilouOntonotesNerTag](BilouOntonotesNerDomain, (t, s) => new BilouOntonotesNerTag(t, s), l => l.token, mp.provide, lexMp.provide) {
+class OntonotesChainNer()(implicit sCt:ClassTag[OntonotesNerSpan], tCt:ClassTag[BilouOntonotesNerTag], mp:ModelProvider[OntonotesChainNer], lexicons:StaticLexicons)
+  extends ChainNer[OntonotesNerSpan, BilouOntonotesNerTag](BilouOntonotesNerDomain, (t, s) => new BilouOntonotesNerTag(t, s), l => l.token, mp.provide, lexicons) {
   def newBuffer = new OntonotesNerSpanBuffer()
 
   def newSpan(sec: Section, start: Int, length: Int, category: String) = new OntonotesNerSpan(sec, start, length, category)
 }
 
 // todo a serialized model for this does not exist
-object OntonotesChainNer extends OntonotesChainNer()(classTag[OntonotesNerSpan], classTag[BilouOntonotesNerTag], ModelProvider.classpath(), ModelProvider.classpathDir)
+object OntonotesChainNer extends OntonotesChainNer()(classTag[OntonotesNerSpan], classTag[BilouOntonotesNerTag], ModelProvider.classpath(), new StaticLexicons()(LexiconsProvider.classpath))
 
 /**
  * A base class for finite-state named entity recognizers
@@ -72,8 +72,8 @@ object OntonotesChainNer extends OntonotesChainNer()(classTag[OntonotesNerSpan],
 abstract class ChainNer[S<: NerSpan, L<:NerTag](labelDomain: CategoricalDomain[String],
                                    newLabel: (Token, String) => L,
                                    labelToToken: L => Token,
-                                   url: java.net.URL=null,
-                                   lexiconRoot: URL)(implicit m: ClassTag[L], s: ClassTag[S]) extends NerAnnotator[S, L] {
+                                   modelIs: InputStream=null,
+                                   val lexicon: StaticLexicons)(implicit m: ClassTag[L], s: ClassTag[S]) extends NerAnnotator[S, L] {
 
   def prereqAttrs = Seq(classOf[Sentence])
 
@@ -109,8 +109,8 @@ abstract class ChainNer[S<: NerSpan, L<:NerTag](labelDomain: CategoricalDomain[S
   val model = new ChainNERModel[ChainNERFeatures](ChainNERFeaturesDomain, l => labelToToken(l).attr[ChainNERFeatures], labelToToken, t => t.attr[L])
   val objective = cc.factorie.variable.HammingObjective
 
-  if (url != null) {
-    deserialize(url.openConnection.getInputStream)
+  if (modelIs != null) {
+    deserialize(modelIs)
     ChainNERFeaturesDomain.freeze()
     println("found model")
   }
@@ -133,8 +133,6 @@ abstract class ChainNer[S<: NerSpan, L<:NerTag](labelDomain: CategoricalDomain[S
 
   def prefix( prefixSize : Int, cluster : String ) : String = if(cluster.length > prefixSize) cluster.substring(0, prefixSize) else cluster
   val clusters = JavaHashMap[String, String]()
-
-  val lexicon = new StaticLexicons()(LexiconsProvider.classpath)
 
   def addFeatures(document: Document, vf: Token => CategoricalVectorVar[String]): Unit = {
     document.annotators(classOf[ChainNERFeatures]) = ChainNer.this.getClass
@@ -338,7 +336,7 @@ object ConllChainNerTrainer extends cc.factorie.util.HyperparameterMain {
     val opts = new ChainNerOpts
     implicit val random = new scala.util.Random(0)
     opts.parse(args)
-    val ner = new ConllChainNer()(ModelProvider.empty, ModelProvider.classpathDir)
+    val ner = new ConllChainNer()(ModelProvider.empty, new StaticLexicons()(LexiconsProvider.classpath))
     if (opts.brownClusFile.wasInvoked) {
       println(s"Reading brown cluster file: ${opts.brownClusFile.value}")
       for (line <- scala.io.Source.fromFile(opts.brownClusFile.value).getLines()) {
