@@ -18,7 +18,6 @@ import java.nio.file.Path
 import cc.factorie.app.nlp.lexicon.{iesl => Iesl, uscensus => Uscensus, wikipedia => Wikipedia, ssdi => Ssdi, mandarin => Mandarin}
 import cc.factorie.app.strings.StringSegmenter
 import cc.factorie.app.nlp.lemma.{Lemmatizer,LowercaseLemmatizer}
-import scala.io.Source
 import java.io.{InputStream, File}
 import cc.factorie.util.{ModelProvider, ClasspathURL}
 

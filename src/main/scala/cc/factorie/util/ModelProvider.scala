@@ -1,10 +1,11 @@
 package cc.factorie.util
 
 import java.io._
-import java.net.URL
-import java.nio.file.{Files, Path}
+import java.nio.file.{Paths, Path}
+
 import scala.language.implicitConversions
 import scala.reflect.{ClassTag, classTag}
+import scala.reflect.runtime.universe.{TypeTag, typeTag}
 
 /**
  * [[ModelProvider]] is a generic trait that serves to provide trained models (and/or lexicons) to factorie classes
@@ -64,6 +65,7 @@ import scala.reflect.{ClassTag, classTag}
  * @tparam Consumer The class of the Model that is required
  */
 trait ModelProvider[+Consumer] {
+
   def provide:InputStream
   def coordinates:String
 }
@@ -72,7 +74,7 @@ object ModelProvider {
   import ISAble._
 
 
-  def classpath[Consumer : ClassTag](suffix:String=".factorie"):ModelProvider[Consumer] =
+  def classpath[Consumer : ClassTag ](suffix:String=".factorie"):ModelProvider[Consumer] =
     new ModelProvider[Consumer] {
       private val url = ClasspathURL[Consumer](suffix)
       val coordinates = url.toString
@@ -131,30 +133,71 @@ object ModelProvider {
   }
 }
 
-/** Typeclass for things that can become [[java.io.InputStream]] */
-trait ISAble[-A] extends (A => InputStream)
+/**
+ * An extension for [[cc.factorie.util.CmdOptions]] that makes it easy to provide models that need model providers.
+ * Concretely:
+ * {{{
+ *   package cool.models
+ *   import cc.factorie.util.{CmdOptions, ModelProviderCmdOptions}
+ *
+ *   class MyCoolModel()(implicit mp:ModelProvider[MyCoolModel])
+ *
+ *   object MyCoolOpts extends CmdOptions with ModelProviderCmdOptions {
+ *    implicit val coolModel = new ModelCmdOption[MyCoolModel]
+ *    // other cmdopts as normal
+ *   }
+ *
+ *   object CoolModelRunnings {
+ *
+ *     def main(args:Array[String]) {
+ *      MyCoolOpts parse args
+ *
+ *      val model = new MyCoolModel()(MyCoolOpts.coolModel.value)
+ *    }
+ *   }
+ * }}}
+ * To provide a model at the command line, you would use:
+ * `java ... cool.models.CoolModelRunnings --cool.models.MyCoolModel="path/to/my/coolmodel.factorie"`
+ * Note that the resulting command-line argument is the full package path of the model. The parsing of the path provided
+ * to the model uses [[java.nio.file.Path]] so anything that works with that should parse properly.
+ */
+trait ModelProviderCmdOptions extends CmdOptions {
+  cmd =>
+  class ModelCmdOption[ModelClass : TypeTag : ClassTag](val defaultValue:ModelProvider[ModelClass]=ModelProvider.empty, val required: Boolean=false) extends cc.factorie.util.CmdOption[ModelProvider[ModelClass]] {
 
-object ISAble {
-  implicit object IsIs extends ISAble[InputStream] {
-    def apply(is:InputStream) = is
+    cmd += this
+
+    val valueType = typeTag[ModelClass]
+
+    //this will almost never be what we want
+    val shortName: Char = classTag.runtimeClass.getSimpleName.head
+
+    def setValue(v: ModelProvider[ModelClass]) { _value = v}
+
+    val name: String = classTag[ModelClass].runtimeClass.getName
+    val valueName: String = s"ModelProvider[$name]"
+    val helpMsg: String = s"This should be a valid path to a file that is a serialized model for $name"
+
+    private var _value:ModelProvider[ModelClass] = defaultValue
+    private var _invokedCount = 0
+
+    def value: ModelProvider[ModelClass] = _value
+
+    override def parse(args: Seq[String], index: Int): Int = if(args(index) == "--"+name) { // we don't support shortName
+      _value = Paths get args(index + 1)
+      _invokedCount += 1
+      math.min(index + 2, args.length)
+    } else if(args(index).startsWith("--" + name + "=")) {
+      _value = Paths get args(index).drop(name.length + 3)
+      _invokedCount += 1
+      index + 1
+    } else index
+
+    def hasValue: Boolean = !(classTag[ModelClass] == classTag[Nothing])
+    def invokedCount = _invokedCount
+
+
   }
 
-  implicit object UrlIs extends ISAble[URL] {
-    def apply(u:URL) = u.openStream()
-  }
-
-  implicit object FileIs extends ISAble[File] {
-    def apply(f:File) = new FileInputStream(f)
-  }
-
-  implicit object PathIs extends ISAble[Path] {
-    def apply(p:Path) = Files.newInputStream(p)
-  }
-
-  def inputStreamOf[A](a:A)(implicit conv:ISAble[A]):InputStream = conv(a)
-  def buffered[A](a:A, buf:Int = 8192)(implicit conv:ISAble[A]):BufferedInputStream = conv(a) match {
-    case b:BufferedInputStream => b
-    case is => new BufferedInputStream(is, buf)
-  }
 }
 

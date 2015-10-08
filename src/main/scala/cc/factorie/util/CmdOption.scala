@@ -68,7 +68,7 @@ trait CmdOption[T] {
     @author Andrew McCallum
  */
 class CmdOptions {
-  private val opts = new HashMap[String,cc.factorie.util.CmdOption[_]]
+  protected val opts = new HashMap[String,cc.factorie.util.CmdOption[_]]
   def apply(key: String) = opts(key)
   def get(key:String) = opts.get(key)
   def size = opts.size
@@ -177,7 +177,7 @@ class CmdOptions {
      } else if (args(index).startsWith("--"+name+"=")) {
        // support --file=foo
        // modified on 1/21/2012 to support --file=foo=bar --brian
-       val rightOfEq = args(index).drop(name.size + 3)
+       val rightOfEq = args(index).drop(name.length + 3)
        parseValue(List(rightOfEq), 0)
        invoke
        invokedCount += 1
@@ -235,9 +235,9 @@ trait DefaultCmdOptions extends CmdOptions {
   }
   new CmdOption("version", "", "STRING",  "Print version numbers.") {
     override def invoke {
-      throw new Error("Not yet implemented.") // TODO How to manage version strings?
-      //println("FACTORIE version "+factorieVersionString)
-      // TODO How do I print the Scala and JVM version numbers?
+      println("java version " + sys.props("java.version"))
+      println("scala version " + util.Properties.versionNumberString)
+      println("FACTORIE version " + "1.2-SNAPSHOT") //TODO obviously this is wrong
       System.exit(0)
     }
   }
