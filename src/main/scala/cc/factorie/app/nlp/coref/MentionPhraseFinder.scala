@@ -13,7 +13,7 @@
 package cc.factorie.app.nlp.coref
 
 import cc.factorie.app.nlp.Document
-import cc.factorie.app.nlp.phrase.{Phrase, NounPhraseType, ConllPhraseEntityType}
+import cc.factorie.app.nlp.phrase.{NounPhraseEntityTypeLabeler, Phrase, NounPhraseType, ConllPhraseEntityType}
 import cc.factorie.app.nlp.pos.{PennPosDomain, PennPosTag}
 import cc.factorie.app.nlp.Token
 import cc.factorie.app.nlp.ner._
