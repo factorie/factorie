@@ -15,9 +15,7 @@ package cc.factorie.model
 
 import cc.factorie.variable._
 
-//import scala.util.{Random,Sorting}
 import cc.factorie.la._
-//import cc.factorie.util.Substitutions
 
 /** The only abstract things are _1, _2, statistics(Values), and StatisticsType  
     @author Andrew McCallum */

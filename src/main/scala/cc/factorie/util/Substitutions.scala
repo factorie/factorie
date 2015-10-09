@@ -15,6 +15,7 @@ package cc.factorie.util
 
 /** A trait for objects that can provide type-matched substitutions of one object for another.
     @author Andrew McCallum */
+@deprecated("Not used anywhere", "Before 10/06/15")
 trait Substitutions {
   /** Given an object, return a substitute of the same type. 
       The returned value may be the original argument itself.

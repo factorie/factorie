@@ -12,7 +12,7 @@
    limitations under the License. */
 
 package cc.factorie.la
-import cc.factorie.util._
+import cc.factorie.util.{DoubleSeq, TruncatedArrayIntSeq}
 
 trait SparseBinaryTensor extends SparseTensor {
   // unsafe - call makeReadable first

@@ -12,7 +12,7 @@
    limitations under the License. */
 
 package cc.factorie.la
-import cc.factorie.util._
+import cc.factorie.util.DoubleSeq
 
 //trait SingletonTensor extends SparseTensor with SparseDoubleSeq with ReadOnlyTensor {
 //}

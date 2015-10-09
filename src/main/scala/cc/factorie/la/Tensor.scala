@@ -12,7 +12,7 @@
    limitations under the License. */
 
 package cc.factorie.la
-import cc.factorie.util._
+import cc.factorie.util.{IntSeq, MutableDoubleSeq, DoubleSeq, DenseDoubleSeq}
 
 import scala.util.Random
 

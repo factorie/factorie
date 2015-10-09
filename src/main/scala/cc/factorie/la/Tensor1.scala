@@ -12,7 +12,7 @@
    limitations under the License. */
 
 package cc.factorie.la
-import cc.factorie.util._
+import cc.factorie.util.{IntSeq, SparseDoubleSeq, DoubleSeq, RangeIntSeq, DenseDoubleSeq, SingletonIntSeq, SeqIntSeq, DoubleSeqIterator}
 
 trait Tensor1 extends Tensor {
   tensor1 =>

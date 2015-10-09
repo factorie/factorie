@@ -12,7 +12,7 @@
    limitations under the License. */
 
 package cc.factorie.la
-import cc.factorie.util._
+import cc.factorie.util.{DoubleSeq, DenseDoubleSeq}
 
 // TODO this should implement DenseTensor - then our cases will catch everything just matching sparse and dense -luke
 trait UniformTensor extends Tensor with ReadOnlyTensor with DenseDoubleSeq {

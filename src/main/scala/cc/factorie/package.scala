@@ -14,7 +14,6 @@
 package cc
 import java.io.BufferedReader
 
-import cc.factorie.model.IterableSingleFactor
 import cc.factorie.util._
 
 import scala.language.implicitConversions
@@ -35,7 +34,6 @@ package object factorie extends CubbieConversions {
 
   implicit def traversableExtras[A](t: Traversable[A]) = new cc.factorie.util.TraversableExtras[A](t)
   implicit def stringExtras(x:String) = new cc.factorie.util.StringExtras(x)
-  implicit def singleFactorIterable[F<:Factor](f:F): Iterable[F] = new IterableSingleFactor(f)
   implicit class IntPairExtras(val x:(Int, Int)) {
     def overlapsWith(y:(Int, Int)):Boolean = (x._1 >= y._1 && x._1 <= y._2) || (x._2 >= y._1 && x._2 <= y._2)
   }

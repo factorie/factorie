@@ -16,9 +16,7 @@ package cc.factorie.model
 import cc.factorie.la._
 import cc.factorie.variable._
 
-//import cc.factorie.util.Substitutions
-
-/** A Factor with one neighboring variable 
+/** A Factor with one neighboring variable
     @author Andrew McCallum */
 abstract class Factor1[N1<:Var](val _1:N1) extends Factor {
   type NeighborType1 = N1
