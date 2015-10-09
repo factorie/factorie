@@ -28,9 +28,9 @@ object NerStructuredCoref extends NerStructuredCoref{
 }
 
 class NerStructuredCoref extends StructuredCoref{
-  override def prereqAttrs: Seq[Class[_]] = (ConllProperNounPhraseFinder.prereqAttrs ++ AcronymNounPhraseFinder.prereqAttrs++PronounFinder.prereqAttrs ++ NnpPosNounPhraseFinder.prereqAttrs).distinct
+  override def prereqAttrs: Seq[Class[_]] = (ConllPhraseFinder.prereqAttrs ++ AcronymNounPhraseFinder.prereqAttrs++PronounFinder.prereqAttrs ++ NnpPosNounPhraseFinder.prereqAttrs).distinct
   override def annotateMentions(doc:Document): Unit = {
-    (ConllProperNounPhraseFinder(doc) ++ PronounFinder(doc) ++ NnpPosNounPhraseFinder(doc)++ AcronymNounPhraseFinder(doc)).distinct.foreach(phrase => doc.getCoref.addMention(phrase))
+    (ConllPhraseFinder(doc) ++ PronounFinder(doc) ++ NnpPosNounPhraseFinder(doc)++ AcronymNounPhraseFinder(doc)).distinct.foreach(phrase => doc.getCoref.addMention(phrase))
     doc.coref.mentions.foreach(mention => NounPhraseEntityTypeLabeler.process(mention.phrase))
     doc.coref.mentions.foreach(mention => NounPhraseGenderLabeler.process(mention.phrase))
     doc.coref.mentions.foreach(mention => NounPhraseNumberLabeler.process(mention.phrase))

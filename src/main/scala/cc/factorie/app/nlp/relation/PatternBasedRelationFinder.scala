@@ -11,8 +11,6 @@ import scala.io.Source
  * @author John Sullivan, Benjamin Roth
  */
 class PatternBasedRelationFinder(predictors:Seq[PatternRelationPredictor]) extends DocumentAnnotator{
-  /** How the annotation of this DocumentAnnotator should be printed in one-word-per-line (OWPL) format.
-      If there is no per-token annotation, return null.  Used in Document.owplString. */
   def tokenAnnotationString(token: Token) = null
 
   def postAttrs = Seq(classOf[RelationMentionSeq])
@@ -26,8 +24,8 @@ class PatternBasedRelationFinder(predictors:Seq[PatternRelationPredictor]) exten
 
     /** this produces a sliding window of 4 mentions that we then compare to generate contexts. Each mention should be compared
       * to the three mentions before and after it in the following loop. The last element is a singleton list which we drop.
-      * The last mention in the document has already been compared to the three mentions that preceed it.
-      * */
+      * The last mention in the document has already been compared to the three mentions that precede it.
+      */
     val mentionGrouping = (0 until mentions.size).map(idx => mentions.slice(idx, math.min(idx + 4, mentions.size))).dropRight(1).toList
 
     val relationMentions = (for(m1 :: ms <- mentionGrouping;

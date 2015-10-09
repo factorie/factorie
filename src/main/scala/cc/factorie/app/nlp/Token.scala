@@ -16,6 +16,7 @@ import cc.factorie.util.{Attr, Cubbie}
 import cc.factorie.variable.{CategoricalValue, ChainLink, StringVariable}
 
 import scala.collection.mutable
+import cc.factorie.app.nlp.ner.BioConllNerTag
 
 // There are two ways to create Tokens and add them to Sentences and/or Documents:
 // Without String arguments, in which case the string is assumed to already be in the Document
@@ -221,9 +222,9 @@ trait TokenStringCubbieSlot extends TokenCubbie {
   // No postFetchToken necessary because "string" isn't needed for Token initialization
 }
 
-trait TokenIobConllNerTagCubbie extends TokenCubbie {
+trait TokenBioConllNerTagCubbie extends TokenCubbie {
   val ner = StringSlot("ner")
-  def newTokenNerLabel(t:Token, s:String): cc.factorie.app.nlp.ner.IobConllNerTag
+  def newTokenNerLabel(t:Token, s:String): BioConllNerTag
   override def storeToken(t:Token): this.type = {
     super.storeToken(t)
     ner := t.nerTag.categoryValue

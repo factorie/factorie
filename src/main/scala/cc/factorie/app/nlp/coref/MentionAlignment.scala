@@ -60,9 +60,9 @@ object MentionAlignment {
       ParseBasedPhraseFinder.getPhrases(doc).foreach(doc.coref.addMention)
     }else {
       val defaultMap = if(annotatorMap eq null) DocumentAnnotatorPipeline.defaultDocumentAnnotationMap else annotatorMap
-      val preReqs = ConllProperNounPhraseFinder.prereqAttrs ++ PronounFinder.prereqAttrs ++AcronymNounPhraseFinder.prereqAttrs
+      val preReqs = ConllPhraseFinder.prereqAttrs ++ PronounFinder.prereqAttrs ++AcronymNounPhraseFinder.prereqAttrs
       DocumentAnnotatorPipeline.apply(map=defaultMap.toMap, prereqs=Nil, preReqs).process(doc)
-      (ConllProperNounPhraseFinder(doc) ++ PronounFinder(doc) ++ AcronymNounPhraseFinder(doc)).foreach(doc.getCoref.addMention)
+      (ConllPhraseFinder(doc) ++ PronounFinder(doc) ++ AcronymNounPhraseFinder(doc)).foreach(doc.getCoref.addMention)
     }
     DocumentAnnotatorPipeline.apply(DocumentAnnotatorPipeline.defaultDocumentAnnotationMap, prereqs=Nil, ForwardCoref.prereqAttrs).process(doc)
   }

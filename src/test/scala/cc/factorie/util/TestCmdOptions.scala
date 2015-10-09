@@ -1,6 +1,8 @@
 package cc.factorie.util
 
-import org.scalatest.{FlatSpec, Matchers}
+import java.io.File
+
+import org.scalatest.{Matchers, FlatSpec}
 
 /**
  * @author John Sullivan
@@ -66,7 +68,7 @@ class TestCmdOptions extends FlatSpec with Matchers {
     assert(opts.dub.value == 2.34)
   }
 
-  it should "parse space-separtaed lists" in {
+  it should "parse space-separated lists" in {
     val opts = new DefaultCmdOptions {
       val dubList = new CmdOption("params", List.empty[Double], "", "")
       val name = new CmdOption("name", "", "", "")
@@ -74,5 +76,23 @@ class TestCmdOptions extends FlatSpec with Matchers {
     opts parse "--params 1.0 5.3 13 2943.32 --name=steve".split(" ")
     assert(opts.dubList.value == List(1.0, 5.3, 13.0, 2943.32))
     assert(opts.name.value == "steve")
+  }
+
+  it should "parse strings into Files properly" in {
+    val opts = new CmdOptions {
+      val file = new CmdOption[File]("file", null, "", "")
+    }
+    val tmp = File.createTempFile("test-dir", "test1")
+    opts parse s"--file ${tmp.getAbsolutePath}".split(" ")
+    assert(opts.file.value.getAbsolutePath == tmp.getAbsolutePath)
+  }
+
+  it should "parse string lists into file lists properly" in {
+    val opts = new CmdOptions {
+      val files = new CmdOption[List[File]]("files", List.empty, "", "")
+    }
+    val tmps = (1 to 3).map(i => File.createTempFile("test-dir", "test" + i))
+    opts parse s"--files=${tmps.map(_.getAbsolutePath).mkString(",")}".split(" ")
+    assert(opts.files.value.zip(tmps).forall{case (a, b) => a.getAbsolutePath == b.getAbsolutePath})
   }
 }

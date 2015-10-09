@@ -32,6 +32,9 @@ import scala.reflect.ClassTag
     @author Andrew McCallum */
 trait Attr extends Serializable {
   /** A collection of attributes, keyed by the attribute class. */
+
+  def getAttr = attr
+
   object attr extends Serializable {
     private var _attr: Array[AnyRef] = new Array[AnyRef](2)
     /** The number of attributes present. */

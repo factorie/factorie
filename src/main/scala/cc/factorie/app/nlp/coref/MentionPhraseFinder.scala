@@ -12,13 +12,12 @@
    limitations under the License. */
 package cc.factorie.app.nlp.coref
 
-import cc.factorie.app.nlp.{Token, _}
-import cc.factorie.app.nlp.ner.BilouConllNerTag
-import cc.factorie.app.nlp.phrase._
+import cc.factorie.app.nlp.Document
+import cc.factorie.app.nlp.phrase.{Phrase, NounPhraseType, ConllPhraseEntityType}
 import cc.factorie.app.nlp.pos.{PennPosDomain, PennPosTag}
-
-import scala.Option.option2Iterable
-import scala.collection.mutable.ArrayBuffer
+import cc.factorie.app.nlp.Token
+import cc.factorie.app.nlp.ner._
+import scala.collection.mutable
 
 /** Trait for objects that return a list of Phrases given a Document 
     whose annotations includes those classes listed in prereqAttrs.
@@ -38,7 +37,7 @@ import scala.collection.mutable.ArrayBuffer
 trait MentionPhraseFinder {
   def prereqAttrs: Seq[Class[_]]
   //def phrasePostAttrs: Seq[Class[_]] // TODO Should we have something like this?
-  def apply(document:Document): Iterable[Phrase]
+  def apply(document:Document): Seq[Phrase]
 }
 
 
@@ -46,55 +45,29 @@ trait MentionPhraseFinder {
     @author Andrew McCallum */
 object PronounFinder extends MentionPhraseFinder {
   def prereqAttrs = Seq(classOf[PennPosTag])
-  def apply(document:Document): Iterable[Phrase] = { 
-    val phrases = document.tokens.filter(_.attr[PennPosTag].isPersonalPronoun).map(t => new Phrase(t.section, start=t.positionInSection, length=1,offsetToHeadToken = -1))
+  def apply(document:Document): Seq[Phrase] = {
+    val phrases = document.tokens.filter(_.attr[PennPosTag].isPersonalPronoun).map(t => new Phrase(t.section, start=t.positionInSection, length=1,offsetToHeadToken = -1)).toSeq
     for (phrase <- phrases) phrase.attr += new NounPhraseType(phrase, "PRO")
     phrases
   }
 }
 
-/** Apply returns a list of proper noun phrases, given BilouConllNerTags.
-    @author Andrew McCallum */
-object ConllProperNounPhraseFinder extends MentionPhraseFinder {
-  def prereqAttrs = Seq(classOf[BilouConllNerTag], classOf[PennPosTag])
-  def apply(doc:Document): Seq[Phrase] = {
-    val result = new ArrayBuffer[Phrase]
-    for (section <- doc.sections; token <- section.tokens) {
-      if (token.attr[BilouConllNerTag].categoryValue != "O") {
-        val attr = token.attr[BilouConllNerTag].categoryValue.split("-")
-        if (attr(0) == "U") {
-          val phrase = new Phrase(section, token.positionInSection, length=1,offsetToHeadToken = -1)
-          phrase.attr += new ConllPhraseEntityType(phrase, attr(1))
-          DeterministicNounPhraseTypeLabeler.process(phrase)
-          result += phrase
-        } else if (attr(0) == "B") {
-          if (token.hasNext) {
-            var lookFor = token.next
-            while (lookFor.hasNext && lookFor.attr[BilouConllNerTag].categoryValue.matches("(I|L)-" + attr(1))) lookFor = lookFor.next
-            // TODO Be more clever in determining the headTokenOffset
-            val phrase = new Phrase(section, token.positionInSection, length=lookFor.positionInSection - token.positionInSection,offsetToHeadToken = -1)
-            phrase.attr += new ConllPhraseEntityType(phrase, attr(1))
-            DeterministicNounPhraseTypeLabeler.process(phrase) // this requires POS tags
-            result += phrase
-          } else {
-            val phrase = new Phrase(section, token.positionInSection, length=1,offsetToHeadToken = -1)
-            phrase.attr += new ConllPhraseEntityType(phrase, attr(1))
-            DeterministicNounPhraseTypeLabeler.process(phrase) // this requires POS tags
-            result += phrase
-          }
-        }
-      }
-    }
-    result
-  }
+class NerPhraseFinder[Span <: NerSpan] extends MentionPhraseFinder {
+  val prereqAttrs = Seq(classOf[NerSpanBuffer[Span]])
+  def apply(doc:Document):Seq[Phrase] =
+    doc.attr[NerSpanBuffer[Span]].map(new Phrase(_))
 }
+
+object AnyNerPhraseFinder extends NerPhraseFinder[NerSpan]
+object ConllPhraseFinder extends NerPhraseFinder[ConllNerSpan]
+object OntonotesPhraseFinder extends NerPhraseFinder[OntonotesNerSpan]
 
 /** Apply returns a list of acronym noun phrases.
     @author Andrew McCallum */
 object AcronymNounPhraseFinder extends MentionPhraseFinder {
   def prereqAttrs = Seq(classOf[Token])
   def apply(doc:Document): Seq[Phrase] = {
-    val result = new ArrayBuffer[Phrase]
+    val result = new mutable.ArrayBuffer[Phrase]
     for (section <- doc.sections; token <- section.tokens) {
       // Matches middle word of "Yesterday IBM announced" but not "OBAMA WINS ELECTION"
       if ( token.string.length > 2 && !token.containsLowerCase && Character.isUpperCase(token.string(0)) && (token.getNext ++ token.getPrev).exists(_.containsLowerCase)) {
@@ -113,7 +86,7 @@ object AcronymNounPhraseFinder extends MentionPhraseFinder {
 object NnpPosNounPhraseFinder extends MentionPhraseFinder {
   def prereqAttrs = Seq(classOf[PennPosTag])
   def apply(doc:Document): Seq[Phrase] = {
-    val result = new ArrayBuffer[Phrase]
+    val result = new mutable.ArrayBuffer[Phrase]
     var start = 0
     for (section <- doc.sections) {
       val tokens = section.tokens
