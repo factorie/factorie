@@ -31,7 +31,7 @@ object FactorieBuild extends Build {
 
   lazy val factorie = Project("factorie", file(".")).
     configs(NoNLP, WithNLP).
-    settings(
+    settings(jflexSettings ++ Seq(
       organization := "cc.factorie_2.11",
       version := "1.2-SNAPSHOT",
       scalaVersion := "2.11.7",
@@ -50,10 +50,9 @@ object FactorieBuild extends Build {
         CompileDependencies.json4s,
         TestDependencies.scalatest
       ),
-      seq(jflexSettings: _*),
       unmanagedSourceDirectories in Compile <+= (sourceDirectory in jflex),
       sourceGenerators in Compile <+= generate in jflex
-    ).
+    ):_*).
     settings(inConfig(NoNLP)(
       Classpaths.configSettings ++ Defaults.defaultSettings ++ baseAssemblySettings ++ jflexSettings ++ Seq(
       test in assembly := {},
