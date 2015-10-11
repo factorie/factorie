@@ -88,7 +88,7 @@ object Dependencies {
     val acommonslang = "commons-lang" % "commons-lang" % "2.6"
     val snappy = "org.xerial.snappy" % "snappy-java" % "1.1.1.3"
     val bliki = "info.bliki.wiki" % "bliki-core" % "3.0.19"
-    val json4s = "org.json4s" % "json4s-core_2.11" % "3.2.9"
+    val json4s = "org.json4s" %% "json4s-jackson" % "3.2.9"
   }
 
   object TestDependencies {
