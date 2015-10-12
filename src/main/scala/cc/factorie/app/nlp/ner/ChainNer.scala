@@ -95,6 +95,51 @@ abstract class ChainNer[S<: NerSpan, L<:NerTag](labelDomain: CategoricalDomain[S
       document
     }
 
+  synchronized {
+
+    lexicon.iesl.Month.toString()
+    lexicon.iesl.Day.toString()
+
+    lexicon.iesl.PersonFirst.toString()
+    lexicon.iesl.PersonFirstHigh.toString()
+    lexicon.iesl.PersonFirstHighest.toString()
+    lexicon.iesl.PersonFirstMedium.toString()
+
+    lexicon.iesl.PersonLast.toString()
+    lexicon.iesl.PersonLastHigh.toString()
+    lexicon.iesl.PersonLastHighest.toString()
+    lexicon.iesl.PersonLastMedium.toString()
+
+    lexicon.iesl.PersonHonorific.toString()
+
+    lexicon.iesl.Company.toString()
+    lexicon.iesl.JobTitle.toString()
+    lexicon.iesl.OrgSuffix.toString()
+
+    lexicon.iesl.Country.toString()
+    lexicon.iesl.City.toString()
+    lexicon.iesl.PlaceSuffix.toString()
+    lexicon.iesl.UsState.toString()
+    lexicon.iesl.Continents.toString()
+
+    lexicon.wikipedia.Person.toString()
+    lexicon.wikipedia.Event.toString()
+    lexicon.wikipedia.Location.toString()
+    lexicon.wikipedia.Organization.toString()
+    lexicon.wikipedia.ManMadeThing().toString
+    lexicon.iesl.Demonym.toString()
+
+    lexicon.wikipedia.Book.toString()
+    lexicon.wikipedia.Business.toString()
+    lexicon.wikipedia.Film.toString()
+
+    lexicon.wikipedia.LocationAndRedirect.toString()
+    lexicon.wikipedia.PersonAndRedirect.toString()
+    lexicon.wikipedia.OrganizationAndRedirect.toString()
+  }
+
+  println("loaded lexicons")
+
   object ChainNERFeaturesDomain extends CategoricalVectorDomain[String]
   class ChainNERFeatures(val token: Token) extends BinaryFeatureVectorVariable[String] {
     def domain = ChainNERFeaturesDomain
