@@ -126,7 +126,7 @@ abstract class ChainNer[S<: NerSpan, L<:NerTag](labelDomain: CategoricalDomain[S
     lexicon.wikipedia.Event.toString()
     lexicon.wikipedia.Location.toString()
     lexicon.wikipedia.Organization.toString()
-    lexicon.wikipedia.ManMadeThing().toString
+    lexicon.wikipedia.ManMadeThing.toString()
     lexicon.iesl.Demonym.toString()
 
     lexicon.wikipedia.Book.toString()

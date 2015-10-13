@@ -233,26 +233,9 @@ class TrieUnionLexicon[L <: TriePhraseLexicon](val name: String, val members: L*
   }
 }
 
-/** Support for constructing Lexicons, which automatically will determine if a WordLexicon will suffice or a PhraseLexicon is required.
-    @author Andrew McCallum */
-object OldLexicon {
-  def fromSource(name:String, source:Source, tokenizer:StringSegmenter = cc.factorie.app.strings.nonWhitespaceSegmenter, lemmatizer:Lemmatizer = LowercaseLemmatizer): Lexicon = {
-    var result: MutableLexicon = new ChainWordLexicon(name, tokenizer, lemmatizer)
-    try { result ++= source } catch { case e:MultiWordException => {
-      result = new ChainPhraseLexicon(name, tokenizer, lemmatizer)
-      result ++= source.reset
-      source.close()
-    } }
-    result
-  }
-  def fromFilename(filename:String, tokenizer:StringSegmenter = cc.factorie.app.strings.nonWhitespaceSegmenter, lemmatizer:Lemmatizer = LowercaseLemmatizer): Lexicon = 
-    fromSource(filename, Source.fromFile(new File(filename))(scala.io.Codec.UTF8))
-  def fromResource(resourceFilename:String, tokenizer:StringSegmenter = cc.factorie.app.strings.nonWhitespaceSegmenter, lemmatizer:Lemmatizer = LowercaseLemmatizer): Lexicon =
-    fromSource(resourceFilename, io.Source.fromInputStream(getClass.getResourceAsStream(resourceFilename)))
-}
-
 /** A union of multiple lexicons.  Answer "contains" queries with true, if any of the member Lexicons contain the query.
     @author Andrew McCallum */
+@deprecated("Use TriePhraseLexicon instead", "Before 10/1/15")
 class ChainUnionLexicon(val name: String, val members:Lexicon*) extends Lexicon {
   def tokenizer: StringSegmenter = members.head.tokenizer
   def lemmatizer: Lemmatizer = members.head.lemmatizer
