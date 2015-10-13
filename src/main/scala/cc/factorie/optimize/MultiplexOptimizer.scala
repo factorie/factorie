@@ -1,6 +1,6 @@
 package cc.factorie.optimize
 
-import cc.factorie.model.{WeightsMap, WeightsSet, Weights}
+import cc.factorie.model.{Weights, WeightsMap, WeightsSet}
 
 import scala.collection.mutable
 

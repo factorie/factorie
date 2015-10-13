@@ -27,10 +27,9 @@ import cc.factorie
 import cc.factorie.model.ConstantWeights2
 
 object TutorialModel extends App {
-  import cc.factorie._
   import cc.factorie.la._
+  import cc.factorie.model.{DotFactorWithStatistics2, ItemizedModel}
   import cc.factorie.variable.BooleanVariable
-  import cc.factorie.model.{ ItemizedModel, DotFactorWithStatistics2 }
 
   /*& Let's start by creating some Variables and Factor classes. **/
   val outputs: Seq[BooleanVariable] = for (i <- 0 until 10) yield new BooleanVariable

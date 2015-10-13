@@ -12,11 +12,12 @@
    limitations under the License. */
 package cc.factorie.tutorial
 
-import collection.mutable.{Buffer, ArrayBuffer}
 import cc.factorie._
-import cc.factorie.variable.{HammingTemplate, LabeledCategoricalVariable, DoubleVariable, BooleanDomain}
-import cc.factorie.model.{TupleTemplateWithStatistics2, CombinedModel}
-import cc.factorie.infer.{VariableSettingsSampler, SamplingMaximizer}
+import cc.factorie.infer.{SamplingMaximizer, VariableSettingsSampler}
+import cc.factorie.model.{CombinedModel, TupleTemplateWithStatistics2}
+import cc.factorie.variable.{BooleanDomain, DoubleVariable, HammingTemplate, LabeledCategoricalVariable}
+
+import scala.collection.mutable.{ArrayBuffer, Buffer}
 
 //import bp.{InferencerBPWorker, InferencerBP, MaxProductLattice, LatticeBP}
 

@@ -1,12 +1,13 @@
 package cc.factorie.tutorial
 
-import cc.factorie.app.nlp.hcoref._
-import cc.factorie.variable.{Var, BagOfWordsVariable}
-import com.mongodb.{MongoClient, DB}
 import cc.factorie._
+import cc.factorie.app.nlp.hcoref._
 import cc.factorie.util.EvaluatableClustering
-import scala.util.Random
+import cc.factorie.variable.{BagOfWordsVariable, Var}
+import com.mongodb.{DB, MongoClient}
+
 import scala.collection.mutable
+import scala.util.Random
 
 /**
  * @author John Sullivan

@@ -12,14 +12,12 @@
    limitations under the License. */
 package cc.factorie.app.nlp.coref
 
-import cc.factorie.app.nlp._
-import cc.factorie.app.nlp.phrase._
-import cc.factorie.app.nlp.pos.PennPosDomain
-import scala.collection.mutable.ArrayBuffer
+import cc.factorie.app.nlp.Document
+import cc.factorie.app.nlp.phrase.{NounPhraseEntityTypeLabeler, Phrase, NounPhraseType, ConllPhraseEntityType}
+import cc.factorie.app.nlp.pos.{PennPosDomain, PennPosTag}
 import cc.factorie.app.nlp.Token
 import cc.factorie.app.nlp.ner._
-import cc.factorie.app.nlp.pos.PennPosTag
-import scala.Option.option2Iterable
+import scala.collection.mutable
 
 /** Trait for objects that return a list of Phrases given a Document 
     whose annotations includes those classes listed in prereqAttrs.
@@ -69,7 +67,7 @@ object OntonotesPhraseFinder extends NerPhraseFinder[OntonotesNerSpan]
 object AcronymNounPhraseFinder extends MentionPhraseFinder {
   def prereqAttrs = Seq(classOf[Token])
   def apply(doc:Document): Seq[Phrase] = {
-    val result = new ArrayBuffer[Phrase]
+    val result = new mutable.ArrayBuffer[Phrase]
     for (section <- doc.sections; token <- section.tokens) {
       // Matches middle word of "Yesterday IBM announced" but not "OBAMA WINS ELECTION"
       if ( token.string.length > 2 && !token.containsLowerCase && Character.isUpperCase(token.string(0)) && (token.getNext ++ token.getPrev).exists(_.containsLowerCase)) {
@@ -88,7 +86,7 @@ object AcronymNounPhraseFinder extends MentionPhraseFinder {
 object NnpPosNounPhraseFinder extends MentionPhraseFinder {
   def prereqAttrs = Seq(classOf[PennPosTag])
   def apply(doc:Document): Seq[Phrase] = {
-    val result = new ArrayBuffer[Phrase]
+    val result = new mutable.ArrayBuffer[Phrase]
     var start = 0
     for (section <- doc.sections) {
       val tokens = section.tokens

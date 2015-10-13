@@ -12,9 +12,8 @@
    limitations under the License. */
 
 package cc.factorie.app.strings
+import java.io.{InputStream, Reader}
 import java.text.BreakIterator
-import java.io.Reader
-import java.io.InputStream
 
 trait StringSegmentIterator extends Iterator[String] {
   def start: Int

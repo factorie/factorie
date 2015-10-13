@@ -26,17 +26,18 @@
 
 package cc.factorie.app.classify
 
-import cc.factorie._
-import app.classify
 import java.io._
-import cc.factorie.util.{ScriptingUtils, BinarySerializer}
-import scala.language.postfixOps
-import scala.collection.mutable.ArrayBuffer
-import cc.factorie.la.Tensor1
-import cc.factorie.variable._
+
+import cc.factorie._
+import cc.factorie.app.classify
 import cc.factorie.app.classify.backend._
 import cc.factorie.app.nlp.lexicon._
-import scala.collection.mutable
+import cc.factorie.la.Tensor1
+import cc.factorie.util.{BinarySerializer, ScriptingUtils}
+import cc.factorie.variable._
+
+import scala.collection.mutable.ArrayBuffer
+import scala.language.postfixOps
 
 // Feature and Label classes
 

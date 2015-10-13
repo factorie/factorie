@@ -12,21 +12,18 @@
    limitations under the License. */
 package cc.factorie.app.nlp.phrase
 
-import java.net.URL
-import java.nio.file.Path
+import cc.factorie.app.nlp.lexicon._
+import java.io._
 
 import cc.factorie._
-import cc.factorie.app.nlp._
-import cc.factorie.app.nlp.lexicon._
-import cc.factorie.app.nlp.ner.{ConllNerDomain, OntonotesEntityTypeDomain}
-import cc.factorie.util.{ModelProvider, ClasspathURL, BinarySerializer}
-import java.io._
-import cc.factorie.variable.{CategoricalVariable, LabeledCategoricalVariable, BinaryFeatureVectorVariable, CategoricalVectorDomain, CategoricalLabeling}
-import cc.factorie.optimize.{PredictorExample, Trainer, OptimizableObjectives}
 import cc.factorie.app.classify.backend.LinearMulticlassClassifier
+import cc.factorie.app.nlp._
 import cc.factorie.app.nlp.load.LoadConll2011
+import cc.factorie.app.nlp.ner.{ConllNerDomain, OntonotesEntityTypeDomain}
+import cc.factorie.optimize.{OptimizableObjectives, PredictorExample, Trainer}
+import cc.factorie.util.{BinarySerializer, ClasspathURL}
+import cc.factorie.variable.{BinaryFeatureVectorVariable, CategoricalLabeling, CategoricalVariable, CategoricalVectorDomain, LabeledCategoricalVariable}
 
-import scala.io.Source
 
 
 /** Categorical variable indicating whether the noun phrase is person, location, organization, etc. 

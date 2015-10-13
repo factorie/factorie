@@ -13,25 +13,26 @@
 
 package cc.factorie.app.nlp.ner
 
-import java.net.URL
+import cc.factorie.app.nlp.lexicon.{LexiconsProvider, StaticLexicons}
+import cc.factorie.util._
+import java.io._
 
 import cc.factorie._
-import app.strings._
-import cc.factorie.app.nlp.lexicon.{LexiconsProvider, Lexicon, StaticLexicons}
-import cc.factorie.util._
-import cc.factorie.app.nlp._
 import cc.factorie.app.chain._
-import scala.io._
-import java.io._
-import scala.math.round
-import scala.collection.mutable.ListBuffer
+import cc.factorie.app.nlp._
 import cc.factorie.app.nlp.embeddings._
+import cc.factorie.app.strings._
 import cc.factorie.model.DotFamilyWithStatistics2
-import cc.factorie.optimize.{ParameterAveraging, AdaGrad}
+import cc.factorie.optimize.{AdaGrad, ParameterAveraging}
+import cc.factorie.util.{BinarySerializer, CmdOptions, HyperparameterMain, JavaHashMap}
 import cc.factorie.variable._
 import cc.factorie.optimize.Trainer
 import cc.factorie.la.WeightsMapAccumulator
 import scala.reflect.{ClassTag, classTag}
+
+import scala.collection.mutable.ListBuffer
+import scala.io._
+import scala.math.round
 
 
 class TokenSequence[T<:NerTag](token: Token)(implicit m: ClassTag[T]) extends collection.mutable.ArrayBuffer[Token] {
@@ -773,8 +774,8 @@ object ConllStackedChainNerOptimizer {
       println("Got results: " + result.mkString(" "))
       opts.saveModel.setValue(true)
       println("Running best configuration...")
-      import scala.concurrent.duration._
       import scala.concurrent.Await
+      import scala.concurrent.duration._
       Await.result(qs.execute(opts.values.flatMap(_.unParse).toArray), 5.hours)
       println("Done")
     }

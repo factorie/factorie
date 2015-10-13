@@ -12,7 +12,6 @@
    limitations under the License. */
 
 package cc.factorie.app.nlp.pos
-import cc.factorie._
 import cc.factorie.app.nlp._
 import cc.factorie.variable._
 

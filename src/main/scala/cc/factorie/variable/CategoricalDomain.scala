@@ -13,11 +13,10 @@
 
 package cc.factorie.variable
 
+import cc.factorie.util.Cubbie
+import cc.factorie.{util, variable}
+
 import scala.collection.mutable
-import java.io._
-import java.util.zip.{GZIPOutputStream, GZIPInputStream}
-import cc.factorie.util.{JavaHashMap, Cubbie}
-import cc.factorie.{variable, util}
 
 // For single categorical values
 

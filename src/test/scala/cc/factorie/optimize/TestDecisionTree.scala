@@ -12,16 +12,14 @@
    limitations under the License. */
 package cc.factorie.optimize
 
-import org.scalatest.junit.JUnitSuite
-import org.junit.Test
-import cc.factorie._
-import cc.factorie.optimize._
+import cc.factorie.app.classify.backend._
+import cc.factorie.la.{SingletonTensor1, SparseIndexedTensor1, Tensor1}
 import cc.factorie.traversableExtras
-import cc.factorie.la.{SingletonTensor1, Tensor1, SparseIndexedTensor1, SparseBinaryTensor1}
 import cc.factorie.util.BinarySerializer
 import cc.factorie.util.CubbieConversions._
-import cc.factorie.variable.{VectorDomain, DiscreteDomain}
-import cc.factorie.app.classify.backend._
+import cc.factorie.variable.{DiscreteDomain, VectorDomain}
+import org.junit.Test
+import org.scalatest.junit.JUnitSuite
 
 class TestDecisionTree extends JUnitSuite {
   @Test def testRegression(): Unit = {

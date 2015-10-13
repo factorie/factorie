@@ -12,12 +12,11 @@
    limitations under the License. */
 package cc.factorie.app.mf
 
-import org.junit._
-import org.junit.Assert._
 import cc.factorie._
-import la._
-import optimize.OnlineTrainer
+import cc.factorie.la._
+import cc.factorie.optimize.OnlineTrainer
 import cc.factorie.variable.DiscreteDomain
+import org.junit._
 
 /**
  * User: apassos

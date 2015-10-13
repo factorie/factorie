@@ -13,6 +13,7 @@
 
 package cc.factorie.app.nlp.load
 import java.io.File
+
 import cc.factorie.app.nlp.Document
 
 object LoadHTML {

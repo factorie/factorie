@@ -13,16 +13,15 @@
 
 package cc.factorie.app.nlp.load
 
+import java.io.PrintWriter
+
 import cc.factorie.app.nlp._
+import cc.factorie.app.nlp.lemma.TokenLemma
+import cc.factorie.app.nlp.parse.ParseTree
+import cc.factorie.app.nlp.pos.{LabeledSpanishPosTag, PennPosTag, PosTag}
 import cc.factorie.util.FastLogging
 
-
 import scala.io.Source
-import cc.factorie.app.nlp.pos.{LabeledSpanishPosTag, PosTag, PennPosTag, SpanishPosTag}
-import cc.factorie.app.nlp.parse.ParseTree
-import cc.factorie.app.nlp.lemma.TokenLemma
-
-import java.io.PrintWriter
 
 /*
  * Loader for the CoNLL 2008 closed-track shared task data.

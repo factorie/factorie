@@ -12,30 +12,21 @@
    limitations under the License. */
 package cc.factorie.app.nlp.coref
 
-import java.net.URL
-import java.nio.file.Path
+import cc.factorie.app.nlp.lexicon.{LexiconsProvider, StaticLexicons}
+import java.util.concurrent.ExecutorService
 
-import cc.factorie.app.nlp._
+import cc.factorie.app.nlp.{Document, _}
+import cc.factorie.app.nlp.ner._
 import cc.factorie.app.nlp.parse._
 import cc.factorie.app.nlp.phrase._
 import cc.factorie.app.nlp.pos._
-import cc.factorie.app.nlp.ner._
-import scala.collection.mutable.{HashMap, HashSet, ArrayBuffer}
-import cc.factorie.app.nlp.lexicon.{LexiconsProvider, Lexicon, StaticLexicons, StopWords}
-import scala.collection.immutable.IndexedSeq
-import scala.collection.immutable.StringOps
 import cc.factorie.app.nlp.wordnet._
-import cc.factorie.app.nlp.{DocumentAnnotatorPipeline, MutableDocumentAnnotatorMap, Document}
-import cc.factorie.util.{Trackable, HyperparameterMain, TimingCollector, Trackers}
-import cc.factorie.app.nlp.load.{MentionSpeaker, LoadConll2011}
-import cc.factorie.app.nlp.ner.{ConllChainNer, NerTag}
-import java.util.concurrent.ExecutorService
-import cc.factorie.optimize._
-import java.io._
 import cc.factorie.util._
-import cc.factorie.variable.{EnumDomain, CategoricalVariable}
+import cc.factorie.variable.{CategoricalVariable, EnumDomain}
 
-import scala.io.Source
+import scala.collection.immutable.StringOps
+import scala.collection.mutable.{HashMap, HashSet}
+
 
 
 /**

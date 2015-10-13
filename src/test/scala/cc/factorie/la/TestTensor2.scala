@@ -1,8 +1,8 @@
 package cc.factorie.la
 
+import org.junit.Assert._
 import org.junit.Test
 import org.scalatest.junit._
-import org.junit.Assert._
 
 
 class TestTensor2 extends JUnitSuite with cc.factorie.util.FastLogging {

@@ -14,9 +14,9 @@
 package cc.factorie.app.nlp.phrase
 
 import cc.factorie.app.nlp._
-import cc.factorie.util.Attr
-import cc.factorie.app.nlp.pos.{PennPosTag, PennPosDomain}
 import cc.factorie.app.nlp.parse.ParseTreeLabelDomain
+import cc.factorie.app.nlp.pos.{PennPosDomain, PennPosTag}
+import cc.factorie.util.Attr
 
 /** A Phrase is a TokenSpan that has a head token.
     If offsetToHeadToken is unspecified, then it will be set automatically using HeadTokenOffset.apply. */

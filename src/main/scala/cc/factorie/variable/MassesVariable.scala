@@ -14,7 +14,8 @@
 package cc.factorie.variable
 
 import cc.factorie.la._
-import cc.factorie.util.{SparseDoubleSeq, DoubleSeq}
+import cc.factorie.util.{DoubleSeq, SparseDoubleSeq}
+
 import scala.util.Random
 
 /** A Tensor containing only non-negative entries.  These are also the basis for Proportions.

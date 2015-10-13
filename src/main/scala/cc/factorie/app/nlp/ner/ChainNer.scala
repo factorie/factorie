@@ -6,15 +6,15 @@ package cc.factorie.app.nlp.ner
  */
 
 import java.io._
-import java.net.URL
-import cc.factorie._
+
+import cc.factorie.app.nlp.lexicon.{LexiconsProvider, StaticLexicons}
+
+import cc.factorie.app.chain.{ChainModel, SegmentEvaluation}
 import cc.factorie.app.nlp._
-import cc.factorie.app.nlp.lexicon.{LexiconsProvider, Lexicon, StaticLexicons}
-import cc.factorie.util._
+import cc.factorie.optimize.{AdaGrad, ParameterAveraging, Trainer}
+import cc.factorie.util.{ModelProvider, BinarySerializer, JavaHashMap}
 import cc.factorie.variable._
-import cc.factorie.app.chain.ChainModel
-import cc.factorie.optimize.{Trainer, AdaGrad, ParameterAveraging}
-import cc.factorie.app.chain.SegmentEvaluation
+
 import scala.reflect.{ClassTag, classTag}
 
 /**
@@ -429,8 +429,8 @@ object ConllNerOptimizer {
     println("Best l1: " + opts.l1.value + " best l2: " + opts.l2.value)
     println("Running best configuration...")
     opts.serialize.setValue(true)
-    import scala.concurrent.duration._
     import scala.concurrent.Await
+    import scala.concurrent.duration._
     Await.result(qs.execute(opts.values.flatMap(_.unParse).toArray), 1.hours)
     println("Done.")
   }

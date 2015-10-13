@@ -18,8 +18,6 @@
 
 package cc.factorie.tutorial
 object TutorialFamily extends App {
-  import cc.factorie._ 
-  import cc.factorie.la._ 
     
 //  val family1 = new Family1[BooleanVariable] {
 //    def score(b:BooleanValue) = if (b.booleanValue) 1.0 else 0.0

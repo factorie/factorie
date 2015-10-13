@@ -13,9 +13,6 @@
 
 package cc.factorie.directed
 
-import cc.factorie._
-import cc.factorie.util.DoubleSeq
-import scala.collection.mutable.ArrayBuffer
 import cc.factorie.variable._
 
 /*

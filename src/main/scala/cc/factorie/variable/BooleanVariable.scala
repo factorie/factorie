@@ -13,8 +13,6 @@
 
 package cc.factorie.variable
 
-import cc.factorie.variable
-
 /** The value of a BooleanDomain.  A subclass of CategoricalValue.
     @author Andrew McCallum */
 trait BooleanValue extends CategoricalValue[Boolean] { def domain: BooleanDomain = BooleanDomain }

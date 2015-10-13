@@ -21,12 +21,13 @@
 
 package cc.factorie.app.nlp.lexicon
 
+import java.io.Serializable
+
 import cc.factorie.app.nlp.Token
 import cc.factorie.app.nlp.lemma.Lemmatizer
-import cc.factorie.util.Logger
-import cc.factorie.util.JavaHashSet
+import cc.factorie.util.{JavaHashSet, Logger}
 import cc.factorie.variable.CategoricalVectorVar
-import java.io.Serializable
+
 import scala.collection.mutable.Set
 
 /**

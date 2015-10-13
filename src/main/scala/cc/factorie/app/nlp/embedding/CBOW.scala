@@ -1,14 +1,11 @@
 package cc.factorie.app.nlp.embedding
-import cc.factorie.variable.CategoricalDomain
-import cc.factorie.model._
-import cc.factorie.la._
-import cc.factorie.optimize._
-import cc.factorie.util.{IntArrayBuffer}
-import scala.util.Random
 import java.io._
-import cc.factorie.util.DoubleAccumulator
-import scala.collection.mutable.{ArrayOps,ArrayBuffer}
-import java.util.zip.GZIPOutputStream
+
+import cc.factorie.la._
+import cc.factorie.model._
+import cc.factorie.util.{DoubleAccumulator, IntArrayBuffer}
+
+import scala.collection.mutable.ArrayBuffer
 
 class CBOWOptions extends WindowWordEmbedderOptions with IncrementalVocabularyOptions {
   val margin = new CmdOption("margin", 0.1, "DOUBLE", "Margin for WSABIE training.")

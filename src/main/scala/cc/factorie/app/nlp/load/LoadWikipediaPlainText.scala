@@ -12,15 +12,10 @@
    limitations under the License. */
 
 package cc.factorie.app.nlp.load
+import java.io.{File, _}
+
 import cc.factorie.app.nlp._
-import java.io.File
-import scala.util.matching.Regex
-import scala.io.Source
 import org.apache.commons.compress.compressors.CompressorStreamFactory
-import java.io._
-import info.bliki.wiki.filter.PlainTextConverter
-import info.bliki.wiki.model.WikiModel
-import scala.xml.{XML,Text,Elem}
 
 /** Create Documents from plain text files.
     By default create one Document per file.

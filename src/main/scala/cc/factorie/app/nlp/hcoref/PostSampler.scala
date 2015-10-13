@@ -1,6 +1,7 @@
 package cc.factorie.app.nlp.hcoref
 
 import cc.factorie._
+
 import scala.collection.mutable
 import scala.util.Random
 

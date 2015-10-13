@@ -11,12 +11,13 @@
    See the License for the specific language governing permissions and
    limitations under the License. */
 package cc.factorie.app.topics.lda
+import java.io.{BufferedReader, File, FileInputStream, InputStreamReader, PrintWriter}
+
 import cc.factorie._
-import scala.collection.mutable.HashMap
-import java.io.{PrintWriter, FileWriter, File, BufferedReader, InputStreamReader, FileInputStream}
-import collection.mutable.{ArrayBuffer, HashSet, HashMap}
 import cc.factorie.directed._
-import cc.factorie.variable.{DiscreteSeqDomain, DiscreteSeqVariable, DiscreteDomain, CategoricalSeqDomain}
+import cc.factorie.variable.{CategoricalSeqDomain, DiscreteDomain, DiscreteSeqDomain, DiscreteSeqVariable}
+
+import scala.collection.mutable.{ArrayBuffer, HashMap}
 
 // Name here must match superDoc exactly, in order to enable stitching back together again at the end 
 class RecursiveDocument(superDoc:Doc, val superTopic:Int) extends Document(superDoc.ws.domain, superDoc.name, Nil)

@@ -18,10 +18,10 @@ package cc.factorie.tutorial
 import cc.factorie._
 import cc.factorie.app.nlp._
 import cc.factorie.app.nlp.ner._
-import cc.factorie.variable.{HammingObjective, BinaryFeatureVectorVariable, CategoricalVectorDomain}
-import cc.factorie.model.{Parameters, DotTemplateWithStatistics2, DotTemplateWithStatistics1, TemplateModel}
 import cc.factorie.infer.InferByBPChain
-import cc.factorie.optimize.{Trainer, LikelihoodExample}
+import cc.factorie.model.{DotTemplateWithStatistics1, DotTemplateWithStatistics2, Parameters, TemplateModel}
+import cc.factorie.optimize.{LikelihoodExample, Trainer}
+import cc.factorie.variable.{BinaryFeatureVectorVariable, CategoricalVectorDomain, HammingObjective}
 
 /**
  * An example of a linear-chain CRF system NER which manually defines the model.

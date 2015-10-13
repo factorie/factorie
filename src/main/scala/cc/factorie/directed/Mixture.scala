@@ -13,8 +13,6 @@
 
 package cc.factorie.directed
 
-import cc.factorie._
-import scala.collection.mutable.{ArrayBuffer,Stack}
 import cc.factorie.variable._
 
 //trait GateVar extends MutableDiscreteVar

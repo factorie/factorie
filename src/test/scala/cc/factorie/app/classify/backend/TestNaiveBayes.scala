@@ -3,8 +3,8 @@ package cc.factorie.app.classify.backend
 import cc.factorie.app.classify.NaiveBayesClassifierTrainer
 import cc.factorie.la.DenseTensor2
 import cc.factorie.variable._
-import org.junit.Test
 import org.junit.Assert._
+import org.junit.Test
 import org.scalatest.junit._
 
 import scala.collection.mutable

@@ -13,13 +13,9 @@
 
 package cc.factorie.infer
 
-import cc.factorie.directed._
-import cc.factorie.la.WeightsMapAccumulator
-import cc.factorie.util.DoubleAccumulator
-import cc.factorie.optimize.Example
-import cc.factorie.variable.{DenseProportions1, Proportions1, Var, DiscreteVariable}
-import cc.factorie.model.Model
 import cc.factorie.maths
+import cc.factorie.model.Model
+import cc.factorie.variable.{DenseProportions1, DiscreteVariable, Proportions1, Var}
 
 // Inference naming conventions:
 

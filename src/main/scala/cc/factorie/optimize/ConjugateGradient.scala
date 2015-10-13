@@ -12,10 +12,8 @@
    limitations under the License. */
 
 package cc.factorie.optimize
-import cc.factorie._
-import cc.factorie.la._
-import cc.factorie.util.FastLogging
 import cc.factorie.model.{WeightsMap, WeightsSet}
+import cc.factorie.util.FastLogging
 
 /**
  * A conjugate gradient optimizer. Should not be used unless you know you want it because LBFGS is often better.

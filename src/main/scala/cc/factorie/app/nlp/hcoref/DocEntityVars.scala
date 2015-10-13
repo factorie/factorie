@@ -1,7 +1,7 @@
 package cc.factorie.app.nlp.hcoref
 
-import cc.factorie.variable.{DenseDoubleBagVariable, BagOfWordsVariable, DiffList}
 import cc.factorie.app.nlp.coref.WithinDocEntity
+import cc.factorie.variable.{BagOfWordsVariable, DenseDoubleBagVariable, DiffList}
 
 /**
  * @author John Sullivan

@@ -12,8 +12,8 @@
    limitations under the License. */
 
 package cc.factorie.la
-import cc.factorie._
-import cc.factorie.util._
+import cc.factorie.maths
+import cc.factorie.util.{DenseDoubleSeq, IntSeq, RangeIntSeq, DoubleSeq}
 
 trait DenseTensor extends Tensor with TensorWithMutableDefaultValue with DenseDoubleSeq with Serializable {
   protected def _initialArray: Array[Double] = new Array[Double](length)

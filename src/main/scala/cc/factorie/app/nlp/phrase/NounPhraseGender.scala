@@ -12,17 +12,12 @@
    limitations under the License. */
 package cc.factorie.app.nlp.phrase
 
-import java.io.File
-import java.net.URL
-import java.nio.file.Path
-
 import cc.factorie.app.nlp._
-import cc.factorie.app.nlp.lexicon.{LexiconsProvider, Lexicon, StaticLexicons}
-import cc.factorie.util.ModelProvider
-import cc.factorie.variable.{EnumDomain, CategoricalVariable}
-import scala.io.Source
+import cc.factorie.app.nlp.lexicon.{LexiconsProvider, StaticLexicons}
+import cc.factorie.app.nlp.coref.{Mention, PronounSets}
+import cc.factorie.variable.{CategoricalVariable, EnumDomain}
+
 import scala.reflect.ClassTag
-import cc.factorie.app.nlp.coref.{PronounSets, Mention, WithinDocCoref, MentionList}
 
 object GenderDomain extends EnumDomain {
   val UNKNOWN,     // uncertain 

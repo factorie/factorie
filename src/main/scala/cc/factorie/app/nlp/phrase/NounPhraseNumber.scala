@@ -12,12 +12,12 @@
    limitations under the License. */
 package cc.factorie.app.nlp.phrase
 
-import cc.factorie._
 import cc.factorie.app.nlp._
-import cc.factorie.app.nlp.pos._
 import cc.factorie.app.nlp.coref.WithinDocCoref
 import cc.factorie.app.nlp.morph.BasicMorphologicalAnalyzer
-import cc.factorie.variable.{EnumDomain, CategoricalVariable}
+import cc.factorie.app.nlp.pos._
+import cc.factorie.variable.{CategoricalVariable, EnumDomain}
+
 import scala.reflect.ClassTag
 
 object NumberDomain extends EnumDomain {

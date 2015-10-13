@@ -21,13 +21,11 @@
 
 package cc.factorie.app.nlp.lexicon
 
-import cc.factorie.util.Logger
-import cc.factorie.util.JavaHashMap
-import cc.factorie.util.JavaHashSet
 import java.io.Serializable
-import scala.collection.mutable.Queue
-import scala.collection.mutable.Set
-import scala.collection.mutable.Map
+
+import cc.factorie.util.{JavaHashMap, JavaHashSet, Logger}
+
+import scala.collection.mutable.{Map, Queue, Set}
 
 /**
  * A Trie implementation. Used as an internal data structure by Aho-Corasick.

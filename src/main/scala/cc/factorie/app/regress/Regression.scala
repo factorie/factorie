@@ -14,10 +14,8 @@ package cc.factorie.app.regress
 
 import cc.factorie._
 import cc.factorie.la._
-import optimize._
-import java.io.File
-import util.DoubleAccumulator
-import cc.factorie.model.{Weights2, Weights1, WeightsSet, Parameters}
+import cc.factorie.model.{Parameters, Weights1, Weights2, WeightsSet}
+import cc.factorie.optimize._
 import cc.factorie.variable.TensorVar
 
 // Infrastructure for regression.  The architecture is somewhat parallel to app.classify. 

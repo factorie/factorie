@@ -11,13 +11,12 @@
    See the License for the specific language governing permissions and
    limitations under the License. */
 package cc.factorie.app.nlp.embeddings
-import cc.factorie.util.Threading
-import cc.factorie.app._
-import scala.collection.mutable.ArrayBuffer
-import scala.math
-import scala.util.{Sorting, Random}
+import java.io.{BufferedOutputStream, FileInputStream, FileOutputStream, OutputStreamWriter}
 import java.util.zip.{GZIPInputStream, GZIPOutputStream}
-import java.io.{OutputStreamWriter, BufferedOutputStream, FileInputStream, FileOutputStream}
+
+import cc.factorie.app._
+
+import scala.util.Random
 
 
 class VocabBuilder(vocab_hash_size: Int = 20e6.toInt, sampling_table_size: Int = 1e8.toInt, load_factor: Double = 0.7) {

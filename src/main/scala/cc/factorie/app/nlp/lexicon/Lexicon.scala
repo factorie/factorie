@@ -12,13 +12,13 @@
    limitations under the License. */
 
 package cc.factorie.app.nlp.lexicon
-import cc.factorie._
+
+import cc.factorie.app.nlp.{Token, TokenSpan}
+import cc.factorie.app.nlp.lemma.{Lemmatizer, LowercaseLemmatizer}
 import cc.factorie.app.strings.StringSegmenter
-import cc.factorie.app.nlp.Token
-import cc.factorie.app.nlp.TokenSpan
-import cc.factorie.app.nlp.lemma.{Lemmatizer,LowercaseLemmatizer,NoopLemmatizer}
 import cc.factorie.variable.CategoricalVectorVar
-import scala.collection.mutable.{ListBuffer, ArrayBuffer, HashMap}
+
+import scala.collection.mutable.{ArrayBuffer, HashMap}
 import scala.io.Source
 import java.io.{InputStream, File}
 import cc.factorie.app.chain.Observation

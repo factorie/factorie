@@ -17,8 +17,8 @@ package cc.factorie.util
 
 import java.io.File
 
-import scala.collection.mutable.{HashMap, ArrayBuffer}
-import scala.reflect.runtime.universe._
+import scala.collection.mutable
+import scala.reflect.runtime.universe.{TypeTag, typeOf}
 
 /** Concrete version is implemented as an inner class of @see CmdOptions.
     @author Andrew McCallum */
@@ -68,7 +68,7 @@ trait CmdOption[T] {
     @author Andrew McCallum
  */
 class CmdOptions {
-  protected val opts = new HashMap[String,cc.factorie.util.CmdOption[_]]
+  protected val opts = new mutable.HashMap[String,cc.factorie.util.CmdOption[_]]
   def apply(key: String) = opts(key)
   def get(key:String) = opts.get(key)
   def size = opts.size
@@ -96,7 +96,7 @@ class CmdOptions {
     sb.toString
   }
   /** The arguments that were unqualified by dashed options. */
-  private val _remaining = new ArrayBuffer[String]
+  private val _remaining = new mutable.ArrayBuffer[String]
   def remaining: Seq[String] = _remaining
   /** Parse sequence of command-line arguments. */
   def parse(args:Seq[String]): Unit = {
@@ -134,7 +134,7 @@ class CmdOptions {
   }
 
   /** get options as a Seq[String] e.g. Seq("--l1=value", "--l2=value"...) **/
-  def unParse: Seq[String] = values.toSeq.map(_.unParse).flatten
+  def unParse: Seq[String] = values.toSeq.flatMap(_.unParse)
 
   class CmdOption[T:TypeTag](val name:String, val defaultValue:T, val valueName:String, val helpMsg:String, val required:Boolean, val shortName:Char) extends cc.factorie.util.CmdOption[T] {
     def this(name:String, defaultValue:T, valueName:String, helpMsg:String) = this(name, defaultValue, valueName, helpMsg, false, name.head)
@@ -171,7 +171,7 @@ class CmdOptions {
        if (newIndex < args.length && !(args(newIndex).startsWith("-") && args(newIndex).length > 1)) newIndex = parseValue(args, newIndex)
        else if (valueType =:= typeOf[Boolean]) setValue(true.asInstanceOf[T]) // for CmdOption[Boolean], invoking with no value arg defaults to true
        // ...otherwise the value will just remain the defaultValue
-       invoke
+       invoke()
        invokedCount += 1
        newIndex
      } else if (args(index).startsWith("--"+name+"=")) {
@@ -179,7 +179,7 @@ class CmdOptions {
        // modified on 1/21/2012 to support --file=foo=bar --brian
        val rightOfEq = args(index).drop(name.length + 3)
        parseValue(List(rightOfEq), 0)
-       invoke
+       invoke()
        invokedCount += 1
        index + 1
      } else index
@@ -228,7 +228,7 @@ class CmdOptions {
 /** Default CmdOption collection that should be included in most CmdOptions. */
 trait DefaultCmdOptions extends CmdOptions {
   new CmdOption("help", "", "STRING", "Print this help message.") {
-    override def invoke = {
+    override def invoke() {
       DefaultCmdOptions.this.values.foreach(o => println(o.helpMsg))
       System.exit(0)
     }
@@ -242,7 +242,7 @@ trait DefaultCmdOptions extends CmdOptions {
     }
   }
   new CmdOption("config", "", "FILE", "Read command option values from a file") {
-    override def invoke {
+    override def invoke() {
       if (this.value != "") {
         import scala.io.Source
         val contents = Source.fromFile(new java.io.File(this.value)).mkString

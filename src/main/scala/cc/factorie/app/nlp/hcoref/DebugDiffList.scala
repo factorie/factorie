@@ -1,8 +1,8 @@
 package cc.factorie.app.nlp.hcoref
 
-import cc.factorie.{TemplateModel, DiffList, Model}
 import cc.factorie.infer.SettingsSampler
 import cc.factorie.variable.SettingIterator
+import cc.factorie.{DiffList, Model, TemplateModel}
 
 /**
  * @author John Sullivan

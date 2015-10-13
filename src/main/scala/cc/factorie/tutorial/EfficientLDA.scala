@@ -11,13 +11,15 @@
    See the License for the specific language governing permissions and
    limitations under the License. */
 package cc.factorie.tutorial
-import scala.collection.mutable.ArrayBuffer
 import java.io.File
+
 import cc.factorie.app.nlp.lexicon.StopWords
 import cc.factorie.app.strings.alphaSegmenter
 import cc.factorie.app.topics.lda.SparseLDAInferencer
 import cc.factorie.directed._
 import cc.factorie.variable._
+
+import scala.collection.mutable.ArrayBuffer
 
 /**
  * LDA example using the SparseLDAInferencer, very efficient.

@@ -1,13 +1,14 @@
 package cc.factorie.util
 
-import org.json4s._
 import org.json4s.JsonDSL._
+import org.json4s._
+
 import scala.collection.mutable
 
 /**
  * Methods for serializing and de-serializing cubbies to and from json. 
  * Important Note: (As of May 28, 2015) Serialization/de-serialization of general list structures of ints and doubles
- * (Seq[Int], Seq[Double], List[Int], List[Double, Array[Int], Array[Double], etc) is not supported. Instead, the 
+ * (Seq[Int], Seq[Double], List[Int], List[Double], Array[Int], Array[Double], etc) is not supported. Instead, the
  * factorie optimized versions of these data structures, IntSeq and DoubleSeq must be used. *
  * @author John Sullivan
  */

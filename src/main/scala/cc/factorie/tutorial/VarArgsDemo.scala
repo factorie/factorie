@@ -15,9 +15,10 @@
 
 package cc.factorie.tutorial
 import cc.factorie._
+import cc.factorie.model.{DotTemplate2, Parameters, TemplateModel}
+import cc.factorie.variable.{DiscreteDomain, DiscreteVariable, Var, Vars}
+
 import scala.collection.mutable.ArrayBuffer
-import cc.factorie.variable.{Var, DiscreteVariable, DiscreteDomain, Vars}
-import cc.factorie.model.{Parameters, DotTemplate2, TemplateModel}
 
 /** Demonstrate how to create a factor that has a varying number of neighbors. */
 object VarArgsDemo {

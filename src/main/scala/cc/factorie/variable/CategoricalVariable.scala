@@ -13,9 +13,6 @@
 
 package cc.factorie.variable
 
-import scala.collection.mutable.ArrayBuffer
-import cc.factorie.la._
-
 
 /** A DiscreteVar whose integers 0...N are associated with an categorical objects of type C.
     Concrete implementations include CategoricalVariable and BooleanVariable. 

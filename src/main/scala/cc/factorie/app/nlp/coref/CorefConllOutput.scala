@@ -12,8 +12,8 @@
    limitations under the License. */
 package cc.factorie.app.nlp.coref
 
-import cc.factorie.util.F1Evaluation
 import cc.factorie.app.nlp.TokenSpan
+import cc.factorie.util.F1Evaluation
 
 class CorefConllOutput {
   val macroMUC = new F1Evaluation

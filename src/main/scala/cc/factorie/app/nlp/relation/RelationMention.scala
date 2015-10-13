@@ -1,8 +1,9 @@
 package cc.factorie.app.nlp.relation
 
-import cc.factorie.variable._
 import cc.factorie.app.nlp.coref._
 import cc.factorie.util.Attr
+import cc.factorie.variable._
+
 import scala.collection.mutable._
 
 object RelationArgFeaturesDomain extends CategoricalDomain[String]

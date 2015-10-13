@@ -12,8 +12,9 @@
    limitations under the License. */
 
 package cc.factorie.app.nlp
-import cc.factorie.util.{Cubbie, Attr}
+import cc.factorie.util.{Attr, Cubbie}
 import cc.factorie.variable._
+
 import scala.collection.mutable
 
 /** A sub-sequence of Tokens within a Section (which is in turn part of a Document). */

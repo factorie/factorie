@@ -12,14 +12,14 @@
    limitations under the License. */
 package cc.factorie.app.nlp.hcoref
 
-import cc.factorie._
+import cc.factorie.{Parameters, _}
 import cc.factorie.app.strings
-import cc.factorie.model._
-import cc.factorie.variable._
-import scala.reflect.ClassTag
 import cc.factorie.la.{Tensor, Tensor1}
-import cc.factorie.Parameters
+import cc.factorie.model._
 import cc.factorie.util.VectorUtils
+import cc.factorie.variable._
+
+import scala.reflect.ClassTag
 
 /**
  * @author John Sullivan

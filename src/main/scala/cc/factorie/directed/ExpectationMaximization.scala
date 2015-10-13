@@ -14,8 +14,8 @@
 package cc.factorie.directed
 
 import cc.factorie.infer._
-import cc.factorie.variable.{Var, DiscreteVar, DiscreteVariable}
 import cc.factorie.model.Model
+import cc.factorie.variable.{DiscreteVar, DiscreteVariable, Var}
 
 /** The expectation-maximization method of inference.
     maximizing is the collection of variables that will be maximized.   

@@ -12,7 +12,7 @@
    limitations under the License. */
 package cc.factorie.app.bib.parser
 
-import languageFeature.postfixOps
+import scala.languageFeature.postfixOps
 
 private[parser] object AST {
   // these types all have very generic names, so wrap them in an "AST" prefix

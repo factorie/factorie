@@ -12,8 +12,6 @@
    limitations under the License. */
 package cc.factorie.util
 
-import cc.factorie._
-
 object FastSorting {
   // NOTE: This sorts keeps the keys and values in correspondence, while sorting by the keys
   def quickSort(keys: Array[Int], values: Array[Int]): Unit = {

@@ -1,9 +1,11 @@
 package cc.factorie.app.nlp.relation
 
+import java.io.InputStream
+
 import cc.factorie.app.nlp._
 import cc.factorie.app.nlp.coref.{ParseForwardCoref, WithinDocCoref}
+
 import scala.io.Source
-import java.io.InputStream
 
 /**
  * @author John Sullivan, Benjamin Roth

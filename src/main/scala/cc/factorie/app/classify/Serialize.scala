@@ -12,11 +12,12 @@
    limitations under the License. */
 package cc.factorie.app.classify
 
-import java.io.{PrintWriter, PrintStream}
-import cc.factorie._
+import java.io.PrintStream
+
 import cc.factorie.util.Cubbie
-import collection.mutable.ArrayBuffer
-import cc.factorie.variable.{CategoricalVectorDomain, CategoricalDomain}
+import cc.factorie.variable.{CategoricalDomain, CategoricalVectorDomain}
+
+import scala.collection.mutable.ArrayBuffer
 
 
 // TODO could maybe make this cleaner if we added custom serializers for different tensors that didn't require

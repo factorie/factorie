@@ -1,11 +1,6 @@
 package cc.factorie.app.nlp.lexicon
 
-import scala.collection.mutable.{ListBuffer, HashMap}
-import scala.io.Source
-import java.io.File
-import cc.factorie.app.strings.StringSegmenter
-import cc.factorie.app.nlp.lemma.{Lemmatizer,LowercaseLemmatizer}
-import cc.factorie.app.chain.Observation
+import scala.collection.mutable.HashMap
 
 /**
  * Created by kate on 5/20/14.

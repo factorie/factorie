@@ -12,16 +12,17 @@
    limitations under the License. */
 package cc.factorie.tutorial
 
-import cc.factorie._
 import java.io.File
-import cc.factorie.util.BinarySerializer
-import cc.factorie.app.nlp._
-import cc.factorie.app.nlp.pos.{PennPosTag, PennPosDomain, LabeledPennPosTag}
-import app.chain.Observations.addNeighboringFeatureConjunctions
-import cc.factorie.optimize.Trainer
-import cc.factorie.variable.{LabeledVar, BinaryFeatureVectorVariable, CategoricalVectorDomain}
-import cc.factorie.app.nlp.load.LoadOWPL
+
+import cc.factorie._
 import cc.factorie.app.chain.ChainModel
+import cc.factorie.app.chain.Observations.addNeighboringFeatureConjunctions
+import cc.factorie.app.nlp._
+import cc.factorie.app.nlp.load.LoadOWPL
+import cc.factorie.app.nlp.pos.{LabeledPennPosTag, PennPosDomain, PennPosTag}
+import cc.factorie.optimize.Trainer
+import cc.factorie.util.BinarySerializer
+import cc.factorie.variable.{BinaryFeatureVectorVariable, CategoricalVectorDomain, LabeledVar}
 
 /**
  * Author: martin

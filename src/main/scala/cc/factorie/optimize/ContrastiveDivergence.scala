@@ -13,11 +13,11 @@
 package cc.factorie.optimize
 
 import cc.factorie._
-import cc.factorie.la.WeightsMapAccumulator
-import cc.factorie.util.DoubleAccumulator
-import cc.factorie.variable.{Var, LabeledMutableVar, DiffList}
-import cc.factorie.model.{Parameters, Model, DotFamily}
 import cc.factorie.infer.Sampler
+import cc.factorie.la.WeightsMapAccumulator
+import cc.factorie.model.{DotFamily, Model, Parameters}
+import cc.factorie.util.DoubleAccumulator
+import cc.factorie.variable.{DiffList, LabeledMutableVar, Var}
 
 /**
   * A training example for using contrastive divergence.

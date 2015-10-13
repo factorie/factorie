@@ -15,12 +15,13 @@
 package cc.factorie.variable
 
 import cc.factorie._
-import cc.factorie.la._
-import cc.factorie.util.{SparseDoubleSeq, DenseDoubleSeq, DoubleSeq, IntSeq}
-import scala.util.Random
 import cc.factorie.directed._
 import cc.factorie.infer._
-import MassesVariable._
+import cc.factorie.la._
+import cc.factorie.util.{DenseDoubleSeq, DoubleSeq, SparseDoubleSeq}
+import cc.factorie.variable.MassesVariable._
+
+import scala.util.Random
 
 // Proportions Values
 

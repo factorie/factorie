@@ -13,7 +13,6 @@
 package cc.factorie.tutorial
 
 object NlpPipeline extends App {
-  import cc.factorie._
   import cc.factorie.app.nlp._
   var doc = new Document("Education is the most powerful weapon which you can use to change the world.")
   val annotator = DocumentAnnotatorPipeline(pos.OntonotesForwardPosTagger, parse.WSJTransitionBasedParser)

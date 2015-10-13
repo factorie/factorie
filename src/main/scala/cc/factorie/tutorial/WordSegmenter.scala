@@ -16,10 +16,10 @@
 package cc.factorie.tutorial
 
 import cc.factorie._
+import cc.factorie.app.chain.{ChainModel, Observation}
+import cc.factorie.infer.{MaximizeByBPLoopy, MaximizeByMPLP}
 import cc.factorie.optimize._
 import cc.factorie.variable._
-import cc.factorie.infer.{MaximizeByBPLoopy, MaximizeByMPLP}
-import cc.factorie.app.chain.{Observation, ChainModel}
 
 object WordSegmenter {
 

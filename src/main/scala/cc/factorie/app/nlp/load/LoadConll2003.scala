@@ -12,15 +12,11 @@
    limitations under the License. */
 
 package cc.factorie.app.nlp.load
-import cc.factorie.app.nlp._
-
+import cc.factorie.app.nlp.{Document, Sentence, Token, UnknownDocumentAnnotator, _}
 import cc.factorie.app.nlp.ner._
-import collection.mutable.ArrayBuffer
 import cc.factorie.util.FastLogging
-import cc.factorie.app.nlp.Document
-import cc.factorie.app.nlp.Sentence
-import cc.factorie.app.nlp.Token
-import cc.factorie.app.nlp.UnknownDocumentAnnotator
+
+import scala.collection.mutable.ArrayBuffer
 
 /** Load a sequence of CoNLL 2003 documents.
   *

@@ -13,7 +13,6 @@
 
 package cc.factorie.model
 
-import scala.collection.mutable.HashMap
 import cc.factorie.la._
 import cc.factorie.variable._
 

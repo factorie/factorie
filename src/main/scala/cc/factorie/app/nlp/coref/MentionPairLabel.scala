@@ -12,18 +12,12 @@
    limitations under the License. */
 package cc.factorie.app.nlp.coref
 
-import java.io.File
-import java.net.URL
-import java.nio.file.Path
-
-import cc.factorie.app.nlp.lexicon.{LexiconsProvider, Lexicon, StaticLexicons}
-import cc.factorie.la.{SparseTensor, GrowableSparseBinaryTensor1}
-import cc.factorie.util.ModelProvider
-import cc.factorie.variable.{LabeledCategoricalVariable, BinaryFeatureVectorVariable}
-import scala.collection.mutable
+import cc.factorie.app.nlp.lexicon.{LexiconsProvider, StaticLexicons}
 import cc.factorie.app.nlp.Token
+import cc.factorie.la.{GrowableSparseBinaryTensor1, SparseTensor}
+import cc.factorie.variable.{BinaryFeatureVectorVariable, LabeledCategoricalVariable}
 
-import scala.io.Source
+import scala.collection.mutable
 
 /** Contains two possible mention sets:
  *    Lexical & Conventional

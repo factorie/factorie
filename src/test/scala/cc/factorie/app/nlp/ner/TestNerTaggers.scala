@@ -5,8 +5,8 @@ package cc.factorie.app.nlp.ner
  *         created on 3/23/15
  */
 
-import org.scalatest._
 import cc.factorie.app.nlp.load._
+import org.scalatest._
 
 class TestNerTaggers extends FlatSpec {
   val conllTestFilename = this.getClass.getResource("/conll-ner-input").getPath

@@ -13,7 +13,6 @@
 package cc.factorie.app.nlp
 
 import cc.factorie.util.BasicEvaluatableClustering
-import cc.factorie.variable.Vars
 
 /**
  * @author John Sullivan

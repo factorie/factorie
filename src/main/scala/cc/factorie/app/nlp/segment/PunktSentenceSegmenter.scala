@@ -12,9 +12,9 @@
    limitations under the License. */
 package cc.factorie.app.nlp.segment
 
-import io.Source
-import annotation.tailrec
 import java.util.regex.Pattern
+
+import scala.annotation.tailrec
 import scala.collection._
 
 sealed trait TokenType

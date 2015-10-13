@@ -13,10 +13,7 @@
 package cc.factorie.app.nlp.parse
 
 import cc.factorie.app.nlp.load._
-
-import org.junit.Test
-import org.junit.Before
-import org.junit.Assert
+import org.junit.{Assert, Before, Test}
 
 class TestTransitionBasedParser {
 

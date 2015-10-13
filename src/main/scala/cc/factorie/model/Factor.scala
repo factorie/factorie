@@ -13,15 +13,8 @@
 
 package cc.factorie.model
 
-import scala.collection.mutable.{ArrayBuffer, HashMap, HashSet, ListBuffer, FlatHashTable}
-import scala.util.{Random,Sorting}
-import scala.util.Random
-import scala.math
-import scala.util.Sorting
 import cc.factorie.la._
-import cc.factorie.util.Substitutions
-import java.io._
-import cc.factorie.variable.{Var, Vars, Assignment}
+import cc.factorie.variable.{Assignment, Var, Vars}
 
 /** A single factor in a factor graph.  From a Factor you can get its neighboring variables,
     the factor's score using the neighboring variable's current values,

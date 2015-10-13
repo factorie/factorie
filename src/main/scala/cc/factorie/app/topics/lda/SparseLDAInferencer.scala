@@ -11,12 +11,9 @@
    See the License for the specific language governing permissions and
    limitations under the License. */
 package cc.factorie.app.topics.lda
-import cc.factorie._
-import cc.factorie.directed._
+import cc.factorie.directed.{DirectedModel, DiscreteMixtureCounts, PlatedCategoricalMixture}
 import cc.factorie.util.DoubleSeq
-import scala.Array
-import cc.factorie.directed.{DirectedModel, PlatedCategoricalMixture, DiscreteMixtureCounts}
-import cc.factorie.variable.{ProportionsVar, DiscreteSeqVariable, DiscreteDomain, CategoricalDomain}
+import cc.factorie.variable.{CategoricalDomain, DiscreteDomain, DiscreteSeqVariable, ProportionsVar}
 
 class SparseLDAInferencer(
     val zDomain:DiscreteDomain,

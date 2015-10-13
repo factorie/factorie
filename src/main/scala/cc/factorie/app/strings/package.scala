@@ -13,8 +13,6 @@
 
 package cc.factorie.app
 
-import util.matching.Regex
-
 package object strings {
 
   /** Read the entire contents of the InputStream with the given encoding, and return them as a String. */

@@ -1,7 +1,7 @@
 package cc.factorie.app.nlp.parse
 
-import org.junit.{Assert, Before, Test}
 import cc.factorie.app.nlp.load.LoadOntonotes5
+import org.junit.{Assert, Test}
 
 /**
  * Created by diwe01 on 17.06.14.

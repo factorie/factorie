@@ -12,12 +12,13 @@
    limitations under the License. */
 
 package cc
-import scala.util.Random
-import cc.factorie.util._
-import scala.language.implicitConversions
-import cc.factorie.model.IterableSingleFactor
-import scala.reflect.runtime.universe._
 import java.io.BufferedReader
+
+import cc.factorie.util._
+
+import scala.language.implicitConversions
+import scala.reflect.runtime.universe._
+import scala.util.Random
 
 package object factorie extends CubbieConversions {
   var random = new Random(0)
@@ -33,7 +34,6 @@ package object factorie extends CubbieConversions {
 
   implicit def traversableExtras[A](t: Traversable[A]) = new cc.factorie.util.TraversableExtras[A](t)
   implicit def stringExtras(x:String) = new cc.factorie.util.StringExtras(x)
-  implicit def singleFactorIterable[F<:Factor](f:F): Iterable[F] = new IterableSingleFactor(f)
   implicit class IntPairExtras(val x:(Int, Int)) {
     def overlapsWith(y:(Int, Int)):Boolean = (x._1 >= y._1 && x._1 <= y._2) || (x._2 >= y._1 && x._2 <= y._2)
   }

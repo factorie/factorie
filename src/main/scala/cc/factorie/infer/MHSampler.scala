@@ -13,9 +13,9 @@
 
 package cc.factorie.infer
 
+import cc.factorie.model.Model
 import cc.factorie.util.Hooks0
 import cc.factorie.variable.DiffList
-import cc.factorie.model.Model
 
 /** A Metropolis-Hastings sampler.  
     The abstract method 'propose' should be defined to make a random proposal, putting changes in its implicit DiffList, 

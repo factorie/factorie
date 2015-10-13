@@ -13,7 +13,6 @@
 package cc.factorie.app.nlp.segment
 
 import cc.factorie.app.nlp._
-import scala.collection.mutable.ArrayBuffer
 
 
 /**

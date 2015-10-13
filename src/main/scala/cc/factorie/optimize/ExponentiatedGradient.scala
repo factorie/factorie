@@ -12,7 +12,7 @@
    limitations under the License. */
 package cc.factorie.optimize
 
-import cc.factorie.la.{Tensor, SparseIndexedTensor, DenseTensor}
+import cc.factorie.la.{DenseTensor, SparseIndexedTensor, Tensor}
 import cc.factorie.model.{WeightsMap, WeightsSet}
 
 // TODO this should really store weights in log-space, and have an unnormalized version

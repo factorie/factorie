@@ -12,11 +12,10 @@
    limitations under the License. */
 
 package cc.factorie.la
-import cc.factorie._
 import cc.factorie.util._
-import java.lang.IllegalStateException
 
 // TODO Finish this implementation
+@deprecated("Not used anywhere", "Before 10/06/15")
 class ConcatenatedTensor(theTensors:Seq[Tensor]) extends ReadOnlyTensor with Tensor1 with DenseDoubleSeq {
   def forallActiveElements(f: (Int, Double) => Boolean) = forallElements(f)
   def activeDomainSize = activeDomain.size

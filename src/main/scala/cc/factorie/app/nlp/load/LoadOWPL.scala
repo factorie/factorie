@@ -12,11 +12,8 @@
    limitations under the License. */
 package cc.factorie.app.nlp.load
 
+import cc.factorie.app.nlp.{Document, Sentence, Token, UnknownDocumentAnnotator}
 import cc.factorie.variable.MutableCategoricalVar
-import cc.factorie.app.nlp.Document
-import cc.factorie.app.nlp.Sentence
-import cc.factorie.app.nlp.Token
-import cc.factorie.app.nlp.UnknownDocumentAnnotator
 
 /**
  * Author: martin, strubell

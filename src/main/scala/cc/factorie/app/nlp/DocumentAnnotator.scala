@@ -12,9 +12,9 @@
    limitations under the License. */
 
 package cc.factorie.app.nlp
-import cc.factorie.app.nlp.phrase.Phrase
-import cc.factorie.util.{Cubbie, Threading}
 import cc.factorie.app.nlp.coref.Mention
+import cc.factorie.app.nlp.phrase.Phrase
+import cc.factorie.util.Threading
 
 trait DocumentAnnotator {
   def process(document: Document): Document  // NOTE: this method may mutate and return the same document that was passed in

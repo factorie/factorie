@@ -24,12 +24,14 @@ import scala.reflect.ClassTag
     @author Andrew McCallum
     @since 0.9
 */
+@deprecated("Not used anywhere", "Before 10/06/15")
 trait Catalog {
   Catalog += this
   def catalogIndex = Catalog.indexOf(this)
   def catalogSiblings[This<:Catalog] = Catalog.get[This](this.getClass)
 }
 
+@deprecated("Not used anywhere", "Before 10/06/15")
 object Catalog {
   private val cache = new HashMap[Class[_],ArrayBuffer[Catalog]] {
     override def default(k:Class[_]) = new ArrayBuffer[Catalog]

@@ -12,8 +12,7 @@
    limitations under the License. */
 
 package cc.factorie.la
-import cc.factorie._
-import cc.factorie.util._
+import cc.factorie.util.{SparseDoubleSeq, DoubleSeq, ArrayDoubleSeq, IntSeq, TruncatedArrayIntSeq, FastSorting}
 
 /** A sparse Tensor that stores an array of indices having non-zero values and an aligned sized array storing those values. */
 

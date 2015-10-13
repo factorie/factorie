@@ -1,8 +1,8 @@
 package cc.factorie.app.classify.backend
 
-import cc.factorie.la.{DenseTensor2, DenseTensor1}
-import org.junit.Test
+import cc.factorie.la.{DenseTensor1, DenseTensor2}
 import org.junit.Assert._
+import org.junit.Test
 import org.scalatest.junit._
 
 

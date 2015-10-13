@@ -15,6 +15,7 @@ package cc.factorie.util
 
 /** The scala REPL available through an object main.
     Runs each of the command-line args as a scala command, then drops into an interpreter prompt. */
+@deprecated("Not used anywhere", "Before 10/06/15")
 object Interpreter {
   def main(args:Array[String]): Unit = {
     val settings = new scala.tools.nsc.Settings
