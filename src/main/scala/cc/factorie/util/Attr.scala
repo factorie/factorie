@@ -98,6 +98,11 @@ trait Attr extends Serializable {
     def contains[C<:AnyRef]()(implicit m: ClassTag[C]): Boolean = index(m.runtimeClass) >= 0
     /** Return true if there is an attribute of class equal to or subclass of the argument. */
     def contains(key:Class[_]): Boolean = index(key) >= 0
+    /** Return true if there is an attribute of class exactly equal to the argument. */
+    def containsExactly[C<:AnyRef]()(implicit m: ClassTag[C]): Boolean = indexExactly(m.runtimeClass) >= 0
+    /** Return true if there is an attribute of class exactly equal to the argument. */
+    def containsExactly(key: Class[_]): Boolean = indexExactly(key) >= 0
+
     /** Returns a sequence of all attributes with classes assignable to C (i.e. that are either C or a subclass of C). */
     def all[C<:AnyRef]()(implicit m: ClassTag[C]): Seq[C] = {
       val key = m.runtimeClass
