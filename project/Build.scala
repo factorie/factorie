@@ -31,7 +31,7 @@ object FactorieBuild extends Build {
 
   lazy val factorie = Project("factorie", file(".")).
     configs(NoNLP, WithNLP).
-    settings(
+    settings(jflexSettings ++ Seq(
       organization := "cc.factorie_2.11",
       version := "1.2-SNAPSHOT",
       scalaVersion := "2.11.7",
@@ -50,10 +50,9 @@ object FactorieBuild extends Build {
         CompileDependencies.json4s,
         TestDependencies.scalatest
       ),
-      seq(jflexSettings: _*),
       unmanagedSourceDirectories in Compile <+= (sourceDirectory in jflex),
       sourceGenerators in Compile <+= generate in jflex
-    ).
+    ):_*).
     settings(inConfig(NoNLP)(
       Classpaths.configSettings ++ Defaults.defaultSettings ++ baseAssemblySettings ++ jflexSettings ++ Seq(
       test in assembly := {},
@@ -89,7 +88,7 @@ object Dependencies {
     val acommonslang = "commons-lang" % "commons-lang" % "2.6"
     val snappy = "org.xerial.snappy" % "snappy-java" % "1.1.1.3"
     val bliki = "info.bliki.wiki" % "bliki-core" % "3.0.19"
-    val json4s = "org.json4s" % "json4s-core_2.11" % "3.2.9"
+    val json4s = "org.json4s" %% "json4s-jackson" % "3.2.9"
   }
 
   object TestDependencies {
