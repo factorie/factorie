@@ -33,7 +33,7 @@ trait DebugCoref[Vars <: NodeVariables[Vars]]{
   var acceptedThisRound = 0.0
   var totalProps = 0
   lazy val begin = System.currentTimeMillis()
-  var startTime = 0L
+  var startTime = begin
   var stopTime = 0L
 
   beforeInferHooks += { _ =>
