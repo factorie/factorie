@@ -67,14 +67,10 @@ trait CanopyPairGenerator[Vars <: NodeVariables[Vars] with Canopy] extends PairG
   @tailrec
   private def getEntity(context:Option[Node[Vars]]):Node[Vars] = context match {
     case Some(n1) =>
-      val iter = n1.variables.canopies.iterator
-      val candidates = new mutable.ArrayBuffer[Node[Vars]]
-      while(iter.hasNext) {
-        canopies.get(iter.next()) match {
-          case Some(ns) => candidates ++= ns
-          case None => ()
-        }
-      }
+      val nodeCanopies = n1.variables.canopies.toSeq
+
+      val candidates = canopies(nodeCanopies(random.nextInt(nodeCanopies.size)))
+
       if(candidates.size <= 1) {
         getEntity(None)
       } else {

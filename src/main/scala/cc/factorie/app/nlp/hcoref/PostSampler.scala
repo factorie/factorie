@@ -109,7 +109,7 @@ trait PostSampler[Vars <: NodeVariables[Vars], Model <: DirectScoringModel[Vars]
           new MergeUp[Vars](n1,n2)({d:DiffList => newInstance(d)}).perform(null)
         case None =>
           scoreThresh = math.max(minScore, scoreThresh - 0.1)
-          println("\tlowering our standards to " + scoreThresh)
+          //println("\tlowering our standards to " + scoreThresh)
       }
 
       //print(".")
@@ -132,23 +132,23 @@ trait PostSampler[Vars <: NodeVariables[Vars], Model <: DirectScoringModel[Vars]
     val roots = mentions.map(_.root).filterNot(_.isMention).toSeq
     println("dropping in %d roots".format(roots.size))
     val scoreMat = getScoreMatrx(roots, 50)
-    println("generated a score matrix with %d entries".format(scoreMat.size))
+    //println("generated a score matrix with %d entries".format(scoreMat.size))
     val mergedRoots = mutable.HashSet[Node[Vars]]()
     var idx = roots.size - 1
     while(idx > roots.size - 50) {
       if(idx % 10 == 0) print(".")
       val (n1, n2, _) = scoreMat(idx)
-      println("idx: " + idx)
+      //println("idx: " + idx)
 
       //val mvs = settings(n1 -> n2).asInstanceOf[MoveSettingIterator[Vars]].moves
-      println("proposing to merge ", n1.toString, n2.toString)
+      //println("proposing to merge ", n1.toString, n2.toString)
       if((!mergedRoots.contains(n1) || !mergedRoots.contains(n2)) && !(n1 == n2)) {
         if(n1.children.size > n2.children.size && !mergedRoots.contains(n1)) {
-          println("merging n2 (%d) into n1 (%d)".format(n2.children.size, n1.children.size))
+          //println("merging n2 (%d) into n1 (%d)".format(n2.children.size, n1.children.size))
           mergedRoots += n2
           new MergeLeft[Vars](n1, n2).perform(null)
         } else {
-          println("merging n1 (%d) into n2 (%d)".format(n1.children.size, n2.children.size))
+          //println("merging n1 (%d) into n2 (%d)".format(n1.children.size, n2.children.size))
           mergedRoots += n1
           new MergeLeft[Vars](n2, n1).perform(null)
         }
@@ -165,7 +165,7 @@ trait PostSampler[Vars <: NodeVariables[Vars], Model <: DirectScoringModel[Vars]
     def processNode(node:Node[Vars]): Unit = {
       implicit val diff:DiffList = null
       if(node.children.nonEmpty && node.children.size >= threshold) {
-        println("\treshuffling %d children in %s".format(node.children.size, node))
+        //println("\treshuffling %d children in %s".format(node.children.size, node))
         val children = node.children.toSeq
         val sub1 = newInstance(null)
         val sub2 = newInstance(null)
@@ -174,7 +174,7 @@ trait PostSampler[Vars <: NodeVariables[Vars], Model <: DirectScoringModel[Vars]
         //children.head.alterParent(Some(sub1))
 
         val scores = getScoreMatrx(children).map{case(a,b,c) => (a,b) -> c}
-        println("\t calculated %d pairwise scores".format(scores.size))
+        //println("\t calculated %d pairwise scores".format(scores.size))
         // since scores is sorted these should be the two most different pairs
         val ((n1, n2), _) = scores.head
         n1 alterParent Some(sub1)
