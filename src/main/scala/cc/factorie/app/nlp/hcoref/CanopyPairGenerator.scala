@@ -1,8 +1,8 @@
 package cc.factorie.app.nlp.hcoref
 
-import cc.factorie._
 import cc.factorie.infer.{Proposal, SettingsSampler}
 
+import scala.annotation.tailrec
 import scala.collection.mutable
 
 /**
@@ -21,10 +21,8 @@ trait SingularCanopy extends Canopy {
 trait CanopyPairGenerator[Vars <: NodeVariables[Vars] with Canopy] extends PairGenerator[Vars] {
   this:SettingsSampler[(Node[Vars], Node[Vars])] =>
 
-  val entMap = new mutable.HashMap[String, Node[Vars]]()
   protected var canopies = new mutable.HashMap[String,mutable.ArrayBuffer[Node[Vars]]]()
   var entities = mutable.ArrayBuffer[Node[Vars]]()
-  protected var deletedEntities = mutable.ArrayBuffer[Node[Vars]]()
   mentions foreach addEntity
 
   proposalHooks += {proposal:Proposal[(Node[Vars], Node[Vars])] =>
@@ -53,51 +51,67 @@ trait CanopyPairGenerator[Vars <: NodeVariables[Vars] with Canopy] extends PairG
 
   def addEntity(e:Node[Vars]):Unit ={
     entities += e
-    entMap.put(e.uniqueId.toString, e)
     for(cname <- e.variables.canopies){
       canopies.getOrElse(cname,{val a = new mutable.ArrayBuffer[Node[Vars]];canopies(cname)=a;a}) += e
     }
   }
 
   def nextEntityPair:(Node[Vars],Node[Vars]) = {
-    val e1 = nextEntity(null)
-    val e2 = nextEntity(e1)
+    val e1 = getEntity(None)
+    val e2 = getEntity(Some(e1))
     e1 -> e2
   }
 
   def nextContext = nextEntityPair
 
-
-  def sampleCanopyName(context:Node[Vars]):String = context.variables.canopies.sampleUniformly(random)
-  def nextEntity(context:Node[Vars]=null.asInstanceOf[Node[Vars]]):Node[Vars] = {
-    var result:Node[Vars]=null.asInstanceOf[Node[Vars]]
-    if(context==null)result = sampleEntity(entities)
-    else {
-      val cname = sampleCanopyName(context)
-      val canopy = canopies.getOrElse(cname,{val c = new mutable.ArrayBuffer[Node[Vars]];c+=context;c})
-      result= if(canopy.size>0) sampleEntity(canopy) else sampleEntity(entities)
-
-    }
-
-    result
+  @tailrec
+  private def getEntity(context:Option[Node[Vars]]):Node[Vars] = context match {
+    case Some(n1) =>
+      val iter = n1.variables.canopies.iterator
+      val candidates = new mutable.ArrayBuffer[Node[Vars]]
+      while(iter.hasNext) {
+        canopies.get(iter.next()) match {
+          case Some(ns) => candidates ++= ns
+          case None => ()
+        }
+      }
+      if(candidates.size <= 1) {
+        getEntity(None)
+      } else {
+        var e = candidates(random.nextInt(candidates.size))
+        var i = 0
+        while(!e.exists) {
+          i += 1
+          e = candidates(random.nextInt(candidates.size))
+          if(i % 5 == 0) {
+            cleanEntities()
+          }
+        }
+        e
+      }
+    case None =>
+      var e = entities(random.nextInt(entities.size))
+      var i = 0
+      while(!e.exists) {
+        i += 1
+        e = entities(random.nextInt(entities.size))
+        if(i % 5 == 0) {
+          cleanEntities()
+        }
+      }
+      e
   }
 
-  protected def sampleEntity(samplePool:mutable.ArrayBuffer[Node[Vars]]) = {
-    var tries = 5
-    var e = null.asInstanceOf[Node[Vars]]
-    while({tries-=1;tries} >= 0 && (e==null || !e.exists) && samplePool.size>0){
-      e = samplePool(random.nextInt(samplePool.size))
-      if(tries==1)performMaintenance(samplePool)
+  private def cleanEntities(): Unit = {
+    val existingEnts = new mutable.ArrayBuffer[Node[Vars]]
+    val iter = entities.iterator
+    while(iter.hasNext) {
+      val e = iter.next()
+      if(e.exists) {
+        existingEnts += e
+      }
     }
-    if(e != null && !e.exists)e=null.asInstanceOf[Node[Vars]]
-    e
-  }
-  def performMaintenance(es:mutable.ArrayBuffer[Node[Vars]]):Unit ={
-    val cleanEntities = mutable.ArrayBuffer[Node[Vars]]()
-    cleanEntities ++= es.filter(_.exists)
-    deletedEntities ++= es.filter(!_.exists)
-    es.clear()
-    es++=cleanEntities
+    entities = existingEnts
   }
 
 }
