@@ -14,9 +14,12 @@ package cc.factorie.app.nlp.hcoref
 
 import cc.factorie.infer.Proposal
 
-class Logger(val log:(String => Unit))
+//todo this is ugly and bad
+trait Logger {
+  def log(s:String):Unit
+}
 object Logger {
-  val default = new Logger({s:String => println(s)})
+  val default = new Logger{def log(s:String) {println(s)}}
 }
 
 /**
@@ -70,14 +73,13 @@ trait DebugCoref[Vars <: NodeVariables[Vars]]{
     log.log(f"\t max depth: $maxDepth min depth: $minDepth ave depth: $aveDepth%.2f")
     log.log(f"\t max children: $maxChildren min children: $minChildren ave children: $aveChildren%.2f")
     log.log(f"\t max mentions: $maxMentions min mentions: $minMentions ave mentions: $aveMentions%.2f")
-    //println("%d non mention samples".format(multiSamples))
     startTime = stopTime
     acceptedThisRound = 0.0
   }
 
   proposalHooks += {p:Proposal[(Node[Vars], Node[Vars])] =>
     totalProps +=1
-    if(p.diff.size != 0) {
+    if(p.diff.nonEmpty) {
       acceptedProps += 1
       acceptedThisRound += 1
     }
