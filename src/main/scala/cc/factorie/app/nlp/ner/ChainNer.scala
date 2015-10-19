@@ -7,6 +7,7 @@ package cc.factorie.app.nlp.ner
 
 import java.io._
 
+import cc.factorie._
 import cc.factorie.app.chain.{ChainModel, SegmentEvaluation}
 import cc.factorie.app.nlp._
 import cc.factorie.optimize.{AdaGrad, ParameterAveraging, Trainer}
@@ -37,7 +38,7 @@ import scala.reflect.ClassTag
  * PER      f1=0.940327 p=0.955329 r=0.925788 (tp=1497 fp=70 fn=120 true=1617 pred=1567)
  *
  */
-class ConllChainNer(url: java.net.URL=null) extends ChainNer[ConllNerSpan, BilouConllNerTag](BilouConllNerDomain, (t, s) => new BilouConllNerTag(t, s), l => l.token, url) {
+class ConllChainNer(url: java.net.URL=null) extends ChainNer[BilouConllNerTag](BilouConllNerDomain, (t, s) => new BilouConllNerTag(t, s), l => l.token, url) {
   def loadDocs(fileName: String): Seq[Document] = cc.factorie.app.nlp.load.LoadConll2003(BILOU=true).fromFilename(fileName)
 
   def newSpan(sec: Section, start: Int, length: Int, category: String) = new ConllNerSpan(sec, start, length, category)
@@ -49,7 +50,7 @@ class ConllChainNer(url: java.net.URL=null) extends ChainNer[ConllNerSpan, Bilou
 object ConllChainNer extends ConllChainNer(cc.factorie.util.ClasspathURL[ConllChainNer](".factorie")) with Serializable
 
 
-class OntonotesChainNer(url: java.net.URL=null)(implicit ct:ClassTag[OntonotesNerSpan]) extends ChainNer[OntonotesNerSpan, BilouOntonotesNerTag](BilouOntonotesNerDomain, (t, s) => new BilouOntonotesNerTag(t, s), l => l.token, url) {
+class OntonotesChainNer(url: java.net.URL=null)(implicit ct:ClassTag[OntonotesNerSpan]) extends ChainNer[BilouOntonotesNerTag](BilouOntonotesNerDomain, (t, s) => new BilouOntonotesNerTag(t, s), l => l.token, url) {
   def newBuffer = new OntonotesNerSpanBuffer()
 
   def newSpan(sec: Section, start: Int, length: Int, category: String) = new OntonotesNerSpan(sec, start, length, category)
@@ -61,14 +62,15 @@ object OntonotesChainNer extends OntonotesChainNer(cc.factorie.util.ClasspathURL
 /**
  * A base class for finite-state named entity recognizers
  */
-abstract class ChainNer[S<: NerSpan, L<:NerTag](labelDomain: CategoricalDomain[String],
+abstract class ChainNer[L<:NerTag](labelDomain: CategoricalDomain[String],
                                    newLabel: (Token, String) => L,
                                    labelToToken: L => Token,
-                                   url: java.net.URL=null)(implicit m: ClassTag[L], s: ClassTag[S]) extends NerAnnotator[S, L] {
+                                   url: java.net.URL=null)(implicit m: ClassTag[L]) extends DocumentAnnotator with Serializable {
 
-  def prereqAttrs = Seq(classOf[Sentence])
+  val prereqAttrs = Seq(classOf[Sentence])
+  val postAttrs = Seq(m.runtimeClass)
 
-  def annotateTokens(document: Document) =
+  def process(document:Document) =
     if(document.tokenCount > 0) {
       if (!document.tokens.head.attr.contains(m.runtimeClass))
         document.tokens.map(token => token.attr += newLabel(token, "O"))
@@ -84,6 +86,8 @@ abstract class ChainNer[S<: NerSpan, L<:NerTag](labelDomain: CategoricalDomain[S
     } else {
       document
     }
+
+  def tokenAnnotationString(token: Token) = token.attr[L].categoryValue
 
   object ChainNERFeaturesDomain extends CategoricalVectorDomain[String]
   class ChainNERFeatures(val token: Token) extends BinaryFeatureVectorVariable[String] {
@@ -344,8 +348,8 @@ object ConllChainNerTrainer extends cc.factorie.util.HyperparameterMain {
       }
     }
     assert(opts.train.wasInvoked && opts.test.wasInvoked, "No train/test data file provided.")
-    val trainPortionToTake = if(opts.trainPortion.wasInvoked) opts.trainPortion.value.toDouble  else 1.0
-    val testPortionToTake =  if(opts.testPortion.wasInvoked) opts.testPortion.value.toDouble  else 1.0
+    val trainPortionToTake = if(opts.trainPortion.wasInvoked) opts.trainPortion.value else 1.0
+    val testPortionToTake =  if(opts.testPortion.wasInvoked) opts.testPortion.value else 1.0
     val trainDocsFull = ner.loadDocs(opts.train.value)
     val testDocsFull = ner.loadDocs(opts.test.value)
     val trainDocs = trainDocsFull.take((trainDocsFull.length*trainPortionToTake).floor.toInt)

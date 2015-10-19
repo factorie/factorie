@@ -9,28 +9,25 @@ import java.util.logging.{Logger, Level}
 /**
  * @author John Sullivan
  */
-abstract class NerAnnotator[Span <: NerSpan : ClassTag, Tag <: NerTag : ClassTag] extends DocumentAnnotator with Serializable {
+object ConllNerChunkAnnotator extends NerChunkAnnotator({() => new ConllNerSpanBuffer}, {(s:Section, start:Int, end:Int, cat:String) => new ConllNerSpan(s, start, end, cat)})
+object OntonotesNerChunkAnnotator extends NerChunkAnnotator({() => new OntonotesNerSpanBuffer}, {(s:Section, start:Int, end:Int, cat:String) => new OntonotesNerSpan(s, start, end, cat)})
+
+class NerChunkAnnotator[Span <: NerSpan : ClassTag, Tag <: NerTag : ClassTag](newBuffer:() => NerSpanBuffer[Span], newSpan:(Section, Int, Int, String) => Span) extends DocumentAnnotator {
 
   private val logger = Logger.getLogger(getClass.getName)
 
+  val prereqAttrs = Seq(classTag[Tag].runtimeClass)
+  val postAttrs = Seq(classTag[Span].runtimeClass)
+
   def tokenAnnotationString(token: Token) = token.attr.exactly[Tag].categoryValue
 
-  val postAttrs = Seq(classTag[Tag].runtimeClass, classTag[Span].runtimeClass)
-
-  /** This class should annotate all of the tokens in the document with the appropriate NER tag */
-  def annotateTokens(document:Document):Document
-
-  def newBuffer:NerSpanBuffer[Span]
-  def newSpan(sec:Section, start:Int, length:Int, category:String):Span
-
-  def process(document: Document) = {
+  def process(doc: Document) = {
     sealed trait State
     case class Reading(tag:String) extends State
     case object NotReading extends State
 
-    val doc = annotateTokens(document)
-    val spanBuffer = newBuffer
-    doc.sections.map { sec =>
+    val spanBuffer = newBuffer()
+    doc.sections.foreach { sec =>
       val iter = sec.tokens.iterator
       var tok:Token = null
       var state:State = NotReading
@@ -60,7 +57,7 @@ abstract class NerAnnotator[Span <: NerSpan : ClassTag, Tag <: NerTag : ClassTag
               val prevToken = if (tok.hasPrev) tok.prev else null
               if (prevToken != null) prevToken.attr[Tag].categoryValue else "<null>"
             }
-            logger.log(Level.FINE, "Invalid combination of states, prefix %s, state %s at token %s. Previous token was %s.".format(prefix, s, tok, prevStr))
+            logger.log(Level.WARNING, "Invalid combination of states, prefix %s, state %s at token %s. Previous token was %s.".format(prefix, s, tok, prevStr))
         }
       }
       if (tokBuffer.nonEmpty) {

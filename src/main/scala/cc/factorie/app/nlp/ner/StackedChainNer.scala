@@ -37,14 +37,14 @@ class TokenSequence[T<:NerTag](token: Token)(implicit m: ClassTag[T]) extends co
   def key = this.mkString("-")
 }
 
-abstract class StackedChainNer[S <: NerSpan : ClassTag, L<:NerTag ](labelDomain: CategoricalDomain[String],
+abstract class StackedChainNer[L<:NerTag](labelDomain: CategoricalDomain[String],
                                  newLabel: (Token, String) => L,
                                  labelToToken: L => Token,
                                  embeddingMap: SkipGramEmbedding,
                                  embeddingDim: Int,
                                  scale: Double,
                                  useOffsetEmbedding: Boolean,
-                                 url: java.net.URL=null)(implicit m: ClassTag[L]) extends NerAnnotator[S, L] {
+                                 url: java.net.URL=null)(implicit m: ClassTag[L]) extends DocumentAnnotator with Serializable {
 
   val FEATURE_PREFIX_REGEX = "^[^@]*$".r
   val ALPHA_REGEX = "[A-Za-z]+".r
@@ -62,27 +62,30 @@ abstract class StackedChainNer[S <: NerSpan : ClassTag, L<:NerTag ](labelDomain:
     }
   }
 
-  def annotateTokens(document: Document) =
-  if(document.tokenCount > 0) {
-    if (!document.tokens.head.attr.contains(m.runtimeClass))
-      document.tokens.map(token => token.attr += newLabel(token, "O"))
-    if (!document.tokens.head.attr.contains(classOf[ChainNerFeatures])) {
-      document.tokens.map(token => {token.attr += new ChainNerFeatures(token)})
-      initFeatures(document,(t:Token)=>t.attr[ChainNerFeatures])
+  def process(document:Document) =
+    if(document.tokenCount > 0) {
+      if (!document.tokens.head.attr.contains(m.runtimeClass))
+        document.tokens.map(token => token.attr += newLabel(token, "O"))
+      if (!document.tokens.head.attr.contains(classOf[ChainNerFeatures])) {
+        document.tokens.map(token => {token.attr += new ChainNerFeatures(token)})
+        initFeatures(document,(t:Token)=>t.attr[ChainNerFeatures])
+      }
+      process(document, useModel2 = false)
+      if (!document.tokens.head.attr.contains(classOf[ChainNer2Features])) {
+        document.tokens.map(token => token.attr += new ChainNer2Features(token))
+        initFeatures(document,(t:Token)=>t.attr[ChainNer2Features])
+        initSecondaryFeatures(document)
+      }
+      process(document,useModel2 = true)
+      document
+    } else {
+      document
     }
-    process(document, useModel2 = false)
-    if (!document.tokens.head.attr.contains(classOf[ChainNer2Features])) {
-      document.tokens.map(token => token.attr += new ChainNer2Features(token))
-      initFeatures(document,(t:Token)=>t.attr[ChainNer2Features])
-      initSecondaryFeatures(document)
-    }
-    process(document,useModel2 = true)
-    document
-  } else {
-    document
-  }
 
-  def prereqAttrs = Seq(classOf[Sentence])
+  val prereqAttrs = Seq(classOf[Sentence])
+  val postAttrs = Seq(m.runtimeClass)
+
+  def tokenAnnotationString(token: Token) = token.attr[NerTag].categoryValue
 
   object ChainNer2FeaturesDomain extends CategoricalVectorDomain[String]
   class ChainNer2Features(val token:Token) extends BinaryFeatureVectorVariable[String] {
@@ -634,7 +637,7 @@ class ConllStackedChainNer(embeddingMap: SkipGramEmbedding,
                            embeddingDim: Int,
                            scale: Double,
                            useOffsetEmbedding: Boolean,
-                           url: java.net.URL=null) extends StackedChainNer[ConllNerSpan, BilouConllNerTag](BilouConllNerDomain, (t, s) => new BilouConllNerTag(t, s), l => l.token, embeddingMap, embeddingDim, scale, useOffsetEmbedding, url) {
+                           url: java.net.URL=null) extends StackedChainNer[BilouConllNerTag](BilouConllNerDomain, (t, s) => new BilouConllNerTag(t, s), l => l.token, embeddingMap, embeddingDim, scale, useOffsetEmbedding, url) {
   def newSpan(sec: Section, start: Int, length: Int, category: String) = new ConllNerSpan(sec, start, length, category)
 
   def newBuffer = new ConllNerSpanBuffer
@@ -647,7 +650,7 @@ class OntonotesStackedChainNer(embeddingMap: SkipGramEmbedding,
                                embeddingDim: Int,
                                scale: Double,
                                useOffsetEmbedding: Boolean,
-                               url: java.net.URL=null) extends StackedChainNer[OntonotesNerSpan, BilouOntonotesNerTag](BilouOntonotesNerDomain, (t, s) => new BilouOntonotesNerTag(t, s), l => l.token, embeddingMap, embeddingDim, scale, useOffsetEmbedding, url) {
+                               url: java.net.URL=null) extends StackedChainNer[BilouOntonotesNerTag](BilouOntonotesNerDomain, (t, s) => new BilouOntonotesNerTag(t, s), l => l.token, embeddingMap, embeddingDim, scale, useOffsetEmbedding, url) {
 
   def newSpan(sec: Section, start: Int, length: Int, category: String) = new OntonotesNerSpan(sec, start, length, category)
   def newBuffer = new OntonotesNerSpanBuffer

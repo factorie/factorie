@@ -74,6 +74,8 @@ object DocumentAnnotatorPipeline extends FastLogging  {
     classOf[ner.NerTag] -> (() => ner.ConllChainNer), // TODO Should there be a different default?
     classOf[ner.BilouConllNerTag] -> (() => ner.NoEmbeddingsConllStackedChainNer),
     classOf[ner.BilouOntonotesNerTag] -> (() => ner.NoEmbeddingsOntonotesStackedChainNer),
+    classOf[ner.ConllNerSpanBuffer] -> (() => ner.ConllNerChunkAnnotator),
+    classOf[ner.OntonotesNerSpanBuffer] -> (() => ner.OntonotesNerChunkAnnotator),
     //classOf[coref.mention.NerMentionList] -> (() => coref.mention.NerAndPronounMentionFinder),
     //classOf[phrase.GenderLabel[coref.Mention]] -> (() => phrase.GenderLabeler[]),
     classOf[phrase.Gender] -> (() => phrase.MentionPhraseGenderLabeler),
