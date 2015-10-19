@@ -4,10 +4,15 @@ import cc.factorie.app.nlp.{Section, Token, Document, DocumentAnnotator}
 import scala.reflect.{ClassTag, classTag}
 import scala.collection.mutable
 
+import java.util.logging.{Logger, Level}
+
 /**
  * @author John Sullivan
  */
 abstract class NerAnnotator[Span <: NerSpan : ClassTag, Tag <: NerTag : ClassTag] extends DocumentAnnotator with Serializable {
+
+  private val logger = Logger.getLogger(getClass.getName)
+
   def tokenAnnotationString(token: Token) = token.attr.exactly[Tag].categoryValue
 
   val postAttrs = Seq(classTag[Tag].runtimeClass, classTag[Span].runtimeClass)
@@ -32,7 +37,7 @@ abstract class NerAnnotator[Span <: NerSpan : ClassTag, Tag <: NerTag : ClassTag
       val tokBuffer = mutable.ArrayBuffer[Token]()
       while(iter.hasNext) {
         tok = iter.next()
-        val tag = tok.attr.exactly[Tag]
+        val tag = tok.attr[Tag]
         (tag.spanPrefix, state) match {
           case ("O", NotReading) => ()
           case ("U", NotReading) => spanBuffer.add(newSpan(sec, tok.positionInSection, 1, tag.baseCategoryValue))(null)
@@ -50,10 +55,15 @@ abstract class NerAnnotator[Span <: NerSpan : ClassTag, Tag <: NerTag : ClassTag
             spanBuffer.add(newSpan(sec, tokBuffer.head.positionInSection, tokBuffer.size, t))(null)
             tokBuffer.clear()
             state = NotReading
-          case (prefix, s) => throw new Error("Invalid combination of states, prefix %s, state %s at token %s".format(prefix, s, tok))
+          case (prefix, s) =>
+            val prevStr = {
+              val prevToken = if (tok.hasPrev) tok.prev else null
+              if (prevToken != null) prevToken.attr[Tag].categoryValue else "<null>"
+            }
+            logger.log(Level.FINE, "Invalid combination of states, prefix %s, state %s at token %s. Previous token was %s.".format(prefix, s, tok, prevStr))
         }
       }
-      if(tokBuffer.nonEmpty) {
+      if (tokBuffer.nonEmpty) {
         spanBuffer.add(newSpan(sec, tokBuffer.head.positionInSection, tokBuffer.size, state.asInstanceOf[Reading].tag))(null)
       }
     }
