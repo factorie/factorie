@@ -250,18 +250,20 @@ abstract class ChainNer[S<: NerSpan, L<:NerTag](labelDomain: CategoricalDomain[S
 
     val trainLabels = labels(trainDocs).toIndexedSeq
     val testLabels = labels(testDocs).toIndexedSeq
+    val labelDomain: CategoricalDomain[String] = trainLabels.head.domain.asInstanceOf[CategoricalDomain[String]]
+    (trainLabels ++ testLabels).foreach(_.setRandomly)
 
     val examples = trainDocs.flatMap(_.sentences.filter(_.length > 1).map(sentence => new model.ChainLikelihoodExample(sentence.tokens.map(_.attr[L with LabeledMutableDiscreteVar])))).toSeq
     val optimizer = new AdaGrad(rate=rate, delta=delta) with ParameterAveraging
 
     def evaluate(){
-      val segmentEvaluation = new SegmentEvaluation[L with LabeledMutableCategoricalVar[String]](
+      val segmentEvaluation = new SegmentEvaluation[L with CategoricalLabeling[String]](
         labelDomain.categories.filter(_.length > 2).map(_.substring(2)),
         "(B|U)-", "(I|L)-"
       )
       trainDocs.foreach(doc => {
         process(doc)
-        for (sentence <- doc.sentences) segmentEvaluation += sentence.tokens.map(_.attr[L with LabeledMutableCategoricalVar[String]])
+        for (sentence <- doc.sentences) segmentEvaluation += sentence.tokens.map(_.attr[L with CategoricalLabeling[String]])
       })
       println(s"Train accuracy ${objective.accuracy(trainLabels)}")
       println(segmentEvaluation)
@@ -272,7 +274,7 @@ abstract class ChainNer[S<: NerSpan, L<:NerTag](labelDomain: CategoricalDomain[S
         )
         testDocs.foreach(doc => {
           process(doc)
-          for (sentence <- doc.sentences) testSegmentEvaluation += sentence.tokens.map(_.attr[L with LabeledMutableCategoricalVar[String]])
+          for (sentence <- doc.sentences) testSegmentEvaluation += sentence.tokens.map(_.attr[L with CategoricalLabeling[String]])
         })
         println(s"Test accuracy ${objective.accuracy(testLabels)}")
         println(testSegmentEvaluation)
