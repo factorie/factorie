@@ -11,8 +11,6 @@ import java.util.logging.{Logger, Level}
  */
 abstract class NerAnnotator[Span <: NerSpan : ClassTag, Tag <: NerTag : ClassTag] extends DocumentAnnotator with Serializable {
 
-  private val logger = Logger.getLogger(getClass.getName)
-
   def tokenAnnotationString(token: Token) = token.attr.exactly[Tag].categoryValue
 
   val postAttrs = Seq(classTag[Tag].runtimeClass, classTag[Span].runtimeClass)
@@ -60,7 +58,7 @@ abstract class NerAnnotator[Span <: NerSpan : ClassTag, Tag <: NerTag : ClassTag
               val prevToken = if (tok.hasPrev) tok.prev else null
               if (prevToken != null) prevToken.attr[Tag].categoryValue else "<null>"
             }
-            logger.log(Level.FINE, "Invalid combination of states, prefix %s, state %s at token %s. Previous token was %s.".format(prefix, s, tok, prevStr))
+            NerAnnotator.logger.log(Level.FINE, "Invalid combination of states, prefix %s, state %s at token %s. Previous token was %s.".format(prefix, s, tok, prevStr))
         }
       }
       if (tokBuffer.nonEmpty) {
@@ -71,4 +69,8 @@ abstract class NerAnnotator[Span <: NerSpan : ClassTag, Tag <: NerTag : ClassTag
     doc.annotators ++= Seq(classTag[Tag].runtimeClass -> this.getClass, classTag[NerSpanBuffer[Span]].runtimeClass -> this.getClass)
     doc
   }
+}
+
+object NerAnnotator {
+    private val logger : Logger = Logger.getLogger(getClass.getName)
 }
