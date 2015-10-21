@@ -65,9 +65,12 @@ trait AutoStoppingAcceptSampler[Vars <: NodeVariables[Vars]] extends CorefSample
   override def infer(): Unit = {
     beforeInferHook
 
-    while(proposalIdx < iterations && runOfRejectedProposals < autoStopAcceptThreshold) {
-      process(nextContext)
+    val contextIter = contexts.toIterator
+
+    while(contextIter.hasNext && runOfRejectedProposals < autoStopAcceptThreshold) {
+      process(contextIter.next())
     }
+
     if(proposalIdx == iterations) {
       println("Stopping at max iterations of %d steps" format proposalIdx)
     } else {

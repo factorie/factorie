@@ -40,7 +40,8 @@ abstract class DocEntityCoref {
     with CanopyPairGenerator[DocEntityVars]
     with NoSplitMoveGenerator[DocEntityVars]
     with DebugCoref[DocEntityVars]
-    with TrainingObjective[DocEntityVars] {
+    with TrainingObjective[DocEntityVars]
+    with PrintlnLogger {
     def newInstance(implicit d: DiffList) = new Node[DocEntityVars](new DocEntityVars())
 
     val autoStopThreshold = _settings.autoStopThreshold

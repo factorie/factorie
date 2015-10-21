@@ -14,18 +14,23 @@ package cc.factorie.app.nlp.hcoref
 
 import cc.factorie.infer.Proposal
 
-class Logger(val log:(String => Unit))
-object Logger {
-  val default = new Logger({s:String => println(s)})
+//todo this is ugly and bad
+trait Logger {
+  def log(s:String):Unit
+}
+trait PrintlnLogger extends Logger {
+  final def log(s:String) {println(s)}
+}
+trait PassedLogger extends Logger {
+  def _log:Logger
+  final def log (s:String) {_log.log(s)}
 }
 
 /**
  * @author John Sullivan
  */
 trait DebugCoref[Vars <: NodeVariables[Vars]]{
-  this: CorefSampler[Vars] with PairGenerator[Vars] with MoveGenerator[Vars]=>
-
-  var log:Logger = Logger.default
+  this: CorefSampler[Vars] with PairGenerator[Vars] with MoveGenerator[Vars] with Logger =>
 
   var printEvery:Int = 10000
 
@@ -33,7 +38,7 @@ trait DebugCoref[Vars <: NodeVariables[Vars]]{
   var acceptedThisRound = 0.0
   var totalProps = 0
   lazy val begin = System.currentTimeMillis()
-  var startTime = 0L
+  var startTime = begin
   var stopTime = 0L
 
   beforeInferHooks += { _ =>
@@ -66,18 +71,17 @@ trait DebugCoref[Vars <: NodeVariables[Vars]]{
     val maxMentions = rootMentions.max
     val minMentions = rootMentions.min
     val aveMentions = rootMentions.sum.toDouble / rootMentions.size
-    log.log(f"After $totalProps%d proposals $percentAccepted%.2f%% ($percentAcceptedThisRound%.2f%% this round) accepted in $elapsedFromBegin%.3f secs ($totalPropsPerSec%.2f proposals/sec). This round of $printEvery%d took $elapsedSecs%.3f secs ($propsPerSec%.2f proposals/sec)")
-    log.log(f"\t max depth: $maxDepth min depth: $minDepth ave depth: $aveDepth%.2f")
-    log.log(f"\t max children: $maxChildren min children: $minChildren ave children: $aveChildren%.2f")
-    log.log(f"\t max mentions: $maxMentions min mentions: $minMentions ave mentions: $aveMentions%.2f")
-    //println("%d non mention samples".format(multiSamples))
+    log(f"After $totalProps%d proposals $percentAccepted%.2f%% ($percentAcceptedThisRound%.2f%% this round) accepted in $elapsedFromBegin%.3f secs ($totalPropsPerSec%.2f proposals/sec). This round of $printEvery%d took $elapsedSecs%.3f secs ($propsPerSec%.2f proposals/sec)")
+    log(f"\t max depth: $maxDepth min depth: $minDepth ave depth: $aveDepth%.2f")
+    log(f"\t max children: $maxChildren min children: $minChildren ave children: $aveChildren%.2f")
+    log(f"\t max mentions: $maxMentions min mentions: $minMentions ave mentions: $aveMentions%.2f")
     startTime = stopTime
     acceptedThisRound = 0.0
   }
 
   proposalHooks += {p:Proposal[(Node[Vars], Node[Vars])] =>
     totalProps +=1
-    if(p.diff.size != 0) {
+    if(p.diff.nonEmpty) {
       acceptedProps += 1
       acceptedThisRound += 1
     }

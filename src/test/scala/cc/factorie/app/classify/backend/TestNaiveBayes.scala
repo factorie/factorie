@@ -64,17 +64,17 @@ class TestNaiveBayes extends JUnitSuite with cc.factorie.util.FastLogging {
     val classifier = trainer.train(people, (person: Person) => person.features)
 
     // what we expect:
-    // p(male|largeFoot)   = 3/4 = 0.75
-    // p(male|longhair)    = 1/5 = 0.2
-    // p(female|largeFoot) = 1/4 = 0.25
-    // p(female|longhair)  = 4/5 = 0.8
-    val expected = new DenseTensor2(Array(Array(math.log(0.75), math.log(0.25)), Array(math.log(0.2), math.log(0.8))))
+    // p(largeFoot|male)   = 3/4
+    // p(longhair|male)    = 1/4
+    // p(largeFoot|female) = 1/5
+    // p(longhair|female)  = 4/5
+    val expected = new DenseTensor2(Array(Array(math.log(0.75), math.log(0.2)), Array(math.log(0.25), math.log(0.8))))
     assertArrayEquals(expected.toArray, classifier.weights.value.toArray, 0.001)
 
-    // p(male|largeFoot&longHair) = 0.75 * 0.2 = 0.15
-    // p(female|largeFoot&longHair) = 0.25 * 0.8 = 0.2
+    // p(male|largeFoot&longHair) = 0.75 * 0.25 = 0.1875
+    // p(female|largeFoot&longHair) = 0.2 * 0.8 = 0.16
     val c = classifier.classify(p7)
-    assertArrayEquals(Array(math.log(0.15), math.log(0.2)), c.prediction.toArray, 0.001)
+    assertArrayEquals(Array(math.log(0.1875), math.log(0.16)), c.prediction.toArray, 0.001)
   }
 
 }

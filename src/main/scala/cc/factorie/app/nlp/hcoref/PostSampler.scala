@@ -26,7 +26,7 @@ trait DirectScoringModel[Vars <: NodeVariables[Vars]] extends CorefModel[Vars] {
  * hierarchical summaries rather than coreference hypotheses
  */
 trait PostSampler[Vars <: NodeVariables[Vars], Model <: DirectScoringModel[Vars]] {
-  this: CorefSampler[Vars] with MoveGenerator[Vars] =>
+  this: CorefSampler[Vars] with MoveGenerator[Vars] with Logger =>
 
   implicit val random:Random
 
@@ -35,7 +35,7 @@ trait PostSampler[Vars <: NodeVariables[Vars], Model <: DirectScoringModel[Vars]
   def postSample: Unit = {
     var branches = mentions.flatMap(_.getParent).toSet.toSeq //mentions.collect {case m if !m.isMention && m.getParent.isDefined => m.parent}.toSet.toSeq
     val orphans = mentions.filter(m => m.isMention && m.getParent.isEmpty)
-    println("About to slot %d orphans into %d branches".format(orphans.size, branches.size))
+    log("About to slot %d orphans into %d branches".format(orphans.size, branches.size))
     val threshold = (branches.size * orphans.size) / 10 //never look at more than 10% of the possible size
 
     var idx = 0
@@ -54,8 +54,6 @@ trait PostSampler[Vars <: NodeVariables[Vars], Model <: DirectScoringModel[Vars]
         val score = scoreDist(orphan, branch)
         candidates += branch
 
-        //println(curIdx, maxIdx, branch, score, maxScore)
-        // update scores
         if(score > maxScore) {
           maxIdx = curIdx
           maxl2 = maxl1
@@ -71,16 +69,15 @@ trait PostSampler[Vars <: NodeVariables[Vars], Model <: DirectScoringModel[Vars]
       }
 
       idx += 1
-      if(idx % 10 == 0) {
-        print(".")
-      }
       if(candidates.nonEmpty) {
         orphan.alterParent(Some(candidates(maxIdx)))(null)
       }
       branches = branches.shuffle
     }
-    println("At this point we should have no more mentions but we have " + mentions.count(m => m.isMention && m.getParent.isEmpty))
-    println("done")
+    if(mentions.count(m => m.isMention && m.getParent.isEmpty) > 0) {
+      log("At this point we should have no more mentions but we have " + mentions.count(m => m.isMention && m.getParent.isEmpty))
+    }
+    log("done")
 
   }
 
@@ -88,7 +85,7 @@ trait PostSampler[Vars <: NodeVariables[Vars], Model <: DirectScoringModel[Vars]
 
   def retryMentions: Unit = {
     var orphans = mentions.filter(m => m.isMention && m.getParent.isEmpty).toSeq
-    println("trying merger on %d mentions".format(orphans.size))
+    log("trying merger on %d mentions".format(orphans.size))
     val minScore = -1.5
     var scoreThresh = 0.0
     var remainingMents = orphans.size
@@ -109,16 +106,13 @@ trait PostSampler[Vars <: NodeVariables[Vars], Model <: DirectScoringModel[Vars]
           new MergeUp[Vars](n1,n2)({d:DiffList => newInstance(d)}).perform(null)
         case None =>
           scoreThresh = math.max(minScore, scoreThresh - 0.1)
-          println("\tlowering our standards to " + scoreThresh)
       }
 
-      //print(".")
-      //println("%d mentions remain".format(orphans.size))
       remainingM1 = remainingMents
       orphans = mentions.filter(m => m.isMention && m.getParent.isEmpty).toSeq
       remainingMents = orphans.size
     }
-    println("done trying to merge mentions with %d mentions left and a score threshold of %.2f".format(orphans.size, scoreThresh))
+    log("done trying to merge mentions with %d mentions left and a score threshold of %.2f".format(orphans.size, scoreThresh))
   }
 
   def getScoreMatrx(ns:Seq[Node[Vars]], threshold:Int = 10):Seq[(Node[Vars], Node[Vars], Double)] =
@@ -130,60 +124,48 @@ trait PostSampler[Vars <: NodeVariables[Vars], Model <: DirectScoringModel[Vars]
 
   def dropInRoots: Unit = {
     val roots = mentions.map(_.root).filterNot(_.isMention).toSeq
-    println("dropping in %d roots".format(roots.size))
+    log("dropping in %d roots".format(roots.size))
     val scoreMat = getScoreMatrx(roots, 50)
-    println("generated a score matrix with %d entries".format(scoreMat.size))
     val mergedRoots = mutable.HashSet[Node[Vars]]()
     var idx = roots.size - 1
     while(idx > roots.size - 50) {
       if(idx % 10 == 0) print(".")
       val (n1, n2, _) = scoreMat(idx)
-      println("idx: " + idx)
 
-      //val mvs = settings(n1 -> n2).asInstanceOf[MoveSettingIterator[Vars]].moves
-      println("proposing to merge ", n1.toString, n2.toString)
       if((!mergedRoots.contains(n1) || !mergedRoots.contains(n2)) && !(n1 == n2)) {
         if(n1.children.size > n2.children.size && !mergedRoots.contains(n1)) {
-          println("merging n2 (%d) into n1 (%d)".format(n2.children.size, n1.children.size))
           mergedRoots += n2
           new MergeLeft[Vars](n1, n2).perform(null)
         } else {
-          println("merging n1 (%d) into n2 (%d)".format(n1.children.size, n2.children.size))
           mergedRoots += n1
           new MergeLeft[Vars](n2, n1).perform(null)
         }
       }
       idx -= 1
     }
-    println("\nDone dropping roots, now we have %d roots".format(mentions.map(_.root).toSet.size))
+    log("\nDone dropping roots, now we have %d roots".format(mentions.map(_.root).toSet.size))
   }
 
   def internalReshuffle: Unit = {
     val threshold = mentions.size / 10
     val roots = mentions.collect {case m if !m.root.isMention => m.root}.toSet.toSeq
-    println("Started reshuffle")
+    log("Started reshuffle")
     def processNode(node:Node[Vars]): Unit = {
       implicit val diff:DiffList = null
       if(node.children.nonEmpty && node.children.size >= threshold) {
-        println("\treshuffling %d children in %s".format(node.children.size, node))
         val children = node.children.toSeq
         val sub1 = newInstance(null)
         val sub2 = newInstance(null)
         sub1 alterParent Some(node)
         sub2 alterParent Some(node)
-        //children.head.alterParent(Some(sub1))
 
         val scores = getScoreMatrx(children).map{case(a,b,c) => (a,b) -> c}
-        println("\t calculated %d pairwise scores".format(scores.size))
-        // since scores is sorted these should be the two most different pairs
         val ((n1, n2), _) = scores.head
         n1 alterParent Some(sub1)
         n2 alterParent Some(sub2)
-        //println("our 1 is %s our 2 is %s".format(n1, n2))
         val relScoreMap = mutable.HashMap[Node[Vars], (Double, Double)]().withDefault(_ => (Double.NaN, Double.NaN))
         for(((c1, c2), sc) <- scores.tail
             if (c1 == n1 || c1 == n2 || c2 == n1 || c2 == n2) && !(n1==c1 && n2==c2)) { // if we have a pair that has one of n1/n2, but not both
-          //println("comparing %s and %s".format(c1, c2))
           if(c1 == n1) {
             val (_, s2) = relScoreMap(c2)
             relScoreMap(c2) = sc -> s2
@@ -206,13 +188,13 @@ trait PostSampler[Vars <: NodeVariables[Vars], Model <: DirectScoringModel[Vars]
           n alterParent Some(if (s1 > s2) sub1 else sub2)
         }
 
-        println("\tafter reshuffle we have two nodes of size %d and %d".format(sub1.children.size, sub2.children.size))
+        log("\tafter reshuffle we have two nodes of size %d and %d".format(sub1.children.size, sub2.children.size))
         sub1.children foreach processNode
         sub2.children foreach processNode
       }
     }
     roots foreach processNode
-    println("finished reshuffle")
+    log("finished reshuffle")
   }
 
   def semiBIRCH: Unit = {
@@ -231,17 +213,15 @@ trait PostSampler[Vars <: NodeVariables[Vars], Model <: DirectScoringModel[Vars]
     }
     def dropNode(candidates:Seq[Node[Vars]], node:Node[Vars]): Unit = {
       val (s, newParent) = (candidates.map(c => scoreDist(c, node) -> c) ++ node.getParent.map(p => scoreDist(p, node) -> p)).sortBy(-_._1).head
-      println ("giving %s to %s as a child with score %.4f".format(node, newParent, s))
+      log ("giving %s to %s as a child with score %.4f".format(node, newParent, s))
       if(newParent != node.parent) {
         node.alterParent(Some(newParent))(null)
         dropNode(newParent.children.filterNot(c => c.isMention || c == node).toSeq, node)
       } else {
-        println("%s settled down with %s as a parent".format(node, node.getParent))
+        log("%s settled down with %s as a parent".format(node, node.getParent))
       }
     }
     smallRoots.foreach(dropNode(bigRoots, _))
   }
 
 }
-
-
