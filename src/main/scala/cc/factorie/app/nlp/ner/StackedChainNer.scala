@@ -522,9 +522,12 @@ abstract class StackedChainNer[L<:NerTag](labelDomain: CategoricalDomain[String]
 
     (trainDocuments ++ testDocuments).foreach( _.tokens.map(token => token.attr += new ChainNer2Features(token)))
 
-    for(document <- trainDocuments ++ testDocuments) initFeatures(document, (t:Token)=>t.attr[ChainNer2Features])
-    for(document <- trainDocuments ++ testDocuments) initSecondaryFeatures(document)
+    for(document <- trainDocuments) initFeatures(document, (t:Token)=>t.attr[ChainNer2Features])
+    for(document <- trainDocuments) initSecondaryFeatures(document)
     ChainNer2FeaturesDomain.freeze()
+      
+    for(document <- testDocuments) initFeatures(document, (t:Token)=>t.attr[ChainNer2Features])
+    for(document <- testDocuments) initSecondaryFeatures(document)
     //println(trainDocuments(3).tokens.map(token => token.nerTag.target.categoryValue + " "+token.string+" "+token.attr[ChainNer2Features].toString).mkString("\n"))
     //println("Example Test Token features")
     //println(testDocuments(1).tokens.map(token => token.nerTag.baseCategoryValue+" "+token.string+" "+token.attr[ChainNer2Features].toString).mkString("\n"))
