@@ -11,6 +11,7 @@
    See the License for the specific language governing permissions and
    limitations under the License. */
 package cc.factorie.app.nlp.lemma
+
 import java.io.{FileInputStream, InputStream}
 
 import cc.factorie.app.nlp._
@@ -22,9 +23,7 @@ import cc.factorie.util.ClasspathURL
 
 class WordNetLemmatizer(val inputStreamFactory: String=>InputStream) extends DocumentAnnotator {
   def this(wordNetDir:java.io.File) = this((string:String) => new FileInputStream(new java.io.File(wordNetDir, string)))
- // def this(url:java.net.URL) = ???
-  //def this() = this(util.InputStreamFromJar(classOf[WordNetLemmatizer]))
-  
+
   val resourcePath = "dict/"
   def sourceFactory(string:String): io.Source = io.Source.fromInputStream(inputStreamFactory(resourcePath+string))
   

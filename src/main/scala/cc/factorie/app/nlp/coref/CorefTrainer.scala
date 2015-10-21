@@ -12,6 +12,7 @@
    limitations under the License. */
 package cc.factorie.app.nlp.coref
 
+import cc.factorie.app.nlp.lexicon.{LexiconsProvider, StaticLexicons}
 import cc.factorie.app.nlp.load.LoadConll2011
 import cc.factorie.app.nlp.ner.{ConllChainNer, NerTag}
 import cc.factorie.app.nlp.phrase._
@@ -46,6 +47,10 @@ trait ForwardCorefTrainerOpts extends CorefTrainerOpts{
 
 object ForwardCorefTrainer extends CorefTrainer{
   object opts extends ForwardCorefTrainerOpts
+
+  // todo fix this
+  @deprecated("This exists to preserve prior behavior, it should be a constructor argument", "10/5/15")
+  val lexicon = new StaticLexicons()(LexiconsProvider.classpath)
 
   def evaluateParameters(args: Array[String]): Double = {
     opts.parse(args)
@@ -98,7 +103,7 @@ object ForwardCorefTrainer extends CorefTrainer{
 
       lr.model.MentionPairFeaturesDomain.freeze()
       //Add Cached Mention Features
-      for(doc <- testDocs; mention <- doc.coref.mentions) mention.attr += new MentionCharacteristics(mention)
+      for(doc <- testDocs; mention <- doc.coref.mentions) mention.attr += new MentionCharacteristics(mention, lexicon)
 
       lr.doTest(testDocs, WordNet, "Test")
     }

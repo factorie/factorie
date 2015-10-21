@@ -293,7 +293,7 @@ class LabeledDiscreteEvaluation[C](val domain: DiscreteDomain) {
     require(label.domain eq domain)
     _size += 1
     val trueIndex = label.target.intValue
-    for (targetIndex <- 0 until domain.size) {
+    for (targetIndex <- domain.indices) {
       if (targetIndex == trueIndex) {
         if (trueIndex == predIndex)
           _tp(targetIndex) += 1

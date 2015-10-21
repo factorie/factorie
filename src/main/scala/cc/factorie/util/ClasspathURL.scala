@@ -14,7 +14,9 @@ package cc.factorie.util
 import scala.language.existentials
 import scala.reflect.ClassTag
 
+@deprecated("See cc.factorie.util.ModelProvider", "10/05/15")
 object ClasspathURL {
+
   def fromDirectory[C](suffix:String)(implicit m: ClassTag[C]): java.net.URL = {
     Option(System.getProperty(m.runtimeClass.getName)) match {
       case Some(url) =>

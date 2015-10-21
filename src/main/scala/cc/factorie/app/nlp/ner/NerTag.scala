@@ -48,7 +48,7 @@ abstract class NerSpan(section:Section, start:Int, length:Int) extends TokenSpan
   */
 trait SpanEncoding {
   def prefixes: Set[String]
-  def encodedTags(baseTags: Seq[String]): Seq[String] = Seq("O") ++ baseTags.filter(_ != "O").map(t => prefixes.map(_ + t)).flatten
+  def encodedTags(baseTags: Seq[String]): Seq[String] = Seq("O") ++ baseTags.filter(_ != "O").flatMap(t => prefixes.map(_ + t))
   def suffixIntVal(i: Int): Int = if (i == 0) 0 else ((i - 1)/prefixes.size)+1
 }
 /** BILOU span encoding (Beginning, Inside, Last, Outside, Unit) */
