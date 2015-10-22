@@ -3,6 +3,8 @@ package cc.factorie.util
 import java.io._
 import java.nio.file.{Paths, Path}
 
+import cc.factorie.app.nlp.lexicon.LexiconsProvider
+
 import scala.language.implicitConversions
 import scala.reflect.{ClassTag, classTag}
 import scala.reflect.runtime.universe.{TypeTag, typeTag}
@@ -197,6 +199,38 @@ trait ModelProviderCmdOptions extends CmdOptions {
     def invokedCount = _invokedCount
 
 
+  }
+
+  class LexiconsProviderCmdOption(val name:String, useFullPath:Boolean=false, val defaultValue:LexiconsProvider=LexiconsProvider.classpath, val required:Boolean=false) extends cc.factorie.util.CmdOption[LexiconsProvider] {
+
+    cmd += this
+
+    val shortName = 'l'
+
+    private var _value:LexiconsProvider = defaultValue
+    private var _invokedCount = 0
+
+    def setValue(v: LexiconsProvider) = {_value = v}
+
+    val valueName = "LexiconsProvider"
+
+    val helpMsg = "This should be a valid path to the root directory containing a set of static Lexicons"
+    def value = _value
+
+    override def parse(args: Seq[String], index: Int) = if(args(index) == "--"+name) {
+      _value = LexiconsProvider.fromFile(new File(args(index + 1)), useFullPath)
+      _invokedCount += 1
+      math.min(index + 2, args.length)
+    } else if(args(index).startsWith("--"+name+"=")){
+      _value = LexiconsProvider.fromFile(new File(args(index).drop(name.length + 3)), useFullPath)
+      _invokedCount += 1
+      index + 1
+    } else index
+
+
+
+    val hasValue = true
+    def invokedCount = _invokedCount
   }
 
 }
