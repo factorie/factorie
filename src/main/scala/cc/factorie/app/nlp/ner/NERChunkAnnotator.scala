@@ -9,9 +9,14 @@ import java.util.logging.{Logger, Level}
 /**
  * @author John Sullivan
  */
-object ConllNerChunkAnnotator extends NerChunkAnnotator({() => new ConllNerSpanBuffer}, {(s:Section, start:Int, end:Int, cat:String) => new ConllNerSpan(s, start, end, cat)})
-object OntonotesNerChunkAnnotator extends NerChunkAnnotator({() => new OntonotesNerSpanBuffer}, {(s:Section, start:Int, end:Int, cat:String) => new OntonotesNerSpan(s, start, end, cat)})
+object BilouConllNerChunkAnnotator extends NerChunkAnnotator[ConllNerSpan, BilouConllNerTag]({() => new ConllNerSpanBuffer}, {(s:Section, start:Int, end:Int, cat:String) => new ConllNerSpan(s, start, end, cat)})
+object BilouOntonotesNerChunkAnnotator extends NerChunkAnnotator[OntonotesNerSpan, BilouOntonotesNerTag]({() => new OntonotesNerSpanBuffer}, {(s:Section, start:Int, end:Int, cat:String) => new OntonotesNerSpan(s, start, end, cat)})
+object BioConllNerChunkAnnotator extends NerChunkAnnotator[ConllNerSpan, BioConllNerTag]({() => new ConllNerSpanBuffer}, {(s:Section, start:Int, end:Int, cat:String) => new ConllNerSpan(s, start, end, cat)})
+object BioOntonotesNerChunkAnnotator extends NerChunkAnnotator[OntonotesNerSpan, BioOntonotesNerTag]({() => new OntonotesNerSpanBuffer}, {(s:Section, start:Int, end:Int, cat:String) => new OntonotesNerSpan(s, start, end, cat)})
 
+
+/** Takes documents that are already annotated with token-level NerTags of type Tag and annotates them with NerSpans
+  * of type Span */
 class NerChunkAnnotator[Span <: NerSpan : ClassTag, Tag <: NerTag : ClassTag](newBuffer:() => NerSpanBuffer[Span], newSpan:(Section, Int, Int, String) => Span) extends DocumentAnnotator {
 
   private val logger = Logger.getLogger(getClass.getName)
