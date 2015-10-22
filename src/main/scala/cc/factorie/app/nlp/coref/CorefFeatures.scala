@@ -13,7 +13,7 @@
 
 package cc.factorie.app.nlp.coref
 
-import cc.factorie.app.nlp.lexicon.StopWords
+import cc.factorie.app.nlp.lexicon.{StopWords, StaticLexicons}
 import cc.factorie.app.nlp.ner.OntonotesEntityTypeDomain
 import cc.factorie.app.nlp.phrase.{Gender, Number, _}
 import cc.factorie.app.nlp.wordnet.WordNet
@@ -21,8 +21,7 @@ import cc.factorie.app.nlp.wordnet.WordNet
 import scala.collection.mutable
 
 /** Various lazily-evaluated cached characteristics of a Mention, typically attached to a Mention as an attr. */
-class MentionCharacteristics(val mention: Mention) {
-  import cc.factorie.app.nlp.lexicon
+class MentionCharacteristics(val mention: Mention, lexicon:StaticLexicons) {
   // TODO These should be cleaned up and made more efficient -akm
   lazy val isPRO = CorefFeatures.posTagsSet.contains(mention.phrase.headToken.posTag.categoryValue)
   lazy val isProper = CorefFeatures.properSet.contains(mention.phrase.headToken.posTag.categoryValue)
@@ -141,8 +140,7 @@ object CorefFeatures {
       "Mismatch"
   }
 
-  def matchingTokensRelations(m1:Mention, m2:Mention) = {
-    import cc.factorie.app.nlp.lexicon
+  def matchingTokensRelations(m1:Mention, m2:Mention, lexicon:StaticLexicons) = {
     val set = new mutable.HashSet[String]()
     val m1c = m1.attr[MentionCharacteristics]
     val m2c = m2.attr[MentionCharacteristics]

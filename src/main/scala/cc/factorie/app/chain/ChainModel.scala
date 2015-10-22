@@ -58,6 +58,7 @@ class ChainModel[Label <: MutableDiscreteVar, Features <: CategoricalVectorVar[S
   var useObsMarkov = false
 
   def serialize(stream: OutputStream) {
+    import cc.factorie.util.CubbieConversions._
     val dstream = new DataOutputStream(new BufferedOutputStream(stream))
     BinarySerializer.serialize(featuresDomain, dstream)
     BinarySerializer.serialize(labelDomain, dstream)
@@ -66,6 +67,7 @@ class ChainModel[Label <: MutableDiscreteVar, Features <: CategoricalVectorVar[S
   }
 
   def deserialize(stream: InputStream) {
+    import cc.factorie.util.CubbieConversions._
     val dstream = new DataInputStream(new BufferedInputStream(stream))
     BinarySerializer.deserialize(featuresDomain, dstream)
     BinarySerializer.deserialize(labelDomain, dstream)

@@ -18,17 +18,19 @@ import cc.factorie.infer.Proposal
 trait Logger {
   def log(s:String):Unit
 }
-object Logger {
-  val default = new Logger{def log(s:String) {println(s)}}
+trait PrintlnLogger extends Logger {
+  final def log(s:String) {println(s)}
+}
+trait PassedLogger extends Logger {
+  def _log:Logger
+  final def log (s:String) {_log.log(s)}
 }
 
 /**
  * @author John Sullivan
  */
 trait DebugCoref[Vars <: NodeVariables[Vars]]{
-  this: CorefSampler[Vars] with PairGenerator[Vars] with MoveGenerator[Vars]=>
-
-  var log:Logger = Logger.default
+  this: CorefSampler[Vars] with PairGenerator[Vars] with MoveGenerator[Vars] with Logger =>
 
   var printEvery:Int = 10000
 
@@ -69,10 +71,10 @@ trait DebugCoref[Vars <: NodeVariables[Vars]]{
     val maxMentions = rootMentions.max
     val minMentions = rootMentions.min
     val aveMentions = rootMentions.sum.toDouble / rootMentions.size
-    log.log(f"After $totalProps%d proposals $percentAccepted%.2f%% ($percentAcceptedThisRound%.2f%% this round) accepted in $elapsedFromBegin%.3f secs ($totalPropsPerSec%.2f proposals/sec). This round of $printEvery%d took $elapsedSecs%.3f secs ($propsPerSec%.2f proposals/sec)")
-    log.log(f"\t max depth: $maxDepth min depth: $minDepth ave depth: $aveDepth%.2f")
-    log.log(f"\t max children: $maxChildren min children: $minChildren ave children: $aveChildren%.2f")
-    log.log(f"\t max mentions: $maxMentions min mentions: $minMentions ave mentions: $aveMentions%.2f")
+    log(f"After $totalProps%d proposals $percentAccepted%.2f%% ($percentAcceptedThisRound%.2f%% this round) accepted in $elapsedFromBegin%.3f secs ($totalPropsPerSec%.2f proposals/sec). This round of $printEvery%d took $elapsedSecs%.3f secs ($propsPerSec%.2f proposals/sec)")
+    log(f"\t max depth: $maxDepth min depth: $minDepth ave depth: $aveDepth%.2f")
+    log(f"\t max children: $maxChildren min children: $minChildren ave children: $aveChildren%.2f")
+    log(f"\t max mentions: $maxMentions min mentions: $minMentions ave mentions: $aveMentions%.2f")
     startTime = stopTime
     acceptedThisRound = 0.0
   }

@@ -14,7 +14,9 @@
 package cc.factorie.app.nlp.ner
 
 import cc.factorie.app.nlp._
+import cc.factorie.la.{SparseBinaryTensor2, Tensor2}
 import cc.factorie.variable._
+import scala.collection.JavaConverters._
 
 // A "Tag" is a categorical label associated with a token.
 
@@ -47,14 +49,96 @@ abstract class NerSpan(section:Section, start:Int, length:Int) extends TokenSpan
   * @author Kate Silverstein
   */
 trait SpanEncoding {
+  this: CategoricalDomain[String] =>
   def prefixes: Set[String]
-  def encodedTags(baseTags: Seq[String]): Seq[String] = Seq("O") ++ baseTags.filter(_ != "O").map(t => prefixes.map(_ + t)).flatten
+  def encodedTags(baseTags: Seq[String]): Seq[String] = Seq("O") ++ baseTags.filter(_ != "O").flatMap(t => prefixes.map(_ + t))
   def suffixIntVal(i: Int): Int = if (i == 0) 0 else ((i - 1)/prefixes.size)+1
+  def isLicitTransition(from:String, to:String):Boolean
+
+  def isLicit(from:this.type#Value, to:this.type#Value):Boolean
+
+  final def permittedMask:Set[(Int, Int)] =
+    (for(t1 <- this._indices.values().asScala; // todo there has to be a better way to get this
+        t2 <- this._indices.values().asScala
+        if isLicit(t1, t2)) yield {
+      //println(s"${t1.category} -> ${t2.category}")
+      t1.intValue -> t2.intValue }).toSet
 }
+object BILOU {
+  val licitTransitions = Set(
+    "O" -> "B",
+    "O" -> "U",
+    "O" -> "O",
+
+    "B" -> "I",
+    "B" -> "L",
+
+    "I" -> "I",
+    "I" -> "L",
+
+    "L" -> "O",
+    "L" -> "B",
+    "L" -> "U",
+
+    "U" -> "U",
+    "U" -> "B",
+    "U" -> "O"
+  )
+}
+
+object BIO {
+  val licitTransitions = Set(
+    "B" -> "I",
+    "B" -> "O",
+    "B" -> "B",
+
+    "O" -> "B",
+    "O" -> "O",
+
+    "I" -> "I",
+    "I" -> "O",
+    "I" -> "B"
+  )
+}
+
 /** BILOU span encoding (Beginning, Inside, Last, Outside, Unit) */
-trait BILOU extends SpanEncoding { def prefixes = Set("B-", "I-", "L-", "U-") }
+trait BILOU extends SpanEncoding {
+  this : CategoricalDomain[String] =>
+  def prefixes = Set("B-", "I-", "L-", "U-")
+  def isLicitTransition(from: String, to: String) = BILOU.licitTransitions contains from -> to
+
+  def splitNerTag(tag:String):(String, Option[String]) = if(tag == "O") "O" -> None else {
+    val Array(pre, cat) = tag.split("-")
+    if(pre == "U") {
+      pre -> None
+    } else {
+      pre -> Some(cat)
+    }
+  }
+
+  def isLicit(from: this.type#Value, to: this.type#Value) =
+    splitNerTag(from.category) -> splitNerTag(to.category) match {
+      case ((fromPre, Some(fromCat)), (toPre, Some(toCat))) => toCat == fromCat && BILOU.licitTransitions.contains(fromPre -> toPre)
+      case ((fromPre, _), (toPre, _)) => BILOU.licitTransitions contains fromPre -> toPre
+    }
+
+}
 /** BIO span encoding (Beginning, Inside, Outside) */
-trait BIO extends SpanEncoding { def prefixes = Set("B-", "I-") }
+trait BIO extends SpanEncoding {
+  this : CategoricalDomain[String] =>
+  def prefixes = Set("B-", "I-")
+  def isLicitTransition(from: String, to: String) = BILOU.licitTransitions contains from -> to
+  def splitNerTag(tag:String):(String, Option[String]) = if(tag == "O") "O" -> None else {
+    val Array(pre, cat) = tag.split("-")
+    pre -> Some(cat)
+  }
+
+  def isLicit(from: this.type#Value, to: this.type#Value) =
+    splitNerTag(from.category) -> splitNerTag(to.category) match {
+      case ((fromPre, Some(fromCat)), (toPre, Some(toCat))) => toCat == fromCat && BIO.licitTransitions.contains(fromPre -> toPre)
+      case ((fromPre, _), (toPre, _)) => BIO.licitTransitions contains fromPre -> toPre
+    }
+}
 
 object ConllNerDomain extends EnumDomain {
   val O, PER, ORG, LOC, MISC = Value

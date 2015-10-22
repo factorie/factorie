@@ -125,9 +125,9 @@ object HierCorefDemo {
       with CanopyPairGenerator[WikiCorefVars]
       with NoSplitMoveGenerator[WikiCorefVars]
       with DebugCoref[WikiCorefVars]
-      with PostSampler[WikiCorefVars, WikiCorefModel] {
+      with PostSampler[WikiCorefVars, WikiCorefModel]
+      with PrintlnLogger {
       def autoStopAcceptThreshold = 10000
-      val logger = Logger.default
 
       def newInstance(implicit d: DiffList): Node[WikiCorefVars] = new Node[WikiCorefVars](new WikiCorefVars/*, nextId*/) {
         def canopyIds: Set[String] = Set.empty[String]
@@ -167,8 +167,7 @@ object HierCorefDemo {
 
     implicit val random = new Random()
 
-    val sampler = new HierarchicalCorefSampler[WikiCorefVars](model, mentions, iterations) with DebugCoref[WikiCorefVars] {
-      val logger = Logger.default
+    val sampler = new HierarchicalCorefSampler[WikiCorefVars](model, mentions, iterations) with DebugCoref[WikiCorefVars] with PrintlnLogger {
       override def newInstance(implicit d: DiffList): Node[WikiCorefVars] = new Node[WikiCorefVars](new WikiCorefVars)
     }
 

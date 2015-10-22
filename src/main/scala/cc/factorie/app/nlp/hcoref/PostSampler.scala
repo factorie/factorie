@@ -26,18 +26,16 @@ trait DirectScoringModel[Vars <: NodeVariables[Vars]] extends CorefModel[Vars] {
  * hierarchical summaries rather than coreference hypotheses
  */
 trait PostSampler[Vars <: NodeVariables[Vars], Model <: DirectScoringModel[Vars]] {
-  this: CorefSampler[Vars] with MoveGenerator[Vars] =>
+  this: CorefSampler[Vars] with MoveGenerator[Vars] with Logger =>
 
   implicit val random:Random
-
-  val logger:Logger
 
   def scoreDist(n1:Node[Vars], n2:Node[Vars]) = model.asInstanceOf[Model].scoreDistance(n1, n2)
 
   def postSample: Unit = {
     var branches = mentions.flatMap(_.getParent).toSet.toSeq //mentions.collect {case m if !m.isMention && m.getParent.isDefined => m.parent}.toSet.toSeq
     val orphans = mentions.filter(m => m.isMention && m.getParent.isEmpty)
-    logger.log("About to slot %d orphans into %d branches".format(orphans.size, branches.size))
+    log("About to slot %d orphans into %d branches".format(orphans.size, branches.size))
     val threshold = (branches.size * orphans.size) / 10 //never look at more than 10% of the possible size
 
     var idx = 0
@@ -77,9 +75,9 @@ trait PostSampler[Vars <: NodeVariables[Vars], Model <: DirectScoringModel[Vars]
       branches = branches.shuffle
     }
     if(mentions.count(m => m.isMention && m.getParent.isEmpty) > 0) {
-      logger.log("At this point we should have no more mentions but we have " + mentions.count(m => m.isMention && m.getParent.isEmpty))
+      log("At this point we should have no more mentions but we have " + mentions.count(m => m.isMention && m.getParent.isEmpty))
     }
-    logger.log("done")
+    log("done")
 
   }
 
@@ -87,7 +85,7 @@ trait PostSampler[Vars <: NodeVariables[Vars], Model <: DirectScoringModel[Vars]
 
   def retryMentions: Unit = {
     var orphans = mentions.filter(m => m.isMention && m.getParent.isEmpty).toSeq
-    logger.log("trying merger on %d mentions".format(orphans.size))
+    log("trying merger on %d mentions".format(orphans.size))
     val minScore = -1.5
     var scoreThresh = 0.0
     var remainingMents = orphans.size
@@ -114,7 +112,7 @@ trait PostSampler[Vars <: NodeVariables[Vars], Model <: DirectScoringModel[Vars]
       orphans = mentions.filter(m => m.isMention && m.getParent.isEmpty).toSeq
       remainingMents = orphans.size
     }
-    logger.log("done trying to merge mentions with %d mentions left and a score threshold of %.2f".format(orphans.size, scoreThresh))
+    log("done trying to merge mentions with %d mentions left and a score threshold of %.2f".format(orphans.size, scoreThresh))
   }
 
   def getScoreMatrx(ns:Seq[Node[Vars]], threshold:Int = 10):Seq[(Node[Vars], Node[Vars], Double)] =
@@ -126,7 +124,7 @@ trait PostSampler[Vars <: NodeVariables[Vars], Model <: DirectScoringModel[Vars]
 
   def dropInRoots: Unit = {
     val roots = mentions.map(_.root).filterNot(_.isMention).toSeq
-    logger.log("dropping in %d roots".format(roots.size))
+    log("dropping in %d roots".format(roots.size))
     val scoreMat = getScoreMatrx(roots, 50)
     val mergedRoots = mutable.HashSet[Node[Vars]]()
     var idx = roots.size - 1
@@ -145,13 +143,13 @@ trait PostSampler[Vars <: NodeVariables[Vars], Model <: DirectScoringModel[Vars]
       }
       idx -= 1
     }
-    logger.log("\nDone dropping roots, now we have %d roots".format(mentions.map(_.root).toSet.size))
+    log("\nDone dropping roots, now we have %d roots".format(mentions.map(_.root).toSet.size))
   }
 
   def internalReshuffle: Unit = {
     val threshold = mentions.size / 10
     val roots = mentions.collect {case m if !m.root.isMention => m.root}.toSet.toSeq
-    logger.log("Started reshuffle")
+    log("Started reshuffle")
     def processNode(node:Node[Vars]): Unit = {
       implicit val diff:DiffList = null
       if(node.children.nonEmpty && node.children.size >= threshold) {
@@ -190,13 +188,13 @@ trait PostSampler[Vars <: NodeVariables[Vars], Model <: DirectScoringModel[Vars]
           n alterParent Some(if (s1 > s2) sub1 else sub2)
         }
 
-        logger.log("\tafter reshuffle we have two nodes of size %d and %d".format(sub1.children.size, sub2.children.size))
+        log("\tafter reshuffle we have two nodes of size %d and %d".format(sub1.children.size, sub2.children.size))
         sub1.children foreach processNode
         sub2.children foreach processNode
       }
     }
     roots foreach processNode
-    logger.log("finished reshuffle")
+    log("finished reshuffle")
   }
 
   def semiBIRCH: Unit = {
@@ -215,12 +213,12 @@ trait PostSampler[Vars <: NodeVariables[Vars], Model <: DirectScoringModel[Vars]
     }
     def dropNode(candidates:Seq[Node[Vars]], node:Node[Vars]): Unit = {
       val (s, newParent) = (candidates.map(c => scoreDist(c, node) -> c) ++ node.getParent.map(p => scoreDist(p, node) -> p)).sortBy(-_._1).head
-      logger.log ("giving %s to %s as a child with score %.4f".format(node, newParent, s))
+      log ("giving %s to %s as a child with score %.4f".format(node, newParent, s))
       if(newParent != node.parent) {
         node.alterParent(Some(newParent))(null)
         dropNode(newParent.children.filterNot(c => c.isMention || c == node).toSeq, node)
       } else {
-        logger.log("%s settled down with %s as a parent".format(node, node.getParent))
+        log("%s settled down with %s as a parent".format(node, node.getParent))
       }
     }
     smallRoots.foreach(dropNode(bigRoots, _))

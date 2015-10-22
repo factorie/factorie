@@ -146,7 +146,8 @@ object TACCoref {
       with CanopyPairGenerator[DenseDocEntityVars]
       with NoSplitMoveGenerator[DenseDocEntityVars]
       with DebugCoref[DenseDocEntityVars]
-      with TrainingObjective[DenseDocEntityVars] {
+      with TrainingObjective[DenseDocEntityVars]
+      with PrintlnLogger {
       def newInstance(implicit d: DiffList) = new Node[DenseDocEntityVars](new DenseDocEntityVars())
 
       val autoStopThreshold = 10000
@@ -160,7 +161,8 @@ object TACCoref {
       with CanopyPairGenerator[DenseDocEntityVars]
       with NoSplitMoveGenerator[DenseDocEntityVars]
       with DebugCoref[DenseDocEntityVars]
-      with TrainingObjective[DenseDocEntityVars] {
+      with TrainingObjective[DenseDocEntityVars]
+      with PrintlnLogger {
       def newInstance(implicit d: DiffList) = new Node[DenseDocEntityVars](new DenseDocEntityVars())
 
       val autoStopThreshold = 10000

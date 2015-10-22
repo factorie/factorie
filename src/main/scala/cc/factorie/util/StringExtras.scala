@@ -14,11 +14,13 @@
 
 package cc.factorie.util
 
+import scala.util.Try
+
 /** New functionality on String instances, available by implicit conversion in the cc.factorie.factorie package object. */
 class StringExtras(val s: String) extends AnyVal {
 
-  def toIntSafe: Option[Int] = try { Some(s.toInt) } catch { case _: Throwable => None }
-  def toDoubleSafe: Option[Double] = try { Some(s.toDouble) } catch { case _: Throwable => None }
+  def toIntSafe: Option[Int] = Try(s.toInt).toOption
+  def toDoubleSafe: Option[Double] = Try(s.toDouble).toOption
 
   def skipUntil(r:scala.util.matching.Regex): String = {
     r.findFirstMatchIn(s) match {
