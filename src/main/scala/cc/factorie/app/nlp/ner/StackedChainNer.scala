@@ -77,6 +77,10 @@ abstract class StackedChainNer[S <: NerSpan : ClassTag, L<:NerTag ](labelDomain:
       initSecondaryFeatures(document)
     }
     process(document,useModel2 = true)
+    for (token <- document.tokens) {
+      token.attr.remove[ChainNerFeatures]
+      token.attr.remove[ChainNer2Features]
+    }
     document
   } else {
     document
