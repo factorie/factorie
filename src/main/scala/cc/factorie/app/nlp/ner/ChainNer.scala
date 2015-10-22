@@ -13,7 +13,7 @@ import cc.factorie._
 import cc.factorie.app.chain.{ChainModel, SegmentEvaluation}
 import cc.factorie.app.nlp._
 import cc.factorie.optimize.{AdaGrad, ParameterAveraging, Trainer}
-import cc.factorie.util.{ModelProvider, BinarySerializer, JavaHashMap}
+import cc.factorie.util._
 import cc.factorie.variable._
 
 import scala.reflect.{ClassTag, classTag}
@@ -70,8 +70,8 @@ object OntonotesChainNer extends OntonotesChainNer()(classTag[OntonotesNerSpan],
 /**
  * A base class for finite-state named entity recognizers
  */
-abstract class ChainNer[L<:NerTag](labelDomain: CategoricalDomain[String],
-                                   newLabel: (Token, String) => L,
+abstract class ChainNer[L<:NerTag](val labelDomain: CategoricalDomain[String] with SpanEncoding,
+                                   val newLabel: (Token, String) => L,
                                    labelToToken: L => Token,
                                    modelIs: InputStream=null,
                                    val lexicon: StaticLexicons)(implicit m: ClassTag[L]) extends DocumentAnnotator with Serializable {
@@ -153,7 +153,7 @@ abstract class ChainNer[L<:NerTag](labelDomain: CategoricalDomain[String],
                                                                 labelToFeatures: L => Features,
                                                                 labelToToken: L => Token,
                                                                 tokenToLabel: Token => L)
-    extends ChainModel(labelDomain, featuresDomain, labelToFeatures, labelToToken, tokenToLabel) //with Parameters {
+    extends ChainModel[L, Features, Token](labelDomain, featuresDomain, labelToFeatures, labelToToken, tokenToLabel)
 
   val model = new ChainNERModel[ChainNERFeatures](ChainNERFeaturesDomain, l => labelToToken(l).attr[ChainNERFeatures], labelToToken, t => t.attr[L])
   val objective = cc.factorie.variable.HammingObjective
@@ -364,7 +364,7 @@ abstract class ChainNer[L<:NerTag](labelDomain: CategoricalDomain[String],
   }
 }
 
-class ChainNerOpts extends cc.factorie.util.CmdOptions with SharedNLPCmdOptions {
+class ChainNerOpts extends cc.factorie.util.CmdOptions with SharedNLPCmdOptions with ModelProviderCmdOptions with DefaultCmdOptions {
   val saveModel = new CmdOption("save-model", "CoNLLChainNer.factorie", "FILE", "Filename for the model (saving a trained model or reading a running model.")
   val serialize = new CmdOption("serialize", true, "BOOLEAN", "Whether to serialize at all")
   val train = new CmdOption("train", "", "STRING", "Filename(s) from which to read training data in CoNLL 2003 one-word-per-lineformat.")
@@ -379,6 +379,7 @@ class ChainNerOpts extends cc.factorie.util.CmdOptions with SharedNLPCmdOptions 
   val delta = new CmdOption("delta", 0.066, "DOUBLE", "learning delta")
   val modelFile = new CmdOption("model-file", "", "STRING", "Filename of the serialized model that you want to load.")
   val useTagger = new CmdOption("use-tagger", "", "STRING", "Which tagger? (remove me later)")
+  val lexicons = new LexiconsProviderCmdOption("lexicons")
 }
 
 
@@ -387,7 +388,7 @@ object ConllChainNerTrainer extends cc.factorie.util.HyperparameterMain {
     val opts = new ChainNerOpts
     implicit val random = new scala.util.Random(0)
     opts.parse(args)
-    val ner = new ConllChainNer()(ModelProvider.empty, new StaticLexicons()(LexiconsProvider.classpath))
+    val ner = new ConllChainNer()(ModelProvider.empty, new StaticLexicons()(opts.lexicons.value))
     if (opts.brownClusFile.wasInvoked) {
       println(s"Reading brown cluster file: ${opts.brownClusFile.value}")
       for (line <- scala.io.Source.fromFile(opts.brownClusFile.value).getLines()) {
