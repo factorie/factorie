@@ -57,7 +57,7 @@ class ConllChainNer(implicit mp:ModelProvider[ConllChainNer], lexicons:StaticLex
 //TODO this serialized model doesn't exist yet?
 object ConllChainNer extends ConllChainNer()(ModelProvider.classpath(), new StaticLexicons()(LexiconsProvider.classpath)) with Serializable
 
-class OntonotesChainNer()(implicit sCt:ClassTag[OntonotesNerSpan], tCt:ClassTag[BilouOntonotesNerTag], mp:ModelProvider[OntonotesChainNer], lexicons:StaticLexicons)
+class OntonotesChainNer()(implicit mp:ModelProvider[OntonotesChainNer], lexicons:StaticLexicons)
   extends ChainNer[BilouOntonotesNerTag](BilouOntonotesNerDomain, (t, s) => new BilouOntonotesNerTag(t, s), l => l.token, mp.provide, lexicons) {
   def newBuffer = new OntonotesNerSpanBuffer()
 
@@ -65,7 +65,7 @@ class OntonotesChainNer()(implicit sCt:ClassTag[OntonotesNerSpan], tCt:ClassTag[
 }
 
 // todo a serialized model for this does not exist
-object OntonotesChainNer extends OntonotesChainNer()(classTag[OntonotesNerSpan], classTag[BilouOntonotesNerTag], ModelProvider.classpath(), new StaticLexicons()(LexiconsProvider.classpath))
+object OntonotesChainNer extends OntonotesChainNer()(ModelProvider.classpath(), new StaticLexicons()(LexiconsProvider.classpath))
 
 /**
  * A base class for finite-state named entity recognizers
