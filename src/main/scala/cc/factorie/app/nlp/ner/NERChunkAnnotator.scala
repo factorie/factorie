@@ -14,12 +14,9 @@ object BilouOntonotesNerChunkAnnotator extends NerChunkAnnotator[OntonotesNerSpa
 object BioConllNerChunkAnnotator extends NerChunkAnnotator[ConllNerSpan, BioConllNerTag]({() => new ConllNerSpanBuffer}, {(s:Section, start:Int, end:Int, cat:String) => new ConllNerSpan(s, start, end, cat)})
 object BioOntonotesNerChunkAnnotator extends NerChunkAnnotator[OntonotesNerSpan, BioOntonotesNerTag]({() => new OntonotesNerSpanBuffer}, {(s:Section, start:Int, end:Int, cat:String) => new OntonotesNerSpan(s, start, end, cat)})
 
-
 /** Takes documents that are already annotated with token-level NerTags of type Tag and annotates them with NerSpans
   * of type Span */
 class NerChunkAnnotator[Span <: NerSpan : ClassTag, Tag <: NerTag : ClassTag](newBuffer:() => NerSpanBuffer[Span], newSpan:(Section, Int, Int, String) => Span) extends DocumentAnnotator {
-
-  private val logger = Logger.getLogger(getClass.getName)
 
   val prereqAttrs = Seq(classTag[Tag].runtimeClass)
   val postAttrs = Seq(classTag[Span].runtimeClass)
@@ -62,7 +59,7 @@ class NerChunkAnnotator[Span <: NerSpan : ClassTag, Tag <: NerTag : ClassTag](ne
               val prevToken = if (tok.hasPrev) tok.prev else null
               if (prevToken != null) prevToken.attr[Tag].categoryValue else "<null>"
             }
-            logger.log(Level.WARNING, "Invalid combination of states, prefix %s, state %s at token %s. Previous token was %s.".format(prefix, s, tok, prevStr))
+            NerChunkAnnotator.logger.log(Level.WARNING, "Invalid combination of states, prefix %s, state %s at token %s. Previous token was %s.".format(prefix, s, tok, prevStr))
         }
       }
       if (tokBuffer.nonEmpty) {
@@ -71,4 +68,8 @@ class NerChunkAnnotator[Span <: NerSpan : ClassTag, Tag <: NerTag : ClassTag](ne
     }
     doc
   }
+}
+
+object NerChunkAnnotator {
+    private val logger : Logger = Logger.getLogger(getClass.getName)
 }

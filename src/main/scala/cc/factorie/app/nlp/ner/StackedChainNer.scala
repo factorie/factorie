@@ -75,6 +75,10 @@ abstract class StackedChainNer[L<:NerTag](labelDomain: CategoricalDomain[String]
         initSecondaryFeatures(document)
       }
       process(document,useModel2 = true)
+      for (token <- document.tokens) {
+        token.attr.remove[ChainNerFeatures]
+        token.attr.remove[ChainNer2Features]
+      }
       document
     } else {
       document
@@ -655,7 +659,7 @@ object NoEmbeddingsConllStackedChainNer extends NoEmbeddingsConllStackedChainNer
 class OntonotesStackedChainNer(embeddingMap: SkipGramEmbedding,
                                embeddingDim: Int,
                                scale: Double,
-                               useOffsetEmbedding: Boolean)(implicit mp:ModelProvider[ConllStackedChainNer], lexicons:StaticLexicons)
+                               useOffsetEmbedding: Boolean)(implicit mp:ModelProvider[OntonotesStackedChainNer], lexicons:StaticLexicons)
   extends StackedChainNer[BilouOntonotesNerTag](
     BilouOntonotesNerDomain,
     (t, s) => new BilouOntonotesNerTag(t, s),
@@ -666,7 +670,7 @@ class OntonotesStackedChainNer(embeddingMap: SkipGramEmbedding,
     useOffsetEmbedding,
     mp.provide, lexicons)
 
-class NoEmbeddingsOntonotesStackedChainNer()(implicit mp:ModelProvider[NoEmbeddingsConllStackedChainNer], lexicons:StaticLexicons) extends OntonotesStackedChainNer(null, 0, 0.0, false)(mp, lexicons) with Serializable
+class NoEmbeddingsOntonotesStackedChainNer()(implicit mp:ModelProvider[NoEmbeddingsOntonotesStackedChainNer], lexicons:StaticLexicons) extends OntonotesStackedChainNer(null, 0, 0.0, false)(mp, lexicons) with Serializable
 object NoEmbeddingsOntonotesStackedChainNer extends NoEmbeddingsOntonotesStackedChainNer()(ModelProvider.classpath(), new StaticLexicons()(LexiconsProvider.classpath)) with Serializable
 
 class StackedChainNerOpts extends CmdOptions with SharedNLPCmdOptions{
