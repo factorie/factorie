@@ -66,6 +66,8 @@ class NerChunkAnnotator[Span <: NerSpan : ClassTag, Tag <: NerTag : ClassTag](ne
         spanBuffer.add(newSpan(sec, tokBuffer.head.positionInSection, tokBuffer.size, state.asInstanceOf[Reading].tag))(null)
       }
     }
+    doc.attr += spanBuffer
+    doc.annotators ++= Seq(classTag[Tag].runtimeClass -> this.getClass, classTag[NerSpanBuffer[Span]].runtimeClass -> this.getClass)
     doc
   }
 }
