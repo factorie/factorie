@@ -59,7 +59,7 @@ class NerChunkAnnotator[Span <: NerSpan : ClassTag, Tag <: NerTag : ClassTag](ne
               val prevToken = if (tok.hasPrev) tok.prev else null
               if (prevToken != null) prevToken.attr[Tag].categoryValue else "<null>"
             }
-            NerChunkAnnotator.logger.log(Level.FINE, "Invalid combination of states, prefix %s, state %s at token %s. Previous token was %s.".format(prefix, s, tok, prevStr))
+            NerChunkAnnotator.logger.log(Level.WARNING, "Invalid combination of states, prefix %s, state %s at token %s. Previous token was %s.".format(prefix, s, tok, prevStr))
         }
       }
       if (tokBuffer.nonEmpty) {
