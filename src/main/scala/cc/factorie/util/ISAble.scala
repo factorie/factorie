@@ -1,6 +1,6 @@
 package cc.factorie.util
 
-import java.io.{BufferedInputStream, FileInputStream, File, InputStream}
+import java.io._
 import java.net.URL
 import java.nio.file.{Files, Path}
 
@@ -26,10 +26,29 @@ object ISAble {
     def apply(p:Path) = Files.newInputStream(p)
   }
 
+  implicit object BytesIs extends ISAble[Array[Byte]] {
+    def apply(arr:Array[Byte]) = new ByteArrayInputStream(arr)
+  }
+
   def inputStreamOf[A](a:A)(implicit conv:ISAble[A]):InputStream = conv(a)
   def buffered[A](a:A, buf:Int = 8192)(implicit conv:ISAble[A]):BufferedInputStream = conv(a) match {
     case b:BufferedInputStream => b
     case is => new BufferedInputStream(is, buf)
+  }
+  def lines[A](a:A, charSet:String="UTF-8")(implicit conv:ISAble[A]):Iterator[String] = new Iterator[String] {
+    private val rdr = new BufferedReader(new InputStreamReader(conv(a), charSet))
+    private var nextLine = rdr.readLine()
+
+    def next() = {
+      val res = nextLine
+      nextLine = rdr.readLine()
+      if(nextLine == null) {
+        rdr.close()
+      }
+      res
+    }
+
+    def hasNext = nextLine != null
   }
 }
 
