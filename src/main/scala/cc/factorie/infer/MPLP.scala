@@ -13,9 +13,10 @@
 package cc.factorie.infer
 
 import cc.factorie.la.DenseTensor1
-import scala.collection.mutable.ArrayBuffer
+import cc.factorie.model.{Factor, Model}
 import cc.factorie.variable._
-import cc.factorie.model.{Model, Factor}
+
+import scala.collection.mutable.ArrayBuffer
 
 /**
  * User: apassos

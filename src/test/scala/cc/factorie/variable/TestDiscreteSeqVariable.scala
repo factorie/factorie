@@ -1,7 +1,7 @@
 package cc.factorie.variable
 
-import org.junit.Test
 import org.junit.Assert._
+import org.junit.Test
 import org.scalatest.junit._
 
 

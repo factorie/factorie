@@ -12,11 +12,13 @@
    limitations under the License. */
 package cc.factorie.util
 
-import scala.util.Random
-import scala.concurrent._
-import java.text.SimpleDateFormat
 import java.io.{FileOutputStream, OutputStreamWriter}
+import java.text.SimpleDateFormat
+
 import cc.factorie.variable.Proportions
+
+import scala.concurrent._
+import scala.util.Random
 
 /**
  * User: apassos
@@ -247,7 +249,6 @@ abstract class JobQueueExecutor(memory: Int, className: String, cores: Int = 1) 
     val as = serializeArgs(args)
     import scala.concurrent.ExecutionContext.Implicits.global
     Future {
-      import sys.process._
       val thisPrefix = s"$prefix/job-$thisId"
       val outFile = thisPrefix+"-out"
       val jvmCommand = s"java -Xmx${memory}g -classpath '$classpath' cc.factorie.util.QSubExecutor --className=$className  '--classArgs=$as' --outFile=$outFile"

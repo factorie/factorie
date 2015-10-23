@@ -12,12 +12,11 @@
    limitations under the License. */
 package cc.factorie.app.regress
 
-import cc.factorie._
 import cc.factorie.la._
-import org.junit.Test
-import org.junit.Assert._
 import cc.factorie.optimize.OptimizableObjectives
-import cc.factorie.variable.{TensorVariable, DiffList}
+import cc.factorie.variable.{DiffList, TensorVariable}
+import org.junit.Assert._
+import org.junit.Test
 
 /**
  * @author apassos

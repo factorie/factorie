@@ -19,6 +19,18 @@ object FileUtils extends FileUtils
 class FileUtils {
 
   /**
+   * Tries to convert a string to a readable, writable file, failing otherwise
+   */
+  def fromString(s:String):File = {
+    val f = new File(s)
+    if(f.exists() && f.canRead && f.canWrite) {
+      f
+    } else {
+      throw new IllegalArgumentException("%s cannot be resolved to a readable, writable file".format(s))
+    }
+  }
+
+  /**
    * Returns a list of the file names of files with the given ending under the given directory
    * @param fileName name of directory from which to get list of file names
    * @param ending file name ending to match

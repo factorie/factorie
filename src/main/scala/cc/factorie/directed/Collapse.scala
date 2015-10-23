@@ -13,10 +13,10 @@
 
 package cc.factorie.directed
 
+import cc.factorie.model.{Factor, Family}
+import cc.factorie.variable.{Var, _}
+
 import scala.collection.mutable.ArrayBuffer
-import cc.factorie.model.{Family, Factor}
-import cc.factorie.variable._
-import cc.factorie.variable.Var
 
 /* Contains various recipes that "collapse" variables
    by setting the value of variables to an internal state 

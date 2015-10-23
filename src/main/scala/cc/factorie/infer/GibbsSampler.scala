@@ -12,11 +12,12 @@
    limitations under the License. */
 package cc.factorie.infer
 
-import scala.collection.mutable.{ArrayBuffer,HashMap}
-import cc.factorie.directed.{DirectedModel, DirectedFactor}
-import cc.factorie.variable._
-import cc.factorie.model.{Model, Factor}
 import cc.factorie._
+import cc.factorie.directed.{DirectedFactor, DirectedModel}
+import cc.factorie.model.{Factor, Model}
+import cc.factorie.variable._
+
+import scala.collection.mutable.{ArrayBuffer, HashMap}
 
 /** Sample a value for a single variable.  This sampler works in one of two ways:  
     If the model is a DirectedModel, then sampling is performed based on a suite a handlers

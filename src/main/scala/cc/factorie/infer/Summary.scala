@@ -13,12 +13,9 @@
 
 package cc.factorie.infer
 
-import cc.factorie.directed._
-import cc.factorie.la.{DenseTensor1, Tensor, Outer1Tensor2}
-import cc.factorie
+import cc.factorie.la.{DenseTensor1, Tensor}
+import cc.factorie.model.{DotFamily, Factor, Family}
 import cc.factorie.variable._
-import cc.factorie.model.{DotFamily, Family, Factor}
-import scala.Some
 
 /** The result of inference: a collection of Marginal objects.
     @author Andrew McCallum */

@@ -11,15 +11,17 @@
    See the License for the specific language governing permissions and
    limitations under the License. */
 package cc.factorie.tutorial
-import scala.collection.mutable.ArrayBuffer
 import java.io.File
+
 import cc.factorie._
-import cc.factorie.la._
 import cc.factorie.app.nlp.lexicon.StopWords
 import cc.factorie.app.strings.alphaSegmenter
 import cc.factorie.app.topics.lda.SparseLDAInferencer
 import cc.factorie.directed._
+import cc.factorie.la._
 import cc.factorie.variable._
+
+import scala.collection.mutable.ArrayBuffer
 
 // A fast approximation to Topics-over-Time that leverages SparseLDAInferencer.
 // Estimate a per-topic Beta distribution over normalized time stamps.

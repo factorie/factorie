@@ -11,8 +11,9 @@
    See the License for the specific language governing permissions and
    limitations under the License. */
 package cc.factorie.util
-import org.junit.Test
 import org.junit.Assert._
+import org.junit.Test
+
 import scala.concurrent.Future
 
 /**

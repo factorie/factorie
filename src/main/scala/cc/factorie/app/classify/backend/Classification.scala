@@ -13,15 +13,12 @@
 package cc.factorie.app.classify.backend
 
 import cc.factorie._
-import cc.factorie.la._
-import cc.factorie.util.{Threading, TensorCubbie, Cubbie}
-import cc.factorie.variable._
-import cc.factorie.model.{Parameters, DotTemplateWithStatistics2, Template2}
+import cc.factorie.la.{DenseTensor1, DenseTensor2, Tensor1, Tensor2, _}
+import cc.factorie.model.{DotTemplateWithStatistics2, Parameters, Template2}
 import cc.factorie.optimize._
-import cc.factorie.la.Tensor1
-import cc.factorie.la.DenseTensor1
-import cc.factorie.la.Tensor2
-import cc.factorie.la.DenseTensor2
+import cc.factorie.util.{Cubbie, TensorCubbie, Threading}
+import cc.factorie.variable._
+
 import scala.reflect.ClassTag
 
 // "Classifier"s take "values" of variables as input rather than the variables themselves.

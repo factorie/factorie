@@ -13,8 +13,9 @@
 
 package cc.factorie.util
 
-import scala.reflect.ClassTag
 import java.io._
+
+import scala.reflect.ClassTag
 
 // TODO Why insist on AnyRef?  Why not just Any?  This would make app.nlp.DocumentProcessor a little cleaner. -akm
 
@@ -31,6 +32,9 @@ import java.io._
     @author Andrew McCallum */
 trait Attr extends Serializable {
   /** A collection of attributes, keyed by the attribute class. */
+
+  def getAttr = attr
+
   object attr extends Serializable {
     private var _attr: Array[AnyRef] = new Array[AnyRef](2)
     /** The number of attributes present. */
@@ -94,6 +98,11 @@ trait Attr extends Serializable {
     def contains[C<:AnyRef]()(implicit m: ClassTag[C]): Boolean = index(m.runtimeClass) >= 0
     /** Return true if there is an attribute of class equal to or subclass of the argument. */
     def contains(key:Class[_]): Boolean = index(key) >= 0
+    /** Return true if there is an attribute of class exactly equal to the argument. */
+    def containsExactly[C<:AnyRef]()(implicit m: ClassTag[C]): Boolean = indexExactly(m.runtimeClass) >= 0
+    /** Return true if there is an attribute of class exactly equal to the argument. */
+    def containsExactly(key: Class[_]): Boolean = indexExactly(key) >= 0
+
     /** Returns a sequence of all attributes with classes assignable to C (i.e. that are either C or a subclass of C). */
     def all[C<:AnyRef]()(implicit m: ClassTag[C]): Seq[C] = {
       val key = m.runtimeClass

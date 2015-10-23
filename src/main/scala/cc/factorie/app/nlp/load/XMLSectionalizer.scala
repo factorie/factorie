@@ -1,8 +1,9 @@
 package cc.factorie.app.nlp.load
 
-import cc.factorie.app.nlp.{Section, Token, Document, DocumentAnnotator}
-import scala.collection.mutable
 import cc.factorie.app.nlp.load.TACDocTypes._
+import cc.factorie.app.nlp.{Document, DocumentAnnotator, Section, Token}
+
+import scala.collection.mutable
 
 /** The token span is assumed to be contiguous */
 abstract class TACSection(tks:Iterable[Token]) extends Section {

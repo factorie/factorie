@@ -1,7 +1,7 @@
 package cc.factorie.app.bib.hcoref
 
-import cc.factorie.variable.{Var, DenseDoubleBagVariable, DiffList, BagOfWordsVariable}
 import cc.factorie.app.nlp.hcoref.{GroundTruth, NodeVariables, SingularCanopy}
+import cc.factorie.variable.{BagOfWordsVariable, DenseDoubleBagVariable, DiffList}
 
 /**
  * @author John Sullivan

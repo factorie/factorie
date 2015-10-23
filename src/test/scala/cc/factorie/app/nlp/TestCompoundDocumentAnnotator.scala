@@ -1,7 +1,7 @@
 package cc.factorie.app.nlp
 
-import org.scalatest.{FlatSpec, Matchers}
 import cc.factorie.app.nlp.segment.{DeterministicNormalizingTokenizer, DeterministicSentenceSegmenter}
+import org.scalatest.{FlatSpec, Matchers}
 
 /**
  * @author John Sullivan

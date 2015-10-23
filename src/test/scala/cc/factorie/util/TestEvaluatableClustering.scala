@@ -13,8 +13,6 @@
 package cc.factorie.util
 
 import org.junit.Test
-import org.junit.Assert._
-import cc.factorie.util._
 
 class TestEvaluatableClustering {
   @Test def testBasicEvaluatableClustering(): Unit = {

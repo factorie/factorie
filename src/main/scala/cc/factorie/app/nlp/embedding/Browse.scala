@@ -1,7 +1,8 @@
 package cc.factorie.app.nlp.embedding
-import scala.collection.mutable.LinkedHashMap
-import cc.factorie.maths
 import cc.factorie.la._
+import cc.factorie.maths
+
+import scala.collection.mutable.LinkedHashMap
 
 object Browse {
   

@@ -1,8 +1,8 @@
 package cc.factorie.app.nlp
 
-import org.scalatest._
-import cc.factorie.app.nlp.pos.{PennPosTag, PennPosDomain}
 import cc.factorie.app.nlp.parse._
+import cc.factorie.app.nlp.pos.{PennPosDomain, PennPosTag}
+import org.scalatest._
 
 /** Test serialization of Document to BSON.
     @author John Sullivan, Andrew McCallum

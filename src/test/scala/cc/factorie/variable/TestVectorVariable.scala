@@ -1,6 +1,6 @@
 package cc.factorie.variable
 
-import cc.factorie.la.{GrowableSparseBinaryTensor1}
+import cc.factorie.la.GrowableSparseBinaryTensor1
 import org.junit.Test
 import org.scalatest.junit._
 

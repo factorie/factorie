@@ -13,9 +13,10 @@
 package cc.factorie.app.nlp
 
 import java.io._
-import cc.factorie.app.nlp.parse._
-import java.net.{ServerSocket,Socket,SocketException}
+import java.net.{ServerSocket, Socket, SocketException}
+
 import cc.factorie.app.nlp.coref.MentionList
+import cc.factorie.app.nlp.parse._
 
 /** A command-line driver for DocumentAnnotators.
     Launch on the command-line, specifying which NLP pipeline steps you want, 
@@ -46,7 +47,7 @@ object NLP {
 
       // named entity recognition
       val conllchainner = new CmdOption[String]("conll-chain-ner", null, "URL", "Annotate CoNLL-2003 NER") { override def invoke() = { if (value ne null) System.setProperty(classOf[ner.ConllChainNer].getName, value); annotators += cc.factorie.app.nlp.ner.ConllChainNer } }
-      val basicontonotesner = new CmdOption[String]("ontonotes-chain-ner", null, "URL", "Annotate Ontonotes NER")  { override def invoke() = { if (value ne null) System.setProperty(classOf[ner.BasicOntonotesNER].getName, value); annotators += cc.factorie.app.nlp.ner.BasicOntonotesNER } }
+      val basicontonotesner = new CmdOption[String]("ontonotes-chain-ner", null, "URL", "Annotate Ontonotes NER")  { override def invoke() = { if (value ne null) System.setProperty(classOf[ner.OntonotesChainNer].getName, value); annotators += cc.factorie.app.nlp.ner.OntonotesChainNer} }
       val noembeddingsconllstackedchainner = new CmdOption[String]("stacked-chain-ner-noembeddings", null, "URL", "Annotate Conll NER using a stacked chain model that doesn't use embeddings")  { override def invoke() = { if (value ne null) System.setProperty(classOf[ner.NoEmbeddingsConllStackedChainNer].getName, value); annotators += cc.factorie.app.nlp.ner.NoEmbeddingsConllStackedChainNer } }
 
       // parsers

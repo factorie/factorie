@@ -12,11 +12,13 @@
    limitations under the License. */
 package cc.factorie.app.bib.parser
 
-import org.scalatest.junit.JUnitSuite
+import java.io.File
+
 import cc.factorie.app.bib.parser.Dom.Name
 import org.junit.Test
-import java.io.File
-import collection.mutable.ArrayBuffer
+import org.scalatest.junit.JUnitSuite
+
+import scala.collection.mutable.ArrayBuffer
 
 class TestBibtexParser extends JUnitSuite with cc.factorie.util.FastLogging {
 

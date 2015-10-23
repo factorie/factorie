@@ -14,7 +14,9 @@
 package cc.factorie.app.nlp.ner
 
 import cc.factorie.app.nlp._
+import cc.factorie.la.{SparseBinaryTensor2, Tensor2}
 import cc.factorie.variable._
+import scala.collection.JavaConverters._
 
 // A "Tag" is a categorical label associated with a token.
 
@@ -24,8 +26,12 @@ import cc.factorie.variable._
 abstract class NerTag(val token:Token, initialCategory:String) extends CategoricalVariable(initialCategory) {
    /** Return "PER" instead of "I-PER". */
    def baseCategoryValue: String = if (categoryValue.length > 1 && categoryValue(1) == '-') categoryValue.substring(2) else categoryValue
+
+   def isEmpty = categoryValue == "O" // this should always be correct, but it might not be
+   def spanPrefix = categoryValue.split("-").apply(0)
  }
 
+trait NerSpanBuffer[Tag <: NerSpan] extends TokenSpanBuffer[Tag]
 
 /** A categorical variable holding the named entity type of a TokenSpan.
     More specific subclasses have a domain, such as ConllNerDomain.
@@ -43,14 +49,96 @@ abstract class NerSpan(section:Section, start:Int, length:Int) extends TokenSpan
   * @author Kate Silverstein
   */
 trait SpanEncoding {
+  this: CategoricalDomain[String] =>
   def prefixes: Set[String]
-  def encodedTags(baseTags: Seq[String]): Seq[String] = Seq("O") ++ baseTags.filter(_ != "O").map(t => prefixes.map(_ + t)).flatten
+  def encodedTags(baseTags: Seq[String]): Seq[String] = Seq("O") ++ baseTags.filter(_ != "O").flatMap(t => prefixes.map(_ + t))
   def suffixIntVal(i: Int): Int = if (i == 0) 0 else ((i - 1)/prefixes.size)+1
+  def isLicitTransition(from:String, to:String):Boolean
+
+  def isLicit(from:this.type#Value, to:this.type#Value):Boolean
+
+  final def permittedMask:Set[(Int, Int)] =
+    (for(t1 <- this._indices.values().asScala; // todo there has to be a better way to get this
+        t2 <- this._indices.values().asScala
+        if isLicit(t1, t2)) yield {
+      //println(s"${t1.category} -> ${t2.category}")
+      t1.intValue -> t2.intValue }).toSet
 }
+object BILOU {
+  val licitTransitions = Set(
+    "O" -> "B",
+    "O" -> "U",
+    "O" -> "O",
+
+    "B" -> "I",
+    "B" -> "L",
+
+    "I" -> "I",
+    "I" -> "L",
+
+    "L" -> "O",
+    "L" -> "B",
+    "L" -> "U",
+
+    "U" -> "U",
+    "U" -> "B",
+    "U" -> "O"
+  )
+}
+
+object BIO {
+  val licitTransitions = Set(
+    "B" -> "I",
+    "B" -> "O",
+    "B" -> "B",
+
+    "O" -> "B",
+    "O" -> "O",
+
+    "I" -> "I",
+    "I" -> "O",
+    "I" -> "B"
+  )
+}
+
 /** BILOU span encoding (Beginning, Inside, Last, Outside, Unit) */
-trait BILOU extends SpanEncoding { def prefixes = Set("B-", "I-", "L-", "U-") }
+trait BILOU extends SpanEncoding {
+  this : CategoricalDomain[String] =>
+  def prefixes = Set("B-", "I-", "L-", "U-")
+  def isLicitTransition(from: String, to: String) = BILOU.licitTransitions contains from -> to
+
+  def splitNerTag(tag:String):(String, Option[String]) = if(tag == "O") "O" -> None else {
+    val Array(pre, cat) = tag.split("-")
+    if(pre == "U") {
+      pre -> None
+    } else {
+      pre -> Some(cat)
+    }
+  }
+
+  def isLicit(from: this.type#Value, to: this.type#Value) =
+    splitNerTag(from.category) -> splitNerTag(to.category) match {
+      case ((fromPre, Some(fromCat)), (toPre, Some(toCat))) => toCat == fromCat && BILOU.licitTransitions.contains(fromPre -> toPre)
+      case ((fromPre, _), (toPre, _)) => BILOU.licitTransitions contains fromPre -> toPre
+    }
+
+}
 /** BIO span encoding (Beginning, Inside, Outside) */
-trait BIO extends SpanEncoding { def prefixes = Set("B-", "I-") }
+trait BIO extends SpanEncoding {
+  this : CategoricalDomain[String] =>
+  def prefixes = Set("B-", "I-")
+  def isLicitTransition(from: String, to: String) = BILOU.licitTransitions contains from -> to
+  def splitNerTag(tag:String):(String, Option[String]) = if(tag == "O") "O" -> None else {
+    val Array(pre, cat) = tag.split("-")
+    pre -> Some(cat)
+  }
+
+  def isLicit(from: this.type#Value, to: this.type#Value) =
+    splitNerTag(from.category) -> splitNerTag(to.category) match {
+      case ((fromPre, Some(fromCat)), (toPre, Some(toCat))) => toCat == fromCat && BIO.licitTransitions.contains(fromPre -> toPre)
+      case ((fromPre, _), (toPre, _)) => BIO.licitTransitions contains fromPre -> toPre
+    }
+}
 
 object ConllNerDomain extends EnumDomain {
   val O, PER, ORG, LOC, MISC = Value
@@ -59,15 +147,9 @@ object ConllNerDomain extends EnumDomain {
 class ConllNerTag(token:Token, initialCategory:String) extends NerTag(token, initialCategory) { def domain = ConllNerDomain }
 class LabeledConllNerTag(token:Token, initialCategory:String) extends ConllNerTag(token, initialCategory) with CategoricalLabeling[String]
 
-class ConllNerSpanLabel(span:TokenSpan, initialCategory:String)
-  extends NerSpanLabel(span, initialCategory) with Serializable {
-  def domain = ConllNerDomain
-}
-class ConllNerSpan(section:Section, start:Int, length:Int, category:String)
-  extends NerSpan(section, start, length) with Serializable {
-  val label = new ConllNerSpanLabel(this, category)
-}
-class ConllNerSpanBuffer extends TokenSpanBuffer[ConllNerSpan] with Serializable
+class ConllNerSpanLabel(span:TokenSpan, initialCategory:String) extends NerSpanLabel(span, initialCategory) with Serializable { def domain = ConllNerDomain }
+class ConllNerSpan(section:Section, start:Int, length:Int, category:String) extends NerSpan(section, start, length) with Serializable { val label = new ConllNerSpanLabel(this, category) }
+class ConllNerSpanBuffer extends NerSpanBuffer[ConllNerSpan] with Serializable
 //class ConllNerLabel(val token:Token, targetValue:String) extends NerLabel(targetValue) { def domain = ConllNerDomain }
 
 
@@ -82,17 +164,8 @@ object BioConllNerDomain extends CategoricalDomain[String] with BIO {
     new ConllNerSpanBuffer ++= boundaries.map(b => new ConllNerSpan(section, b._1, b._2, b._3))
   } 
 }
-class BioConllNerTag(token:Token, initialCategory:String) extends NerTag(token, initialCategory) with Serializable {
-  def domain = BioConllNerDomain
-}
-class LabeledBioConllNerTag(token:Token, initialCategory:String)
-  extends BioConllNerTag(token, initialCategory) with CategoricalLabeling[String] with Serializable
-// IobConllNerDomain is defined in app.nlp.package as val IobConllNerDomain = BioConllNerDomain
-class IobConllNerTag(token:Token, initialCategory:String) extends NerTag(token, initialCategory) with Serializable {
-  def domain = IobConllNerDomain
-}
-class LabeledIobConllNerTag(token:Token, initialCategory:String)
-  extends IobConllNerTag(token, initialCategory) with CategoricalLabeling[String] with Serializable
+class BioConllNerTag(token:Token, initialCategory:String) extends NerTag(token, initialCategory) with Serializable { def domain = BioConllNerDomain }
+class LabeledBioConllNerTag(token:Token, initialCategory:String) extends BioConllNerTag(token, initialCategory) with CategoricalLabeling[String] with Serializable
 //class BioConllNerLabel(val token:Token, targetValue:String) extends NerLabel(targetValue) { def domain = BioConllNerDomain }
 
 
@@ -168,14 +241,11 @@ class OntonotesNerTag(token:Token, initialCategory:String) extends NerTag(token,
 class LabeledOntonotesNerTag(token:Token, initialCategory:String)
   extends OntonotesNerTag(token, initialCategory) with CategoricalLabeling[String]
 
-class OntonotesNerSpanLabel(span:TokenSpan, initialCategory:String) extends NerSpanLabel(span, initialCategory) with Serializable {
-  def domain = OntonotesNerDomain
+class OntonotesNerSpanLabel(span:TokenSpan, initialCategory:String) extends NerSpanLabel(span, initialCategory) with Serializable { def domain = OntonotesNerDomain }
+class OntonotesNerSpan(section:Section, start:Int, length:Int, category:String) extends NerSpan(section, start, length) with Serializable { val label = new OntonotesNerSpanLabel(this, category) }
+class OntonotesNerSpanBuffer(spans:Iterable[OntonotesNerSpan]) extends NerSpanBuffer[OntonotesNerSpan] with Serializable {
+  def this() = this(Iterable.empty[OntonotesNerSpan])
 }
-class OntonotesNerSpan(section:Section, start:Int, length:Int, category:String)
-  extends NerSpan(section, start, length) with Serializable {
-  val label = new OntonotesNerSpanLabel(this, category)
-}
-class OntonotesNerSpanBuffer extends TokenSpanBuffer[OntonotesNerSpan] with Serializable
 
 
 object BioOntonotesNerDomain extends CategoricalDomain[String] with BIO {
@@ -222,7 +292,7 @@ class LabeledGermevalNerTag(token:Token, initialCategory:String) extends Germeva
 
 class GermevalNerSpanLabel(span:TokenSpan, initialCategory:String) extends NerSpanLabel(span, initialCategory) { def domain = GermevalNerDomain }
 class GermevalNerSpan(section:Section, start:Int, length:Int, category:String) extends NerSpan(section, start, length) { val label = new GermevalNerSpanLabel(this, category) }
-class GermevalNerSpanBuffer extends TokenSpanBuffer[GermevalNerSpan]
+class GermevalNerSpanBuffer extends NerSpanBuffer[GermevalNerSpan]
 
 
 object BioGermevalNerDomain extends CategoricalDomain[String] with BIO {

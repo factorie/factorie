@@ -1,10 +1,10 @@
 package cc.factorie.app.bib.hcoref
 
-import cc.factorie.util.{EvaluatableClustering, DefaultCmdOptions}
 import cc.factorie.app.nlp.hcoref._
-import com.mongodb.{MongoClient, DB}
-import cc.factorie.variable.{DiffList, Var}
-import scala.io.Source
+import cc.factorie.util.{DefaultCmdOptions, EvaluatableClustering}
+import cc.factorie.variable.DiffList
+import com.mongodb.MongoClient
+
 import scala.util.Random
 
 /**
@@ -39,7 +39,8 @@ object AuthorCoref {
       with CanopyPairGenerator[AuthorVars]
       with NoSplitMoveGenerator[AuthorVars]
       with DebugCoref[AuthorVars]
-      with TrainingObjective[AuthorVars] {
+      with TrainingObjective[AuthorVars]
+      with PrintlnLogger {
       def newInstance(implicit d: DiffList) = new Node[AuthorVars](new AuthorVars())
 
       val autoStopThreshold = 10000
@@ -57,9 +58,9 @@ object AuthorCoref {
       with CanopyPairGenerator[AuthorVars]
       with NoSplitMoveGenerator[AuthorVars]
       //with DebugDiffListMoveGenerator[AuthorVars]
-      with DebugCoref[AuthorVars] {
+      with DebugCoref[AuthorVars]
+      with PrintlnLogger{
       val autoStopThreshold = 10000
-      val logger = Logger.default
 
       def outerGetBagSize(n: Node[AuthorVars]) = n.variables.firstNames.size
 
@@ -91,7 +92,8 @@ object AuthorCoref {
       with CanopyPairGenerator[AuthorVars]
       with NoSplitMoveGenerator[AuthorVars]
       with DebugCoref[AuthorVars]
-      with TrainingObjective[AuthorVars] {
+      with TrainingObjective[AuthorVars]
+      with PrintlnLogger {
       def newInstance(implicit d: DiffList) = new Node[AuthorVars](new AuthorVars())
 
       val autoStopThreshold = 10000

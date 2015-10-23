@@ -21,13 +21,11 @@
 
 package cc.factorie.app.nlp.lexicon
 
-import cc.factorie.util.Logger
-import cc.factorie.util.JavaHashMap
-import cc.factorie.util.JavaHashSet
 import java.io.Serializable
-import scala.collection.mutable.Queue
-import scala.collection.mutable.Set
-import scala.collection.mutable.Map
+
+import cc.factorie.util.{JavaHashMap, JavaHashSet, Logger}
+
+import scala.collection.mutable.{Map, Queue, Set}
 
 /**
  * A Trie implementation. Used as an internal data structure by Aho-Corasick.
@@ -123,7 +121,7 @@ class TrieNode(val label : String, var root : TrieNode, val sep : String, val de
     if (phrase.length <= index) {
       emit = true
       exactEmit = true
-      if (output == -1) {
+      if ((output == -1) && (outputSet == null)) {
         output = depth
       } else {
         if (outputSet == null) { constructSet }
@@ -166,7 +164,7 @@ class TrieNode(val label : String, var root : TrieNode, val sep : String, val de
 
   private def constructSet() : Unit = {
     outputSet = JavaHashSet[Int](3)
-    outputSet.add(output)
+    if (output != -1) { outputSet.add(output) }
     output = -1
   }
   
@@ -197,7 +195,9 @@ class TrieNode(val label : String, var root : TrieNode, val sep : String, val de
   /**
    * Serialization method. It's usually faster to reconstruct the Trie from the source, but this ensures compatibility.
    */
-  def readObject(in : java.io.ObjectInputStream) : Unit = { in.defaultReadObject(); failNode = root }
+  @throws(classOf[java.io.IOException])
+  @throws(classOf[ClassNotFoundException])
+  private def readObject(in : java.io.ObjectInputStream) : Unit = { in.defaultReadObject(); failNode = root }
 }
 
 object TrieNode {

@@ -12,11 +12,10 @@
    limitations under the License. */
 package cc.factorie.directed
 
-import cc.factorie._
-import scala.collection.mutable.{ArrayBuffer, HashMap}
+import cc.factorie.model.{Factor, Model}
+import cc.factorie.variable.{DiffList, MutableVar, Var, VarWithDeterministicValue}
 
-import cc.factorie.variable.{MutableVar, VarWithDeterministicValue, Var, DiffList}
-import cc.factorie.model.{Model, Factor}
+import scala.collection.mutable.{ArrayBuffer, HashMap}
 
 trait DirectedModel extends Model {
   def getParentFactor(v:Var): Option[DirectedFactor]

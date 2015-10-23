@@ -11,10 +11,10 @@
    See the License for the specific language governing permissions and
    limitations under the License. */
 package cc.factorie.app.topics.lda
-import cc.factorie._
-import scala.collection.mutable.ArrayBuffer
 import cc.factorie.directed._
-import cc.factorie.variable.{MassesVariable, CategoricalSeqDomain}
+import cc.factorie.variable.{CategoricalSeqDomain, MassesVariable}
+
+import scala.collection.mutable.ArrayBuffer
 
 // Unfinished model similar to Labeled-LDA.
 

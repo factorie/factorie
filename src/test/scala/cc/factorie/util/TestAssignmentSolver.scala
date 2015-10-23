@@ -11,9 +11,9 @@
    See the License for the specific language governing permissions and
    limitations under the License. */
 package cc.factorie.util
-import org.junit._
-import Assert._
 import cc.factorie.la.DenseTensor2
+import org.junit.Assert._
+import org.junit._
 
 /**
  * User: apassos

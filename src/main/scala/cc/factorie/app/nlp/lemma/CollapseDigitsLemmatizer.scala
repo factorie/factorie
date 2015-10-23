@@ -11,7 +11,6 @@
    See the License for the specific language governing permissions and
    limitations under the License. */
 package cc.factorie.app.nlp.lemma
-import cc.factorie._
 import cc.factorie.app.nlp._
 
 class CollapseDigitsLemmatizer extends DocumentAnnotator with Lemmatizer {

@@ -16,9 +16,9 @@ import cc.factorie._
 import cc.factorie.app.nlp._
 import cc.factorie.app.nlp.phrase._
 import cc.factorie.app.nlp.pos.PennPosDomain
-import cc.factorie.util.{Attr,UniqueId,ImmutableArrayIndexedSeq,EvaluatableClustering}
+import cc.factorie.util.{Attr, EvaluatableClustering, ImmutableArrayIndexedSeq, UniqueId}
 import cc.factorie.variable._
-import cc.factorie._
+
 import scala.collection.mutable.ArrayBuffer
 
 /** Either a mention, entity or sub-entity in an coreference or entity resolution model.

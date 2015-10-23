@@ -13,9 +13,11 @@
 package cc.factorie.app.nlp.phrase
 
 import cc.factorie.app.nlp._
-import cc.factorie.variable.{EnumDomain, CategoricalVariable}
+import cc.factorie.app.nlp.lexicon.{LexiconsProvider, StaticLexicons}
+import cc.factorie.app.nlp.coref.{Mention, PronounSets}
+import cc.factorie.variable.{CategoricalVariable, EnumDomain}
+
 import scala.reflect.ClassTag
-import cc.factorie.app.nlp.coref.{PronounSets, Mention, WithinDocCoref, MentionList}
 
 object GenderDomain extends EnumDomain {
   val UNKNOWN,     // uncertain 
@@ -37,6 +39,11 @@ class PhraseGender(val phrase:Phrase, categoryIndex:Int) extends Gender(category
 
 /** Cheap gender predictor based on rules and lexicons. */
 class PhraseGenderLabeler[A<:AnyRef](documentAttrToPhrases:(A)=>Iterable[Phrase])(implicit docAttrClass:ClassTag[A]) extends DocumentAnnotator {
+
+  // todo fix this
+  @deprecated("This exists to preserve prior behavior, it should be a constructor argument", "10/5/15")
+  val lexicon = new StaticLexicons()(LexiconsProvider.classpath)
+
   def process(document:Document): Document = {
     for (phrase <- documentAttrToPhrases(document.attr[A])) process(phrase)
     document

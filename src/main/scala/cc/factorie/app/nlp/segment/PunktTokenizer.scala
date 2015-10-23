@@ -12,8 +12,7 @@
    limitations under the License. */
 package cc.factorie.app.nlp.segment
 
-import cc.factorie.app.strings.StringSegmenter
-import cc.factorie.app.nlp.{DocumentAnnotator, Sentence, Document, Token}
+import cc.factorie.app.nlp.{Document, DocumentAnnotator, Sentence, Token}
 import cc.factorie.app.strings.StringSegmentIterator
 
 object DefaultRules {

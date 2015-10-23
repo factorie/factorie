@@ -2,7 +2,6 @@ package cc.factorie.directed
 
 import cc.factorie.variable.DoubleVariable
 import org.junit.Test
-import org.junit.Assert._
 import org.scalatest.junit._
 
 

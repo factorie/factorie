@@ -13,9 +13,9 @@
 package cc.factorie.optimize
 
 import cc.factorie._
-import la._
-import util._
+import cc.factorie.la._
 import cc.factorie.model.{WeightsMap, WeightsSet}
+import cc.factorie.util._
 
 /**
  * The AdaGrad regularized dual averaging algorithm from Duchi et al, Adaptive Subgradient Algorithms

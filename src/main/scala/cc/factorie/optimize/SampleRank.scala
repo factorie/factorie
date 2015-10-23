@@ -15,10 +15,10 @@
 
 package cc.factorie.optimize
 import cc.factorie._
-import cc.factorie.la._
-import util.DoubleAccumulator
-import cc.factorie.model.{WeightsSet, Parameters, Model, DotFamily}
 import cc.factorie.infer.ProposalSampler
+import cc.factorie.la._
+import cc.factorie.model.{DotFamily, Model, Parameters, WeightsSet}
+import cc.factorie.util.DoubleAccumulator
 
 /** Provides a gradient that encourages the model.score to rank its best proposal the same as the objective.score would, with a margin.
     @author Andrew McCallum */

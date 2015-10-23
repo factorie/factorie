@@ -12,10 +12,11 @@
    limitations under the License. */
 package cc.factorie.app.nlp.wordnet
 
-import scala.collection.immutable.HashMap
-import scala.collection.mutable.ArrayBuffer
-import scala.collection.mutable
 import cc.factorie.util.ClasspathURL
+
+import scala.collection.immutable.HashMap
+import scala.collection.mutable
+import scala.collection.mutable.ArrayBuffer
 
 class WordNet(val inputStreamFactory: String=>java.io.InputStream) {
   def this(wordNetDir:java.io.File) = this((string:String) => new java.io.FileInputStream(new java.io.File(wordNetDir, string)))

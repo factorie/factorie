@@ -1,12 +1,13 @@
 package cc.factorie.tutorial
 
-import cc.factorie.app.nlp.hcoref._
-import cc.factorie.variable.{Var, BagOfWordsVariable}
-import com.mongodb.{MongoClient, DB}
 import cc.factorie._
+import cc.factorie.app.nlp.hcoref._
 import cc.factorie.util.EvaluatableClustering
-import scala.util.Random
+import cc.factorie.variable.{NoopDiff, BagOfWordsVariable, Var}
+import com.mongodb.{DB, MongoClient}
+
 import scala.collection.mutable
+import scala.util.Random
 
 /**
  * @author John Sullivan
@@ -21,7 +22,7 @@ object HierCorefDemo {
     def canopies = names.value.iterator.map(_._1).toList
 
     def this(n:Map[String, Double], c:Map[String, Double], m:Map[String, Double], t:String) = this(new BagOfWordsVariable(Nil, n), new BagOfWordsVariable(Nil, c), new BagOfWordsVariable(Nil, m), new BagOfWordsVariable(Seq(t)))
-    def this()(implicit d:DiffList) = this(new BagOfWordsVariable(), new BagOfWordsVariable(), new BagOfWordsVariable(), new BagOfWordsVariable())
+    def this()(implicit d:DiffList) = {this(new BagOfWordsVariable(), new BagOfWordsVariable(), new BagOfWordsVariable(), new BagOfWordsVariable()); if(d!=null) d += new NoopDiff(this)}
 
     def ++(other: WikiCorefVars)(implicit d: DiffList): WikiCorefVars = new WikiCorefVars(this.names ++ other.names,this.context ++ other.context, this.mentions ++ other.mentions, this.truth ++ other.truth)
 
@@ -32,6 +33,7 @@ object HierCorefDemo {
       this.context.add(other.context.members)(d)
       this.mentions.add(other.mentions.members)(d)
       this.truth.add(other.truth.members)(d)
+      d += new NoopDiff(this) // this is needed to trigger unrolling on SingleBagTemplates like Entropy
     }
 
     def --=(other: WikiCorefVars)(implicit d: DiffList) {
@@ -40,6 +42,7 @@ object HierCorefDemo {
       this.mentions.remove(other.mentions.members)(d)
       //println("removing tbag: %s of %s from %s of %s".format(this.truth.value.asHashMap, this.node.id, other.truth.value.asHashMap, other.node.id))
       this.truth.remove(other.truth.members)(d)
+      d += new NoopDiff(this)
     }
 
     def getVariables: Seq[Var] = Seq(names, context, mentions)
@@ -58,7 +61,9 @@ object HierCorefDemo {
     }
   }
 
-  class WikiCorefModel(namesWeight:Double, namesShift: Double, contextWeight:Double, contextShift: Double, mentionsWeight:Double, mentionsShift: Double, distanceWeight:Double, distanceShift:Double)  extends CorefModel[WikiCorefVars] {
+  class WikiCorefModel(namesWeight:Double, namesShift: Double, contextWeight:Double, contextShift: Double, mentionsWeight:Double, mentionsShift: Double, distanceWeight:Double, distanceShift:Double)
+    extends CorefModel[WikiCorefVars]
+    with DirectScoringModel[WikiCorefVars] {
     this += new ChildParentCosineDistance(namesWeight, namesShift, {w:WikiCorefVars => w.names}, "names") {this.debugOff()}
     this += new ChildParentCosineDistance(contextWeight, contextShift, {w:WikiCorefVars => w.context}, "context") {this.debugOff()}
     this += new ChildParentCosineDistance(mentionsWeight, mentionsShift, {w:WikiCorefVars => w.mentions}, "mentions") {this.debugOff()}
@@ -105,7 +110,7 @@ object HierCorefDemo {
     implicit val random = new scala.util.Random()
 
     val mongoConn = new MongoClient("localhost", 27017)
-    val mongoDb = mongoConn.getDB("wikicoref-bos")
+    val mongoDb = mongoConn.getDB("wikicoref")
     val corefCollection = new HcorefCubbieCollection(Seq("mentions", "cbag", "nbag", "mbag"), mongoDb)
     val allMentions = corefCollection.loadAll.filterNot(_.variables.truth.size == 0)//.filterNot(_.source == "wp")
     println("Done loading")
@@ -116,12 +121,13 @@ object HierCorefDemo {
     val time = System.currentTimeMillis()
 
     val sampler = new CorefSampler[WikiCorefVars](model, allMentions, numSamples)
-      with AutoStoppingSampler[WikiCorefVars]
+      with AutoStoppingAcceptSampler[WikiCorefVars]
       with CanopyPairGenerator[WikiCorefVars]
       with NoSplitMoveGenerator[WikiCorefVars]
-      with DebugCoref[WikiCorefVars] {
-      def autoStopThreshold = 10000
-      val logger = Logger.default
+      with DebugCoref[WikiCorefVars]
+      with PostSampler[WikiCorefVars, WikiCorefModel]
+      with PrintlnLogger {
+      def autoStopAcceptThreshold = 10000
 
       def newInstance(implicit d: DiffList): Node[WikiCorefVars] = new Node[WikiCorefVars](new WikiCorefVars/*, nextId*/) {
         def canopyIds: Set[String] = Set.empty[String]
@@ -161,8 +167,7 @@ object HierCorefDemo {
 
     implicit val random = new Random()
 
-    val sampler = new HierarchicalCorefSampler[WikiCorefVars](model, mentions, iterations) with DebugCoref[WikiCorefVars] {
-      val logger = Logger.default
+    val sampler = new HierarchicalCorefSampler[WikiCorefVars](model, mentions, iterations) with DebugCoref[WikiCorefVars] with PrintlnLogger {
       override def newInstance(implicit d: DiffList): Node[WikiCorefVars] = new Node[WikiCorefVars](new WikiCorefVars)
     }
 

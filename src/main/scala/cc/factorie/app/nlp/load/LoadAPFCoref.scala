@@ -1,16 +1,18 @@
 package cc.factorie.app.nlp.load
 
+import java.io._
+import java.util.zip.GZIPInputStream
+
 import cc.factorie.app.nlp._
 import cc.factorie.app.nlp.coref.WithinDocCoref
-import java.io._
-import cc.factorie.util.{DefaultCmdOptions, NonValidatingXML}
 import cc.factorie.app.nlp.phrase.Phrase
-import scala.io.Source
-import cc.factorie.app.nlp.segment.{DeterministicSentenceSegmenter, DeterministicNormalizingTokenizer}
 import cc.factorie.app.nlp.pos.PennPosTag
+import cc.factorie.app.nlp.segment.{DeterministicNormalizingTokenizer, DeterministicSentenceSegmenter}
+import cc.factorie.util.{DefaultCmdOptions, NonValidatingXML}
+
+import scala.io.Source
 import scala.util.matching.Regex
 import scala.xml.Node
-import java.util.zip.GZIPInputStream
 
 /**
  * Takes a document and an apf.xml file that contains coreference annotation for that

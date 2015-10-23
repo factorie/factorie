@@ -13,14 +13,15 @@
 package cc.factorie.optimize
 
 import cc.factorie._
-import org.junit.Test
-import org.junit.Assert._
-import scala.util.Random
-import cc.factorie.la._
-import cc.factorie.util.LocalDoubleAccumulator
-import cc.factorie.variable.{LabeledCategoricalVariable, BinaryFeatureVectorVariable, CategoricalVectorDomain, CategoricalDomain}
-import cc.factorie.model.{Parameters, DotTemplateWithStatistics2, DotTemplateWithStatistics1, TemplateModel}
 import cc.factorie.infer.InferByBPTree
+import cc.factorie.la._
+import cc.factorie.model.{DotTemplateWithStatistics1, DotTemplateWithStatistics2, Parameters, TemplateModel}
+import cc.factorie.util.LocalDoubleAccumulator
+import cc.factorie.variable.{BinaryFeatureVectorVariable, CategoricalDomain, CategoricalVectorDomain, LabeledCategoricalVariable}
+import org.junit.Assert._
+import org.junit.Test
+
+import scala.util.Random
 
 /**
  * @author sameer

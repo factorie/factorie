@@ -29,6 +29,11 @@ package object hcoref {
     }
   }
 
+  implicit class MentionListUtils[Vars <: NodeVariables[Vars]](val ments:Iterable[Node[Vars]]) extends AnyVal {
+    def roots = ments.map(_.root).toSet.toSeq
+    def nonMentionRoots = ments.map(_.root).filterNot(_.isMention).toSet.toSeq
+  }
+
   implicit class NodeListGroundTruthUtils[Vars <: NodeVariables[Vars] with GroundTruth](val nodes:Iterable[Node[Vars]]) {
     //this logic is ugly, but should always be correct for mentions
     private lazy val mentionToTruth = nodes.filter(_.isMention)

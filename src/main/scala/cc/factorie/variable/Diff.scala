@@ -13,8 +13,9 @@
 
 package cc.factorie.variable
 
-import scala.collection.mutable.ArrayBuffer
 import cc.factorie.model.Model
+
+import scala.collection.mutable.ArrayBuffer
 
 /** A change record for a variable, holding its old and new values, with capability to undo and redo the change.
     @author Andrew McCallum */

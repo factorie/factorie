@@ -12,11 +12,10 @@
    limitations under the License. */
 
 package cc.factorie.app.chain
-import cc.factorie._
-import scala.collection.mutable.ArrayBuffer
 import cc.factorie.util.Attr
 import cc.factorie.variable.{AbstractChainLink, CategoricalVectorVar}
 
+import scala.collection.mutable.ArrayBuffer
 import scala.util.matching.Regex
 
 /** A element of the input sequence to a linear-chain (CRF) having a string.  Its corresponding label will be an Attr attribute. */

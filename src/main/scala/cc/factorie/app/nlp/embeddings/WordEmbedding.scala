@@ -12,10 +12,9 @@
    limitations under the License. */
 package cc.factorie.app.nlp.embeddings
 
-import cc.factorie.util.ClasspathURL
-import cc.factorie.la
 import java.util.zip.GZIPInputStream
-import cc.factorie.app.nlp.embeddings
+
+import cc.factorie.la
 
 class WordEmbedding(val inputStreamFactory: () => java.io.InputStream, val dimensionSize: Int,numTake: Int = -1) extends scala.collection.mutable.LinkedHashMap[String,la.DenseTensor1] {
   def sourceFactory(): io.Source = io.Source.fromInputStream(new GZIPInputStream(inputStreamFactory()),"iso-8859-1")

@@ -6,14 +6,17 @@ package cc.factorie.app.nlp.ner
  */
 
 import java.io._
+
+import cc.factorie.app.nlp.lexicon.{LexiconsProvider, StaticLexicons}
+
+import cc.factorie._
+import cc.factorie.app.chain.{ChainModel, SegmentEvaluation}
 import cc.factorie.app.nlp._
-import cc.factorie.util.BinarySerializer
+import cc.factorie.optimize.{AdaGrad, ParameterAveraging, Trainer}
+import cc.factorie.util._
 import cc.factorie.variable._
-import cc.factorie.app.chain.ChainModel
-import cc.factorie.optimize.{Trainer, AdaGrad, ParameterAveraging}
-import cc.factorie.app.chain.SegmentEvaluation
-import cc.factorie.util.JavaHashMap
-import scala.reflect.ClassTag
+
+import scala.reflect.{ClassTag, classTag}
 
 /**
  * NER tagger for the CoNLL 2003 corpus
@@ -37,52 +40,109 @@ import scala.reflect.ClassTag
  * PER      f1=0.940327 p=0.955329 r=0.925788 (tp=1497 fp=70 fn=120 true=1617 pred=1567)
  *
  */
-class ConllChainNer(url: java.net.URL=null)
+class ConllChainNer(implicit mp:ModelProvider[ConllChainNer], lexicons:StaticLexicons)
   extends ChainNer[BilouConllNerTag](
     BilouConllNerDomain,
     (t, s) => new BilouConllNerTag(t, s),
     l => l.token,
-    url) with Serializable {
+    mp.provide,
+    lexicons) with Serializable {
   def loadDocs(fileName: String): Seq[Document] = cc.factorie.app.nlp.load.LoadConll2003(BILOU=true).fromFilename(fileName)
-  override def process(document:Document): Document = {
-    if (document.tokenCount > 0) {
-      val doc = super.process(document)
-      doc.attr.+=(new ConllNerSpanBuffer ++= document.sections.flatMap(section => BilouConllNerDomain.spanList(section)))
-      doc
-    } else document
-  }
+
+  def newSpan(sec: Section, start: Int, length: Int, category: String) = new ConllNerSpan(sec, start, length, category)
+
+  def newBuffer = new ConllNerSpanBuffer
 }
 
 //TODO this serialized model doesn't exist yet?
-object ConllChainNer extends ConllChainNer(cc.factorie.util.ClasspathURL[ConllChainNer](".factorie")) with Serializable
+object ConllChainNer extends ConllChainNer()(ModelProvider.classpath(), new StaticLexicons()(LexiconsProvider.classpath)) with Serializable
 
+class OntonotesChainNer()(implicit sCt:ClassTag[OntonotesNerSpan], tCt:ClassTag[BilouOntonotesNerTag], mp:ModelProvider[OntonotesChainNer], lexicons:StaticLexicons)
+  extends ChainNer[BilouOntonotesNerTag](BilouOntonotesNerDomain, (t, s) => new BilouOntonotesNerTag(t, s), l => l.token, mp.provide, lexicons) {
+  def newBuffer = new OntonotesNerSpanBuffer()
+
+  def newSpan(sec: Section, start: Int, length: Int, category: String) = new OntonotesNerSpan(sec, start, length, category)
+}
+
+// todo a serialized model for this does not exist
+object OntonotesChainNer extends OntonotesChainNer()(classTag[OntonotesNerSpan], classTag[BilouOntonotesNerTag], ModelProvider.classpath(), new StaticLexicons()(LexiconsProvider.classpath))
 
 /**
  * A base class for finite-state named entity recognizers
  */
-abstract class ChainNer[L<:NerTag](labelDomain: CategoricalDomain[String],
-                                   newLabel: (Token, String) => L,
+abstract class ChainNer[L<:NerTag](val labelDomain: CategoricalDomain[String] with SpanEncoding,
+                                   val newLabel: (Token, String) => L,
                                    labelToToken: L => Token,
-                                   url: java.net.URL=null)(implicit m: ClassTag[L]) extends DocumentAnnotator {
+                                   modelIs: InputStream=null,
+                                   val lexicon: StaticLexicons)(implicit m: ClassTag[L]) extends DocumentAnnotator with Serializable {
 
-  //DocumentAnnotator methods
-  def tokenAnnotationString(token: Token): String = token.attr[L].categoryValue
-  def prereqAttrs = Seq(classOf[Sentence])
-  def postAttrs = Seq(m.runtimeClass).asInstanceOf[Seq[Class[_]]]
-  def process(document: Document): Document = {
-    if (document.tokenCount == 0) return document
-    if (!document.tokens.head.attr.contains(m.runtimeClass))
-      document.tokens.map(token => token.attr += newLabel(token, "O"))
-    if (!document.tokens.head.attr.contains(classOf[ChainNERFeatures])) {
-      document.tokens.map(token => {token.attr += new ChainNERFeatures(token)})
-      addFeatures(document, (t:Token)=>t.attr[ChainNERFeatures])
+  val prereqAttrs = Seq(classOf[Sentence])
+  val postAttrs = Seq(m.runtimeClass)
+
+  def process(document:Document) =
+    if(document.tokenCount > 0) {
+      if (!document.tokens.head.attr.contains(m.runtimeClass))
+        document.tokens.map(token => token.attr += newLabel(token, "O"))
+      if (!document.tokens.head.attr.contains(classOf[ChainNERFeatures])) {
+        document.tokens.map(token => {token.attr += new ChainNERFeatures(token)})
+        addFeatures(document, (t:Token)=>t.attr[ChainNERFeatures])
+      }
+      document.sentences.collect {
+        case sentence if sentence.nonEmpty =>
+          val vars = sentence.tokens.map(_.attr[L]).toSeq
+          model.maximize(vars)(null)
+      }
+      document
+    } else {
+      document
     }
-    for (sentence <- document.sentences if sentence.tokens.size > 0) {
-      val vars = sentence.tokens.map(_.attr[L]).toSeq
-      model.maximize(vars)(null)
-    }
-    document
+
+  synchronized {
+
+    lexicon.iesl.Month.toString()
+    lexicon.iesl.Day.toString()
+
+    lexicon.iesl.PersonFirst.toString()
+    lexicon.iesl.PersonFirstHigh.toString()
+    lexicon.iesl.PersonFirstHighest.toString()
+    lexicon.iesl.PersonFirstMedium.toString()
+
+    lexicon.iesl.PersonLast.toString()
+    lexicon.iesl.PersonLastHigh.toString()
+    lexicon.iesl.PersonLastHighest.toString()
+    lexicon.iesl.PersonLastMedium.toString()
+
+    lexicon.iesl.PersonHonorific.toString()
+
+    lexicon.iesl.Company.toString()
+    lexicon.iesl.JobTitle.toString()
+    lexicon.iesl.OrgSuffix.toString()
+
+    lexicon.iesl.Country.toString()
+    lexicon.iesl.City.toString()
+    lexicon.iesl.PlaceSuffix.toString()
+    lexicon.iesl.UsState.toString()
+    lexicon.iesl.Continents.toString()
+
+    lexicon.wikipedia.Person.toString()
+    lexicon.wikipedia.Event.toString()
+    lexicon.wikipedia.Location.toString()
+    lexicon.wikipedia.Organization.toString()
+    lexicon.wikipedia.ManMadeThing.toString()
+    lexicon.iesl.Demonym.toString()
+
+    lexicon.wikipedia.Book.toString()
+    lexicon.wikipedia.Business.toString()
+    lexicon.wikipedia.Film.toString()
+
+    lexicon.wikipedia.LocationAndRedirect.toString()
+    lexicon.wikipedia.PersonAndRedirect.toString()
+    lexicon.wikipedia.OrganizationAndRedirect.toString()
   }
+
+  println("loaded lexicons")
+
+  def tokenAnnotationString(token: Token) = token.attr[L].categoryValue
 
   object ChainNERFeaturesDomain extends CategoricalVectorDomain[String]
   class ChainNERFeatures(val token: Token) extends BinaryFeatureVectorVariable[String] {
@@ -93,13 +153,13 @@ abstract class ChainNer[L<:NerTag](labelDomain: CategoricalDomain[String],
                                                                 labelToFeatures: L => Features,
                                                                 labelToToken: L => Token,
                                                                 tokenToLabel: Token => L)
-    extends ChainModel(labelDomain, featuresDomain, labelToFeatures, labelToToken, tokenToLabel) //with Parameters {
+    extends ChainModel[L, Features, Token](labelDomain, featuresDomain, labelToFeatures, labelToToken, tokenToLabel)
 
   val model = new ChainNERModel[ChainNERFeatures](ChainNERFeaturesDomain, l => labelToToken(l).attr[ChainNERFeatures], labelToToken, t => t.attr[L])
   val objective = cc.factorie.variable.HammingObjective
 
-  if (url != null) {
-    deserialize(url.openConnection.getInputStream)
+  if (modelIs != null) {
+    deserialize(modelIs)
     ChainNERFeaturesDomain.freeze()
     println("found model")
   }
@@ -120,14 +180,7 @@ abstract class ChainNer[L<:NerTag](labelDomain: CategoricalDomain[String],
     is.close()
   }
 
-  object Demonyms extends lexicon.PhraseLexicon("iesl/demonyms") {
-    for (line <- io.Source.fromInputStream(lexicon.ClasspathResourceLexicons.getClass.getResourceAsStream("iesl/demonyms.txt")).getLines()) {
-      val fields = line.trim.split(" ?\t ?") // TODO The currently checked in version has extra spaces in it; when this is fixed, use simply: ('\t')
-      for (phrase <- fields.drop(1)) this += phrase
-    }
-  }
-
-  def prefix( prefixSize : Int, cluster : String ) : String = if(cluster.size > prefixSize) cluster.substring(0, prefixSize) else cluster
+  def prefix( prefixSize : Int, cluster : String ) : String = if(cluster.length > prefixSize) cluster.substring(0, prefixSize) else cluster
   val clusters = JavaHashMap[String, String]()
 
   def addFeatures(document: Document, vf: Token => CategoricalVectorVar[String]): Unit = {
@@ -157,7 +210,7 @@ abstract class ChainNer[L<:NerTag](labelDomain: CategoricalDomain[String],
     lexicon.iesl.Country.tagText(tokenSequence,vf, "COUNTRY")
     lexicon.iesl.City.tagText(tokenSequence,vf, "CITY")
     lexicon.iesl.PlaceSuffix.tagText(tokenSequence,vf, "PLACE-SUFFIX")
-    lexicon.iesl.USState.tagText(tokenSequence,vf, "USSTATE")
+    lexicon.iesl.UsState.tagText(tokenSequence,vf, "USSTATE")
     lexicon.iesl.Continents.tagText(tokenSequence,vf, "CONTINENT")
 
     lexicon.wikipedia.Person.tagText(tokenSequence,vf, "WIKI-PERSON")
@@ -182,7 +235,7 @@ abstract class ChainNer[L<:NerTag](labelDomain: CategoricalDomain[String],
       features += s"W=$word"
       features += s"SHAPE=${cc.factorie.app.strings.stringShape(rawWord, 2)}"
       if (token.isPunctuation) features += "PUNCTUATION"
-      if (clusters.size > 0 && clusters.contains(rawWord)) {
+      if (clusters.nonEmpty && clusters.contains(rawWord)) {
         features += "CLUS="+prefix(4,clusters(rawWord))
         features += "CLUS="+prefix(6,clusters(rawWord))
         features += "CLUS="+prefix(10,clusters(rawWord))
@@ -249,18 +302,20 @@ abstract class ChainNer[L<:NerTag](labelDomain: CategoricalDomain[String],
 
     val trainLabels = labels(trainDocs).toIndexedSeq
     val testLabels = labels(testDocs).toIndexedSeq
+    val labelDomain: CategoricalDomain[String] = trainLabels.head.domain.asInstanceOf[CategoricalDomain[String]]
+    (trainLabels ++ testLabels).foreach(_.setRandomly)
 
-    val examples = trainDocs.flatMap(_.sentences.filter(_.length > 1).map(sentence => new model.ChainLikelihoodExample(sentence.tokens.map(_.attr[L with LabeledMutableDiscreteVar])))).toSeq
+    val examples = trainDocs.flatMap(_.sentences.filter(_.length > 1).map(sentence => new model.ChainLikelihoodExample(sentence.tokens.map(_.attr[L with LabeledMutableDiscreteVar]))))
     val optimizer = new AdaGrad(rate=rate, delta=delta) with ParameterAveraging
 
     def evaluate(){
-      val segmentEvaluation = new SegmentEvaluation[L with LabeledMutableCategoricalVar[String]](
+      val segmentEvaluation = new SegmentEvaluation[L with CategoricalLabeling[String]](
         labelDomain.categories.filter(_.length > 2).map(_.substring(2)),
         "(B|U)-", "(I|L)-"
       )
       trainDocs.foreach(doc => {
         process(doc)
-        for (sentence <- doc.sentences) segmentEvaluation += sentence.tokens.map(_.attr[L with LabeledMutableCategoricalVar[String]])
+        for (sentence <- doc.sentences) segmentEvaluation += sentence.tokens.map(_.attr[L with CategoricalLabeling[String]])
       })
       println(s"Train accuracy ${objective.accuracy(trainLabels)}")
       println(segmentEvaluation)
@@ -271,7 +326,7 @@ abstract class ChainNer[L<:NerTag](labelDomain: CategoricalDomain[String],
         )
         testDocs.foreach(doc => {
           process(doc)
-          for (sentence <- doc.sentences) testSegmentEvaluation += sentence.tokens.map(_.attr[L with LabeledMutableCategoricalVar[String]])
+          for (sentence <- doc.sentences) testSegmentEvaluation += sentence.tokens.map(_.attr[L with CategoricalLabeling[String]])
         })
         println(s"Test accuracy ${objective.accuracy(testLabels)}")
         println(testSegmentEvaluation)
@@ -309,7 +364,7 @@ abstract class ChainNer[L<:NerTag](labelDomain: CategoricalDomain[String],
   }
 }
 
-class ChainNerOpts extends cc.factorie.util.CmdOptions with SharedNLPCmdOptions {
+class ChainNerOpts extends cc.factorie.util.CmdOptions with SharedNLPCmdOptions with ModelProviderCmdOptions with DefaultCmdOptions {
   val saveModel = new CmdOption("save-model", "CoNLLChainNer.factorie", "FILE", "Filename for the model (saving a trained model or reading a running model.")
   val serialize = new CmdOption("serialize", true, "BOOLEAN", "Whether to serialize at all")
   val train = new CmdOption("train", "", "STRING", "Filename(s) from which to read training data in CoNLL 2003 one-word-per-lineformat.")
@@ -324,6 +379,7 @@ class ChainNerOpts extends cc.factorie.util.CmdOptions with SharedNLPCmdOptions 
   val delta = new CmdOption("delta", 0.066, "DOUBLE", "learning delta")
   val modelFile = new CmdOption("model-file", "", "STRING", "Filename of the serialized model that you want to load.")
   val useTagger = new CmdOption("use-tagger", "", "STRING", "Which tagger? (remove me later)")
+  val lexicons = new LexiconsProviderCmdOption("lexicons")
 }
 
 
@@ -332,7 +388,7 @@ object ConllChainNerTrainer extends cc.factorie.util.HyperparameterMain {
     val opts = new ChainNerOpts
     implicit val random = new scala.util.Random(0)
     opts.parse(args)
-    val ner = new ConllChainNer
+    val ner = new ConllChainNer()(ModelProvider.empty, new StaticLexicons()(opts.lexicons.value))
     if (opts.brownClusFile.wasInvoked) {
       println(s"Reading brown cluster file: ${opts.brownClusFile.value}")
       for (line <- scala.io.Source.fromFile(opts.brownClusFile.value).getLines()) {
@@ -341,8 +397,8 @@ object ConllChainNerTrainer extends cc.factorie.util.HyperparameterMain {
       }
     }
     assert(opts.train.wasInvoked && opts.test.wasInvoked, "No train/test data file provided.")
-    val trainPortionToTake = if(opts.trainPortion.wasInvoked) opts.trainPortion.value.toDouble  else 1.0
-    val testPortionToTake =  if(opts.testPortion.wasInvoked) opts.testPortion.value.toDouble  else 1.0
+    val trainPortionToTake = if(opts.trainPortion.wasInvoked) opts.trainPortion.value else 1.0
+    val testPortionToTake =  if(opts.testPortion.wasInvoked) opts.testPortion.value else 1.0
     val trainDocsFull = ner.loadDocs(opts.train.value)
     val testDocsFull = ner.loadDocs(opts.test.value)
     val trainDocs = trainDocsFull.take((trainDocsFull.length*trainPortionToTake).floor.toInt)
@@ -380,8 +436,8 @@ object ConllNerOptimizer {
     println("Best l1: " + opts.l1.value + " best l2: " + opts.l2.value)
     println("Running best configuration...")
     opts.serialize.setValue(true)
-    import scala.concurrent.duration._
     import scala.concurrent.Await
+    import scala.concurrent.duration._
     Await.result(qs.execute(opts.values.flatMap(_.unParse).toArray), 1.hours)
     println("Done.")
   }

@@ -12,17 +12,11 @@
    limitations under the License. */
 
 package cc.factorie.app.nlp.load
-import cc.factorie.app.nlp._
-
-import cc.factorie._
+import cc.factorie.app.nlp.{Document, Sentence, Token, UnknownDocumentAnnotator}
 import cc.factorie.app.nlp.ner._
-import collection.mutable.ArrayBuffer
 import cc.factorie.util.FastLogging
-import cc.factorie.app.nlp.Document
-import cc.factorie.app.nlp.Sentence
-import cc.factorie.app.nlp.Token
-import cc.factorie.app.nlp.UnknownDocumentAnnotator
-import cc.factorie.app.nlp.pos.PennPosTag
+
+import scala.collection.mutable.ArrayBuffer
 
 // Usage:
 // Either LoadConll2003.fromFilename("foo")
@@ -34,7 +28,6 @@ case class LoadConll2002(BILOU:Boolean = false) extends Load with FastLogging {
   val conllToPennMap = Map("\"" -> "''", "(" -> "-LRB-", ")" -> "-RRB-", "NN|SYM" -> "NN")
 
   def fromSource(source:io.Source): Seq[Document] = {
-    import scala.io.Source
     import scala.collection.mutable.ArrayBuffer
     def newDocument(name:String): Document = {
       val document = new Document("").setName(name)
@@ -72,7 +65,7 @@ case class LoadConll2002(BILOU:Boolean = false) extends Load with FastLogging {
         val ner = fields(1).stripLineEnd
         if (sentence.length > 0) document.appendString(" ")
         val token = new Token(sentence, word)
-        token.attr += new LabeledIobConllNerTag(token, ner)
+        token.attr += new LabeledBioConllNerTag(token, ner)
 //        token.attr += new cc.factorie.app.nlp.pos.PennPosTag(token, partOfSpeech)
       }
     }

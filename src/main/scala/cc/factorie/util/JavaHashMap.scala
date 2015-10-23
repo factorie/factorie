@@ -12,8 +12,8 @@
    limitations under the License. */
 package cc.factorie.util
 
-import scala.collection.mutable
 import scala.collection.JavaConverters._
+import scala.collection.mutable
 
 // Java hash mutable hashmaps are significantly faster than the Scala ones, for no good reason
 // Replace this with AnyRefMap when we switch to Scala 2.11 -luke

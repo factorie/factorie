@@ -13,7 +13,6 @@
 package cc.factorie.app.nlp.parse
 
 import cc.factorie.app.nlp._
-import cc.factorie._
 import cc.factorie.app.nlp.lemma.TokenLemma
 import cc.factorie.app.nlp.pos.PosTag
 import scala.annotation.tailrec
@@ -572,7 +571,7 @@ class TransitionBasedParser extends DocumentAnnotator {
     import cc.factorie.util.CubbieConversions._
     // Sparsify the evidence weights
     import scala.language.reflectiveCalls
-    val sparseEvidenceWeights = new la.DenseLayeredTensor2(FeaturesDomain.dimensionDomain.size, ParseDecisionDomain.size, new la.SparseIndexedTensor1(_))
+    val sparseEvidenceWeights = new DenseLayeredTensor2(FeaturesDomain.dimensionDomain.size, ParseDecisionDomain.size, new SparseIndexedTensor1(_))
     model.weights.value.foreachElement((i, v) => if (v != 0.0) sparseEvidenceWeights += (i, v))
     model.weights.set(sparseEvidenceWeights)
     val dstream = new java.io.DataOutputStream(new BufferedOutputStream(stream))
@@ -588,7 +587,7 @@ class TransitionBasedParser extends DocumentAnnotator {
     BinarySerializer.deserialize(FeaturesDomain.dimensionDomain, dstream)
     BinarySerializer.deserialize(ParseDecisionDomain, dstream)
     import scala.language.reflectiveCalls
-    model.weights.set(new la.DenseLayeredTensor2(FeaturesDomain.dimensionDomain.size, ParseDecisionDomain.size, new la.SparseIndexedTensor1(_)))
+    model.weights.set(new DenseLayeredTensor2(FeaturesDomain.dimensionDomain.size, ParseDecisionDomain.size, new SparseIndexedTensor1(_)))
     BinarySerializer.deserialize(model, dstream)
     logger.debug("TransitionBasedParser model parameters oneNorm "+model.parameters.oneNorm)
     dstream.close()  // TODO Are we really supposed to close here, or is that the responsibility of the caller?

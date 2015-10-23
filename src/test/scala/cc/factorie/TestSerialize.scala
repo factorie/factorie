@@ -12,19 +12,20 @@
    limitations under the License. */
 package cc.factorie
 
-import app.chain.ChainModel
-import cc.factorie.la._
-import org.scalatest.junit.JUnitSuite
-import org.junit.Test
 import java.io._
+
+import cc.factorie.app.chain.ChainModel
 import cc.factorie.app.nlp
-import cc.factorie.util.{TensorCubbie, BinarySerializer}
-import scala.language.postfixOps
-import scala.collection.mutable.ArrayBuffer
 import cc.factorie.app.nlp.ner.NerTag
-import cc.factorie.variable._
+import cc.factorie.la._
 import cc.factorie.model._
-import scala.reflect.ClassTag
+import cc.factorie.util.BinarySerializer
+import cc.factorie.variable._
+import org.junit.Test
+import org.scalatest.junit.JUnitSuite
+
+import scala.collection.mutable.ArrayBuffer
+import scala.language.postfixOps
 
 class TestSerialize extends JUnitSuite  with cc.factorie.util.FastLogging{
 

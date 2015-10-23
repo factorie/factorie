@@ -12,17 +12,19 @@
    limitations under the License. */
 package cc.factorie.app.nlp.segment
 
-import scala.collection.mutable.{Map, ArrayBuffer}
-import scala.util.Random
 import java.io._
+
 import cc.factorie._
-import cc.factorie.util.{BinarySerializer, HyperparameterMain}
-import cc.factorie.util.CubbieConversions._
-import cc.factorie.variable._
-import cc.factorie.app.nlp._
-import cc.factorie.optimize.{LikelihoodExample, BatchTrainer, OnlineTrainer}
 import cc.factorie.app.chain.ChainModel
 import cc.factorie.app.chineseStrings._
+import cc.factorie.app.nlp._
+import cc.factorie.optimize.OnlineTrainer
+import cc.factorie.util.BinarySerializer
+import cc.factorie.util.CubbieConversions._
+import cc.factorie.variable._
+
+import scala.collection.mutable.ArrayBuffer
+import scala.util.Random
 
 /** A linear-chain CRF model for Chinese word segmentation with four companion 
     objects, each pre-trained on a different corpus that corresponds to a 

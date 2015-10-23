@@ -12,12 +12,10 @@
    limitations under the License. */
 
 package cc.factorie.app.classify
-import cc.factorie.variable._
-import cc.factorie.infer._
+import cc.factorie.app.classify.backend.{MulticlassClassification, MulticlassClassifier}
+import cc.factorie.variable.{CategoricalDomain, LabeledDiscreteEvaluation, LabeledMutableDiscreteVar}
+
 import scala.collection.mutable.ArrayBuffer
-import cc.factorie.variable.{LabeledDiscreteEvaluation, LabeledMutableDiscreteVar, CategoricalDomain}
-import cc.factorie.la.Tensor1
-import cc.factorie.app.classify.backend.{MulticlassClassifier, MulticlassClassification}
 
 
 case class LabeledClassification[L](label: L, classification: MulticlassClassification)

@@ -12,10 +12,10 @@
    limitations under the License. */
 package cc.factorie.app.nlp.segment
 
-import org.scalatest.junit.JUnitSuite
-import org.junit.Test
-import cc.factorie.app.nlp.{DocumentAnnotatorPipeline, DocumentAnnotator, Sentence, Document, Token}
+import cc.factorie.app.nlp.{Document, DocumentAnnotatorPipeline, Sentence, Token}
 import cc.factorie.util.FastLogging
+import org.junit.Test
+import org.scalatest.junit.JUnitSuite
 
 class TestRegexTokenizer extends JUnitSuite with FastLogging {
   

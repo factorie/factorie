@@ -13,8 +13,8 @@
 package cc.factorie.infer
 
 import cc.factorie.la.{SparseIndexedTensor1, Tensor}
-import cc.factorie.variable.{DiscreteVar, DiffList, HashMapAssignment}
-import cc.factorie.model.{CombinedModel, ItemizedModel, Model, Factor1}
+import cc.factorie.model.{CombinedModel, Factor1, ItemizedModel, Model}
+import cc.factorie.variable.{DiffList, DiscreteVar, HashMapAssignment}
 
 /**
  * User: apassos

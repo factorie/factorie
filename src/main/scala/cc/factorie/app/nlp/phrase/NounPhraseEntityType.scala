@@ -12,15 +12,18 @@
    limitations under the License. */
 package cc.factorie.app.nlp.phrase
 
-import cc.factorie._
-import cc.factorie.app.nlp._
-import cc.factorie.app.nlp.ner.{ConllNerDomain, OntonotesEntityTypeDomain}
-import cc.factorie.util.{ClasspathURL, BinarySerializer}
+import cc.factorie.app.nlp.lexicon._
 import java.io._
-import cc.factorie.variable.{CategoricalVariable, LabeledCategoricalVariable, BinaryFeatureVectorVariable, CategoricalVectorDomain, CategoricalLabeling}
-import cc.factorie.optimize.{PredictorExample, Trainer, OptimizableObjectives}
+
+import cc.factorie._
 import cc.factorie.app.classify.backend.LinearMulticlassClassifier
+import cc.factorie.app.nlp._
 import cc.factorie.app.nlp.load.LoadConll2011
+import cc.factorie.app.nlp.ner.{ConllNerDomain, OntonotesEntityTypeDomain}
+import cc.factorie.optimize.{OptimizableObjectives, PredictorExample, Trainer}
+import cc.factorie.util.{BinarySerializer, ClasspathURL}
+import cc.factorie.variable.{BinaryFeatureVectorVariable, CategoricalLabeling, CategoricalVariable, CategoricalVectorDomain, LabeledCategoricalVariable}
+
 
 
 /** Categorical variable indicating whether the noun phrase is person, location, organization, etc. 
@@ -45,6 +48,10 @@ class OntonotesPhraseEntityTypeLabeler extends DocumentAnnotator {
   def this(stream:InputStream) = { this(); deserialize(stream) }
   def this(file: File) = this(new FileInputStream(file))
   def this(url:java.net.URL) = this(url.openConnection.getInputStream)
+
+  // todo fix this
+  @deprecated("This exists to preserve prior behavior, it should be a constructor argument", "10/5/15")
+  val lexicon = new StaticLexicons()(LexiconsProvider.classpath)
 
   def prereqAttrs: Iterable[Class[_]] = List(classOf[NounPhraseList])
   def postAttrs: Iterable[Class[_]] = List(classOf[OntonotesPhraseEntityType])
@@ -91,7 +98,7 @@ class OntonotesPhraseEntityTypeLabeler extends DocumentAnnotator {
       lexicon.iesl.Country,
       lexicon.iesl.City,
       lexicon.iesl.AllPlaces,
-      lexicon.iesl.USState,
+      lexicon.iesl.UsState,
       lexicon.wikipedia.Person,
       lexicon.wikipedia.Event,
       lexicon.wikipedia.Location,
@@ -99,7 +106,7 @@ class OntonotesPhraseEntityTypeLabeler extends DocumentAnnotator {
       lexicon.wikipedia.ManMadeThing,
       lexicon.wikipedia.Event)
   
-  val PersonLexicon = new lexicon.UnionLexicon("NounPhraseEntityTypePerson", lexicon.PersonPronoun, lexicon.PosessiveDeterminer)
+  val PersonLexicon = new UnionLexicon("NounPhraseEntityTypePerson", PersonPronoun, PosessiveDeterminer)
   def isWordNetPerson(token:Token): Boolean = wordnet.WordNet.isHypernymOf("person", wordnet.WordNet.lemma(token.string, "NN"))
   def entityTypeIndex(mention:Phrase): Int = {
     if (PersonLexicon.contains(mention) || isWordNetPerson(mention.headToken)) OntonotesEntityTypeDomain.index("PERSON")

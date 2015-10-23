@@ -12,10 +12,10 @@
    limitations under the License. */
 package cc.factorie.app.nlp.morph
 
-import collection.mutable
-import cc.factorie.app.nlp.wordnet.WordNet
 import cc.factorie.app.nlp.lexicon.Lexicon
 import cc.factorie.util.ClasspathURL
+
+import scala.collection.mutable
 
 /** A simple morphological analyzer, simply indicating if a noun is singular or plural.
     Obviously this supports very limited functionality. More will be added as needed.

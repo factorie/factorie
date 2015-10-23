@@ -1,8 +1,10 @@
 package cc.factorie.app.nlp.hcoref
 
-import cc.factorie.infer.{SettingsSampler, Proposal}
+import cc.factorie.infer.{Proposal, SettingsSampler}
+
+import scala.annotation.tailrec
 import scala.collection.mutable
-import cc.factorie._
+import scala.util.Random
 
 /**
   * @author John Sullivan
@@ -17,86 +19,105 @@ trait SingularCanopy extends Canopy {
   def canopy:String
 }
 
+private[hcoref] class EntityPairGenHashSet[Vars <: NodeVariables[Vars]](mentionSize:Int)(implicit random:Random) extends mutable.HashSet[Node[Vars]] {
+  override def initialSize = (mentionSize * 1.5).toInt
+
+  def sample:Node[Vars] = {
+    var cand = table(random.nextInt(table.length))
+    while(cand == null ) {
+      cand = table(random.nextInt(table.length))
+    }
+    cand.asInstanceOf[Node[Vars]]
+  }
+}
+
 trait CanopyPairGenerator[Vars <: NodeVariables[Vars] with Canopy] extends PairGenerator[Vars] {
   this:SettingsSampler[(Node[Vars], Node[Vars])] =>
 
-  val entMap = new mutable.HashMap[String, Node[Vars]]()
-  protected var canopies = new mutable.HashMap[String,mutable.ArrayBuffer[Node[Vars]]]()
-  var entities = mutable.ArrayBuffer[Node[Vars]]()
-  protected var deletedEntities = mutable.ArrayBuffer[Node[Vars]]()
+  protected var canopies = new mutable.HashMap[String,EntityPairGenHashSet[Vars]]()
+  var entities = new EntityPairGenHashSet[Vars](mentions.size)
+  var nonexistentEnts = new mutable.HashSet[Node[Vars]]
   mentions foreach addEntity
 
   proposalHooks += {proposal:Proposal[(Node[Vars], Node[Vars])] =>
-    val newEntities = mutable.HashSet[Node[Vars]]()
-    for(diff<-proposal.diff){
-      diff.variable match {
-        case v:Node[Vars]#Exists => diff.undo()
-        case _ => ()
+    val iter = proposal.diff.iterator
+    while(iter.hasNext) {
+      val diff = iter.next()
+      if(diff.variable.isInstanceOf[Node[Vars]#Exists]) {
+        val v = diff.variable.asInstanceOf[Node[Vars]#Exists]
+        val newValue = v.booleanValue
+        diff.undo()
+        val oldValue = v.booleanValue
+        diff.redo()
+        if(newValue != oldValue) {
+          if(newValue) {
+            addEntity(v.node)
+          } else {
+            nonexistentEnts += v.node
+          }
+        }
       }
     }
-    for(diff<-proposal.diff){
-      diff.variable match{
-        case children:Node[Vars]#Children => if(!children.node.existsVar.booleanValue && !children.node.exists)newEntities += children.node
-        case _ => ()
-      }
-    }
-    for(diff<-proposal.diff){
-      diff.variable match{
-        case v:Node[Vars]#Exists => diff.redo()
-        case _ => ()
-      }
-    }
-
-    for(entity<-newEntities)addEntity(entity)
   }
 
   def addEntity(e:Node[Vars]):Unit ={
     entities += e
-    entMap.put(e.uniqueId.toString, e)
-    for(cname <- e.variables.canopies){
-      canopies.getOrElse(cname,{val a = new mutable.ArrayBuffer[Node[Vars]];canopies(cname)=a;a}) += e
+    val iter = e.variables.canopies.iterator
+    while(iter.hasNext) {
+      val canopy = iter.next()
+      val canopyEnts = canopies.getOrElse(canopy, new EntityPairGenHashSet[Vars](5))
+      canopyEnts += e
+      canopies(canopy) = canopyEnts
     }
   }
 
   def nextEntityPair:(Node[Vars],Node[Vars]) = {
-    val e1 = nextEntity(null)
-    val e2 = nextEntity(e1)
+    val e1 = getEntity(null)
+    val e2 = getEntity(e1)
     e1 -> e2
   }
 
   def nextContext = nextEntityPair
 
+  @tailrec
+  private def getEntity(context:Node[Vars]):Node[Vars] = if(context != null) {
+    val nodeCanopies = context.variables.canopies.toSeq
 
-  def sampleCanopyName(context:Node[Vars]):String = context.variables.canopies.sampleUniformly(random)
-  def nextEntity(context:Node[Vars]=null.asInstanceOf[Node[Vars]]):Node[Vars] = {
-    var result:Node[Vars]=null.asInstanceOf[Node[Vars]]
-    if(context==null)result = sampleEntity(entities)
-    else {
-      val cname = sampleCanopyName(context)
-      val canopy = canopies.getOrElse(cname,{val c = new mutable.ArrayBuffer[Node[Vars]];c+=context;c})
-      result= if(canopy.size>0) sampleEntity(canopy) else sampleEntity(entities)
+    val candidates = canopies(nodeCanopies(random.nextInt(nodeCanopies.size)))
 
+    if(candidates.size <= 1) {
+      getEntity(null)
+    } else {
+      var e = candidates.sample
+      var i = 0
+      while(!e.exists) {
+        i += 1
+        e = candidates.sample
+        if(i % 5 == 0) {
+          cleanEntities()
+        }
+      }
+      e
     }
-
-    result
-  }
-
-  protected def sampleEntity(samplePool:mutable.ArrayBuffer[Node[Vars]]) = {
-    var tries = 5
-    var e = null.asInstanceOf[Node[Vars]]
-    while({tries-=1;tries} >= 0 && (e==null || !e.exists) && samplePool.size>0){
-      e = samplePool(random.nextInt(samplePool.size))
-      if(tries==1)performMaintenance(samplePool)
+  } else {
+    var e = entities.sample
+    var i = 0
+    while(!e.exists) {
+      i += 1
+      e = entities.sample
+      if(i % 5 == 0) {
+        cleanEntities()
+      }
     }
-    if(e != null && !e.exists)e=null.asInstanceOf[Node[Vars]]
     e
   }
-  def performMaintenance(es:mutable.ArrayBuffer[Node[Vars]]):Unit ={
-    val cleanEntities = mutable.ArrayBuffer[Node[Vars]]()
-    cleanEntities ++= es.filter(_.exists)
-    deletedEntities ++= es.filter(!_.exists)
-    es.clear()
-    es++=cleanEntities
+
+  private def cleanEntities(): Unit = {
+    val iter = nonexistentEnts.iterator
+    while(iter.hasNext) {
+      entities remove iter.next()
+    }
+    nonexistentEnts = new mutable.HashSet[Node[Vars]]
   }
 
 }

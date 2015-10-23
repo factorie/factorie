@@ -13,10 +13,9 @@
 
 package cc.factorie.directed
 
-import cc.factorie.variable._
+import cc.factorie.infer.{DiscreteSummary1, Maximize, SimpleDiscreteMarginal1, Summary}
 import cc.factorie.model.Model
-import scala.Some
-import cc.factorie.infer.{DiscreteSummary1, Summary, SimpleDiscreteMarginal1, Maximize}
+import cc.factorie.variable._
 
 
 trait DiscreteGeneratingFactor extends DirectedFactor {

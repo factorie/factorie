@@ -12,7 +12,7 @@
    limitations under the License. */
 package cc.factorie.util
 
-import java.util.concurrent.{Executors, Callable, ExecutorService}
+import java.util.concurrent.{Callable, ExecutorService, Executors}
 
 /**
  * User: apassos

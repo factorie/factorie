@@ -13,9 +13,10 @@
 
 package cc.factorie
 import java.util.BitSet
-import scala.util.Random
+
 import cc.factorie.util.DoubleSeq
-import scala.annotation.tailrec
+
+import scala.util.Random
 
 package object maths {
   

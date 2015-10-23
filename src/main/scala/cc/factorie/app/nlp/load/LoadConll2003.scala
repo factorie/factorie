@@ -12,15 +12,11 @@
    limitations under the License. */
 
 package cc.factorie.app.nlp.load
-import cc.factorie.app.nlp._
-
+import cc.factorie.app.nlp.{Document, Sentence, Token, UnknownDocumentAnnotator, _}
 import cc.factorie.app.nlp.ner._
-import collection.mutable.ArrayBuffer
 import cc.factorie.util.FastLogging
-import cc.factorie.app.nlp.Document
-import cc.factorie.app.nlp.Sentence
-import cc.factorie.app.nlp.Token
-import cc.factorie.app.nlp.UnknownDocumentAnnotator
+
+import scala.collection.mutable.ArrayBuffer
 
 /** Load a sequence of CoNLL 2003 documents.
   *
@@ -69,7 +65,7 @@ case class LoadConll2003(BILOU:Boolean = false, verbose:Boolean = false) extends
         document.annotators(classOf[Token]) = UnknownDocumentAnnotator.getClass // register that we have token boundaries
         document.annotators(classOf[Sentence]) = UnknownDocumentAnnotator.getClass // register that we have sentence boundaries
         document.annotators(classOf[pos.PennPosTag]) = UnknownDocumentAnnotator.getClass // register that we have POS tags
-        document.annotators(classOf[LabeledIobConllNerTag]) = UnknownDocumentAnnotator.getClass // register that we have IOB NER tags
+        document.annotators(classOf[LabeledBioConllNerTag]) = UnknownDocumentAnnotator.getClass // register that we have IOB NER tags
         if (BILOU) document.annotators(classOf[LabeledBilouConllNerTag]) = UnknownDocumentAnnotator.getClass // register that we have BILOU NER tags
       } else {
         val fields = line.split(' ')
@@ -79,7 +75,7 @@ case class LoadConll2003(BILOU:Boolean = false, verbose:Boolean = false) extends
         val ner = fields(3).stripLineEnd
         if (sentence.length > 0) document.appendString(" ")
         val token = new Token(sentence, word)
-        token.attr += new LabeledIobConllNerTag(token, ner)
+        token.attr += new LabeledBioConllNerTag(token, ner)
         token.attr += new cc.factorie.app.nlp.pos.PennPosTag(token, partOfSpeech)
       }
     }

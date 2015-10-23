@@ -12,12 +12,13 @@
    limitations under the License. */
 
 package cc
-import scala.util.Random
-import cc.factorie.util._
-import scala.language.implicitConversions
-import cc.factorie.model.IterableSingleFactor
-import scala.reflect.runtime.universe._
 import java.io.BufferedReader
+
+import cc.factorie.util._
+
+import scala.language.implicitConversions
+import scala.reflect.runtime.universe._
+import scala.util.Random
 
 package object factorie extends CubbieConversions {
   var random = new Random(0)
@@ -31,15 +32,25 @@ package object factorie extends CubbieConversions {
     def toNotNull: Option[T] = Option(a)
   }
 
+  def when[A](cond:Boolean, a: => A):Option[A] = if(cond) Some(a) else None
+
   implicit def traversableExtras[A](t: Traversable[A]) = new cc.factorie.util.TraversableExtras[A](t)
   implicit def stringExtras(x:String) = new cc.factorie.util.StringExtras(x)
-  implicit def singleFactorIterable[F<:Factor](f:F): Iterable[F] = new IterableSingleFactor(f)
   implicit class IntPairExtras(val x:(Int, Int)) {
     def overlapsWith(y:(Int, Int)):Boolean = (x._1 >= y._1 && x._1 <= y._2) || (x._2 >= y._1 && x._2 <= y._2)
   }
 
   implicit class StringListExtras(s:Iterable[String]) {
     def toCountBag:Map[String, Double] = s.groupBy(identity).mapValues(_.size.toDouble)
+  }
+
+  implicit class WordBagExtras(m:Map[String, Double]) {
+    def longest = m.keysIterator.toSeq.sortBy(_.length).lastOption.getOrElse("")
+    def topWord = m.toSeq.sortBy(_._2).lastOption.map(_._1).getOrElse("")
+
+    def topBag(w:Int) = m.toSeq.sortBy(-_._2).take(w)
+    def topWords(w:Int) = topBag(w).map(_._1)
+
   }
 
   implicit class BufferedReaderExtras(rdr:BufferedReader) {

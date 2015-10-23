@@ -12,6 +12,7 @@
    limitations under the License. */
 package cc.factorie.app.nlp.phrase
 import cc.factorie.app.nlp._
+
 import scala.collection.mutable.ListBuffer
 
 /** Find noun phrases merely by contiguous nouns (possibly prefixed by adjectives) and pronouns.

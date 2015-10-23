@@ -12,12 +12,11 @@
    limitations under the License. */
 
 package cc.factorie.app.nlp.parse
-import cc.factorie._
 import cc.factorie.app.nlp._
-import java.lang.StringBuffer
-import collection.mutable.ArrayBuffer
 import cc.factorie.util.Cubbie
-import cc.factorie.variable.{LabeledCategoricalVariable, EnumDomain}
+import cc.factorie.variable.{EnumDomain, LabeledCategoricalVariable}
+
+import scala.collection.mutable.ArrayBuffer
 
 // Representation for a dependency parse
 

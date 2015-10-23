@@ -13,11 +13,11 @@
 
 package cc.factorie.infer
 
-import cc.factorie.directed._
-import scala.collection.mutable.{HashSet,HashMap,ArrayBuffer}
-import cc.factorie.directed.{MaximizeGaussianVariance, MaximizeGaussianMean, MaximizeGeneratedDiscrete, MaximizeGate}
-import cc.factorie.variable._
+import cc.factorie.directed.{MaximizeGate, MaximizeGaussianMean, MaximizeGaussianVariance, MaximizeGeneratedDiscrete, _}
 import cc.factorie.model.Model
+import cc.factorie.variable._
+
+import scala.collection.mutable.HashSet
 
 /** An inference engine that finds score-maximizing values.  
     The "infer" method returns a summary holding the maximizing assignment, but does not change the current variable values.

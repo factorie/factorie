@@ -1,12 +1,12 @@
 package cc.factorie.util
 
-import org.scalatest.{FlatSpec, Matchers}
+import cc.factorie.app.nlp._
+import cc.factorie.app.nlp.parse.{ParseTree, ParseTreeLabelDomain}
+import cc.factorie.app.nlp.pos.{PennPosDomain, PennPosTag}
 import cc.factorie.util.JsonCubbieConverter._
 import org.json4s.JsonAST._
 import org.json4s.jackson.JsonMethods._
-import cc.factorie.app.nlp._
-import cc.factorie.app.nlp.pos.{PennPosDomain, PennPosTag}
-import cc.factorie.app.nlp.parse.{ParseTreeLabelDomain, ParseTree}
+import org.scalatest.{FlatSpec, Matchers}
 
 /**
  * @author John Sullivan

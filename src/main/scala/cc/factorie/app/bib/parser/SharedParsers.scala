@@ -12,8 +12,8 @@
    limitations under the License. */
 package cc.factorie.app.bib.parser
 
-import scala.util.parsing.combinator._
 import scala.language.implicitConversions
+import scala.util.parsing.combinator._
 
 private[parser] trait SharedParsers extends RegexParsers {
   override val skipWhitespace = false

@@ -2,7 +2,7 @@ package cc.factorie.optimize
 
 import cc.factorie.la._
 import cc.factorie.model.{WeightsMap, WeightsSet}
-import cc.factorie.util.{DoubleSeq, RangeIntSeq, DenseDoubleSeq}
+import cc.factorie.util.{DenseDoubleSeq, DoubleSeq, RangeIntSeq}
 
 /**
  * The FTRL-Proximal algorithm for regularized adaptive online gradient descent from McMahan, "A Unified View of Regularized Dual Averaging

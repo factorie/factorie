@@ -23,11 +23,11 @@
 package cc.factorie.tutorial
 object TutorialLearning extends App {
   import cc.factorie._
-  import variable._
-  import cc.factorie.app.nlp._
   import cc.factorie.app.chain._
-  import cc.factorie.optimize.{ SynchronizedOptimizerOnlineTrainer, Trainer, SampleRankTrainer }
-  import cc.factorie.infer.{ GibbsSampler, InferByBPChain }
+  import cc.factorie.app.nlp._
+  import cc.factorie.infer.{GibbsSampler, InferByBPChain}
+  import cc.factorie.optimize.{SampleRankTrainer, SynchronizedOptimizerOnlineTrainer, Trainer}
+  import variable._
 
   implicit val random = new scala.util.Random(0)
 

@@ -1,8 +1,9 @@
 package cc.factorie.app.nlp.hcoref
 
 import cc.factorie.app.nlp.Document
-import cc.factorie.app.nlp.coref.{CrossDocEntity, CrossDocMention, WithinDocCoref}
+import cc.factorie.app.nlp.coref.{CrossDocEntity, WithinDocCoref}
 import cc.factorie.variable.DiffList
+
 import scala.util.Random
 
 /**
@@ -39,7 +40,8 @@ abstract class DocEntityCoref {
     with CanopyPairGenerator[DocEntityVars]
     with NoSplitMoveGenerator[DocEntityVars]
     with DebugCoref[DocEntityVars]
-    with TrainingObjective[DocEntityVars] {
+    with TrainingObjective[DocEntityVars]
+    with PrintlnLogger {
     def newInstance(implicit d: DiffList) = new Node[DocEntityVars](new DocEntityVars())
 
     val autoStopThreshold = _settings.autoStopThreshold

@@ -12,11 +12,10 @@
    limitations under the License. */
 package cc.factorie.optimize
 
-import cc.factorie.la._
 import cc.factorie._
-import util._
-import util.FastLogging
+import cc.factorie.la._
 import cc.factorie.model.WeightsSet
+import cc.factorie.util.{FastLogging, _}
 
 /**
  * Learns the parameters of a Model by processing the gradients and values from a collection of Examples.

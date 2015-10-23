@@ -1,8 +1,9 @@
 package cc.factorie.app.nlp.load
 
+import java.io.File
+
 import cc.factorie.app.nlp._
-import java.io.{InputStreamReader, BufferedReader, FileReader, File}
-import cc.factorie.app.nlp.coref.{CorefOptions, Mention, WithinDocEntity, WithinDocCoref}
+import cc.factorie.app.nlp.coref.{Mention, WithinDocCoref, WithinDocEntity}
 import cc.factorie.app.nlp.phrase.{OntonotesPhraseEntityType, Phrase}
 import cc.factorie.app.nlp.pos.PennPosTag
 import cc.factorie.variable.Span

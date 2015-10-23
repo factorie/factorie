@@ -6,8 +6,7 @@
 
 package cc.factorie.util.namejuggler
 
-import StringUtils._
-import org.apache.commons.lang.StringEscapeUtils
+import cc.factorie.util.namejuggler.StringUtils._
 
 object PersonNameWithDerivations {
   def apply(s: NonemptyString): PersonNameWithDerivations = {

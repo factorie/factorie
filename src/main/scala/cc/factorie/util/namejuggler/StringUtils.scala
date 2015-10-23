@@ -52,6 +52,7 @@ object RichString {
 class RichString(val s: String) {
 
   import java.text.Normalizer
+
   import RichString._
 
   def maskNewlines: String = s.replaceAll("[\\n\\r]+", " ")

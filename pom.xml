@@ -22,7 +22,7 @@ limitations under the License.
   <groupId>cc.factorie</groupId>
   <artifactId>factorie_${scala.majorVersion}</artifactId>
   <version>1.2-SNAPSHOT</version>
-  <packaging>jar</packaging>
+  <packaging>${package.type}</packaging>
   <inceptionYear>2009</inceptionYear>
 
   <properties>
@@ -312,13 +312,133 @@ limitations under the License.
             </execution>
           </executions>
         </plugin>
-
       </plugins>
     </build>
 
     <profiles>
       <profile>
+        <id>default</id>
+        <activation>
+          <activeByDefault>true</activeByDefault>
+        </activation>
+        <properties>
+          <package.type>jar</package.type>
+        </properties>
+      </profile>
+      <profile>
+        <id>bundle</id>
+        <properties>
+          <package.type>bundle</package.type>
+        </properties>
+        <build>
+          <plugins>
+            <plugin>
+              <groupId>org.apache.felix</groupId>
+              <artifactId>maven-bundle-plugin</artifactId>
+              <extensions>true</extensions>
+              <executions>
+                <execution>
+                  <id>bundle-manifest</id>
+                  <phase>process-classes</phase>
+                  <goals>    
+                    <goal>manifest</goal>
+                  </goals>   
+                </execution>
+              </executions>
+              <configuration>
+                <instructions>
+                  <Bundle-SymbolicName>${pom.groupId}</Bundle-SymbolicName>
+                  <Import-Package>
+                    scala,
+                    scala.collection,
+                    scala.collection.concurrent,
+                    scala.collection.convert,
+                    scala.collection.generic,
+                    scala.collection.immutable,
+                    scala.collection.mutable,
+                    scala.collection.parallel,
+                    scala.collection.parallel.immutable,
+                    scala.collection.parallel.mutable,
+                    scala.collection.script,
+                    scala.compat,
+                    scala.concurrent,
+                    scala.concurrent.duration,
+                    scala.io,
+                    scala.math,
+                    scala.reflect,
+                    scala.runtime,
+                    scala.sys,
+                    scala.sys.process,
+                    scala.util,
+                    scala.util.control,
+                    scala.util.hashing,
+                    scala.util.matching,
+                    scala.util.parsing.combinator,
+                    scala.annotation,
+                    scala.annotation.meta,
+                    scala.annotation.unchecked,
+                    scala.beans,
+                    scala.concurrent.forkjoin,
+                    scala.concurrent.impl,
+                    scala.concurrent.util,
+                    scala.ref,
+                    scala.reflect.macros.internal,
+                    scala.text
+                  </Import-Package>
+                  <Export-Package>
+                    cc.factorie,
+                    cc.factorie.app,
+                    cc.factorie.app.bib,
+                    cc.factorie.app.bib.hcoref,
+                    cc.factorie.app.bib.parser,
+                    cc.factorie.app.chain,
+                    cc.factorie.app.classify,
+                    cc.factorie.app.classify.backend,
+                    cc.factorie.app.mf,
+                    cc.factorie.app.nlp,
+                    cc.factorie.app.nlp.coref,
+                    cc.factorie.app.nlp.embedding,
+                    cc.factorie.app.nlp.embeddings,
+                    cc.factorie.app.nlp.hcoref,
+                    cc.factorie.app.nlp.lemma,
+                    cc.factorie.app.nlp.lexicon,
+                    cc.factorie.app.nlp.load,
+                    cc.factorie.app.nlp.morph,
+                    cc.factorie.app.nlp.ner,
+                    cc.factorie.app.nlp.parse,
+                    cc.factorie.app.nlp.phrase,
+                    cc.factorie.app.nlp.pos,
+                    cc.factorie.app.nlp.relation,
+                    cc.factorie.app.nlp.segment,
+                    cc.factorie.app.nlp.wordnet,
+                    cc.factorie.app.regress,
+                    cc.factorie.app.strings,
+                    cc.factorie.app.topics,
+                    cc.factorie.app.topics.lda,
+                    cc.factorie.db,
+                    cc.factorie.db.mongo,
+                    cc.factorie.directed,
+                    cc.factorie.infer,
+                    cc.factorie.la,
+                    cc.factorie.maths,
+                    cc.factorie.model,
+                    cc.factorie.optimize,
+                    cc.factorie.tutorial,
+                    cc.factorie.util,
+                    cc.factorie.util.namejuggler,
+                    cc.factorie.variable
+                  </Export-Package>
+                </instructions>
+              </configuration>
+            </plugin>
+          </plugins>
+        </build>
+      </profile>
+      <profile>
         <id>jar-with-dependencies</id>
+        <properties>
+          <package.type>jar</package.type>
+        </properties>
         <build>
           <plugins>
             <!-- Assembles the jar and other release formats (tarball, etc.). -->
@@ -346,6 +466,9 @@ limitations under the License.
       </profile>
       <profile>
         <id>nlp-jar-with-dependencies</id>
+        <properties>
+          <package.type>jar</package.type>
+        </properties>
         <repositories>
           <repository>
             <id>dev-iesl.cs.umass.edu-snapshots</id>
@@ -392,6 +515,9 @@ limitations under the License.
       </profile>
       <profile>
         <id>coverage-check</id>
+        <properties>
+          <package.type>jar</package.type>
+        </properties>
         <build>
           <plugins>
             <plugin>
@@ -414,7 +540,9 @@ limitations under the License.
       </profile>
         <profile>
           <id>sonatype-release</id>
-
+          <properties>
+            <package.type>jar</package.type>
+          </properties>
           <distributionManagement>
             <snapshotRepository>
               <id>ossrh</id>

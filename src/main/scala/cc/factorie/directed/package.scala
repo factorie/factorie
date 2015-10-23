@@ -15,8 +15,9 @@
 
 package cc.factorie
 
-import scala.language.implicitConversions
 import cc.factorie.variable.MutableVar
+
+import scala.language.implicitConversions
 
 package object directed {
   /** Create a new DirectedFactor, make it the "parent" generating factor for this variable,

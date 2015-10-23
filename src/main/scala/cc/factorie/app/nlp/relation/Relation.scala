@@ -1,16 +1,18 @@
 package cc.factorie.app.nlp.relation
 
-import scala.io.Source
-import cc.factorie.app.nlp.{TokenSpan, Token, DocumentAnnotatorPipeline, Document}
-import cc.factorie.app.nlp.pos.OntonotesForwardPosTagger
+import java.io.FileInputStream
+
+import cc.factorie.app.nlp.coref.ParseForwardCoref
+import cc.factorie.app.nlp.load.LoadOWPL
 import cc.factorie.app.nlp.ner.{NerTag, NoEmbeddingsConllStackedChainNer}
 import cc.factorie.app.nlp.parse.OntonotesTransitionBasedParser
-import cc.factorie.app.nlp.coref.ParseForwardCoref
-import java.io.FileInputStream
-import cc.factorie.app.nlp.load.LoadOWPL
-import cc.factorie.variable.{CategoricalVariable, CategoricalDomain, MutableCategoricalVar}
-import scala.collection.mutable
 import cc.factorie.app.nlp.phrase.Phrase
+import cc.factorie.app.nlp.pos.OntonotesForwardPosTagger
+import cc.factorie.app.nlp.{Document, DocumentAnnotatorPipeline, Token, TokenSpan}
+import cc.factorie.variable.{CategoricalDomain, MutableCategoricalVar}
+
+import scala.collection.mutable
+import scala.io.Source
 
 /**
  * @author John Sullivan

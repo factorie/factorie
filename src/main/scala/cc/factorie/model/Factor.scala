@@ -13,15 +13,8 @@
 
 package cc.factorie.model
 
-import scala.collection.mutable.{ArrayBuffer, HashMap, HashSet, ListBuffer, FlatHashTable}
-import scala.util.{Random,Sorting}
-import scala.util.Random
-import scala.math
-import scala.util.Sorting
 import cc.factorie.la._
-import cc.factorie.util.Substitutions
-import java.io._
-import cc.factorie.variable.{Var, Vars, Assignment}
+import cc.factorie.variable.{Assignment, Var, Vars}
 
 /** A single factor in a factor graph.  From a Factor you can get its neighboring variables,
     the factor's score using the neighboring variable's current values,
@@ -115,16 +108,5 @@ trait Factor extends Ordered[Factor] {
   }
   def factorName = "Factor"
   override def toString: String = variables.mkString(factorName+"(", ",", ")")
-}
-
-/** An iterable collection for efficiently holding a single Factor.
-    Used in various Template classes and in an implicit conversion from Factor to IterableSingleFactor
-    so that unroll1,2,3,4 methods (which are supposed to return Iterable[Factor] can be written
-    by end users to return a single Factor (which is then implicitly converted to this class). 
-    @author Andrew McCallum */
-class IterableSingleFactor[F<:Factor](val factor:F) extends Iterable[F] {
-  def iterator = Iterator.single(factor)
-  override def size = 1
-  override def head = factor
 }
 

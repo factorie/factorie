@@ -14,13 +14,14 @@ package cc.factorie.util
 
 import java.io._
 import java.util.zip.{GZIPInputStream, GZIPOutputStream}
-import collection.mutable
-import cc.factorie.la._
-import scala.language.implicitConversions
-import cc.factorie.variable._
-import scala.Some
-import cc.factorie.model.{WeightsSetCubbie, Parameters}
+
 import cc.factorie.app.classify.backend.{BoostedTreeCubbie, DecisionTreeCubbie, RandomForestCubbie}
+import cc.factorie.la._
+import cc.factorie.model.{Parameters, WeightsSetCubbie}
+import cc.factorie.variable._
+
+import scala.collection.mutable
+import scala.language.implicitConversions
 
 // We have these in a trait so we can mix them into the package object and make them available by default
 trait CubbieConversions {

@@ -12,21 +12,19 @@
    limitations under the License. */
 package cc.factorie.directed
 
-import cc.factorie._
+import cc.factorie.infer._
 import cc.factorie.la._
 import cc.factorie.maths
-import scala.util.Random
-import org.jblas.DoubleMatrix
 import cc.factorie.variable._
-import scala.Some
-import cc.factorie.infer._
-import scala.Some
+import org.jblas.DoubleMatrix
+
+import scala.util.Random
 
 object DirectedTypeHelpers {
   type MutableTensorVarTensor1 = MutableTensorVar { type Value = Tensor1 }
   type MutableTensorVarTensor2 = MutableTensorVar { type Value = Tensor2 }
 }
-import DirectedTypeHelpers._
+import cc.factorie.directed.DirectedTypeHelpers._
 
 object MultivariateGaussian extends DirectedFamily3[MutableTensorVarTensor1, MutableTensorVarTensor1, MutableTensorVarTensor2] {
   self =>

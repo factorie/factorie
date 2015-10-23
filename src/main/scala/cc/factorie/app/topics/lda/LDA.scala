@@ -12,18 +12,15 @@
    limitations under the License. */
 
 package cc.factorie.app.topics.lda
+import java.io.{BufferedReader, File, FileInputStream, InputStreamReader, PrintWriter}
+import java.util.concurrent.Executors
+
 import cc.factorie._
 import cc.factorie.directed._
-import cc.factorie.app.nlp.lexicon.StopWords
-import scala.collection.mutable.HashMap
-import java.io.{PrintWriter, FileWriter, File, BufferedReader, InputStreamReader, FileInputStream}
-import collection.mutable.{ArrayBuffer, HashSet, HashMap, LinkedHashMap}
-import cc.factorie.directed._
-import cc.factorie.optimize.TrainerHelpers
-import java.util.concurrent.Executors
-import cc.factorie.variable._
 import cc.factorie.util.DefaultCmdOptions
-import cc.factorie.app.topics.lda
+import cc.factorie.variable._
+
+import scala.collection.mutable.LinkedHashMap
 
 /** Typical recommended value for alpha1 is 50/numTopics. */
 class LDA(val wordSeqDomain: CategoricalSeqDomain[String], numTopics: Int = 10, alpha1:Double = 0.1, val beta1:Double = 0.01,
@@ -308,10 +305,11 @@ class LDACmd {
      -Topic 35 programming sigplan java generation implementation language comp programs sys design
      -Topic  83 ieee trans syst expert circuits systems eng esa appl computers  1  0.100000
    */
-  import scala.collection.mutable.ArrayBuffer
-  import scala.util.control.Breaks._
   import java.io.Reader
+
   import cc.factorie.app.strings.StringSegmenter
+
+  import scala.util.control.Breaks._
   var verbose = false
   val minDocLength = 3
   def newDocument(domain:CategoricalSeqDomain[String], name:String, contents:Reader, segmenter:StringSegmenter): Doc = Document.fromReader(domain, name, contents, segmenter) 

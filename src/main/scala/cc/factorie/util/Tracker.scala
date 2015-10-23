@@ -14,7 +14,7 @@
 
 
 package cc.factorie.util
-import scala.collection.mutable.{ArrayBuffer,LinkedHashMap}
+import scala.collection.mutable.{ArrayBuffer, LinkedHashMap}
 
 /** Track and time bounded regions of code. 
     @author Sebastian Riedel

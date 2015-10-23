@@ -12,8 +12,8 @@
    limitations under the License. */
 package cc.factorie.app.bib.parser
 
-import collection.immutable.TreeMap
-import annotation.tailrec
+import scala.annotation.tailrec
+import scala.collection.immutable.TreeMap
 
 object Dom {
 

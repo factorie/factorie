@@ -11,7 +11,6 @@
    See the License for the specific language governing permissions and
    limitations under the License. */
 package cc.factorie.util
-import scala.reflect.ClassTag
 import scala.annotation.unchecked.uncheckedVariance
 
 /** Immutable IndexedSeq that, unlike scala.collection.immutable.Vector, can be subclassed.

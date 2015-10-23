@@ -12,10 +12,9 @@
    limitations under the License. */
 package cc.factorie.util
 
-import scala.collection.JavaConversions._
 import java.util.concurrent.ConcurrentHashMap
-import scala.collection.mutable
-import scala.collection.concurrent.Map
+
+import scala.collection.JavaConversions._
 
 class ThreadLocal[T](thunk: => T) {
   private val _instances: scala.collection.concurrent.Map[Long, T] = new ConcurrentHashMap[Long, T]

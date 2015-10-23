@@ -13,8 +13,9 @@
 
 package cc.factorie.variable
 
-import collection.mutable
 import cc.factorie.util.Cubbie
+
+import scala.collection.mutable
 
 /** A Domain for sequences of CategoricalValues.
     @author Andrew McCallum */

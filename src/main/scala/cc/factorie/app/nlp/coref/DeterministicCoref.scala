@@ -12,25 +12,21 @@
    limitations under the License. */
 package cc.factorie.app.nlp.coref
 
-import cc.factorie.app.nlp._
+import cc.factorie.app.nlp.lexicon.{LexiconsProvider, StaticLexicons}
+import java.util.concurrent.ExecutorService
+
+import cc.factorie.app.nlp.{Document, _}
+import cc.factorie.app.nlp.ner._
 import cc.factorie.app.nlp.parse._
 import cc.factorie.app.nlp.phrase._
 import cc.factorie.app.nlp.pos._
-import cc.factorie.app.nlp.ner._
-import scala.collection.mutable.{HashMap, HashSet, ArrayBuffer}
-import cc.factorie.app.nlp.lexicon.StopWords
-import scala.collection.immutable.IndexedSeq
-import scala.collection.immutable.StringOps
 import cc.factorie.app.nlp.wordnet._
-import cc.factorie.app.nlp.{DocumentAnnotatorPipeline, MutableDocumentAnnotatorMap, Document}
-import cc.factorie.util.{Trackable, HyperparameterMain, TimingCollector, Trackers}
-import cc.factorie.app.nlp.load.{MentionSpeaker, LoadConll2011}
-import cc.factorie.app.nlp.ner.{ConllChainNer, NerTag}
-import java.util.concurrent.ExecutorService
-import cc.factorie.optimize._
-import java.io._
 import cc.factorie.util._
-import cc.factorie.variable.{EnumDomain, CategoricalVariable}
+import cc.factorie.variable.{CategoricalVariable, EnumDomain}
+
+import scala.collection.immutable.StringOps
+import scala.collection.mutable.{HashMap, HashSet}
+
 
 
 /**
@@ -843,11 +839,15 @@ class CorefUtil {
  */
 object DeterministicCoref extends DocumentAnnotator {
 
+  // todo fix this
+  @deprecated("This exists to preserve prior behavior, it should be a constructor argument", "10/5/15")
+  val lexicon = new StaticLexicons()(LexiconsProvider.classpath)
+
   private val CFUtil: CorefUtil = new CorefUtil()
 
   // The ordered list of sieves used. The sieves will be applied in the order the appear in the list
   // Note: To turn debug information on pass a directory name as the second argument to the sieves you wish to debug, i.e. PreciseConstructSieve(CFUtil, "debug")
-  private val _sieves: List[Sieve] = List(new ExactMatchSieve(CFUtil), new RelaxedStringMatchSieve(CFUtil), new PreciseConstructionsSieve(CFUtil), new StrictHeadMatchingSieve(CFUtil), new StrictHeadMatchingSieveVar1(CFUtil), new StrictHeadMatchingSieveVar2(CFUtil), new AliasSieve(CFUtil), new RelaxedHeadMatchingSieve(CFUtil), new LexicalChainSieve(CFUtil), new PronounSieve(CFUtil))
+  private val _sieves: List[Sieve] = List(new ExactMatchSieve(CFUtil), new RelaxedStringMatchSieve(CFUtil), new PreciseConstructionsSieve(CFUtil, "", lexicon), new StrictHeadMatchingSieve(CFUtil), new StrictHeadMatchingSieveVar1(CFUtil), new StrictHeadMatchingSieveVar2(CFUtil), new AliasSieve(CFUtil), new RelaxedHeadMatchingSieve(CFUtil), new LexicalChainSieve(CFUtil), new PronounSieve(CFUtil))
 
   // A sorted version of the mentions.
   private var _sorted_mentions: Seq[Mention] = null
@@ -861,6 +861,7 @@ object DeterministicCoref extends DocumentAnnotator {
   val options: CorefOptions = new CorefOptions
 
 
+
   /**
    * Generates the list of potential mentions within the Document (doc) 
    * and adds each of these mentions to the WithinDocCoref object (coref)
@@ -871,11 +872,11 @@ object DeterministicCoref extends DocumentAnnotator {
 
     // Mention detection method number 1
     if (false) {
-      if (doc.coref.mentions.isEmpty) (ConllProperNounPhraseFinder(doc) ++ PronounFinder(doc) ++ NnpPosNounPhraseFinder(doc) ++ AcronymNounPhraseFinder(doc)).distinct.foreach(phrase => doc.getCoref.addMention(phrase))
+      if (doc.coref.mentions.isEmpty) (ConllPhraseFinder(doc) ++ PronounFinder(doc) ++ NnpPosNounPhraseFinder(doc) ++ AcronymNounPhraseFinder(doc)).distinct.foreach(phrase => doc.getCoref.addMention(phrase))
       doc.coref.mentions.foreach(mention => NounPhraseEntityTypeLabeler.process(mention.phrase))
       doc.coref.mentions.foreach(mention => NounPhraseGenderLabeler.process(mention.phrase))
       doc.coref.mentions.foreach(mention => NounPhraseNumberLabeler.process(mention.phrase))
-      doc.coref.mentions.foreach(mention => mention.attr += new MentionCharacteristics(mention))
+      doc.coref.mentions.foreach(mention => mention.attr += new MentionCharacteristics(mention, lexicon))
     } else {
 
       // if the document has not been parsed. N.B. This only applies if you are using Gold mentions (and are using the testing framework)
@@ -894,7 +895,7 @@ object DeterministicCoref extends DocumentAnnotator {
 
       // Add mention attributes
       for (mention <- doc.getCoref.mentions) {
-        mention.attr += new MentionCharacteristics(mention)
+        mention.attr += new MentionCharacteristics(mention, lexicon)
         mention.attr += new DeterministicCorefCache(mention)
       }
 
@@ -1327,7 +1328,7 @@ class ExactMatchSieve(CFUtil: CorefUtil, debugDirectory: String = "") extends Si
 /**
  * Precise Constructs Sieve, used for resolving mentions through specific grammatical constructions such as apposition as well as equivalent word forms such as demonyms and acronyms.
  */
-class PreciseConstructionsSieve(CFUtil: CorefUtil, debugDirectory: String = "") extends Sieve(CFUtil, debugDirectory) {
+class PreciseConstructionsSieve(CFUtil: CorefUtil, debugDirectory: String = "", lexicon:StaticLexicons) extends Sieve(CFUtil, debugDirectory) {
   override val name: String = "PreciseConstructionsSieve"
 
   override lazy val debugOutputDir: String = debugDirectory

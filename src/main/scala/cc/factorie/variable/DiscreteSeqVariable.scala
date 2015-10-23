@@ -13,8 +13,6 @@
 
 package cc.factorie.variable
 
-import scala.collection.mutable.ArrayBuffer
-import scala.math
 import java.util.Arrays
 
 /** A Domain for sequences of DiscreteValues.

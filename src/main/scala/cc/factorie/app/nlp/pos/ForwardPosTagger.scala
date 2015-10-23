@@ -11,14 +11,15 @@
    See the License for the specific language governing permissions and
    limitations under the License. */
 package cc.factorie.app.nlp.pos
+import java.io._
+
 import cc.factorie._
+import cc.factorie.app.classify.backend.LinearMulticlassClassifier
 import cc.factorie.app.nlp._
 import cc.factorie.la._
-import cc.factorie.util._
-import java.io._
-import cc.factorie.variable.{MutableCategoricalVar, BinaryFeatureVectorVariable, CategoricalVectorDomain}
 import cc.factorie.optimize.Trainer
-import cc.factorie.app.classify.backend.LinearMulticlassClassifier
+import cc.factorie.util._
+import cc.factorie.variable.{BinaryFeatureVectorVariable, CategoricalVectorDomain}
 
 /** A part-of-speech tagger that predicts by greedily labeling each word in sequence.
     Although it does not use Viterbi, it is surprisingly accurate.  It is also fast.
@@ -569,8 +570,8 @@ object ForwardPosOptimizer {
     println("Best l1: " + opts.l1.value + " best l2: " + opts.l2.value)
     opts.saveModel.setValue(true)
     println("Running best configuration...")
-    import scala.concurrent.duration._
     import scala.concurrent.Await
+    import scala.concurrent.duration._
     Await.result(qs.execute(opts.values.flatMap(_.unParse).toArray), 5.hours)
     println("Done")
   }

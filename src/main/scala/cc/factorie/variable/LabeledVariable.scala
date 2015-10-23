@@ -13,11 +13,11 @@
 
 package cc.factorie.variable
 
-import cc.factorie.util.Attr
 import cc.factorie._
 import cc.factorie.model.TupleTemplateWithStatistics2
+import cc.factorie.util.Attr
+
 import scala.reflect._
-import scala.reflect.runtime.universe._
 
 // Naming explanation:
 // Variables in "aimer/target" pairs, used for labeled data for training.
@@ -293,7 +293,7 @@ class LabeledDiscreteEvaluation[C](val domain: DiscreteDomain) {
     require(label.domain eq domain)
     _size += 1
     val trueIndex = label.target.intValue
-    for (targetIndex <- 0 until domain.size) {
+    for (targetIndex <- domain.indices) {
       if (targetIndex == trueIndex) {
         if (trueIndex == predIndex)
           _tp(targetIndex) += 1

@@ -13,9 +13,10 @@
 package cc.factorie.app.nlp.hcoref
 
 import cc.factorie.infer.{Proposal, SettingsSampler}
-import scala.util.Random
 import cc.factorie.util.Hooks1
+
 import scala.reflect.ClassTag
+import scala.util.Random
 
 /**
  * User:harshal, John Sullivan
@@ -64,9 +65,12 @@ trait AutoStoppingAcceptSampler[Vars <: NodeVariables[Vars]] extends CorefSample
   override def infer(): Unit = {
     beforeInferHook
 
-    while(proposalIdx < iterations && runOfRejectedProposals < autoStopAcceptThreshold) {
-      process(nextContext)
+    val contextIter = contexts.toIterator
+
+    while(contextIter.hasNext && runOfRejectedProposals < autoStopAcceptThreshold) {
+      process(contextIter.next())
     }
+
     if(proposalIdx == iterations) {
       println("Stopping at max iterations of %d steps" format proposalIdx)
     } else {
@@ -105,4 +109,15 @@ trait AutoStoppingSampler[Vars <: NodeVariables[Vars]] extends CorefSampler[Vars
     println("Stopping automatically after %d steps".format(step))
     afterInferHook
   }
+}
+
+/**
+ * Trait for exposing proposalHooks to [[java.lang.Runnable]]
+ */
+trait RunnableHook[Vars <: NodeVariables[Vars]] {
+  this: CorefSampler[Vars] =>
+
+  def runnable:java.lang.Runnable
+
+  proposalHooks += {_ => runnable.run()}
 }

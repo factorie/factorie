@@ -11,14 +11,14 @@
    See the License for the specific language governing permissions and
    limitations under the License. */
 package cc.factorie.app.nlp.load
-import cc.factorie.app.nlp._
-
-import segment._
-
-import xml.{XML, NodeSeq}
 import java.io.File
+
+import cc.factorie.app.nlp._
 import cc.factorie.app.nlp.coref.Mention
 import cc.factorie.app.nlp.phrase.Phrase
+import cc.factorie.app.nlp.segment._
+
+import scala.xml.{NodeSeq, XML}
 
 // TODO: consider moving this info into variables.
 case class ACEEntityIdentifiers(eId: String, eType: String, eSubtype: String, eClass: String)

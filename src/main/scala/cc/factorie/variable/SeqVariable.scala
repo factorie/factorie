@@ -13,8 +13,8 @@
 
 package cc.factorie.variable
 
-import scala.collection.mutable.ArrayBuffer
 import scala.annotation.unchecked.uncheckedVariance
+import scala.collection.mutable.ArrayBuffer
 
 // Variables for holding sequences.
 

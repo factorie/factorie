@@ -11,12 +11,13 @@
    See the License for the specific language governing permissions and
    limitations under the License. */
 package cc.factorie.app.nlp.embeddings
-import cc.factorie.model.{ Parameters, Weights }
-import cc.factorie.optimize.{ Trainer, AdaGradRDA }
+import java.io.{BufferedOutputStream, File, FileInputStream, FileOutputStream, OutputStreamWriter}
+import java.util.zip.{GZIPInputStream, GZIPOutputStream}
+
 import cc.factorie.la.DenseTensor1
+import cc.factorie.model.{Parameters, Weights}
+import cc.factorie.optimize.AdaGradRDA
 import cc.factorie.util.Threading
-import java.io.{ File, PrintWriter, OutputStreamWriter, FileOutputStream, FileInputStream, BufferedOutputStream }
-import java.util.zip.{ GZIPOutputStream, GZIPInputStream }
 
 abstract class WordEmbeddingModel(val opts: EmbeddingOpts) extends Parameters {
 

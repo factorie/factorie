@@ -1,8 +1,9 @@
 package cc.factorie.util
 
-import scala.xml.factory.XMLLoader
+import javax.xml.parsers.{SAXParser, SAXParserFactory}
+
 import scala.xml.Elem
-import javax.xml.parsers.{SAXParserFactory, SAXParser}
+import scala.xml.factory.XMLLoader
 
 /**
  * Convenience class for loading in xml docs that specify

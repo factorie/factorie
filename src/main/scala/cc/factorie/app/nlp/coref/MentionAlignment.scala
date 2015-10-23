@@ -12,12 +12,13 @@
    limitations under the License. */
 package cc.factorie.app.nlp.coref
 
-import cc.factorie.app.nlp.wordnet.WordNet
-import scala.collection.mutable
 import cc.factorie.app.nlp._
+import cc.factorie.app.nlp.phrase.{NounPhraseEntityTypeLabeler, OntonotesPhraseEntityType, ParseAndNerBasedPhraseFinder, ParseBasedPhraseFinder}
 import cc.factorie.app.nlp.pos.PennPosTag
-import collection.mutable.ArrayBuffer
-import cc.factorie.app.nlp.phrase.{ParseBasedPhraseFinder, NounPhraseEntityTypeLabeler, OntonotesPhraseEntityType, ParseAndNerBasedPhraseFinder}
+import cc.factorie.app.nlp.wordnet.WordNet
+
+import scala.collection.mutable
+import scala.collection.mutable.ArrayBuffer
 
 /** Used for training with predicted mentions.
  * If the predicted mention is equal to or within some specified alignment width in options we add the true spans entity label if any
@@ -59,9 +60,9 @@ object MentionAlignment {
       ParseBasedPhraseFinder.getPhrases(doc).foreach(doc.coref.addMention)
     }else {
       val defaultMap = if(annotatorMap eq null) DocumentAnnotatorPipeline.defaultDocumentAnnotationMap else annotatorMap
-      val preReqs = ConllProperNounPhraseFinder.prereqAttrs ++ PronounFinder.prereqAttrs ++AcronymNounPhraseFinder.prereqAttrs
+      val preReqs = ConllPhraseFinder.prereqAttrs ++ PronounFinder.prereqAttrs ++AcronymNounPhraseFinder.prereqAttrs
       DocumentAnnotatorPipeline.apply(map=defaultMap.toMap, prereqs=Nil, preReqs).process(doc)
-      (ConllProperNounPhraseFinder(doc) ++ PronounFinder(doc) ++ AcronymNounPhraseFinder(doc)).foreach(doc.getCoref.addMention)
+      (ConllPhraseFinder(doc) ++ PronounFinder(doc) ++ AcronymNounPhraseFinder(doc)).foreach(doc.getCoref.addMention)
     }
     DocumentAnnotatorPipeline.apply(DocumentAnnotatorPipeline.defaultDocumentAnnotationMap, prereqs=Nil, ForwardCoref.prereqAttrs).process(doc)
   }

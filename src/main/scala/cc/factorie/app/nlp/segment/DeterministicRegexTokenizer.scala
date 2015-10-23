@@ -12,7 +12,7 @@
    limitations under the License. */
 package cc.factorie.app.nlp.segment
 
-import cc.factorie.app.nlp.{DocumentAnnotator, Token, Document}
+import cc.factorie.app.nlp.{Document, DocumentAnnotator, Token}
 
 /** Split a String into a sequence of Tokens.  Aims to adhere to tokenization rules used in Ontonotes and Penn Treebank.
     Note that CoNLL tokenization would use tokenizeAllDashedWords=true.

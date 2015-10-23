@@ -13,15 +13,17 @@
 
 package cc.factorie.app.chain
 
-import java.io.{FileWriter, BufferedWriter, FileInputStream, FileOutputStream}
-import scala.util.Random
+import java.io.{BufferedWriter, FileInputStream, FileOutputStream, FileWriter}
+
 import cc.factorie._
+import cc.factorie.infer.MaximizeByBPChain
+import cc.factorie.la.{GrowableSparseBinaryTensor1, GrowableSparseTensor1}
 import cc.factorie.optimize.OnlineTrainer
 import cc.factorie.util.DefaultCmdOptions
 import cc.factorie.variable._
+
 import scala.io.Source
-import cc.factorie.infer.MaximizeByBPChain
-import cc.factorie.la.{GrowableSparseBinaryTensor1, GrowableSparseTensor1}
+import scala.util.Random
 
 object Chain {
 

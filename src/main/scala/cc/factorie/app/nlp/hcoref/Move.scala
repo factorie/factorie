@@ -12,8 +12,8 @@
    limitations under the License. */
 package cc.factorie.app.nlp.hcoref
 
-import cc.factorie.variable.{SettingIterator, DiffList}
 import cc.factorie.infer.SettingsSampler
+import cc.factorie.variable.{DiffList, SettingIterator}
 
 /**
  * User: escher, John Sullivan, akobren

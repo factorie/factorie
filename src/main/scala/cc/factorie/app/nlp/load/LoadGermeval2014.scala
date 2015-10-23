@@ -16,7 +16,6 @@ import cc.factorie.app.nlp._
 import cc.factorie.app.nlp.ner._
 import cc.factorie.util.FastLogging
 
-import scala.io.Source
 import scala.collection.mutable.ArrayBuffer
 
 /* Loader for Germeval 2014 data
