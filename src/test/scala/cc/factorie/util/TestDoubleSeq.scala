@@ -11,7 +11,7 @@ class TestDoubleSeq extends FlatSpec with Matchers {
 
   "DenseDoubleSeq.sampleIndex" should "always sample a correct index" in {
 
-    val masses = Array[Double](3, 0, 1, 0, 1, 0, 1, 0)
+    val masses = Array[Double](0, 10, 0, 1, 0)
     val totalMass = masses.sum
     val props = masses.map(_ / totalMass)
 
@@ -28,7 +28,7 @@ class TestDoubleSeq extends FlatSpec with Matchers {
 
   "SparseDoubleSeq.sampleIndex" should "always sample a correct index" in {
 
-    val masses = Array[Double](3, 0, 1, 0, 1, 0, 1, 0)
+    val masses = Array[Double](0, 10, 0, 1, 0)
     val totalMass = masses.sum
     val props = masses.map(_ / totalMass)
 
