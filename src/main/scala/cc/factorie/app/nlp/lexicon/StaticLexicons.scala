@@ -13,7 +13,7 @@
 package cc.factorie.app.nlp.lexicon
 
 import java.net.URL
-import java.nio.file.Path
+import java.nio.file.{Files, Path}
 
 import cc.factorie.app.nlp.lexicon.{iesl => Iesl, uscensus => Uscensus, wikipedia => Wikipedia, ssdi => Ssdi, mandarin => Mandarin}
 import cc.factorie.app.strings.StringSegmenter
@@ -25,6 +25,7 @@ import scala.reflect.{ClassTag, classTag}
 import scala.language.implicitConversions
 
 trait LexiconsProvider {
+  def lexiconRoot:URL
   implicit def provide[L : ClassTag]:ModelProvider[L]
 }
 
@@ -46,6 +47,7 @@ object LexiconsProvider {
 
 
   def fromFile(f:File, useFullPath:Boolean = false):LexiconsProvider = new LexiconsProvider {
+    lazy val lexiconRoot = f.toURI.toURL
     override implicit def provide[L : ClassTag]: ModelProvider[L] = new ModelProvider[L] {
       private val path = f.toPath.resolve(if(useFullPath) fullLexiconName[L] else shortLexiconName[L])
       val coordinates = path.toString
@@ -53,20 +55,25 @@ object LexiconsProvider {
     }
   }
 
-  implicit def providePath(p:Path):LexiconsProvider = fromFile(p.toFile, false)
-  implicit def provideFile(f:File):LexiconsProvider = fromFile(f,false)
-  implicit def provideURL(u:URL):LexiconsProvider = new LexiconsProvider {
+  def fromUrl(u:URL, useFullPath:Boolean = false):LexiconsProvider = new LexiconsProvider {
+    lazy val lexiconRoot: URL = u
     implicit def provide[L:ClassTag]: ModelProvider[L] = new ModelProvider[L] {
-      val provide: InputStream = buffered(u)
-      val coordinates: String = u.toString
+      private val modelUrl = new URL(u, if(useFullPath) fullLexiconName[L] else shortLexiconName[L])
+      val provide: InputStream = buffered(modelUrl)
+      val coordinates: String = modelUrl.toString
     }
   }
+
+  implicit def providePath(p:Path):LexiconsProvider = fromFile(p.toFile, false)
+  implicit def provideFile(f:File):LexiconsProvider = fromFile(f,false)
+  implicit def provideURL(u:URL):LexiconsProvider = fromUrl(u, false)
 
 
   @deprecated("This exists to preserve legacy functionality", "10/05/15")
   def classpath:LexiconsProvider = new LexiconsProvider {
+    lazy val lexiconRoot = ClasspathURL.fromDirectory[Lexicon]("")
     implicit def provide[L : ClassTag]: ModelProvider[L] = new ModelProvider[L] {
-      private val url = ClasspathURL.fromDirectory[Lexicon](shortLexiconName[L])
+      private val url = new URL(lexiconRoot, shortLexiconName[L])
       val coordinates: String = url.toString
       val provide: InputStream = buffered(url)
     }

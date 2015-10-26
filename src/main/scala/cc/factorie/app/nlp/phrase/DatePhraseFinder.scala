@@ -12,6 +12,9 @@ import scala.util.parsing.combinator.{ImplicitConversions, Parsers}
 import scala.util.parsing.input.{Position, Reader}
 import scala.language.implicitConversions
 
+/** A collection of Phrases that are noun phrases.  Typically used as an attribute of a Section or a Document. */
+class DatePhraseList(phrases: Iterable[DatePhrase]) extends PhraseList(phrases)
+
 /**
  * Finds and parses all kinds of dates in a document, Basic formats were taken from http://en.wikipedia.org/wiki/Calendar_date.
  * DeterministicTokenizer was used as tokenizer as basis for the implementation.
@@ -214,9 +217,6 @@ class DatePhraseFinder(usePosTag:Boolean) extends DocumentAnnotator with Parsers
 
   override def tokenAnnotationString(token: Token): String = token.document.attr[DatePhraseList].find(phrase => phrase.contains(token)).fold("")("Date: " + _.asInstanceOf[DatePhrase].toString())
 }
-
-/** A collection of Phrases that are noun phrases.  Typically used as an attribute of a Section or a Document. */
-class DatePhraseList(phrases: Iterable[DatePhrase]) extends PhraseList(phrases)
 
 class DatePhrase(startToken: Token, length: Int = 1, val day: Int = -1, val month: Int = -1, val year: Int = Int.MinValue, val weekDay: Int = -1)
   extends Phrase(startToken.section, startToken.positionInSection, length, 0) {

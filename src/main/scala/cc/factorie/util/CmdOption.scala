@@ -40,6 +40,7 @@ trait CmdOption[T] {
       value match {
         case a: Seq[_] => Seq(f"--$name%s") ++ a.map(_.toString)
         case "" => Seq()
+        case f:File => Seq(s"--$name=${f.getAbsolutePath}")
         case a: Any => Seq(f"--$name%s=${value.toString}%s")
       }
 

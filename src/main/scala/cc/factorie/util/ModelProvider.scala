@@ -1,6 +1,7 @@
 package cc.factorie.util
 
 import java.io._
+import java.net.URL
 import java.nio.file.{Paths, Path}
 
 import cc.factorie.app.nlp.lexicon.LexiconsProvider
@@ -133,6 +134,11 @@ object ModelProvider {
       val provide:InputStream = buffered(modelPath)
     }
   }
+
+  def url[Consumer](url:URL):ModelProvider[Consumer] = new ModelProvider[Consumer] {
+    val coordinates: String = url.toString
+    def provide: InputStream = url.openStream()
+  }
 }
 
 /**
@@ -195,6 +201,8 @@ trait ModelProviderCmdOptions extends CmdOptions {
       index + 1
     } else index
 
+    override def unParse:Seq[String] = Seq(s"$name=${value.coordinates}")
+
     def hasValue: Boolean = !(classTag[ModelClass] == classTag[Nothing])
     def invokedCount = _invokedCount
 
@@ -226,6 +234,9 @@ trait ModelProviderCmdOptions extends CmdOptions {
       _invokedCount += 1
       index + 1
     } else index
+
+    override def unParse:Seq[String] = Seq(s"--$name=${value.lexiconRoot.toString}")
+
 
 
 
