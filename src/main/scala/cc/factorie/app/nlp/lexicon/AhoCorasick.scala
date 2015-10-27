@@ -115,28 +115,33 @@ class AhoCorasick(val sep : String) extends Serializable {
     }
     mentions
   }
-  
+
+  /** Tags a Token's features with a specific tag, if it's context forms a phrase in the trie. */
+  def tagMentions(input : Seq[Token], featureFunc : (Token => CategoricalVectorVar[String]), tag : String, tokenFunc : (Token => String)) : Unit = {
+    innerTagMentions(input,featureFunc,tag,tokenFunc)
+  }
+
   /** Tags a Token's features with a specific tag, if it's context forms a phrase in the trie. */
   def tagMentions(input : Seq[Token], featureFunc : (Token => CategoricalVectorVar[String]), tag : String) : Unit = {
-    innerTagMentions(input,featureFunc,tag,((x : String) => x))
+    innerTagMentions(input,featureFunc,tag,((t : Token) => t.string))
   }
 
   /**
    * Tags a Token's features with a specific tag, if it's context forms a phrase in the trie, after lemmatizing each token.
    */
   def lemmatizeAndTagMentions(input : Seq[Token], featureFunc : (Token => CategoricalVectorVar[String]), tag : String, lemmatizer : Lemmatizer) : Unit = {
-    innerTagMentions(input,featureFunc,tag,lemmatizer.lemmatize)
+    innerTagMentions(input,featureFunc,tag,(t:Token) => lemmatizer.lemmatize(t.string))
   }
 
   /** Inner function which tags tokens, after applying the supplied lemmatizeFunc. */
-  private def innerTagMentions(input : Seq[Token], featureFunc : (Token => CategoricalVectorVar[String]), tag : String, lemmatizeFunc : (String => String)) : Unit = {
+  private def innerTagMentions(input : Seq[Token], featureFunc : (Token => CategoricalVectorVar[String]), tag : String, lemmatizeFunc : (Token => String)) : Unit = {
     if (!constructed) {
       setTransitions()
     }
     var i = 0
     var curNode = root
     while (i < input.length) {
-      val tokenString : String = lemmatizeFunc(input(i).string)
+      val tokenString : String = lemmatizeFunc(input(i))
       //logger.log(Level.INFO)("Head = " + head + ", idx = " + i + ", label = " + curNode.label)
       val next = curNode.lookupToken(tokenString)
       if (next != None) {
