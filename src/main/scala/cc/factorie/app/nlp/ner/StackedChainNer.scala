@@ -300,10 +300,7 @@ abstract class StackedChainNer[L<:NerTag](labelDomain: CategoricalDomain[String]
   def initFeatures(document:Document, vf:Token=>CategoricalVectorVar[String]): Unit = {
     count=count+1
     val tokenSequence = document.tokens.toIndexedSeq
-    /* This now does a lot of lemmatizing. It might be worth adding an extra
-     * method to the lookup which pulls out the lemmatized form and creates it 
-     * using the lexicon's lemmatizer if it isn't there.
-     */
+    //One pass of lemmatising, this should be the same lemmatiser as the one used to construct the lexicon.
     LowercaseLemmatizer.process(document)
     val lemmaFunc = (t : Token) => t.attr[LowercaseTokenLemma].value
     lexicon.iesl.Month.tagText(tokenSequence,vf,"MONTH",lemmaFunc)
