@@ -1,10 +1,5 @@
 package cc.factorie.app.nlp.ner
 
-
-/**
- * Created by kate on 6/17/14.
- */
-
 import java.io._
 
 import cc.factorie.app.nlp.lexicon.{LexiconsProvider, StaticLexicons}
@@ -54,7 +49,6 @@ class ConllChainNer(implicit mp:ModelProvider[ConllChainNer], lexicons:StaticLex
   def newBuffer = new ConllNerSpanBuffer
 }
 
-//TODO this serialized model doesn't exist yet?
 object ConllChainNer extends ConllChainNer()(ModelProvider.classpath(), new StaticLexicons()(LexiconsProvider.classpath)) with Serializable
 
 class OntonotesChainNer()(implicit mp:ModelProvider[OntonotesChainNer], lexicons:StaticLexicons)
@@ -371,7 +365,7 @@ class ChainNerOpts extends cc.factorie.util.CmdOptions with SharedNLPCmdOptions 
   val test = new CmdOption("test", "", "STRING", "Filename(s) from which to read test data in CoNLL 2003 one-word-per-lineformat.")
   val brownClusFile = new CmdOption("brown", "brownBllipClusters", "FILE", "File containing brown clusters.")
   val trainDir = new CmdOption("train-dir", "", "STRING", "Path to directory of training data.")
-  val testDir = new CmdOption("test-dir", "/iesl/canvas/ksilvers/data/final-ace/test", "STRING", "Path to directory of test data.")
+  val testDir = new CmdOption("test-dir", "", "STRING", "Path to directory of test data.")
   val l1 = new CmdOption("l1", 0.02, "FLOAT", "L1 regularizer for AdaGradRDA training.")
   val l2 = new CmdOption("l2", 0.000001, "FLOAT", "L2 regularizer for AdaGradRDA training.")
   val learningRate = new CmdOption("learning-rate", 1.0, "FLOAT", "L2 regularizer for AdaGradRDA training.")
