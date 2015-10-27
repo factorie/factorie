@@ -841,7 +841,7 @@ object DeterministicCoref extends DocumentAnnotator {
 
   // todo fix this
   @deprecated("This exists to preserve prior behavior, it should be a constructor argument", "10/5/15")
-  val lexicon = new StaticLexicons()(LexiconsProvider.classpath)
+  val lexicon = new StaticLexicons()(LexiconsProvider.classpath())
 
   private val CFUtil: CorefUtil = new CorefUtil()
 
