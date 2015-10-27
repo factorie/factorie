@@ -41,7 +41,7 @@ class MentionPairFeatures(val model: CorefModel, val mention1:Mention, val menti
 
   // todo fix this
   @deprecated("This exists to preserve prior behavior, it should be a constructor argument", "10/5/15")
-  val lexicon = new StaticLexicons()(LexiconsProvider.classpath)
+  val lexicon = new StaticLexicons()(LexiconsProvider.classpath())
 
   def domain = model.MentionPairFeaturesDomain
   override def skipNonCategories = true
