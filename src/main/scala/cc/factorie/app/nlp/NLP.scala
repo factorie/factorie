@@ -16,7 +16,10 @@ import java.io._
 import java.net.{ServerSocket, Socket, SocketException}
 
 import cc.factorie.app.nlp.coref.MentionList
+import cc.factorie.app.nlp.lexicon.{LexiconsProvider, StaticLexicons}
+import cc.factorie.app.nlp.ner.{OntonotesChainNer, ConllChainNer}
 import cc.factorie.app.nlp.parse._
+import cc.factorie.util.{ModelProvider, ModelProviderCmdOptions}
 
 /** A command-line driver for DocumentAnnotators.
     Launch on the command-line, specifying which NLP pipeline steps you want, 
@@ -28,7 +31,7 @@ object NLP {
   //val interpreter = new scala.tools.nsc.IMain
   def main(args:Array[String]): Unit = {
     val t0 = System.currentTimeMillis()
-    object opts extends cc.factorie.util.DefaultCmdOptions {
+    object opts extends cc.factorie.util.DefaultCmdOptions with ModelProviderCmdOptions {
       val socket = new CmdOption("socket", 3228, "SOCKETNUM", "On which socket number NLP server should listen.")
       val encoding = new CmdOption("encoding", "UTF-8", "ENCODING", "Character encoding for reading document text, such as UTF-8")
       val logFile = new CmdOption("log", "-", "FILENAME", "Send logging messages to this filename.")
@@ -46,8 +49,20 @@ object NLP {
       //val mention3 = new CmdOption("ner-mention", null, "", "Annotate noun mention boundaries using NER tagger and pronoun patterns.") { override def invoke() = annotators += cc.factorie.app.nlp.coref.mention.NerAndPronounMentionFinder }
 
       // named entity recognition
-      val conllchainner = new CmdOption[String]("conll-chain-ner", null, "URL", "Annotate CoNLL-2003 NER") { override def invoke() = { if (value ne null) System.setProperty(classOf[ner.ConllChainNer].getName, value); annotators += cc.factorie.app.nlp.ner.ConllChainNer } }
-      val basicontonotesner = new CmdOption[String]("ontonotes-chain-ner", null, "URL", "Annotate Ontonotes NER")  { override def invoke() = { if (value ne null) System.setProperty(classOf[ner.OntonotesChainNer].getName, value); annotators += cc.factorie.app.nlp.ner.OntonotesChainNer} }
+
+      val conllchainner = new CmdOption[String]("conll-chain-ner", null, "URL", "Annotate CoNLL-2003 NER") {
+        override def invoke() {
+          val mp = if(value ne null) ModelProvider.provide[ConllChainNer, File](new File(value)) else ModelProvider.classpath[ConllChainNer]()
+          annotators += new ConllChainNer()(mp, new StaticLexicons()(LexiconsProvider.classpath()))
+        }
+      }
+      val basicontonotesner = new CmdOption[String]("ontonotes-chain-ner", null, "URL", "Annotate Ontonotes NER") {
+        override def invoke(): Unit = {
+          val mp = if(value ne null) ModelProvider.provide[OntonotesChainNer, File](new File(value)) else ModelProvider.classpath[OntonotesChainNer]()
+          annotators += new OntonotesChainNer()(mp, new StaticLexicons()(LexiconsProvider.classpath()))
+        }
+      }
+
       val noembeddingsconllstackedchainner = new CmdOption[String]("stacked-chain-ner-noembeddings", null, "URL", "Annotate Conll NER using a stacked chain model that doesn't use embeddings")  { override def invoke() = { if (value ne null) System.setProperty(classOf[ner.NoEmbeddingsConllStackedChainNer].getName, value); annotators += cc.factorie.app.nlp.ner.NoEmbeddingsConllStackedChainNer } }
 
       // parsers

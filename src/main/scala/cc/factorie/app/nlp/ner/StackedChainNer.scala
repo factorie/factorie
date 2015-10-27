@@ -683,7 +683,7 @@ class ConllStackedChainNer(embeddingMap: SkipGramEmbedding,
 
 //object ConllStackedChainNer extends ConllStackedChainNer(SkipGramEmbedding, 100, 1.0, true, ClasspathURL[ConllStackedChainNer](".factorie"))
 class NoEmbeddingsConllStackedChainNer()(implicit mp:ModelProvider[NoEmbeddingsConllStackedChainNer], lexcons:StaticLexicons) extends ConllStackedChainNer(null, 0, 0.0, false)(mp, lexcons) with Serializable
-object NoEmbeddingsConllStackedChainNer extends NoEmbeddingsConllStackedChainNer()(ModelProvider.classpath(), new StaticLexicons()(LexiconsProvider.classpath)) with Serializable
+object NoEmbeddingsConllStackedChainNer extends NoEmbeddingsConllStackedChainNer()(ModelProvider.classpath(), new StaticLexicons()(LexiconsProvider.classpath())) with Serializable
 
 class OntonotesStackedChainNer(embeddingMap: SkipGramEmbedding,
                                embeddingDim: Int,
@@ -700,7 +700,7 @@ class OntonotesStackedChainNer(embeddingMap: SkipGramEmbedding,
     mp.provide, lexicons)
 
 class NoEmbeddingsOntonotesStackedChainNer()(implicit mp:ModelProvider[NoEmbeddingsOntonotesStackedChainNer], lexicons:StaticLexicons) extends OntonotesStackedChainNer(null, 0, 0.0, false)(mp, lexicons) with Serializable
-object NoEmbeddingsOntonotesStackedChainNer extends NoEmbeddingsOntonotesStackedChainNer()(ModelProvider.classpath(), new StaticLexicons()(LexiconsProvider.classpath)) with Serializable
+object NoEmbeddingsOntonotesStackedChainNer extends NoEmbeddingsOntonotesStackedChainNer()(ModelProvider.classpath(), new StaticLexicons()(LexiconsProvider.classpath())) with Serializable
 
 class StackedChainNerOpts extends CmdOptions with SharedNLPCmdOptions{
   val trainFile =     new CmdOption("train", "eng.train", "FILE", "CoNLL formatted training file.")
@@ -725,7 +725,7 @@ class StackedChainNerOpts extends CmdOptions with SharedNLPCmdOptions{
 object ConllStackedChainNerTester extends App {
   val opts = new StackedChainNerOpts
   opts.parse(args)
-  val ner = new ConllStackedChainNer(null: SkipGramEmbedding, opts.embeddingDim.value, opts.embeddingScale.value, opts.useOffsetEmbedding.value)(opts.modelDir.value.toURI.toURL, new StaticLexicons()(LexiconsProvider.classpath))
+  val ner = new ConllStackedChainNer(null: SkipGramEmbedding, opts.embeddingDim.value, opts.embeddingScale.value, opts.useOffsetEmbedding.value)(opts.modelDir.value.toURI.toURL, new StaticLexicons()(LexiconsProvider.classpath()))
   val testPortionToTake =  if(opts.testPortion.wasInvoked) opts.testPortion.value else 1.0
   val dataLoader = opts.dataLoader.value match {
     case "conll2003" => load.LoadConll2003(BILOU=true)
@@ -742,7 +742,7 @@ object ConllStackedChainNerTrainer extends HyperparameterMain {
     // Parse command-line
     val opts = new StackedChainNerOpts
     opts.parse(args)
-    val ner = new ConllStackedChainNer(null: SkipGramEmbedding, opts.embeddingDim.value, opts.embeddingScale.value, opts.useOffsetEmbedding.value)(ModelProvider.empty, new StaticLexicons()(LexiconsProvider.classpath))
+    val ner = new ConllStackedChainNer(null: SkipGramEmbedding, opts.embeddingDim.value, opts.embeddingScale.value, opts.useOffsetEmbedding.value)(ModelProvider.empty, new StaticLexicons()(LexiconsProvider.classpath()))
 
     ner.aggregate = opts.aggregateTokens.wasInvoked
 

@@ -1,6 +1,7 @@
 package cc.factorie.util
 
 import java.io._
+import java.net.URL
 import java.nio.file.{Paths, Path}
 
 import cc.factorie.app.nlp.lexicon.LexiconsProvider
@@ -133,6 +134,11 @@ object ModelProvider {
       val provide:InputStream = buffered(modelPath)
     }
   }
+
+  def url[Consumer](url:URL):ModelProvider[Consumer] = new ModelProvider[Consumer] {
+    val coordinates: String = url.toString
+    def provide: InputStream = url.openStream()
+  }
 }
 
 /**
@@ -165,18 +171,20 @@ object ModelProvider {
  */
 trait ModelProviderCmdOptions extends CmdOptions {
   cmd =>
-  class ModelCmdOption[ModelClass : TypeTag : ClassTag](val defaultValue:ModelProvider[ModelClass]=ModelProvider.empty, val required: Boolean=false) extends cc.factorie.util.CmdOption[ModelProvider[ModelClass]] {
+  class ModelCmdOption[ModelClass : TypeTag : ClassTag](val defaultValue:ModelProvider[ModelClass], val name:String, val required: Boolean) extends cc.factorie.util.CmdOption[ModelProvider[ModelClass]] {
+
+    def this(mp:ModelProvider[ModelClass], req:Boolean) = this(mp, classTag[ModelClass].runtimeClass.getName, req)
+    def this(mp:ModelProvider[ModelClass]) = this(mp, false)
+    def this() = this(ModelProvider.empty)
 
     cmd += this
 
     val valueType = typeTag[ModelClass]
 
-    //this will almost never be what we want
-    val shortName: Char = classTag.runtimeClass.getSimpleName.head
+    val shortName: Char = classTag[ModelClass].runtimeClass.getName()(0)
 
     def setValue(v: ModelProvider[ModelClass]) { _value = v}
 
-    val name: String = classTag[ModelClass].runtimeClass.getName
     val valueName: String = s"ModelProvider[$name]"
     val helpMsg: String = s"This should be a valid path to a file that is a serialized model for $name"
 
@@ -195,13 +203,15 @@ trait ModelProviderCmdOptions extends CmdOptions {
       index + 1
     } else index
 
+    override def unParse:Seq[String] = Seq(s"$name=${value.coordinates}")
+
     def hasValue: Boolean = !(classTag[ModelClass] == classTag[Nothing])
     def invokedCount = _invokedCount
 
 
   }
 
-  class LexiconsProviderCmdOption(val name:String, useFullPath:Boolean=false, val defaultValue:LexiconsProvider=LexiconsProvider.classpath, val required:Boolean=false) extends cc.factorie.util.CmdOption[LexiconsProvider] {
+  class LexiconsProviderCmdOption(val name:String, useFullPath:Boolean=false, val defaultValue:LexiconsProvider= LexiconsProvider.classpath(), val required:Boolean=false) extends cc.factorie.util.CmdOption[LexiconsProvider] {
 
     cmd += this
 
@@ -222,10 +232,13 @@ trait ModelProviderCmdOptions extends CmdOptions {
       _invokedCount += 1
       math.min(index + 2, args.length)
     } else if(args(index).startsWith("--"+name+"=")){
-      _value = LexiconsProvider.fromFile(new File(args(index).drop(name.length + 3)), useFullPath)
+      _value = LexiconsProvider.fromString(args(index).drop(name.length + 3), useFullPath)
       _invokedCount += 1
       index + 1
     } else index
+
+    override def unParse:Seq[String] = Seq(s"--$name=${value.lexiconRoot}")
+
 
 
 

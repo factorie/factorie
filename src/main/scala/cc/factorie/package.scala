@@ -32,6 +32,8 @@ package object factorie extends CubbieConversions {
     def toNotNull: Option[T] = Option(a)
   }
 
+  def when[A](cond:Boolean, a: => A):Option[A] = if(cond) Some(a) else None
+
   implicit def traversableExtras[A](t: Traversable[A]) = new cc.factorie.util.TraversableExtras[A](t)
   implicit def stringExtras(x:String) = new cc.factorie.util.StringExtras(x)
   implicit class IntPairExtras(val x:(Int, Int)) {

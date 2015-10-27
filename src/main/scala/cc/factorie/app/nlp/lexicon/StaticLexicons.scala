@@ -13,7 +13,7 @@
 package cc.factorie.app.nlp.lexicon
 
 import java.net.URL
-import java.nio.file.Path
+import java.nio.file.{Paths, Files, Path}
 
 import cc.factorie.app.nlp.lexicon.{iesl => Iesl, uscensus => Uscensus, wikipedia => Wikipedia, ssdi => Ssdi, mandarin => Mandarin}
 import cc.factorie.app.strings.StringSegmenter
@@ -23,8 +23,10 @@ import cc.factorie.util.{ModelProvider, ClasspathURL}
 
 import scala.reflect.{ClassTag, classTag}
 import scala.language.implicitConversions
+import scala.util.Try
 
 trait LexiconsProvider {
+  def lexiconRoot:String
   implicit def provide[L : ClassTag]:ModelProvider[L]
 }
 
@@ -46,6 +48,7 @@ object LexiconsProvider {
 
 
   def fromFile(f:File, useFullPath:Boolean = false):LexiconsProvider = new LexiconsProvider {
+    lazy val lexiconRoot = f.getAbsolutePath
     override implicit def provide[L : ClassTag]: ModelProvider[L] = new ModelProvider[L] {
       private val path = f.toPath.resolve(if(useFullPath) fullLexiconName[L] else shortLexiconName[L])
       val coordinates = path.toString
@@ -53,24 +56,51 @@ object LexiconsProvider {
     }
   }
 
-  implicit def providePath(p:Path):LexiconsProvider = fromFile(p.toFile, false)
-  implicit def provideFile(f:File):LexiconsProvider = fromFile(f,false)
-  implicit def provideURL(u:URL):LexiconsProvider = new LexiconsProvider {
+  def fromUrl(u:URL, useFullPath:Boolean = false):LexiconsProvider = new LexiconsProvider {
+    lazy val lexiconRoot = u.toString
     implicit def provide[L:ClassTag]: ModelProvider[L] = new ModelProvider[L] {
-      val provide: InputStream = buffered(u)
-      val coordinates: String = u.toString
+      private val modelUrl = new URL(u, if(useFullPath) fullLexiconName[L] else shortLexiconName[L])
+      val provide: InputStream = buffered(modelUrl)
+      val coordinates: String = modelUrl.toString
     }
   }
 
+  implicit def providePath(p:Path):LexiconsProvider = fromFile(p.toFile, false)
+  implicit def provideFile(f:File):LexiconsProvider = fromFile(f,false)
+  implicit def provideURL(u:URL):LexiconsProvider = fromUrl(u, false)
 
+  def fromString(s:String, useFullPath:Boolean=false):LexiconsProvider = s match {
+    case cp if cp.toLowerCase == "classpath" => classpath(useFullPath)
+    case urlS if Try(new URL(urlS)).isSuccess => fromUrl(new URL(urlS), useFullPath)
+    case p => fromFile(new File(p), useFullPath)
+  }
+
+  @deprecated("This exists to preserve legacy functionality", "10/27/15")
+  def classpath(useFullPath:Boolean=true):LexiconsProvider = new LexiconsProvider {
+    def lexiconRoot = "classpath"
+    implicit def provide[L: ClassTag]: ModelProvider[L] = new ModelProvider[L] {
+      private def url = if(useFullPath) ClasspathURL.fromDirectory[Lexicon](shortLexiconName[L]) else this.getClass.getResource("/" + shortLexiconName[L])
+      def coordinates: String = url.toString
+      def provide: InputStream = url
+    }
+  }
+
+  /*
   @deprecated("This exists to preserve legacy functionality", "10/05/15")
   def classpath:LexiconsProvider = new LexiconsProvider {
+    //lazy val lexiconRoot = ClasspathURL.fromDirectory[Lexicon]("")
+    lazy val lexiconRoot = Lexicon.getClass.getResource("")
     implicit def provide[L : ClassTag]: ModelProvider[L] = new ModelProvider[L] {
-      private val url = ClasspathURL.fromDirectory[Lexicon](shortLexiconName[L])
+      private val url = {
+        println("root " + lexiconRoot)
+        println("shortname" + shortLexiconName[L])
+        new URL(lexiconRoot, shortLexiconName[L])
+      }
       val coordinates: String = url.toString
       val provide: InputStream = buffered(url)
     }
   }
+  */
 }
 
 
