@@ -27,45 +27,14 @@ trait Observation[+This<:Observation[This]] extends AbstractChainLink[This] with
 
 object Observations {
   /** Copy features into each token from its preceding and following tokens, 
-   with preceding extent equal to preOffset and following extent equal to -postOffset.
+   with preceding extent equal to preOffset and following extent equal to postOffset.
    In other words, to add features from the three preceding tokens and the two following tokens,
    pass arguments (-3,2).
    Features from preceding tokens will have suffixes like "@-1", "@-2", etc.
    Features from following tokens will have suffixes like "@+1", "@+2", etc. 
    The functionality of this method is completely covered as a special case of addNeighboringFeatureConjunctions,
-   but for the simple case, this one is easier to call. */
-  // TODO: Documentation for this function conflicts with what it does (i.e. the comment says it adds "@-1" to prev tokens, and the code adds "@+!").
-  def addNeighboringFeatures[A<:Observation[A]](observations:Seq[A], vf:A=>CategoricalVectorVar[String], preOffset:Int, postOffset:Int): Unit = {
-    val size = observations.length
-    // First gather all the extra features here, then add them to each Token
-    val extraFeatures = Array.tabulate(size)(i => new scala.collection.mutable.ArrayBuffer[String])
-    assert(preOffset < 1)
-    val preSize = -preOffset; val postSize = postOffset
-    for (i <- 0 until size) {
-      val token = observations(i)
-      val thisTokenExtraFeatures = extraFeatures(i)
-      // Do the preWindow features
-      var t = token; var j = 0
-      while (j < preSize && t.hasPrev) {
-        t = t.prev; j += 1; val suffix = "@+"+j
-        thisTokenExtraFeatures ++= vf(t).activeCategories.map(str => str+suffix) // t.values is the list of Strings representing the current features of token t
-      }
-      // Do the postWindow features
-      t = token; j = 0
-      while (j < postSize && t.hasNext) {
-        t = t.next; j += 1; val suffix = "@-"+j
-        thisTokenExtraFeatures ++= vf(t).activeCategories.map(str => str+suffix) // t.values is the list of Strings representing the current features of token t
-      }
-    }
-    // Put the new features in the Token
-    for (i <- 0 until size) vf(observations(i)) ++= extraFeatures(i)
-  }
-
-  /*
-   * This is a reimplmentation of addNeighboringFeatures to make it behave like addNeighboringFeatureConjunctions when given input to just add the neighbouring features.
-   * It's about 9x faster than the addNeighboringFeatureConjunctions when adding neighbouring features.
-   */
-  def addNeighboringFeaturesFast[A<:Observation[A]](observations:IndexedSeq[A], vf:A=>CategoricalVectorVar[String], regex : Regex, preOffset:Int, postOffset:Int): Unit = {
+   but for the simple case, this one is easier to call and much faster. */
+  def addNeighboringFeatures[A<:Observation[A]](observations:IndexedSeq[A], vf:A=>CategoricalVectorVar[String], regex : Regex, preOffset:Int, postOffset:Int): Unit = {
     val size = observations.length
     // First gather all the extra features here, then add them to each Token
     val extraFeatures = Array.tabulate(size)(i => new scala.collection.mutable.ArrayBuffer[String])
