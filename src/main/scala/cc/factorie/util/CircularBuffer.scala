@@ -39,7 +39,7 @@ class CircularBuffer[A](val size : Int)(implicit m : ClassTag[A]) {
     }
   }
 
-  def add(item : A) : A = {
+  def +=(item : A) : A = {
     val output = buffer(position)
     buffer(position) = item
     position += 1
@@ -47,7 +47,7 @@ class CircularBuffer[A](val size : Int)(implicit m : ClassTag[A]) {
     return output
   }
 
-  def get(i : Int) : A = {
+  def apply(i : Int) : A = {
     return buffer(i)
   }
 
@@ -57,9 +57,9 @@ class CircularBuffer[A](val size : Int)(implicit m : ClassTag[A]) {
 
   def getLast() : A = {
     if (position == 0) {
-      return get(size-1)
+      return apply(size-1)
     } else {
-      return get((position-1)%4)
+      return apply((position-1)%4)
     }
   }
 

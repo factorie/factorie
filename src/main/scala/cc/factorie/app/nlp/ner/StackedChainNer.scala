@@ -383,18 +383,18 @@ abstract class StackedChainNer[L<:NerTag](labelDomain: CategoricalDomain[String]
       // Add features from window of 4 words before and after
       var i = 0
       while (i < 4) {
-        val curTok = tokenBuffer.get(i)
+        val curTok = tokenBuffer(i)
         if (curTok != null) {
           curTok += nextStr // add next window feature to the token history
         }
-        val prevStr = stringBuffer.get(i)
+        val prevStr = stringBuffer(i)
         if (prevStr != null) {
           tokenFeatures += prevStr // add previous window feature to the current token
         }
         i += 1
       }
-      tokenBuffer.add(vf(token))
-      stringBuffer.add("PREVWINDOW="+simpleLowerStr)
+      tokenBuffer += vf(token)
+      stringBuffer += "PREVWINDOW="+simpleLowerStr
     }
 
     if(aggregate) document.tokens.foreach( aggregateContext(_, vf) )
