@@ -34,6 +34,7 @@ object Observations {
    Features from following tokens will have suffixes like "@+1", "@+2", etc. 
    The functionality of this method is completely covered as a special case of addNeighboringFeatureConjunctions,
    but for the simple case, this one is easier to call. */
+  // TODO: Documentation for this function conflicts with what it does (i.e. the comment says it adds "@-1" to prev tokens, and the code adds "@+!").
   def addNeighboringFeatures[A<:Observation[A]](observations:Seq[A], vf:A=>CategoricalVectorVar[String], preOffset:Int, postOffset:Int): Unit = {
     val size = observations.length
     // First gather all the extra features here, then add them to each Token
@@ -58,6 +59,58 @@ object Observations {
     }
     // Put the new features in the Token
     for (i <- 0 until size) vf(observations(i)) ++= extraFeatures(i)
+  }
+
+  /*
+   * This is a reimplmentation of addNeighboringFeatures to make it behave like addNeighboringFeatureConjunctions when given input to just add the neighbouring features.
+   * It's about 9x faster than the addNeighboringFeatureConjunctions when adding neighbouring features.
+   */
+  def addNeighboringFeaturesFast[A<:Observation[A]](observations:IndexedSeq[A], vf:A=>CategoricalVectorVar[String], regex : Regex, preOffset:Int, postOffset:Int): Unit = {
+    val size = observations.length
+    // First gather all the extra features here, then add them to each Token
+    val extraFeatures = Array.tabulate(size)(i => new scala.collection.mutable.ArrayBuffer[String])
+    assert(preOffset < 1)
+    val seqStart = observations.head.position
+    val seqEnd = seqStart + size
+    val preSize = -preOffset; val postSize = postOffset
+    val prevOffsetStr = Array.tabulate(preSize+1)(i => "@-"+(i))
+    val nextOffsetStr = Array.tabulate(postSize+1)(i => "@"+(i))
+    var i = 0
+    while (i < size) {
+      val token = observations(i)
+      val thisTokenExtraFeatures = extraFeatures(i)
+      // Do the preWindow features
+      var j = 1
+      while (j <= preSize) {
+        val t = token.prev(j)
+        val suffix = prevOffsetStr(j)
+        if ((t == null) || (t.position < seqStart)) {
+          thisTokenExtraFeatures += "<START>" + suffix
+        } else {
+          thisTokenExtraFeatures ++= vf(t).activeCategories.filter(str => regex.findFirstIn(str).nonEmpty).map(str => str+suffix) // Only include features that match pattern
+        }
+        j += 1
+      }
+      // Do the postWindow features
+      j = 1
+      while (j <= postSize) {
+        val t = token.next(j)
+        val suffix = nextOffsetStr(j)
+        if ((t == null) || (t.position >= seqEnd)) {
+          thisTokenExtraFeatures += "<END>" + suffix
+        } else {
+          thisTokenExtraFeatures ++= vf(t).activeCategories.filter(str => regex.findFirstIn(str).nonEmpty).map(str => str+suffix) // Only include features that match pattern
+        }
+        j += 1
+      }
+      i += 1
+    }
+    // Put the new features in the Token
+    i = 0
+    while (i < size) {
+      vf(observations(i)) ++= extraFeatures(i)
+      i += 1
+    }
   }
 
   /** Return null if index i is out of range. */
@@ -153,9 +206,6 @@ object Observations {
     if (offsets.size == 1) result
     else appendConjunctions(t, seqStart, seqEnd, vf, regex, result, offsets.drop(1))
   }
-
-
-
 
   /** Extract a collection contiguous non-"background" labels
       @author Tim Vieira, Andrew McCallum */

@@ -364,7 +364,7 @@ abstract class StackedChainNer[L<:NerTag](labelDomain: CategoricalDomain[String]
     }
 
     for (sentence <- document.sentences) {
-      cc.factorie.app.chain.Observations.addNeighboringFeatureConjunctions(sentence.tokens, vf, FEATURE_PREFIX_REGEX, List(0), List(1), List(2), List(-1), List(-2))
+      cc.factorie.app.chain.Observations.addNeighboringFeaturesFast(sentence.tokens,vf,FEATURE_PREFIX_REGEX,-2,2)
     }
 
     val tokenBuffer = new CircularBuffer[CategoricalVectorVar[String]](4)
