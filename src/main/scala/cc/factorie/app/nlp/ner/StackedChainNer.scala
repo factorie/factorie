@@ -369,7 +369,7 @@ abstract class StackedChainNer[L<:NerTag](labelDomain: CategoricalDomain[String]
 
     val tokenBuffer = new CircularBuffer[CategoricalVectorVar[String]](4)
     val stringBuffer = new CircularBuffer[String](4)
-    // This is a separate iteration as combining them would be semantically different due to addNeighbouringFeatureConjunctions().
+    // This is a separate iteration as combining them would be semantically different due to addNeighbouringFeaturesFast().
     for (token <- document.tokens) {
       val tokenStr = token.string
       val tokenFeatures = vf(token)
@@ -385,11 +385,11 @@ abstract class StackedChainNer[L<:NerTag](labelDomain: CategoricalDomain[String]
       while (i < 4) {
         val curTok = tokenBuffer.get(i)
         if (curTok != null) {
-          curTok += nextStr
+          curTok += nextStr // add next window feature to the token history
         }
         val prevStr = stringBuffer.get(i)
         if (prevStr != null) {
-          tokenFeatures += prevStr
+          tokenFeatures += prevStr // add previous window feature to the current token
         }
         i += 1
       }
