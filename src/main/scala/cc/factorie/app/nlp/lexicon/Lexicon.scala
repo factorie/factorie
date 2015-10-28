@@ -198,10 +198,15 @@ class TriePhraseLexicon(val name: String, val tokenizer: StringSegmenter = cc.fa
   def tagLemmatizedText(tokens : Seq[Token], featureFunc : (Token => CategoricalVectorVar[String]), tag : String) : Unit = {
     trie.tagMentions(tokens,featureFunc,tag)
   }
-  
+
   /** Tags each token with the specified tag, if the lemmatized form is present in the lexicon */
   def tagText(tokens : Seq[Token], featureFunc : (Token => CategoricalVectorVar[String]), tag : String) : Unit = {
     trie.lemmatizeAndTagMentions(tokens,featureFunc,tag,lemmatizer)
+  }
+
+  /** Tags each token with the specified tag, if the lemmatized form is present in the lexicon */
+  def tagText(tokens : Seq[Token], featureFunc : (Token => CategoricalVectorVar[String]), tag : String, lemmaFunc : (Token => String)) : Unit = {
+    trie.tagMentions(tokens,featureFunc,tag,lemmaFunc)
   }
 }
 
@@ -230,6 +235,11 @@ class TrieUnionLexicon[L <: TriePhraseLexicon](val name: String, val members: L*
   
   def tagText(tokens : Seq[Token], featureFunc : (Token => CategoricalVectorVar[String]), tag : String) : Unit = {
     members.map(_.tagText(tokens,featureFunc,tag))
+  }
+
+  /** Tags each token with the specified tag, if the lemmatized form is present in the lexicon */
+  def tagText(tokens : Seq[Token], featureFunc : (Token => CategoricalVectorVar[String]), tag : String, lemmaFunc : (Token => String)) : Unit = {
+    members.map(_.tagText(tokens,featureFunc,tag,lemmaFunc))
   }
 }
 
