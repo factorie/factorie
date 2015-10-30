@@ -3,6 +3,7 @@ package cc.factorie.app.nlp.ner
 import cc.factorie.app.chain.{ChainHelper, ChainCliqueValues}
 import cc.factorie.app.nlp.{Document, Token, DocumentAnnotator}
 import cc.factorie.la.{Tensor2, DenseTensor2}
+import cc.factorie.util.Logger
 
 import scala.reflect.{ClassTag, classTag}
 
@@ -12,7 +13,7 @@ import scala.reflect.{ClassTag, classTag}
  * @author johnsullivan
  */
 class WellFormedNer[Tag <: NerTag : ClassTag](ner:ChainNer[Tag]) extends DocumentAnnotator {
-  println("using well-formed Ner")
+  import WellFormedNer._
 
   lazy val prereqAttrs = ner.prereqAttrs
   lazy val postAttrs = ner.postAttrs
@@ -33,16 +34,24 @@ class WellFormedNer[Tag <: NerTag : ClassTag](ner:ChainNer[Tag]) extends Documen
   }
 
   def process(document: Document) = {
-    if (!document.tokens.head.attr.contains(classTag[Tag].runtimeClass))
-      document.tokens.map(token => token.attr += ner.newLabel(token, "O"))
-    if (!document.tokens.head.attr.contains(classOf[ner.ChainNERFeatures])) {
-      document.tokens.map(token => {token.attr += new ner.ChainNERFeatures(token)})
-      ner.addFeatures(document, (t:Token)=>t.attr[ner.ChainNERFeatures])
-    }
-    document.tokens.foreach(_.attr[Tag].setCategory("O")(null))
-    document.sentences.collect { case s if s.size > 1 =>
-      maximizeWellFormed(s.tokens.map(_.attr[Tag]))
+    if(document.tokens.nonEmpty) {
+      if (!document.tokens.head.attr.contains(classTag[Tag].runtimeClass))
+        document.tokens.map(token => token.attr += ner.newLabel(token, "O"))
+      if (!document.tokens.head.attr.contains(classOf[ner.ChainNERFeatures])) {
+        document.tokens.map(token => {token.attr += new ner.ChainNERFeatures(token)})
+        ner.addFeatures(document, (t:Token)=>t.attr[ner.ChainNERFeatures])
+      }
+      document.tokens.foreach(_.attr[Tag].setCategory("O")(null))
+      document.sentences.collect { case s if s.size > 1 =>
+        maximizeWellFormed(s.tokens.map(_.attr[Tag]))
+      }
+    } else {
+      logger.warn("We got an empty document with name: " + document.name)
     }
     document
   }
+}
+
+object WellFormedNer {
+  private val logger = Logger.getLogger(getClass.getName)
 }
