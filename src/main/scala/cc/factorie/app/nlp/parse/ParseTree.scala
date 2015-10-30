@@ -16,6 +16,7 @@ import cc.factorie.app.nlp._
 import cc.factorie.util.Cubbie
 import cc.factorie.variable.{EnumDomain, LabeledCategoricalVariable}
 
+import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 
 // Representation for a dependency parse
@@ -237,6 +238,103 @@ class ParseTree(val sentence:Sentence, theTargetParents:Array[Int], theTargetLab
     sb.append("""\end{dependency}""").append("\n")
 
     sb.toString()
+  }
+
+  def getPath(start: Token, end: Token): Seq[Token] = {
+    val tree = start.sentence.parse
+    val path = ArrayBuffer[Token]()
+
+    // get path up to root or end token
+    var currentTok = start
+    path += currentTok
+    while(currentTok.parseParent != null && currentTok != end){
+      currentTok = currentTok.parseParent
+      path += currentTok
+    }
+
+    // if haven't yet reached end, continue down from root
+    val pathDown = ArrayBuffer[Token]()
+    findDescendent(currentTok, end, pathDown)
+    path ++= pathDown.dropRight(1).reverse
+  }
+
+  /* Get the shortest path between start and end tokens in the parse tree,
+   * but in this hacky not-a-shortest-path algorithm, because I'm lazy -ets
+   * Specifically, we find the path through the root, then eliminate */
+  def getShortestPath(start: Token, end: Token): (Seq[Token], Token) = {
+    val tree = start.sentence.parse
+    val path = ArrayBuffer[Token]()
+
+    // get path up to root or end token
+    var currentTok = start
+    path += currentTok
+    while(currentTok.parseParent != null && currentTok != end){
+      currentTok = currentTok.parseParent
+      path += currentTok
+    }
+
+    // if haven't yet reached end, continue down from root
+    val pathDown = ArrayBuffer[Token]()
+    findDescendent(currentTok, end, pathDown)
+
+    var lastCommon = currentTok
+    while(pathDown.nonEmpty && path.nonEmpty && pathDown.last == path.last){
+      lastCommon = pathDown.last
+      pathDown -= pathDown.last
+      path -= path.last
+    }
+    if(lastCommon != currentTok) path += lastCommon
+    (path ++ pathDown.reverse.drop(1), lastCommon)
+    //    path ++= pathDown.dropRight(1).reverse
+  }
+
+  /* Return the path of tokens between current and end in the parse tree */
+  def findDescendent(current: Token, end: Token, path: mutable.Buffer[Token]): Boolean = {
+    if(current == null) false
+    else if(current == end) true
+    else {
+      current.parseChildren.foreach{child =>
+        if(findDescendent(child, end, path)) {
+          path += current
+          return true
+        }
+      }
+      false
+    }
+  }
+
+  /* Get a nicely formatted shortest dependency path between tokens w/ indices start, end */
+  def getStringShortestPath(sentence: Sentence, start: Int, end: Int): String = {
+    val (path, lastCommonTok) = getShortestPath(sentence(start), sentence(end))
+    getPrettyPathString(path :+ sentence(end), _ == lastCommonTok)
+  }
+
+  /* Get a nicely formatted dependency path between tokens w/ indices start, end
+   * reverseArrows defines the token at which the direction of dependencies should reverse,
+   * e.g. if you want a path through the root, you would want reverseArrows to check whether
+   * its input token is the root token */
+  def getPrettyPathString(path: Seq[Token], reverseArrows: Token => Boolean): String = {
+    var reversedArrows = false
+    val sb = new StringBuilder()
+    path.foreach{token =>
+      if(reverseArrows(token)){
+        reversedArrows = true
+        sb.append(s"${token.string}")
+      }
+      else if(reversedArrows) {
+        sb.append(s" <-${token.parseLabel.categoryValue}- ${token.string}")
+      }
+      else{
+        sb.append(s"${token.string} -${token.parseLabel.categoryValue}-> ")
+      }
+    }
+    sb.toString
+  }
+
+  /* Get a nicely formatted dependency path between tokens w/ indices start, end that goes through the root */
+  def getStringRootPath(sentence: Sentence, start: Int, end: Int): String = {
+    val path = getPath(sentence(start), sentence(end)) :+ sentence(end)
+    getPrettyPathString(path,  _.parseLabel.categoryValue == "root")
   }
 
 }
