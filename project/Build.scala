@@ -29,12 +29,15 @@ object FactorieBuild extends Build {
   val NoNLP = config("no-nlp-resources") extend(Runtime)
   val WithNLP = config("with-nlp-resources") extend(Runtime)
 
+  val scalaMajorVersion = "2.11"
+  val scalaMinorVersion = "7"
+
   lazy val factorie = Project("factorie", file(".")).
     configs(NoNLP, WithNLP).
     settings(jflexSettings ++ Seq(
-      organization := "cc.factorie_2.11",
+      organization := s"cc.factorie_$scalaMajorVersion",
       version := "1.2-SNAPSHOT",
-      scalaVersion := "2.11.7",
+      scalaVersion := s"$scalaMajorVersion.$scalaMinorVersion",
       // no verbose deprecation warnings, octal escapes in jflex file are too many
       scalacOptions := Seq("-unchecked", "-encoding", "utf8"),
       resolvers ++= resolutionRepos,
@@ -58,14 +61,14 @@ object FactorieBuild extends Build {
       test in assembly := {},
       target in assembly <<= target,
       assemblyDirectory in assembly := cacheDirectory.value / "assembly-no-nlp-resources",
-      jarName in assembly := "%s-%s-%s" format (name.value, version.value, "jar-with-dependencies.jar")
+      jarName in assembly := "%s_%s-%s-%s" format (name.value, scalaMajorVersion, version.value, "jar-with-dependencies.jar")
     )): _*).
     settings(inConfig(WithNLP)(
       Classpaths.configSettings ++ Defaults.defaultSettings ++ baseAssemblySettings ++ jflexSettings ++ Seq(
       test in assembly := {},
       target in assembly <<= target,
       assemblyDirectory in assembly := cacheDirectory.value / "assembly-with-nlp-resources",
-      jarName in assembly := "%s-%s-%s" format (name.value, version.value, "nlp-jar-with-dependencies.jar"),
+      jarName in assembly := "%s_%s-%s-%s" format (name.value, scalaMajorVersion, version.value, "nlp-jar-with-dependencies.jar"),
       libraryDependencies ++= Seq(Resources.nlpresources)
     )): _*)
 }
@@ -73,10 +76,10 @@ object FactorieBuild extends Build {
 object Dependencies {
   val resolutionRepos = Seq(
     "Scala tools" at "https://oss.sonatype.org/content/groups/scala-tools",
-    "OSS snapshots" at "https://oss.sonatype.org/content/repositories/snapshots",
-    "OSS releases" at "https://oss.sonatype.org/content/repositories/releases",
-    "Umass Releases" at "https://dev-iesl.cs.umass.edu/nexus/content/repositories/public",
-    "Umass Snapshots" at "https://dev-iesl.cs.umass.edu/nexus/content/repositories/public-snapshots"
+    "OSS Snapshots" at "https://oss.sonatype.org/content/repositories/snapshots",
+    "OSS Releases" at "https://oss.sonatype.org/content/repositories/releases",
+    "UMass Releases" at "https://dev-iesl.cs.umass.edu/nexus/content/repositories/public",
+    "UMass Snapshots" at "https://dev-iesl.cs.umass.edu/nexus/content/repositories/public-snapshots"
   )
 
   object CompileDependencies {
