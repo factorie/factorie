@@ -725,7 +725,11 @@ class StackedChainNerOpts extends CmdOptions with SharedNLPCmdOptions{
 object ConllStackedChainNerTester extends App {
   val opts = new StackedChainNerOpts
   opts.parse(args)
-  val ner = new ConllStackedChainNer(null: SkipGramEmbedding, opts.embeddingDim.value, opts.embeddingScale.value, opts.useOffsetEmbedding.value)(opts.modelDir.value.toURI.toURL, new StaticLexicons()(LexiconsProvider.classpath()))
+  val ner = 
+    if(opts.modelDir.wasInvoked)
+      new ConllStackedChainNer(null: SkipGramEmbedding, opts.embeddingDim.value, opts.embeddingScale.value, opts.useOffsetEmbedding.value)(opts.modelDir.value.toURI.toURL, new StaticLexicons()(LexiconsProvider.classpath()))
+    else NoEmbeddingsConllStackedChainNer
+
   val testPortionToTake =  if(opts.testPortion.wasInvoked) opts.testPortion.value else 1.0
   val dataLoader = opts.dataLoader.value match {
     case "conll2003" => load.LoadConll2003(BILOU=true)
