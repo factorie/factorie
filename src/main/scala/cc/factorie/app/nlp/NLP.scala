@@ -17,7 +17,7 @@ import java.net.{ServerSocket, Socket, SocketException}
 
 import cc.factorie.app.nlp.coref.MentionList
 import cc.factorie.app.nlp.lexicon.{LexiconsProvider, StaticLexicons}
-import cc.factorie.app.nlp.ner.{OntonotesChainNer, ConllChainNer}
+import cc.factorie.app.nlp.ner.{ConllStackedChainNer, NoEmbeddingsConllStackedChainNer, OntonotesChainNer, ConllChainNer}
 import cc.factorie.app.nlp.parse._
 import cc.factorie.util.{ModelProvider, ModelProviderCmdOptions}
 
@@ -63,7 +63,12 @@ object NLP {
         }
       }
 
-      val noembeddingsconllstackedchainner = new CmdOption[String]("stacked-chain-ner-noembeddings", null, "URL", "Annotate Conll NER using a stacked chain model that doesn't use embeddings")  { override def invoke() = { if (value ne null) System.setProperty(classOf[ner.NoEmbeddingsConllStackedChainNer].getName, value); annotators += cc.factorie.app.nlp.ner.NoEmbeddingsConllStackedChainNer } }
+      val noembeddingsconllstackedchainner = new CmdOption[String]("stacked-chain-ner-noembeddings", null, "URL", "Annotate Conll NER using a stacked chain model that doesn't use embeddings")  {
+        override def invoke() = {
+          val mp = if (value ne null) ModelProvider.provide[ner.NoEmbeddingsConllStackedChainNer, File](new File(value)) else ModelProvider.classpath[ner.NoEmbeddingsConllStackedChainNer]()
+          annotators += new ConllStackedChainNer(null, 0, 0.0, false)(mp, new StaticLexicons()(LexiconsProvider.classpath()))
+        }
+      }
 
       // parsers
       //val parser1 = new CmdOption("parser1", ClasspathURL[DepParser1](".factorie").toString, "URL", "Annotate dependency parse with a simple shift-reduce transition-based model.") { override def invoke = { System.setProperty(classOf[DepParser1].getName, value); annotators += cc.factorie.app.nlp.parse.DepParser1 } }
