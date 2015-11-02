@@ -12,13 +12,13 @@
    limitations under the License. */
 
 package cc
-import java.io.BufferedReader
+import java.io.{PrintStream, ByteArrayOutputStream, BufferedReader}
 
 import cc.factorie.util._
 
 import scala.language.implicitConversions
 import scala.reflect.runtime.universe._
-import scala.util.Random
+import scala.util.{Success, Failure, Random}
 
 package object factorie extends CubbieConversions {
   var random = new Random(0)
@@ -51,6 +51,17 @@ package object factorie extends CubbieConversions {
     def topBag(w:Int) = m.toSeq.sortBy(-_._2).take(w)
     def topWords(w:Int) = topBag(w).map(_._1)
 
+  }
+
+  implicit class TryExtras[A](t:scala.util.Try[A]) {
+    def logError() = t match {
+      case Success(_) => None
+      case Failure(e) =>
+        val bs = new ByteArrayOutputStream()
+        val ps = new PrintStream(bs, true, "utf-8")
+        e.printStackTrace(ps)
+        Some(bs.toString("utf-8"))
+    }
   }
 
   implicit class BufferedReaderExtras(rdr:BufferedReader) {
