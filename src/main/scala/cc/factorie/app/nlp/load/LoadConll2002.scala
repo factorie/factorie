@@ -19,7 +19,7 @@ import cc.factorie.util.FastLogging
 import scala.collection.mutable.ArrayBuffer
 
 // Usage:
-// Either LoadConll2003.fromFilename("foo")
+// Either LoadConll2002.fromFilename("foo")
 // or LoadConll2003(BILOU = true).fromFilename("foo")
 
 object LoadConll2002 extends LoadConll2002(false)
@@ -43,21 +43,10 @@ case class LoadConll2002(BILOU:Boolean = false) extends Load with FastLogging {
     var sentence = new Sentence(document)
     for (line <- source.getLines()) {
       if (line.length < 2) { // Sentence boundary
-        //sentence.stringLength = document.stringLength - sentence.stringStart
-        //document += sentence
         document.appendString("\n")
-        sentence = new Sentence(document)
-      } 
-        // not in 2002
-//      else if (line.startsWith("-DOCSTART-")) {
-//        // Skip document boundaries
-//        document.asSection.chainFreeze
-//        document = new Document().setName("CoNLL2002-"+documents.length)
-//        document.annotators(classOf[Token]) = UnknownDocumentAnnotator.getClass // register that we have token boundaries
-//        document.annotators(classOf[Sentence]) = UnknownDocumentAnnotator.getClass // register that we have sentence boundaries
-//        documents += document
-//      }
-        else {
+        if(sentence.nonEmpty) sentence = new Sentence(document)
+      }
+      else {
         val fields = line.split(' ')
         assert(fields.length == 2)
         val word = fields(0)
@@ -70,7 +59,6 @@ case class LoadConll2002(BILOU:Boolean = false) extends Load with FastLogging {
       }
     }
     if (BILOU) convertToBILOU(documents)
-    //sentence.stringLength = document.stringLength - sentence.stringStart
     logger.info("Loaded "+documents.length+" documents with "+documents.map(_.sentences.size).sum+" sentences with "+documents.map(_.tokens.size).sum+" tokens total")
     documents
   }
@@ -78,28 +66,13 @@ case class LoadConll2002(BILOU:Boolean = false) extends Load with FastLogging {
     for(doc <- documents) {
       for(sentence <- doc.sentences) {
         for(token <- sentence.tokens) {
-          //println("=======")
           val ner = token.nerTag
           var prev : Token = null
           var next : Token = null
-          //println(token + " -> " + ner.categoryValue);
           if(token.sentenceHasPrev) prev = token.sentencePrev
           if(token.sentenceHasNext) next = token.sentenceNext
           token.sentenceNext
-          /*
-          if(prev != null)
-            println(prev + " -> " + prev.nerLabel.categoryValue);
-          if(next != null)
-            println(next + " -> " + next.nerLabel.categoryValue); */
           val newLabel : String = IOBtoBILOU(prev, token, next)
-          /*if(token.string == "Peter")
-            println(newLabel)
-          if(token.prev != null && token.prev.string == "Peter") {
-            println("Peter Prev")
-            println(token.string)
-            println(newLabel)
-          }*/
-          // token.attr.remove[IobConllNerLabel]
           token.attr += new LabeledBilouConllNerTag(token, newLabel)
         }
       }
