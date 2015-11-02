@@ -13,6 +13,7 @@
 
 package cc.factorie.app.nlp.ner
 
+import cc.factorie.app.nlp.lemma.{LowercaseTokenLemma, LowercaseLemmatizer}
 import cc.factorie.app.nlp.lexicon.{LexiconsProvider, StaticLexicons}
 import cc.factorie.util._
 import java.io._
@@ -170,6 +171,7 @@ abstract class StackedChainNer[L<:NerTag](labelDomain: CategoricalDomain[String]
       }
     }
   }
+
   val model = new StackedChainNereModel[ChainNerFeatures](ChainNerFeaturesDomain, l => labelToToken(l).attr[ChainNerFeatures], labelToToken, t => t.attr[L])
   val model2 = new StackedChainNereModel[ChainNer2Features](ChainNer2FeaturesDomain, l => labelToToken(l).attr[ChainNer2Features], labelToToken, t => t.attr[L])
 
@@ -298,49 +300,48 @@ abstract class StackedChainNer[L<:NerTag](labelDomain: CategoricalDomain[String]
   def initFeatures(document:Document, vf:Token=>CategoricalVectorVar[String]): Unit = {
     count=count+1
     val tokenSequence = document.tokens.toIndexedSeq
-    /* This now does a lot of lemmatizing. It might be worth adding an extra
-     * method to the lookup which pulls out the lemmatized form and creates it 
-     * using the lexicon's lemmatizer if it isn't there.
-     */
-    lexicon.iesl.Month.tagText(tokenSequence,vf,"MONTH")
-    lexicon.iesl.Day.tagText(tokenSequence,vf,"DAY")
+    //One pass of lemmatising, this should be the same lemmatiser as the one used to construct the lexicon.
+    LowercaseLemmatizer.process(document)
+    val lemmaFunc = (t : Token) => t.attr[LowercaseTokenLemma].value
+    lexicon.iesl.Month.tagText(tokenSequence,vf,"MONTH",lemmaFunc)
+    lexicon.iesl.Day.tagText(tokenSequence,vf,"DAY",lemmaFunc)
 
-    lexicon.iesl.PersonFirst.tagText(tokenSequence,vf,"PERSON-FIRST")
-    lexicon.iesl.PersonFirstHigh.tagText(tokenSequence,vf,"PERSON-FIRST-HIGH")
-    lexicon.iesl.PersonFirstHighest.tagText(tokenSequence,vf,"PERSON-FIRST-HIGHEST")
-    lexicon.iesl.PersonFirstMedium.tagText(tokenSequence,vf,"PERSON-FIRST-MEDIUM")
+    lexicon.iesl.PersonFirst.tagText(tokenSequence,vf,"PERSON-FIRST",lemmaFunc)
+    lexicon.iesl.PersonFirstHigh.tagText(tokenSequence,vf,"PERSON-FIRST-HIGH",lemmaFunc)
+    lexicon.iesl.PersonFirstHighest.tagText(tokenSequence,vf,"PERSON-FIRST-HIGHEST",lemmaFunc)
+    lexicon.iesl.PersonFirstMedium.tagText(tokenSequence,vf,"PERSON-FIRST-MEDIUM",lemmaFunc)
 
-    lexicon.iesl.PersonLast.tagText(tokenSequence,vf,"PERSON-LAST")
-    lexicon.iesl.PersonLastHigh.tagText(tokenSequence,vf,"PERSON-LAST-HIGH")
-    lexicon.iesl.PersonLastHighest.tagText(tokenSequence,vf,"PERSON-LAST-HIGHEST")
-    lexicon.iesl.PersonLastMedium.tagText(tokenSequence,vf,"PERSON-LAST-MEDIUM")
+    lexicon.iesl.PersonLast.tagText(tokenSequence,vf,"PERSON-LAST",lemmaFunc)
+    lexicon.iesl.PersonLastHigh.tagText(tokenSequence,vf,"PERSON-LAST-HIGH",lemmaFunc)
+    lexicon.iesl.PersonLastHighest.tagText(tokenSequence,vf,"PERSON-LAST-HIGHEST",lemmaFunc)
+    lexicon.iesl.PersonLastMedium.tagText(tokenSequence,vf,"PERSON-LAST-MEDIUM",lemmaFunc)
 
-    lexicon.iesl.PersonHonorific.tagText(tokenSequence,vf,"PERSON-HONORIFIC")
+    lexicon.iesl.PersonHonorific.tagText(tokenSequence,vf,"PERSON-HONORIFIC",lemmaFunc)
 
-    lexicon.iesl.Company.tagText(tokenSequence,vf, "COMPANY")
-    lexicon.iesl.JobTitle.tagText(tokenSequence,vf, "JOB-TITLE")
-    lexicon.iesl.OrgSuffix.tagText(tokenSequence,vf, "ORG-SUFFIX")
+    lexicon.iesl.Company.tagText(tokenSequence,vf,"COMPANY",lemmaFunc)
+    lexicon.iesl.JobTitle.tagText(tokenSequence,vf,"JOB-TITLE",lemmaFunc)
+    lexicon.iesl.OrgSuffix.tagText(tokenSequence,vf,"ORG-SUFFIX",lemmaFunc)
 
-    lexicon.iesl.Country.tagText(tokenSequence,vf, "COUNTRY")
-    lexicon.iesl.City.tagText(tokenSequence,vf, "CITY")
-    lexicon.iesl.PlaceSuffix.tagText(tokenSequence,vf, "PLACE-SUFFIX")
-    lexicon.iesl.UsState.tagText(tokenSequence,vf, "USSTATE")
-    lexicon.iesl.Continents.tagText(tokenSequence,vf, "CONTINENT")
+    lexicon.iesl.Country.tagText(tokenSequence,vf,"COUNTRY",lemmaFunc)
+    lexicon.iesl.City.tagText(tokenSequence,vf,"CITY",lemmaFunc)
+    lexicon.iesl.PlaceSuffix.tagText(tokenSequence,vf,"PLACE-SUFFIX",lemmaFunc)
+    lexicon.iesl.UsState.tagText(tokenSequence,vf,"USSTATE",lemmaFunc)
+    lexicon.iesl.Continents.tagText(tokenSequence,vf,"CONTINENT",lemmaFunc)
 
-    lexicon.wikipedia.Person.tagText(tokenSequence,vf, "WIKI-PERSON")
-    lexicon.wikipedia.Event.tagText(tokenSequence,vf, "WIKI-EVENT")
-    lexicon.wikipedia.Location.tagText(tokenSequence,vf, "WIKI-LOCATION")
-    lexicon.wikipedia.Organization.tagText(tokenSequence,vf, "WIKI-ORG")
-    lexicon.wikipedia.ManMadeThing.tagText(tokenSequence,vf, "MANMADE")
-    lexicon.iesl.Demonym.tagText(tokenSequence,vf, "DEMONYM")
+    lexicon.wikipedia.Person.tagText(tokenSequence,vf,"WIKI-PERSON",lemmaFunc)
+    lexicon.wikipedia.Event.tagText(tokenSequence,vf,"WIKI-EVENT",lemmaFunc)
+    lexicon.wikipedia.Location.tagText(tokenSequence,vf,"WIKI-LOCATION",lemmaFunc)
+    lexicon.wikipedia.Organization.tagText(tokenSequence,vf,"WIKI-ORG",lemmaFunc)
+    lexicon.wikipedia.ManMadeThing.tagText(tokenSequence,vf,"MANMADE",lemmaFunc)
+    lexicon.iesl.Demonym.tagText(tokenSequence,vf,"DEMONYM",lemmaFunc)
 
-    lexicon.wikipedia.Book.tagText(tokenSequence,vf, "WIKI-BOOK")
-    lexicon.wikipedia.Business.tagText(tokenSequence,vf, "WIKI-BUSINESS")
-    lexicon.wikipedia.Film.tagText(tokenSequence,vf, "WIKI-FILM")
+    lexicon.wikipedia.Book.tagText(tokenSequence,vf,"WIKI-BOOK",lemmaFunc)
+    lexicon.wikipedia.Business.tagText(tokenSequence,vf,"WIKI-BUSINESS",lemmaFunc)
+    lexicon.wikipedia.Film.tagText(tokenSequence,vf,"WIKI-FILM",lemmaFunc)
 
-    lexicon.wikipedia.LocationAndRedirect.tagText(tokenSequence,vf, "WIKI-LOCATION-REDIRECT")
-    lexicon.wikipedia.PersonAndRedirect.tagText(tokenSequence,vf, "WIKI-PERSON-REDIRECT")
-    lexicon.wikipedia.OrganizationAndRedirect.tagText(tokenSequence,vf, "WIKI-ORG-REDIRECT")
+    lexicon.wikipedia.LocationAndRedirect.tagText(tokenSequence,vf,"WIKI-LOCATION-REDIRECT",lemmaFunc)
+    lexicon.wikipedia.PersonAndRedirect.tagText(tokenSequence,vf,"WIKI-PERSON-REDIRECT",lemmaFunc)
+    lexicon.wikipedia.OrganizationAndRedirect.tagText(tokenSequence,vf,"WIKI-ORG-REDIRECT",lemmaFunc)
 
     import cc.factorie.app.strings.simplifyDigits
     for (token <- document.tokens) {
@@ -361,16 +362,41 @@ abstract class StackedChainNer[L<:NerTag](labelDomain: CategoricalDomain[String]
         features += "CLUS="+prefix(20,clusters(rawWord))
       }
     }
-    for (sentence <- document.sentences)
-      cc.factorie.app.chain.Observations.addNeighboringFeatureConjunctions(sentence.tokens, vf, FEATURE_PREFIX_REGEX, List(0), List(1), List(2), List(-1), List(-2))
 
-    document.tokens.foreach { t =>
-      if (ALPHA_REGEX.findFirstIn(t.string).nonEmpty) vf(t) ++= t.charNGrams(2,5).map(n => "NGRAM="+n)
+    for (sentence <- document.sentences) {
+      cc.factorie.app.chain.Observations.addNeighboringFeatures(sentence.tokens,vf,FEATURE_PREFIX_REGEX,-2,2)
     }
 
-    // Add features from window of 4 words before and after
-    document.tokens.foreach(t => vf(t) ++= t.prevWindow(4).map(t2 => "PREVWINDOW="+simplifyDigits(t2.string).toLowerCase))
-    document.tokens.foreach(t => vf(t) ++= t.nextWindow(4).map(t2 => "NEXTWINDOW="+simplifyDigits(t2.string).toLowerCase))
+    val tokenBuffer = new CircularBuffer[CategoricalVectorVar[String]](4)
+    val stringBuffer = new CircularBuffer[String](4)
+    // This is a separate iteration as combining them would be semantically different due to addNeighbouringFeaturesFast().
+    for (token <- document.tokens) {
+      val tokenStr = token.string
+      val tokenFeatures = vf(token)
+      if (ALPHA_REGEX.findFirstIn(tokenStr).nonEmpty) {
+        tokenFeatures ++= token.charNGrams(2,5).map(n => "NGRAM="+n)
+      }
+
+      val simpleLowerStr = simplifyDigits(tokenStr).toLowerCase()
+      val nextStr = "NEXTWINDOW="+simpleLowerStr
+
+      // Add features from window of 4 words before and after
+      var i = 0
+      while (i < 4) {
+        val curTok = tokenBuffer(i)
+        if (curTok != null) {
+          curTok += nextStr // add next window feature to the token history
+        }
+        val prevStr = stringBuffer(i)
+        if (prevStr != null) {
+          tokenFeatures += prevStr // add previous window feature to the current token
+        }
+        i += 1
+      }
+      tokenBuffer += vf(token)
+      stringBuffer += "PREVWINDOW="+simpleLowerStr
+    }
+
     if(aggregate) document.tokens.foreach( aggregateContext(_, vf) )
   }
 
@@ -425,12 +451,14 @@ abstract class StackedChainNer[L<:NerTag](labelDomain: CategoricalDomain[String]
 
   def initSecondaryFeatures(document:Document, extraFeatures : Boolean = false): Unit = {
 
-    document.tokens.foreach(t => t.attr[ChainNer2Features] ++= t.prevWindow(2).zipWithIndex.map(t2 => "PREVLABEL" + t2._2 + "="+t2._1.attr[L].categoryValue))
-    document.tokens.foreach(t => if (t.hasPrev) t.attr[ChainNer2Features] += "PREVLABELCON=" + t.prev.attr[L].categoryValue + "&" + t.string)
-
     for(t <- document.tokens) {
+      val tokenPrevWindow = t.prevWindow(2)
+      t.attr[ChainNer2Features] ++= tokenPrevWindow.zipWithIndex.map(t2 => "PREVLABEL" + t2._2 + "="+t2._1.attr[L].categoryValue)
+      if (t.hasPrev) {
+        t.attr[ChainNer2Features] += "PREVLABELCON=" + t.prev.attr[L].categoryValue + "&" + t.string
+      }
       if (t.sentenceHasPrev) {
-        t.attr[ChainNer2Features] ++= t.prevWindow(2).map(t2 => "PREVLABELLCON=" + t.sentencePrev.attr[L].categoryValue + "&" + t2.string)
+        t.attr[ChainNer2Features] ++= tokenPrevWindow.map(t2 => "PREVLABELLCON=" + t.sentencePrev.attr[L].categoryValue + "&" + t2.string)
         t.attr[ChainNer2Features] ++= t.nextWindow(2).map(t2 => "PREVLABELLCON=" + t.sentencePrev.attr[L].categoryValue + "&" + t2.string)
       }
     }
@@ -629,6 +657,7 @@ abstract class StackedChainNer[L<:NerTag](labelDomain: CategoricalDomain[String]
     println(segmentEvaluation)
     segmentEvaluation.f1
   }
+
   def process(document:Document, useModel2 : Boolean): Unit = {
     if (document.tokenCount == 0) return
     for(sentence <- document.sentences if sentence.tokens.nonEmpty) {
@@ -654,7 +683,7 @@ class ConllStackedChainNer(embeddingMap: SkipGramEmbedding,
 
 //object ConllStackedChainNer extends ConllStackedChainNer(SkipGramEmbedding, 100, 1.0, true, ClasspathURL[ConllStackedChainNer](".factorie"))
 class NoEmbeddingsConllStackedChainNer()(implicit mp:ModelProvider[NoEmbeddingsConllStackedChainNer], lexcons:StaticLexicons) extends ConllStackedChainNer(null, 0, 0.0, false)(mp, lexcons) with Serializable
-object NoEmbeddingsConllStackedChainNer extends NoEmbeddingsConllStackedChainNer()(ModelProvider.classpath(), new StaticLexicons()(LexiconsProvider.classpath())) with Serializable
+object NoEmbeddingsConllStackedChainNer extends NoEmbeddingsConllStackedChainNer()(ModelProvider.classpath[NoEmbeddingsConllStackedChainNer](), new StaticLexicons()(LexiconsProvider.classpath())) with Serializable
 
 class OntonotesStackedChainNer(embeddingMap: SkipGramEmbedding,
                                embeddingDim: Int,
@@ -671,7 +700,7 @@ class OntonotesStackedChainNer(embeddingMap: SkipGramEmbedding,
     mp.provide, lexicons)
 
 class NoEmbeddingsOntonotesStackedChainNer()(implicit mp:ModelProvider[NoEmbeddingsOntonotesStackedChainNer], lexicons:StaticLexicons) extends OntonotesStackedChainNer(null, 0, 0.0, false)(mp, lexicons) with Serializable
-object NoEmbeddingsOntonotesStackedChainNer extends NoEmbeddingsOntonotesStackedChainNer()(ModelProvider.classpath(), new StaticLexicons()(LexiconsProvider.classpath())) with Serializable
+object NoEmbeddingsOntonotesStackedChainNer extends NoEmbeddingsOntonotesStackedChainNer()(ModelProvider.classpath[NoEmbeddingsOntonotesStackedChainNer](), new StaticLexicons()(LexiconsProvider.classpath())) with Serializable
 
 class StackedChainNerOpts extends CmdOptions with SharedNLPCmdOptions{
   val trainFile =     new CmdOption("train", "eng.train", "FILE", "CoNLL formatted training file.")
@@ -696,7 +725,11 @@ class StackedChainNerOpts extends CmdOptions with SharedNLPCmdOptions{
 object ConllStackedChainNerTester extends App {
   val opts = new StackedChainNerOpts
   opts.parse(args)
-  val ner = new ConllStackedChainNer(null: SkipGramEmbedding, opts.embeddingDim.value, opts.embeddingScale.value, opts.useOffsetEmbedding.value)(opts.modelDir.value.toURI.toURL, new StaticLexicons()(LexiconsProvider.classpath()))
+  val ner =
+    if(opts.modelDir.wasInvoked)
+      new ConllStackedChainNer(null: SkipGramEmbedding, opts.embeddingDim.value, opts.embeddingScale.value, opts.useOffsetEmbedding.value)(opts.modelDir.value.toURI.toURL, new StaticLexicons()(LexiconsProvider.classpath()))
+    else NoEmbeddingsConllStackedChainNer
+
   val testPortionToTake =  if(opts.testPortion.wasInvoked) opts.testPortion.value else 1.0
   val dataLoader = opts.dataLoader.value match {
     case "conll2003" => load.LoadConll2003(BILOU=true)

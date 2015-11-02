@@ -68,12 +68,16 @@ trait Section extends Chain[Section,Token] with DocumentSubstring with Attr {
       Note that a Section can have Tokens but no Sentences. */
   def hasSentences: Boolean = _sentences.length > 0
   /** Create and return a new Sentence starting at token index "start" and continuing for "length" tokens. */
+  def +=(s: Sentence): Sentence = addSentence(s)
   def addSentence(s:Sentence): Sentence = {
     if (s.section ne this) throw new Error("Trying to add Sentence to Section to which it does not belong.")
     if (sentences.length > 0 && _sentences.last.end > s.start) throw new Error("Sentences must be added in order and not overlap.  Last Sentence ends at "+_sentences.last.end+" New sentence trying to start at "+s.start)
     if (s.start+s.length > this.length + 1) throw new Error("Trying to add a Sentence beyond the end of the Section. Adding at " + (s.start + s.length) + " instead of " + (this.length + 1))
     _sentences += s; s
   }
+
+  /** Remove the given Sentence from this Section */
+  def -=(s: Sentence): Sentence =  { _sentences -= s; s }
 
   /** Gives the best tokenSpan for a given set of string offsets into the document. */
   def offsetSnapToTokens(offStart:Int, offEnd:Int):Option[TokenSpan] =

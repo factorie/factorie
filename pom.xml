@@ -365,7 +365,6 @@ limitations under the License.
                     scala.concurrent.duration,
                     scala.io,
                     scala.math,
-                    scala.reflect,
                     scala.runtime,
                     scala.sys,
                     scala.sys.process,
@@ -374,6 +373,7 @@ limitations under the License.
                     scala.util.hashing,
                     scala.util.matching,
                     scala.util.parsing.combinator,
+                    scala.util.parsing.input,
                     scala.annotation,
                     scala.annotation.meta,
                     scala.annotation.unchecked,
@@ -383,7 +383,21 @@ limitations under the License.
                     scala.concurrent.util,
                     scala.ref,
                     scala.reflect.macros.internal,
-                    scala.text
+                    scala.text,
+                    scala.reflect.macros.blackbox,
+                    scala.reflect.api,
+                    scala.reflect,
+                    scala.reflect.internal.util,
+                    scala.reflect.internal,
+                    scala.reflect.internal.pickling,
+                    scala.reflect.internal.settings,
+                    scala.reflect.internal.transform,
+                    scala.reflect.macros,
+                    scala.reflect.io,
+                    scala.reflect.internal.tpe,
+                    scala.reflect.runtime,
+                    scala.reflect.internal.annotations,
+                    scala.reflect.macros.whitebox
                   </Import-Package>
                   <Export-Package>
                     cc.factorie,
