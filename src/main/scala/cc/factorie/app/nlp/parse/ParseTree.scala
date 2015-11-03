@@ -13,6 +13,7 @@
 
 package cc.factorie.app.nlp.parse
 import cc.factorie.app.nlp._
+import cc.factorie.app.nlp.load.LoadOntonotes5
 import cc.factorie.util.Cubbie
 import cc.factorie.variable.{EnumDomain, LabeledCategoricalVariable}
 
@@ -240,42 +241,51 @@ class ParseTree(val sentence:Sentence, theTargetParents:Array[Int], theTargetLab
     sb.toString()
   }
 
-  def getPath(start: Token, end: Token): Seq[Token] = {
-    val tree = start.sentence.parse
-    val path = ArrayBuffer[Token]()
+  /** Get the sequence of tokens making up the path that goes through the root
+    * between start and end in the parse tree; returns an empty Seq if the
+    * tree contains cycles. */
+  def getPath(start: Int, end: Int): Seq[Int] = {
+    val path = ArrayBuffer[Int]()
 
-    // get path up to root or end token
+    // get path up to root, end token, or end of a cycle
     var currentTok = start
     path += currentTok
-    while(currentTok.parseParent != null && currentTok != end){
-      currentTok = currentTok.parseParent
+    while (parents(currentTok) != -1 && currentTok != end && !path.contains(parents(currentTok))) {
+      currentTok = parents(currentTok)
       path += currentTok
     }
 
-    // if haven't yet reached end, continue down from root
-    val pathDown = ArrayBuffer[Token]()
-    findDescendent(currentTok, end, pathDown)
-    path ++= pathDown.dropRight(1).reverse
+    // only bother continuing if we didn't find a cycle
+    if (!path.contains(parents(currentTok))) {
+      // if haven't yet reached end, continue down from root
+      val pathDown = ArrayBuffer[Int]()
+      val visited = mutable.Set[Int]()
+      visited += currentTok
+      findDescendantPath(currentTok, end, pathDown, visited)
+      if(pathDown.nonEmpty)
+        return path ++= pathDown.dropRight(1).reverse
+    }
+    Seq()
   }
 
-  /* Get the shortest path between start and end tokens in the parse tree,
-   * but in this hacky not-a-shortest-path algorithm, because I'm lazy -ets
-   * Specifically, we find the path through the root, then eliminate */
-  def getShortestPath(start: Token, end: Token): (Seq[Token], Token) = {
-    val tree = start.sentence.parse
-    val path = ArrayBuffer[Token]()
+  /** Get the sequence of token indices making up the shortest path between start
+    * and end in the parse tree, as well as their deepest common token in the tree */
+  def getShortestPath(start: Int, end: Int): (Seq[Int], Int) = {
+    val path = ArrayBuffer[Int]()
 
     // get path up to root or end token
     var currentTok = start
     path += currentTok
-    while(currentTok.parseParent != null && currentTok != end){
-      currentTok = currentTok.parseParent
+    while(parents(currentTok) != -1 && currentTok != end){
+      currentTok = parents(currentTok)
       path += currentTok
     }
 
     // if haven't yet reached end, continue down from root
-    val pathDown = ArrayBuffer[Token]()
-    findDescendent(currentTok, end, pathDown)
+    val pathDown = ArrayBuffer[Int]()
+    val visited = mutable.Set[Int]()
+    visited += currentTok
+    findDescendantPath(currentTok, end, pathDown, visited)
 
     var lastCommon = currentTok
     while(pathDown.nonEmpty && path.nonEmpty && pathDown.last == path.last){
@@ -283,41 +293,46 @@ class ParseTree(val sentence:Sentence, theTargetParents:Array[Int], theTargetLab
       pathDown -= pathDown.last
       path -= path.last
     }
-    if(lastCommon != currentTok) path += lastCommon
-    (path ++ pathDown.reverse.drop(1), lastCommon)
-    //    path ++= pathDown.dropRight(1).reverse
+    path += lastCommon
+    (path ++ pathDown.reverse, lastCommon)
   }
 
-  /* Return the path of tokens between current and end in the parse tree */
-  def findDescendent(current: Token, end: Token, path: mutable.Buffer[Token]): Boolean = {
-    if(current == null) false
+  /** Populate path with path from current to end in the parse tree; path will be empty
+    * if the tree contains cycles */
+  def findDescendantPath(current: Int, end: Int, path: mutable.Buffer[Int], visited: mutable.Set[Int]): Boolean = {
+    if(current == -1) false
     else if(current == end) true
     else {
-      current.parseChildren.foreach{child =>
-        if(findDescendent(child, end, path)) {
-          path += current
-          return true
+      children(current).foreach{child =>
+        val childIdx = child.positionInSentence
+        if(!visited.contains(childIdx)) { // avoid cycles
+          visited += childIdx
+          if (findDescendantPath(childIdx, end, path, visited)) {
+            path += current
+            return true
+          }
         }
       }
       false
     }
   }
 
-  /* Get a nicely formatted shortest dependency path between tokens w/ indices start, end */
-  def getStringShortestPath(sentence: Sentence, start: Int, end: Int): String = {
-    val (path, lastCommonTok) = getShortestPath(sentence(start), sentence(end))
-    getPrettyPathString(path :+ sentence(end), _ == lastCommonTok)
+  /** Get a nicely formatted String representation of the shortest dependency path
+      between the tokens at indices start and end */
+  def getStringShortestPath(start: Int, end: Int): String = {
+    val (path, lastCommonTok) = getShortestPath(start, end)
+    getPrettyPathString(path :+ end, _ == lastCommonTok)
   }
 
-  /* Get a nicely formatted dependency path between tokens w/ indices start, end
-   * reverseArrows defines the token at which the direction of dependencies should reverse,
-   * e.g. if you want a path through the root, you would want reverseArrows to check whether
-   * its input token is the root token */
-  def getPrettyPathString(path: Seq[Token], reverseArrows: Token => Boolean): String = {
+  /** Turns a list of token indices and a function determining when the direction of the arrows
+    * should reverse into a pretty-printed dependency path. See getStringRootPath for
+    * a usage example. */
+  def getPrettyPathString(path: Seq[Int], reverseArrows: Int => Boolean): String = {
     var reversedArrows = false
     val sb = new StringBuilder()
-    path.foreach{token =>
-      if(reverseArrows(token)){
+    path.foreach{tokenIdx =>
+      val token = sentence(tokenIdx)
+      if(reverseArrows(tokenIdx)){
         reversedArrows = true
         sb.append(s"${token.string}")
       }
@@ -331,10 +346,12 @@ class ParseTree(val sentence:Sentence, theTargetParents:Array[Int], theTargetLab
     sb.toString
   }
 
-  /* Get a nicely formatted dependency path between tokens w/ indices start, end that goes through the root */
-  def getStringRootPath(sentence: Sentence, start: Int, end: Int): String = {
-    val path = getPath(sentence(start), sentence(end)) :+ sentence(end)
-    getPrettyPathString(path,  _.parseLabel.categoryValue == "root")
+  /** Get a nicely formatted String representation of the dependency path that goes
+      through the root between the tokens at indices start and end */
+  def getStringRootPath(start: Int, end: Int): String = {
+    val path = getPath(start, end)
+    if(path.nonEmpty) getPrettyPathString(path :+ end,  t => t == rootChildIndex)
+    else ""
   }
 
 }
