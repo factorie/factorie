@@ -13,7 +13,6 @@
 
 package cc.factorie.app.nlp.parse
 import cc.factorie.app.nlp._
-import cc.factorie.app.nlp.load.LoadOntonotes5
 import cc.factorie.util.Cubbie
 import cc.factorie.variable.{EnumDomain, LabeledCategoricalVariable}
 
@@ -364,7 +363,7 @@ class ParseTree(val sentence:Sentence, theTargetParents:Array[Int], theTargetLab
 // sentence.attr[ParseTree].label(token).set("SUBJ")
 
 // Methods also created in Token supporting:
-// token.parseParent
+// token.parseParents
 // token.setParseParent(parentToken)
 // token.parseChildren
 // token.parseLabel
