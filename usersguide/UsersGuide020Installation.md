@@ -69,7 +69,7 @@ mvn test
 
 If you are running the latest version from git, rather than a milestone release, then some tests may fail. If tests fail for a milestone release, please contact the mailing list: discuss@factorie.cs.umass.edu.
 
-Next we recommend reading the [tutorials](tutorials.html), and looking at the example code in `src/main/scala/cc/factorie/tutorial`.
+Next we recommend reading the [tutorials](http://factorie.cs.umass.edu/usersguide/UsersGuide410Variables.html), and looking at the example code in `src/main/scala/cc/factorie/tutorial`.
 
 ## Packaging JARs
 

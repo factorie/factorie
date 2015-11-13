@@ -69,7 +69,7 @@ FACTORIE has been successfully applied to many tasks, including:
 
 ## First Examples
 
-To get a sense of what FACTORIE can do, check out our [Quick Start guide](../quickstart.html)
+To get a sense of what FACTORIE can do, check out our [Quick Start guide](/usersguide/UsersGuide200QuickStart.html)
 
 ## History
 
