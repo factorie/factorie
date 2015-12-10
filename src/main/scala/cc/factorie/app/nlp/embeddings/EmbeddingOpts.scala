@@ -24,6 +24,7 @@ class EmbeddingOpts extends CmdOptions {
   val ignoreStopWords = new CmdOption("ignore-stopwords", false, "BOOLEAN", "use <bool> to include or discard stopwords. Use 1 for discarding stopwords")
   val cbow = new CmdOption("cbow", false, "BOOLEAN", "user cbow=true for cbow and cbow=false for skip-gram") // 1 would be SkipGram // default method is skipgram 
   val sample = new CmdOption("sample", 0.001, "DOUBLE", "use <double> subsampling")
+  val numIterations = new CmdOption("num-iterations", 1,"INT", "The number of iterations of training to run")
   
   // Optimization related (Don't change if you do not understand how vectors are initialized)
   val rate = new CmdOption("rate", 0.025, "DOUBLE", "learning rate for adaGrad")
