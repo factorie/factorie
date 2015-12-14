@@ -10,8 +10,9 @@
 #jdk:
 #    - oraclejdk8
 sudo: false
-script:
+before_script:
     - echo "MAVEN_OPTS='-Xmx2469m'" > ~/.mavenrc
+script:
     - mvn clean install
     - ./sbt compile
 jdk:
