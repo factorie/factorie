@@ -1,10 +1,5 @@
 package cc.factorie.app.nlp.ner
 
-
-/**
- * Created by kate on 6/17/14.
- */
-
 import java.io._
 
 import cc.factorie.app.nlp.lexicon.{LexiconsProvider, StaticLexicons}
@@ -54,8 +49,7 @@ class ConllChainNer(implicit mp:ModelProvider[ConllChainNer], lexicons:StaticLex
   def newBuffer = new ConllNerSpanBuffer
 }
 
-//TODO this serialized model doesn't exist yet?
-object ConllChainNer extends ConllChainNer()(ModelProvider.classpath(), new StaticLexicons()(LexiconsProvider.classpath())) with Serializable
+object ConllChainNer extends ConllChainNer()(ModelProvider.classpath[ConllChainNer](), new StaticLexicons()(LexiconsProvider.classpath())) with Serializable
 
 class OntonotesChainNer()(implicit mp:ModelProvider[OntonotesChainNer], lexicons:StaticLexicons)
   extends ChainNer[BilouOntonotesNerTag](BilouOntonotesNerDomain, (t, s) => new BilouOntonotesNerTag(t, s), l => l.token, mp.provide, lexicons) {
@@ -65,7 +59,7 @@ class OntonotesChainNer()(implicit mp:ModelProvider[OntonotesChainNer], lexicons
 }
 
 // todo a serialized model for this does not exist
-object OntonotesChainNer extends OntonotesChainNer()(ModelProvider.classpath(), new StaticLexicons()(LexiconsProvider.classpath()))
+object OntonotesChainNer extends OntonotesChainNer()(ModelProvider.classpath[OntonotesChainNer](), new StaticLexicons()(LexiconsProvider.classpath()))
 
 /**
  * A base class for finite-state named entity recognizers
@@ -335,7 +329,7 @@ abstract class ChainNer[L<:NerTag](val labelDomain: CategoricalDomain[String] wi
     }
 
     println(s"training with ${examples.length} examples")
-    Trainer.onlineTrain(model.parameters, examples, optimizer=optimizer, evaluate=evaluate)
+    Trainer.onlineTrain(model.parameters, examples, optimizer=optimizer, evaluate=evaluate, maxIterations = 5)
 
     val finalEval = new SegmentEvaluation[L with LabeledMutableCategoricalVar[String]](labelDomain.categories.filter(_.length > 2).map(_.substring(2)), "(B|U)-", "(I|L)-")
     val buf = new StringBuffer
@@ -367,14 +361,11 @@ abstract class ChainNer[L<:NerTag](val labelDomain: CategoricalDomain[String] wi
 class ChainNerOpts extends cc.factorie.util.CmdOptions with SharedNLPCmdOptions with ModelProviderCmdOptions with DefaultCmdOptions {
   val saveModel = new CmdOption("save-model", "CoNLLChainNer.factorie", "FILE", "Filename for the model (saving a trained model or reading a running model.")
   val serialize = new CmdOption("serialize", true, "BOOLEAN", "Whether to serialize at all")
-  val train = new CmdOption("train", "", "STRING", "Filename(s) from which to read training data in CoNLL 2003 one-word-per-lineformat.")
-  val test = new CmdOption("test", "", "STRING", "Filename(s) from which to read test data in CoNLL 2003 one-word-per-lineformat.")
+  val train = new CmdOption("train", List.empty[File], "List[File]", "Filename(s) from which to read training data in CoNLL 2003 one-word-per-lineformat.")
+  val test = new CmdOption("test", List.empty[File], "List[File]", "Filename(s) from which to read test data in CoNLL 2003 one-word-per-lineformat.")
   val brownClusFile = new CmdOption("brown", "brownBllipClusters", "FILE", "File containing brown clusters.")
-  val trainDir = new CmdOption("train-dir", "", "STRING", "Path to directory of training data.")
-  val testDir = new CmdOption("test-dir", "/iesl/canvas/ksilvers/data/final-ace/test", "STRING", "Path to directory of test data.")
-  val l1 = new CmdOption("l1", 0.02, "FLOAT", "L1 regularizer for AdaGradRDA training.")
-  val l2 = new CmdOption("l2", 0.000001, "FLOAT", "L2 regularizer for AdaGradRDA training.")
-  val learningRate = new CmdOption("learning-rate", 1.0, "FLOAT", "L2 regularizer for AdaGradRDA training.")
+  val trainDir = new CmdOption("train-dir", new File(""), "Dir", "Path to directory of training data.")
+  val testDir = new CmdOption("test-dir", new File(""), "Dir", "Path to directory of test data.")
   val rate = new CmdOption("rate", 0.18, "DOUBLE", "learning rate")
   val delta = new CmdOption("delta", 0.066, "DOUBLE", "learning delta")
   val modelFile = new CmdOption("model-file", "", "STRING", "Filename of the serialized model that you want to load.")
@@ -396,11 +387,17 @@ object ConllChainNerTrainer extends cc.factorie.util.HyperparameterMain {
         ner.clusters(splitLine(1)) = splitLine(0)
       }
     }
-    assert(opts.train.wasInvoked && opts.test.wasInvoked, "No train/test data file provided.")
     val trainPortionToTake = if(opts.trainPortion.wasInvoked) opts.trainPortion.value else 1.0
     val testPortionToTake =  if(opts.testPortion.wasInvoked) opts.testPortion.value else 1.0
-    val trainDocsFull = ner.loadDocs(opts.train.value)
-    val testDocsFull = ner.loadDocs(opts.test.value)
+    val (trainDocsFull, testDocsFull) = if(opts.train.wasInvoked && opts.test.wasInvoked) {
+      opts.train.value.flatMap(f => ner.loadDocs(f.getAbsolutePath)).toSeq ->
+        opts.test.value.flatMap(f => ner.loadDocs(f.getAbsolutePath)).toSeq
+    } else if(opts.trainDir.wasInvoked && opts.testDir.wasInvoked) {
+      opts.trainDir.value.listFiles().flatMap(f => ner.loadDocs(f.getAbsolutePath)).toSeq ->
+        opts.testDir.value.listFiles().flatMap(f => ner.loadDocs(f.getAbsolutePath)).toSeq
+    } else {
+      throw new IllegalArgumentException("You must provide values for either --train and --test or --train-dir and --test-dir")
+    }
     val trainDocs = trainDocsFull.take((trainDocsFull.length*trainPortionToTake).floor.toInt)
     val testDocs = testDocsFull.take((testDocsFull.length*testPortionToTake).floor.toInt)
     println(s"using training set: ${opts.train.value} ; test set: ${opts.test.value}")
@@ -426,14 +423,14 @@ object ConllNerOptimizer {
     opts.parse(args)
     opts.serialize.setValue(false)
     import cc.factorie.util.LogUniformDoubleSampler
-    val l1 = cc.factorie.util.HyperParameter(opts.l1, new LogUniformDoubleSampler(1e-12, 1))
-    val l2 = cc.factorie.util.HyperParameter(opts.l2, new LogUniformDoubleSampler(1e-12, 1))
-    val lr = cc.factorie.util.HyperParameter(opts.learningRate, new LogUniformDoubleSampler(1e-3, 10))
+    val rate = HyperParameter(opts.rate, new LogUniformDoubleSampler(1e-3, 1))
+    val delta = HyperParameter(opts.delta, new LogUniformDoubleSampler(0.01, 0.1))
+
     val qs = new cc.factorie.util.QSubExecutor(10, "cc.factorie.app.nlp.ner.ConllChainNerTrainer")
-    val optimizer = new cc.factorie.util.HyperParameterSearcher(opts, Seq(l1, l2, lr), qs.execute, 100, 90, 60)
+    val optimizer = new cc.factorie.util.HyperParameterSearcher(opts, Seq(rate, delta), qs.execute, 100, 90, 60)
     val result = optimizer.optimize()
     println("Got results: " + result.mkString(" "))
-    println("Best l1: " + opts.l1.value + " best l2: " + opts.l2.value)
+    println("Best rate: " + opts.rate.value + " best delta: " + opts.delta.value)
     println("Running best configuration...")
     opts.serialize.setValue(true)
     import scala.concurrent.Await

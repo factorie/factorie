@@ -23,11 +23,14 @@ class FileUtils {
    */
   def fromString(s:String):File = {
     val f = new File(s)
+    /*
     if(f.exists() && f.canRead && f.canWrite) {
       f
     } else {
       throw new IllegalArgumentException("%s cannot be resolved to a readable, writable file".format(s))
     }
+    */
+    f
   }
 
   /**

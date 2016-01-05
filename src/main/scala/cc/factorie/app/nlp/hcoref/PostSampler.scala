@@ -115,7 +115,7 @@ trait PostSampler[Vars <: NodeVariables[Vars], Model <: DirectScoringModel[Vars]
     log("done trying to merge mentions with %d mentions left and a score threshold of %.2f".format(orphans.size, scoreThresh))
   }
 
-  def getScoreMatrx(ns:Seq[Node[Vars]], threshold:Int = 10):Seq[(Node[Vars], Node[Vars], Double)] =
+  def getScoreMatrix(ns:Seq[Node[Vars]], threshold:Int = 10):Seq[(Node[Vars], Node[Vars], Double)] =
     (for(i <- ns.indices;
          j <- i + 1 until math.min(ns.size, threshold);
          n1 = ns(i);
@@ -125,13 +125,9 @@ trait PostSampler[Vars <: NodeVariables[Vars], Model <: DirectScoringModel[Vars]
   def dropInRoots: Unit = {
     val roots = mentions.map(_.root).filterNot(_.isMention).toSeq
     log("dropping in %d roots".format(roots.size))
-    val scoreMat = getScoreMatrx(roots, 50)
+    val scoreMat = getScoreMatrix(roots, 50)
     val mergedRoots = mutable.HashSet[Node[Vars]]()
-    var idx = roots.size - 1
-    while(idx > roots.size - 50) {
-      if(idx % 10 == 0) print(".")
-      val (n1, n2, _) = scoreMat(idx)
-
+    scoreMat.takeRight(50).foreach { case (n1, n2, _) =>
       if((!mergedRoots.contains(n1) || !mergedRoots.contains(n2)) && !(n1 == n2)) {
         if(n1.children.size > n2.children.size && !mergedRoots.contains(n1)) {
           mergedRoots += n2
@@ -141,7 +137,6 @@ trait PostSampler[Vars <: NodeVariables[Vars], Model <: DirectScoringModel[Vars]
           new MergeLeft[Vars](n2, n1).perform(null)
         }
       }
-      idx -= 1
     }
     log("\nDone dropping roots, now we have %d roots".format(mentions.map(_.root).toSet.size))
   }
@@ -159,7 +154,7 @@ trait PostSampler[Vars <: NodeVariables[Vars], Model <: DirectScoringModel[Vars]
         sub1 alterParent Some(node)
         sub2 alterParent Some(node)
 
-        val scores = getScoreMatrx(children).map{case(a,b,c) => (a,b) -> c}
+        val scores = getScoreMatrix(children).map{case(a,b,c) => (a,b) -> c}
         val ((n1, n2), _) = scores.head
         n1 alterParent Some(sub1)
         n2 alterParent Some(sub2)

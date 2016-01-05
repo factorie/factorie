@@ -23,7 +23,8 @@ abstract class WordEmbeddingModel(val opts: EmbeddingOpts) extends Parameters {
 
   // Algo related
   val D = opts.dimension.value // default value is 200
-  var V: Int = 0 // vocab size. Will computed in buildVocab() section 
+  var V: Int = 0 // vocab size. Will computed in buildVocab() section
+  protected val numIterations = opts.numIterations.value // default value is 1
   protected val threads = opts.threads.value //  default value is 12
   protected val adaGradDelta = opts.delta.value // default value is 0.1
   protected val adaGradRate = opts.rate.value //  default value is 0.025 
@@ -89,7 +90,10 @@ abstract class WordEmbeddingModel(val opts: EmbeddingOpts) extends Parameters {
     trainer = new LiteHogwildTrainer(weightsSet = this.parameters, optimizer = optimizer, nThreads = threads, maxIterations = Int.MaxValue)
     val threadIds = (0 until threads).map(i => i)
     val fileLen = new File(corpus).length
-    Threading.parForeach(threadIds, threads)(threadId => workerThread(threadId, fileLen))
+    (1 to numIterations).foreach { iteration =>
+      println(s"Beginning Training Iteration $iteration")
+      Threading.parForeach(threadIds, threads)(threadId => workerThread(threadId, fileLen))
+    }
     println("Done learning embeddings. ")
     //store()
   }
