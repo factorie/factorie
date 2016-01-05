@@ -27,7 +27,7 @@ trait StringSegmenter {
   def apply(reader:Reader): StringSegmentIterator = apply(cc.factorie.app.strings.readerToString(reader))
 }
 
-class RegexSegmenter(val regex:scala.util.matching.Regex) extends StringSegmenter {
+class RegexSegmenter(val regex:scala.util.matching.Regex) extends StringSegmenter with Serializable{
   def apply(s:String): StringSegmentIterator = new StringSegmentIterator {
     val matchIterator: scala.util.matching.Regex.MatchIterator = regex.findAllIn(s)
     def hasNext = matchIterator.hasNext
@@ -72,7 +72,7 @@ class BreakIteratorSegmenter(val bi:BreakIterator) extends StringSegmenter {
 object alphaSegmenter extends RegexSegmenter("\\p{Alpha}+".r)
 object wordSegmenter extends RegexSegmenter("\\w+".r)
 object wordClassesSegmenter extends RegexSegmenter("\\p{Alpha}+|\\p{Digit}+".r)
-object nonWhitespaceSegmenter extends RegexSegmenter("\\S+".r)
+object nonWhitespaceSegmenter extends RegexSegmenter("\\S+".r) 
 object nonWhitespaceClassesSegmenter extends RegexSegmenter("\\p{Alpha}+|\\p{Digit}+|\\p{Punct}".r)
 object foreignWordSegmenter extends RegexSegmenter("[\\p{L}\\p{P}]*\\p{L}".r)
 object urlSegmenter extends RegexSegmenter("\\b(https?|ftp|file)://[-A-Z0-9+&@#/%?=~_|!:,.;]*[-A-Z0-9+&@#/%=~_|]".r)

@@ -50,7 +50,7 @@ abstract class StackedChainNer[L<:NerTag](labelDomain: CategoricalDomain[String]
                                  scale: Double,
                                  useOffsetEmbedding: Boolean,
                                  modelIs: InputStream=null,
-                                 lexicon:StaticLexicons)(implicit m: ClassTag[L]) extends DocumentAnnotator with Serializable {
+                                 nerLexiconFeatures: NerLexiconFeatures)(implicit m: ClassTag[L]) extends DocumentAnnotator with Serializable {
 
   val FEATURE_PREFIX_REGEX = "^[^@]*$".r
   val ALPHA_REGEX = "[A-Za-z]+".r
@@ -253,95 +253,27 @@ abstract class StackedChainNer[L<:NerTag](labelDomain: CategoricalDomain[String]
     }
   }
 
-  //this block serves to initialize all of the lexicons used by the model before processing
-  lexicon.synchronized {
-    lexicon.iesl.Month.toString()
-    lexicon.iesl.Day.toString()
 
-    lexicon.iesl.PersonFirst.toString()
-    lexicon.iesl.PersonFirstHigh.toString()
-    lexicon.iesl.PersonFirstHighest.toString()
-    lexicon.iesl.PersonFirstMedium.toString()
+//  val bos: BufferedOutputStream = new BufferedOutputStream(new FileOutputStream("features.txt"), 10000)
+//  val out: PrintStream = new PrintStream(bos, true)
+//
+//  for (token <- document.tokens) {
+//      val features: ChainNerFeatures = token.attr[ChainNerFeatures]
+//      if(features != null && features.activeCategories.size > 0) {
+//        val feats: Seq[String] = features.activeCategories.sortWith(_ < _) 
+//        out.println(document.name+":"+token.position+"="+feats.mkString(", "))
+//      }
+//  }
 
-    lexicon.iesl.PersonLast.toString()
-    lexicon.iesl.PersonLastHigh.toString()
-    lexicon.iesl.PersonLastHighest.toString()
-    lexicon.iesl.PersonLastMedium.toString()
-
-    lexicon.iesl.PersonHonorific.toString()
-
-    lexicon.iesl.Company.toString()
-    lexicon.iesl.JobTitle.toString()
-    lexicon.iesl.OrgSuffix.toString()
-
-    lexicon.iesl.Country.toString()
-    lexicon.iesl.City.toString()
-    lexicon.iesl.PlaceSuffix.toString()
-    lexicon.iesl.UsState.toString()
-    lexicon.iesl.Continents.toString()
-
-    lexicon.wikipedia.Person.toString()
-    lexicon.wikipedia.Event.toString()
-    lexicon.wikipedia.Location.toString()
-    lexicon.wikipedia.Organization.toString()
-    lexicon.wikipedia.ManMadeThing.toString()
-    lexicon.iesl.Demonym.toString()
-
-    lexicon.wikipedia.Book.toString()
-    lexicon.wikipedia.Business.toString()
-    lexicon.wikipedia.Film.toString()
-
-    lexicon.wikipedia.LocationAndRedirect.toString()
-    lexicon.wikipedia.PersonAndRedirect.toString()
-    lexicon.wikipedia.OrganizationAndRedirect.toString()
-  }
-
-
+  
   def initFeatures(document:Document, vf:Token=>CategoricalVectorVar[String]): Unit = {
     count=count+1
     val tokenSequence = document.tokens.toIndexedSeq
     //One pass of lemmatising, this should be the same lemmatiser as the one used to construct the lexicon.
     LowercaseLemmatizer.process(document)
-    val lemmaFunc = (t : Token) => t.attr[LowercaseTokenLemma].value
-    lexicon.iesl.Month.tagText(tokenSequence,vf,"MONTH",lemmaFunc)
-    lexicon.iesl.Day.tagText(tokenSequence,vf,"DAY",lemmaFunc)
-
-    lexicon.iesl.PersonFirst.tagText(tokenSequence,vf,"PERSON-FIRST",lemmaFunc)
-    lexicon.iesl.PersonFirstHigh.tagText(tokenSequence,vf,"PERSON-FIRST-HIGH",lemmaFunc)
-    lexicon.iesl.PersonFirstHighest.tagText(tokenSequence,vf,"PERSON-FIRST-HIGHEST",lemmaFunc)
-    lexicon.iesl.PersonFirstMedium.tagText(tokenSequence,vf,"PERSON-FIRST-MEDIUM",lemmaFunc)
-
-    lexicon.iesl.PersonLast.tagText(tokenSequence,vf,"PERSON-LAST",lemmaFunc)
-    lexicon.iesl.PersonLastHigh.tagText(tokenSequence,vf,"PERSON-LAST-HIGH",lemmaFunc)
-    lexicon.iesl.PersonLastHighest.tagText(tokenSequence,vf,"PERSON-LAST-HIGHEST",lemmaFunc)
-    lexicon.iesl.PersonLastMedium.tagText(tokenSequence,vf,"PERSON-LAST-MEDIUM",lemmaFunc)
-
-    lexicon.iesl.PersonHonorific.tagText(tokenSequence,vf,"PERSON-HONORIFIC",lemmaFunc)
-
-    lexicon.iesl.Company.tagText(tokenSequence,vf,"COMPANY",lemmaFunc)
-    lexicon.iesl.JobTitle.tagText(tokenSequence,vf,"JOB-TITLE",lemmaFunc)
-    lexicon.iesl.OrgSuffix.tagText(tokenSequence,vf,"ORG-SUFFIX",lemmaFunc)
-
-    lexicon.iesl.Country.tagText(tokenSequence,vf,"COUNTRY",lemmaFunc)
-    lexicon.iesl.City.tagText(tokenSequence,vf,"CITY",lemmaFunc)
-    lexicon.iesl.PlaceSuffix.tagText(tokenSequence,vf,"PLACE-SUFFIX",lemmaFunc)
-    lexicon.iesl.UsState.tagText(tokenSequence,vf,"USSTATE",lemmaFunc)
-    lexicon.iesl.Continents.tagText(tokenSequence,vf,"CONTINENT",lemmaFunc)
-
-    lexicon.wikipedia.Person.tagText(tokenSequence,vf,"WIKI-PERSON",lemmaFunc)
-    lexicon.wikipedia.Event.tagText(tokenSequence,vf,"WIKI-EVENT",lemmaFunc)
-    lexicon.wikipedia.Location.tagText(tokenSequence,vf,"WIKI-LOCATION",lemmaFunc)
-    lexicon.wikipedia.Organization.tagText(tokenSequence,vf,"WIKI-ORG",lemmaFunc)
-    lexicon.wikipedia.ManMadeThing.tagText(tokenSequence,vf,"MANMADE",lemmaFunc)
-    lexicon.iesl.Demonym.tagText(tokenSequence,vf,"DEMONYM",lemmaFunc)
-
-    lexicon.wikipedia.Book.tagText(tokenSequence,vf,"WIKI-BOOK",lemmaFunc)
-    lexicon.wikipedia.Business.tagText(tokenSequence,vf,"WIKI-BUSINESS",lemmaFunc)
-    lexicon.wikipedia.Film.tagText(tokenSequence,vf,"WIKI-FILM",lemmaFunc)
-
-    lexicon.wikipedia.LocationAndRedirect.tagText(tokenSequence,vf,"WIKI-LOCATION-REDIRECT",lemmaFunc)
-    lexicon.wikipedia.PersonAndRedirect.tagText(tokenSequence,vf,"WIKI-PERSON-REDIRECT",lemmaFunc)
-    lexicon.wikipedia.OrganizationAndRedirect.tagText(tokenSequence,vf,"WIKI-ORG-REDIRECT",lemmaFunc)
+    
+    nerLexiconFeatures.addLexiconFeatures(tokenSequence, vf)
+    
 
     import cc.factorie.app.strings.simplifyDigits
     for (token <- document.tokens) {
@@ -398,6 +330,8 @@ abstract class StackedChainNer[L<:NerTag](labelDomain: CategoricalDomain[String]
     }
 
     if(aggregate) document.tokens.foreach( aggregateContext(_, vf) )
+    
+
   }
 
   def mode(list : List[String]) : String = {
@@ -670,7 +604,7 @@ abstract class StackedChainNer[L<:NerTag](labelDomain: CategoricalDomain[String]
 class ConllStackedChainNer(embeddingMap: SkipGramEmbedding,
                            embeddingDim: Int,
                            scale: Double,
-                           useOffsetEmbedding: Boolean)(implicit mp:ModelProvider[ConllStackedChainNer], lexicons:StaticLexicons)
+                           useOffsetEmbedding: Boolean)(implicit mp:ModelProvider[ConllStackedChainNer], nerLexiconFeatures:NerLexiconFeatures)
   extends StackedChainNer[BilouConllNerTag](
     BilouConllNerDomain,
     (t, s) => new BilouConllNerTag(t, s),
@@ -679,16 +613,16 @@ class ConllStackedChainNer(embeddingMap: SkipGramEmbedding,
     embeddingDim,
     scale,
     useOffsetEmbedding,
-    mp.provide, lexicons)
+    mp.provide, nerLexiconFeatures)
 
 //object ConllStackedChainNer extends ConllStackedChainNer(SkipGramEmbedding, 100, 1.0, true, ClasspathURL[ConllStackedChainNer](".factorie"))
-class NoEmbeddingsConllStackedChainNer()(implicit mp:ModelProvider[NoEmbeddingsConllStackedChainNer], lexcons:StaticLexicons) extends ConllStackedChainNer(null, 0, 0.0, false)(mp, lexcons) with Serializable
-object NoEmbeddingsConllStackedChainNer extends NoEmbeddingsConllStackedChainNer()(ModelProvider.classpath[NoEmbeddingsConllStackedChainNer](), new StaticLexicons()(LexiconsProvider.classpath())) with Serializable
+class NoEmbeddingsConllStackedChainNer()(implicit mp:ModelProvider[NoEmbeddingsConllStackedChainNer], nerLexiconFeatures:NerLexiconFeatures) extends ConllStackedChainNer(null, 0, 0.0, false)(mp, nerLexiconFeatures) with Serializable
+object NoEmbeddingsConllStackedChainNer extends NoEmbeddingsConllStackedChainNer()(ModelProvider.classpath(), StaticLexiconFeatures()) with Serializable
 
 class OntonotesStackedChainNer(embeddingMap: SkipGramEmbedding,
                                embeddingDim: Int,
                                scale: Double,
-                               useOffsetEmbedding: Boolean)(implicit mp:ModelProvider[OntonotesStackedChainNer], lexicons:StaticLexicons)
+                               useOffsetEmbedding: Boolean)(implicit mp:ModelProvider[OntonotesStackedChainNer], nerLexiconFeatures:NerLexiconFeatures)
   extends StackedChainNer[BilouOntonotesNerTag](
     BilouOntonotesNerDomain,
     (t, s) => new BilouOntonotesNerTag(t, s),
@@ -697,10 +631,11 @@ class OntonotesStackedChainNer(embeddingMap: SkipGramEmbedding,
     embeddingDim,
     scale,
     useOffsetEmbedding,
-    mp.provide, lexicons)
+    mp.provide, nerLexiconFeatures)
 
-class NoEmbeddingsOntonotesStackedChainNer()(implicit mp:ModelProvider[NoEmbeddingsOntonotesStackedChainNer], lexicons:StaticLexicons) extends OntonotesStackedChainNer(null, 0, 0.0, false)(mp, lexicons) with Serializable
-object NoEmbeddingsOntonotesStackedChainNer extends NoEmbeddingsOntonotesStackedChainNer()(ModelProvider.classpath[NoEmbeddingsOntonotesStackedChainNer](), new StaticLexicons()(LexiconsProvider.classpath())) with Serializable
+class NoEmbeddingsOntonotesStackedChainNer()(implicit mp:ModelProvider[NoEmbeddingsOntonotesStackedChainNer], nerLexiconFeatures: NerLexiconFeatures) extends OntonotesStackedChainNer(null, 0, 0.0, false)(mp, nerLexiconFeatures) with Serializable
+object NoEmbeddingsOntonotesStackedChainNer extends NoEmbeddingsOntonotesStackedChainNer()(ModelProvider.classpath(), StaticLexiconFeatures()) with Serializable
+
 
 class StackedChainNerOpts extends CmdOptions with SharedNLPCmdOptions{
   val trainFile =     new CmdOption("train", "eng.train", "FILE", "CoNLL formatted training file.")
@@ -727,7 +662,7 @@ object ConllStackedChainNerTester extends App {
   opts.parse(args)
   val ner =
     if(opts.modelDir.wasInvoked)
-      new ConllStackedChainNer(null: SkipGramEmbedding, opts.embeddingDim.value, opts.embeddingScale.value, opts.useOffsetEmbedding.value)(opts.modelDir.value.toURI.toURL, new StaticLexicons()(LexiconsProvider.classpath()))
+      new ConllStackedChainNer(null: SkipGramEmbedding, opts.embeddingDim.value, opts.embeddingScale.value, opts.useOffsetEmbedding.value)(opts.modelDir.value.toURI.toURL, StaticLexiconFeatures())
     else NoEmbeddingsConllStackedChainNer
 
   val testPortionToTake =  if(opts.testPortion.wasInvoked) opts.testPortion.value else 1.0
@@ -746,7 +681,7 @@ object ConllStackedChainNerTrainer extends HyperparameterMain {
     // Parse command-line
     val opts = new StackedChainNerOpts
     opts.parse(args)
-    val ner = new ConllStackedChainNer(null: SkipGramEmbedding, opts.embeddingDim.value, opts.embeddingScale.value, opts.useOffsetEmbedding.value)(ModelProvider.empty, new StaticLexicons()(LexiconsProvider.classpath()))
+    val ner = new ConllStackedChainNer(null: SkipGramEmbedding, opts.embeddingDim.value, opts.embeddingScale.value, opts.useOffsetEmbedding.value)(ModelProvider.empty, StaticLexiconFeatures())
 
     ner.aggregate = opts.aggregateTokens.wasInvoked
 

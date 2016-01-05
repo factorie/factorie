@@ -21,6 +21,8 @@ import cc.factorie.app.nlp.ner.{ConllStackedChainNer, NoEmbeddingsConllStackedCh
 import cc.factorie.app.nlp.parse._
 import cc.factorie.util.{ModelProvider, ModelProviderCmdOptions}
 
+import cc.factorie.app.nlp.ner.StaticLexiconFeatures
+
 /** A command-line driver for DocumentAnnotators.
     Launch on the command-line, specifying which NLP pipeline steps you want, 
     then it listens on a socket port for new text input, and replies with annoted text, one word per line.
@@ -53,20 +55,20 @@ object NLP {
       val conllchainner = new CmdOption[String]("conll-chain-ner", null, "URL", "Annotate CoNLL-2003 NER") {
         override def invoke() {
           val mp = if(value ne null) ModelProvider.provide[ConllChainNer, File](new File(value)) else ModelProvider.classpath[ConllChainNer]()
-          annotators += new ConllChainNer()(mp, new StaticLexicons()(LexiconsProvider.classpath()))
+          annotators += new ConllChainNer()(mp, StaticLexiconFeatures())
         }
       }
       val basicontonotesner = new CmdOption[String]("ontonotes-chain-ner", null, "URL", "Annotate Ontonotes NER") {
         override def invoke(): Unit = {
           val mp = if(value ne null) ModelProvider.provide[OntonotesChainNer, File](new File(value)) else ModelProvider.classpath[OntonotesChainNer]()
-          annotators += new OntonotesChainNer()(mp, new StaticLexicons()(LexiconsProvider.classpath()))
+          annotators += new OntonotesChainNer()(mp, StaticLexiconFeatures())
         }
       }
 
       val noembeddingsconllstackedchainner = new CmdOption[String]("stacked-chain-ner-noembeddings", null, "URL", "Annotate Conll NER using a stacked chain model that doesn't use embeddings")  {
         override def invoke() = {
           val mp = if (value ne null) ModelProvider.provide[ner.NoEmbeddingsConllStackedChainNer, File](new File(value)) else ModelProvider.classpath[ner.NoEmbeddingsConllStackedChainNer]()
-          annotators += new ConllStackedChainNer(null, 0, 0.0, false)(mp, new StaticLexicons()(LexiconsProvider.classpath()))
+          annotators += new ConllStackedChainNer(null, 0, 0.0, false)(mp, StaticLexiconFeatures())
         }
       }
 
