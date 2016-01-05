@@ -427,7 +427,7 @@ object ConllNerOptimizer {
     val delta = HyperParameter(opts.delta, new LogUniformDoubleSampler(0.01, 0.1))
 
     val qs = new cc.factorie.util.QSubExecutor(10, "cc.factorie.app.nlp.ner.ConllChainNerTrainer")
-    val optimizer = new cc.factorie.util.HyperParameterSearcher(opts, Seq(rate, delta), qs.execute, 200, 90, 60)
+    val optimizer = new cc.factorie.util.HyperParameterSearcher(opts, Seq(rate, delta), qs.execute, 100, 90, 60)
     val result = optimizer.optimize()
     println("Got results: " + result.mkString(" "))
     println("Best rate: " + opts.rate.value + " best delta: " + opts.delta.value)
