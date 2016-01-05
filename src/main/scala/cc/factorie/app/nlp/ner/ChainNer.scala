@@ -361,11 +361,11 @@ abstract class ChainNer[L<:NerTag](val labelDomain: CategoricalDomain[String] wi
 class ChainNerOpts extends cc.factorie.util.CmdOptions with SharedNLPCmdOptions with ModelProviderCmdOptions with DefaultCmdOptions {
   val saveModel = new CmdOption("save-model", "CoNLLChainNer.factorie", "FILE", "Filename for the model (saving a trained model or reading a running model.")
   val serialize = new CmdOption("serialize", true, "BOOLEAN", "Whether to serialize at all")
-  val train = new CmdOption("train", "", "STRING", "Filename(s) from which to read training data in CoNLL 2003 one-word-per-lineformat.")
-  val test = new CmdOption("test", "", "STRING", "Filename(s) from which to read test data in CoNLL 2003 one-word-per-lineformat.")
+  val train = new CmdOption("train", List.empty[File], "List[File]", "Filename(s) from which to read training data in CoNLL 2003 one-word-per-lineformat.")
+  val test = new CmdOption("test", List.empty[File], "List[File]", "Filename(s) from which to read test data in CoNLL 2003 one-word-per-lineformat.")
   val brownClusFile = new CmdOption("brown", "brownBllipClusters", "FILE", "File containing brown clusters.")
-  val trainDir = new CmdOption("train-dir", "", "STRING", "Path to directory of training data.")
-  val testDir = new CmdOption("test-dir", "", "STRING", "Path to directory of test data.")
+  val trainDir = new CmdOption("train-dir", new File(""), "Dir", "Path to directory of training data.")
+  val testDir = new CmdOption("test-dir", new File(""), "Dir", "Path to directory of test data.")
   val l1 = new CmdOption("l1", 0.02, "FLOAT", "L1 regularizer for AdaGradRDA training.")
   val l2 = new CmdOption("l2", 0.000001, "FLOAT", "L2 regularizer for AdaGradRDA training.")
   val learningRate = new CmdOption("learning-rate", 1.0, "FLOAT", "L2 regularizer for AdaGradRDA training.")
@@ -390,11 +390,17 @@ object ConllChainNerTrainer extends cc.factorie.util.HyperparameterMain {
         ner.clusters(splitLine(1)) = splitLine(0)
       }
     }
-    assert(opts.train.wasInvoked && opts.test.wasInvoked, "No train/test data file provided.")
     val trainPortionToTake = if(opts.trainPortion.wasInvoked) opts.trainPortion.value else 1.0
     val testPortionToTake =  if(opts.testPortion.wasInvoked) opts.testPortion.value else 1.0
-    val trainDocsFull = ner.loadDocs(opts.train.value)
-    val testDocsFull = ner.loadDocs(opts.test.value)
+    val (trainDocsFull, testDocsFull) = if(opts.train.wasInvoked && opts.test.wasInvoked) {
+      opts.train.value.flatMap(f => ner.loadDocs(f.getAbsolutePath)).toSeq ->
+        opts.test.value.flatMap(f => ner.loadDocs(f.getAbsolutePath)).toSeq
+    } else if(opts.trainDir.wasInvoked && opts.testDir.wasInvoked) {
+      opts.trainDir.value.listFiles().flatMap(f => ner.loadDocs(f.getAbsolutePath)).toSeq ->
+        opts.testDir.value.listFiles().flatMap(f => ner.loadDocs(f.getAbsolutePath)).toSeq
+    } else {
+      throw new IllegalArgumentException("You must provide values for either --train and --test or --train-dir and --test-dir")
+    }
     val trainDocs = trainDocsFull.take((trainDocsFull.length*trainPortionToTake).floor.toInt)
     val testDocs = testDocsFull.take((testDocsFull.length*testPortionToTake).floor.toInt)
     println(s"using training set: ${opts.train.value} ; test set: ${opts.test.value}")
