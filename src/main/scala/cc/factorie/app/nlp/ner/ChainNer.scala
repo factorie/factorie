@@ -329,7 +329,7 @@ abstract class ChainNer[L<:NerTag](val labelDomain: CategoricalDomain[String] wi
     }
 
     println(s"training with ${examples.length} examples")
-    Trainer.onlineTrain(model.parameters, examples, optimizer=optimizer, evaluate=evaluate)
+    Trainer.onlineTrain(model.parameters, examples, optimizer=optimizer, evaluate=evaluate, maxIterations = 5)
 
     val finalEval = new SegmentEvaluation[L with LabeledMutableCategoricalVar[String]](labelDomain.categories.filter(_.length > 2).map(_.substring(2)), "(B|U)-", "(I|L)-")
     val buf = new StringBuffer
@@ -366,9 +366,6 @@ class ChainNerOpts extends cc.factorie.util.CmdOptions with SharedNLPCmdOptions 
   val brownClusFile = new CmdOption("brown", "brownBllipClusters", "FILE", "File containing brown clusters.")
   val trainDir = new CmdOption("train-dir", new File(""), "Dir", "Path to directory of training data.")
   val testDir = new CmdOption("test-dir", new File(""), "Dir", "Path to directory of test data.")
-  val l1 = new CmdOption("l1", 0.02, "FLOAT", "L1 regularizer for AdaGradRDA training.")
-  val l2 = new CmdOption("l2", 0.000001, "FLOAT", "L2 regularizer for AdaGradRDA training.")
-  val learningRate = new CmdOption("learning-rate", 1.0, "FLOAT", "L2 regularizer for AdaGradRDA training.")
   val rate = new CmdOption("rate", 0.18, "DOUBLE", "learning rate")
   val delta = new CmdOption("delta", 0.066, "DOUBLE", "learning delta")
   val modelFile = new CmdOption("model-file", "", "STRING", "Filename of the serialized model that you want to load.")
@@ -426,14 +423,14 @@ object ConllNerOptimizer {
     opts.parse(args)
     opts.serialize.setValue(false)
     import cc.factorie.util.LogUniformDoubleSampler
-    val l1 = cc.factorie.util.HyperParameter(opts.l1, new LogUniformDoubleSampler(1e-12, 1))
-    val l2 = cc.factorie.util.HyperParameter(opts.l2, new LogUniformDoubleSampler(1e-12, 1))
-    val lr = cc.factorie.util.HyperParameter(opts.learningRate, new LogUniformDoubleSampler(1e-3, 10))
+    val rate = HyperParameter(opts.rate, new LogUniformDoubleSampler(1e-3, 1))
+    val delta = HyperParameter(opts.delta, new LogUniformDoubleSampler(0.01, 0.1))
+
     val qs = new cc.factorie.util.QSubExecutor(10, "cc.factorie.app.nlp.ner.ConllChainNerTrainer")
-    val optimizer = new cc.factorie.util.HyperParameterSearcher(opts, Seq(l1, l2, lr), qs.execute, 100, 90, 60)
+    val optimizer = new cc.factorie.util.HyperParameterSearcher(opts, Seq(rate, delta), qs.execute, 100, 90, 60)
     val result = optimizer.optimize()
     println("Got results: " + result.mkString(" "))
-    println("Best l1: " + opts.l1.value + " best l2: " + opts.l2.value)
+    println("Best rate: " + opts.rate.value + " best delta: " + opts.delta.value)
     println("Running best configuration...")
     opts.serialize.setValue(true)
     import scala.concurrent.Await
