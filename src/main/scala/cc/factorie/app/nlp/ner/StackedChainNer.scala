@@ -369,7 +369,7 @@ abstract class StackedChainNer[L<:NerTag](labelDomain: CategoricalDomain[String]
 
     val tokenBuffer = new CircularBuffer[CategoricalVectorVar[String]](4)
     val stringBuffer = new CircularBuffer[String](4)
-    // This is a separate iteration as combining them would be semantically different due to addNeighbouringFeaturesFast().
+    // This is a separate iteration as combining them would be semantically different due to addNeighbouringFeatures().
     for (token <- document.tokens) {
       val tokenStr = token.string
       val tokenFeatures = vf(token)

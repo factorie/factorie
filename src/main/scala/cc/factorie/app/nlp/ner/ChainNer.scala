@@ -73,6 +73,8 @@ abstract class ChainNer[L<:NerTag](val labelDomain: CategoricalDomain[String] wi
   val prereqAttrs = Seq(classOf[Sentence])
   val postAttrs = Seq(m.runtimeClass)
 
+  val FEATURE_PREFIX_REGEX = "^[^@]*$".r
+
   def process(document:Document) =
     if(document.tokenCount > 0) {
       if (!document.tokens.head.attr.contains(m.runtimeClass))
@@ -237,35 +239,55 @@ abstract class ChainNer[L<:NerTag](val labelDomain: CategoricalDomain[String] wi
       }
     }
 
-    for (sentence <- document.sentences)
-      cc.factorie.app.chain.Observations.addNeighboringFeatureConjunctions(sentence.tokens, vf, "^[^@]*$", List(0), List(1), List(2), List(-1), List(-2))
+    for (sentence <- document.sentences) {
+      cc.factorie.app.chain.Observations.addNeighboringFeatures(sentence.tokens,vf,FEATURE_PREFIX_REGEX,-2,2)
+    }
 
+    val tokenBuffer = new CircularBuffer[CategoricalVectorVar[String]](4)
+    val stringBuffer = new CircularBuffer[String](4)
+    // This is a separate iteration as combining them would be semantically different due to addNeighbouringFeatures().
     for (token <- document.tokens) {
-      val word = simplifyDigits(token.string).toLowerCase
-      val features = vf(token)
-      if (word.length < 5){
-        features += "P="+cc.factorie.app.strings.prefix(word, 4)
-        features += "S="+cc.factorie.app.strings.suffix(word, 4)
+      val tokenStr = token.string
+      val tokenFeatures = vf(token)
+      val simpleLowerStr = simplifyDigits(tokenStr).toLowerCase()
+      if (simpleLowerStr.length < 5){
+        tokenFeatures += "P="+cc.factorie.app.strings.prefix(simpleLowerStr, 4)
+        tokenFeatures += "S="+cc.factorie.app.strings.suffix(simpleLowerStr, 4)
+      }
+
+      val nextStr = "NEXTWINDOW="+simpleLowerStr
+
+      // Add features from window of 4 words before and after
+      var i = 0
+      while (i < 4) {
+        val curTok = tokenBuffer(i)
+        if (curTok != null) {
+          curTok += nextStr // add next window feature to the token history
+        }
+        val prevStr = stringBuffer(i)
+        if (prevStr != null) {
+          tokenFeatures += prevStr // add previous window feature to the current token
+        }
+        i += 1
+      }
+      tokenBuffer += vf(token)
+      stringBuffer += "PREVWINDOW="+simpleLowerStr
+    }
+
+    val tokenMap = JavaHashMap[String,Seq[String]]()
+    for (token <- document.tokens) {
+      val tokenStr = token.string
+      if (token.isCapitalized && token.string.length > 1) {
+        if (!tokenMap.contains(tokenStr)) {
+          //First mention of this token
+          tokenMap += (tokenStr -> vf(token).activeCategories.map(f => "FIRSTMENTION=" + f))
+        } else {
+          //Add first mention features
+          vf(token) ++= tokenMap(tokenStr)
+        }
       }
     }
 
-    // Add features from window of 4 words before and after
-    document.tokens.foreach(t => vf(t) ++= t.prevWindow(4).map(t2 => "PREVWINDOW="+simplifyDigits(t2.string).toLowerCase))
-    document.tokens.foreach(t => vf(t) ++= t.nextWindow(4).map(t2 => "NEXTWINDOW="+simplifyDigits(t2.string).toLowerCase))
-
-    document.tokens.foreach(t => {
-      if (t.isCapitalized && t.string.length > 1 &&
-        !vf(t).activeCategories.exists(f => f.matches(".*FIRSTMENTION.*")))
-      {
-        var t2 = t
-        while (t2.hasNext) {
-          t2 = t2.next
-          if (t2.string == t.string) {
-            vf(t2) ++= vf(t).activeCategories.map(f => "FIRSTMENTION="+f)
-          }
-        }
-      }
-    })
     document.tokens.foreach(t => if (t.string.matches("[A-Za-z]+")) vf(t) ++= t.charNGrams(2,5).map(n => "NGRAM="+n))
   }
 
