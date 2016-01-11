@@ -38,7 +38,7 @@ trait CmdOption[T] {
   def unParse: Seq[String] = {
     if (hasValue)
       value match {
-        case a: Seq[_] => Seq(f"--$name%s") ++ a.map(_.toString)
+        case a: Seq[_] => Seq(f"--$name%s=${a.mkString(",")}")
         case "" => Seq()
         case f:File => Seq(s"--$name=${f.getAbsolutePath}")
         case a: Any => Seq(f"--$name%s=${value.toString}%s")
