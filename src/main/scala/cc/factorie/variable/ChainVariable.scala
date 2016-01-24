@@ -90,15 +90,19 @@ trait ChainLink[This<:ChainLink[This,C],C<:Chain[C,This]] extends AbstractChainL
   def chainAfter: IndexedSeq[This] = _chain.links.drop(_position+1)
   def chainBefore: IndexedSeq[This] = _chain.links.take(_position)
   def prevWindow(n:Int): Seq[This] = {
-    var i = math.max(_position-n,  0)
     val res = new collection.mutable.ArrayBuffer[This]
-    while (i <= math.max(_position-1, 0)) {res.append(chain(i)) ;i += 1}
+    if (n > 0) {
+      var i = math.max(_position - n, 0)
+      while (i <= math.max(_position - 1, -1)) {res.append(chain(i)); i += 1}
+    }
     res
   }
   def nextWindow(n:Int): Seq[This] = {
-    var i = math.min(_position+1,  _chain.length-1)
     val res = new collection.mutable.ArrayBuffer[This]
-    while (i <= math.min(_position+n, _chain.length-1)) {res.append(chain(i)) ;i += 1}
+    if ((n > 0) && (_position != _chain.length-1)) {
+      var i = math.min(_position+1,  _chain.length-1)
+      while (i <= math.min(_position+n, _chain.length-1)) {res.append(_chain(i)); i += 1}
+    }
     res
   }
   // TODO currently the size of the window is actually 2*n; perhaps this should be changed! -akm
