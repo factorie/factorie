@@ -13,7 +13,7 @@
 package cc.factorie.app.nlp.lemma
 import cc.factorie.app.nlp._
 
-class LowercaseLemmatizer extends DocumentAnnotator with Lemmatizer {
+class LowercaseLemmatizer extends DocumentAnnotator with Lemmatizer with Serializable {
   def lemmatize(word:String): String = word.toLowerCase
   def process(document:Document): Document = {
     for (token <- document.tokens) token.attr += new LowercaseTokenLemma(token, lemmatize(token.string))
