@@ -63,7 +63,7 @@ object JsonCubbieConverter {
       case JDouble(d) => d
       case JBool(b) => b
       case JString(s) => s
-      case JDecimal(d) => if(d.isValidDouble){
+      case JDecimal(d) => if(d.isDecimalDouble){
         d.toDouble
       } else {
         d
