@@ -1,4 +1,4 @@
-package cc.factorie.epistemodb
+package cc.factorie.app.uschema
 
 import scala.util.Random
 import com.google.common.collect.HashBiMap

@@ -1,4 +1,4 @@
-package cc.factorie.epistemodb
+package cc.factorie.app.uschema
 
 /**
  * Created by beroth on 2/18/15.

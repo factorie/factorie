@@ -1,4 +1,4 @@
-package cc.factorie.epistemodb
+package cc.factorie.app.uschema
 
 import cc.factorie.util
 import org.junit.Assert._

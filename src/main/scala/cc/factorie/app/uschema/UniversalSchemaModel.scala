@@ -1,4 +1,4 @@
-package cc.factorie.epistemodb
+package cc.factorie.app.uschema
 
 import com.mongodb.DB
 import cc.factorie.la.DenseTensor1

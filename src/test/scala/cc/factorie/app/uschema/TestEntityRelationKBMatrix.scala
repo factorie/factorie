@@ -1,4 +1,4 @@
-package cc.factorie.epistemodb
+package cc.factorie.app.uschema
 
 import org.scalatest.junit.JUnitSuite
 import cc.factorie.util

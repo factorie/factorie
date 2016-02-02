@@ -1,7 +1,7 @@
-package cc.factorie.epistemodb.tac
+package cc.factorie.app.uschema.tac
 
 import com.mongodb.{DB, MongoClient}
-import cc.factorie.epistemodb._
+import cc.factorie.app.uschema._
 
 /**
  * Created by beroth on 2/11/15.
