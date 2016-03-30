@@ -651,7 +651,7 @@ class StackedChainNerOpts extends CmdOptions with SharedNLPCmdOptions{
   val saveModel = new CmdOption("save-model", false, "BOOLEAN", "Whether to save the model")
   val runOnlyHere = new CmdOption("runOnlyHere", false, "BOOLEAN", "Run Experiments only on this machine")
 
-  val dataDir = new CmdOption("data", "/home/vineet/canvas/embeddings/data/conll2003/", "STRING", "CONLL data path")
+  val embeddingDir = new CmdOption("embeddingDir", "", "STRING", "location of embedding file")
   val embeddingDim = new CmdOption("embeddingDim", 100, "INT", "embedding dimension")
   val embeddingScale = new CmdOption("embeddingScale", 10.0, "FLOAT", "The scale of the embeddings")
   val useOffsetEmbedding = new CmdOption("useOffsetEmbeddings", true, "BOOLEAN", "Whether to use offset embeddings")
@@ -681,7 +681,11 @@ object ConllStackedChainNerTrainer extends HyperparameterMain {
     // Parse command-line
     val opts = new StackedChainNerOpts
     opts.parse(args)
-    val ner = new ConllStackedChainNer(null: SkipGramEmbedding, opts.embeddingDim.value, opts.embeddingScale.value, opts.useOffsetEmbedding.value)(ModelProvider.empty, StaticLexiconFeatures())
+    val skipgram = if (opts.embeddingDir.wasInvoked)
+      new SkipGramEmbedding(opts.embeddingDir.value, opts.embeddingDim.value)
+    else
+      null
+    val ner = new ConllStackedChainNer(skipgram: SkipGramEmbedding, opts.embeddingDim.value, opts.embeddingScale.value, opts.useOffsetEmbedding.value)(ModelProvider.empty, StaticLexiconFeatures())
 
     ner.aggregate = opts.aggregateTokens.wasInvoked
 

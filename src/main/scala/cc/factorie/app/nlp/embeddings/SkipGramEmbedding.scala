@@ -12,23 +12,26 @@
    limitations under the License. */
 package cc.factorie.app.nlp.embeddings
 
+import java.io.{InputStream, BufferedInputStream, FileInputStream}
 import java.util.zip.GZIPInputStream
 
 import cc.factorie.la
-import cc.factorie.util.ClasspathURL
 
-object SkipGramEmbedding extends SkipGramEmbedding(s => ClasspathURL.fromDirectory[SkipGramEmbedding](s).openConnection().getInputStream, 100)
+//object SkipGramEmbedding extends SkipGramEmbedding(ClasspathURL.fromDirectory[SkipGramEmbedding], 100)
 
-class SkipGramEmbedding(val inputStreamFactory: String=> java.io.InputStream, dimensionSize: Int) extends scala.collection.mutable.LinkedHashMap[String,la.DenseTensor1] {
-  def sourceFactory(string:String): io.Source = io.Source.fromInputStream(new GZIPInputStream(inputStreamFactory(string)))
+class SkipGramEmbedding(val fileLocation: String, dimensionSize: Int) extends scala.collection.mutable.LinkedHashMap[String,la.DenseTensor1] {
+  def sourceFactory(string:String): InputStream  =
+  {
+    if(string.endsWith(".gz")) new GZIPInputStream(new BufferedInputStream(new FileInputStream(string)))
+    else new BufferedInputStream(new FileInputStream(string))
+  }
 
   println("Embedding reading size: %d".format(dimensionSize))
 
   initialize()
   def initialize() {
-    val source = sourceFactory("skip-gram-d100.W.gz")
     var count = 0
-    for (line <- source.getLines()) {
+    for (line <- scala.io.Source.fromInputStream(sourceFactory(fileLocation)).getLines()) {
       val fields = line.split("\\s+")
       val tensor = new la.DenseTensor1(fields.drop(1).map(_.toDouble))
       assert(tensor.dim1 == dimensionSize)
@@ -36,7 +39,6 @@ class SkipGramEmbedding(val inputStreamFactory: String=> java.io.InputStream, di
       count += 1
       if (count % 100000 == 0) println("word vector count: %d".format(count))
     }
-    source.close()
   }
 
   def close(string:String): Seq[String] = {
