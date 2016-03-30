@@ -31,7 +31,7 @@ class SkipGramEmbedding(val fileLocation: String, dimensionSize: Int) extends sc
   initialize()
   def initialize() {
     var count = 0
-    for (line <- scala.io.Source.fromInputStream(sourceFactory(fileLocation)).getLines()) {
+    for (line <- scala.io.Source.fromInputStream(sourceFactory(fileLocation)).getLines().drop(1)) {
       val fields = line.split("\\s+")
       val tensor = new la.DenseTensor1(fields.drop(1).map(_.toDouble))
       assert(tensor.dim1 == dimensionSize)
