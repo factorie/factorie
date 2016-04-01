@@ -53,17 +53,22 @@ class StaticLexiconFeatures(lexicon:StaticLexicons) extends NerLexiconFeatures {
     lexicon.spanish.Month.toString()
     lexicon.spanish.Day.toString()
     lexicon.spanish.PersonFirst.toString()
-    lexicon.spanish.Book.toString()    
-    lexicon.spanish.Event.toString()    
-    lexicon.spanish.Business.toString()  
-    lexicon.spanish.Film.toString()
-    
     lexicon.spanish.Person.toString()
     lexicon.spanish.Location.toString()
     lexicon.spanish.Organization.toString()
-    lexicon.spanish.LocationAndRedirect.toString()
-    lexicon.spanish.PersonAndRedirect.toString()
-    lexicon.spanish.OrganizationAndRedirect.toString()
+    lexicon.spanish.Miscellaneous.toString()
+    
+    lexicon.spanish.WikiBook.toString()    
+    lexicon.spanish.WikiEvent.toString()    
+    lexicon.spanish.WikiBusiness.toString()  
+    lexicon.spanish.WikiFilm.toString()
+    
+    lexicon.spanish.WikiPerson.toString()
+    lexicon.spanish.WikiLocation.toString()
+    lexicon.spanish.WikiOrganization.toString()
+    lexicon.spanish.WikiLocationAndRedirect.toString()
+    lexicon.spanish.WikiPersonAndRedirect.toString()
+    lexicon.spanish.WikiOrganizationAndRedirect.toString()
      
   }
 
@@ -110,21 +115,26 @@ class StaticLexiconFeatures(lexicon:StaticLexicons) extends NerLexiconFeatures {
     lexicon.wikipedia.OrganizationAndRedirect.tagText(tokenSequence,vf,"WIKI-ORG-REDIRECT")
 
     
-    lexicon.spanish.Continents.tagText(tokenSequence,vf,"ES-CONTINENT")
-    lexicon.spanish.Month.tagText(tokenSequence,vf,"ES-MONTH")
-    lexicon.spanish.Day.tagText(tokenSequence,vf,"ES-DAY")
-    lexicon.spanish.PersonFirst.tagText(tokenSequence,vf,"ES-PERSON-FIRST")
-    lexicon.spanish.Book.tagText(tokenSequence,vf,"ES-WIKI-BOOK")
-    lexicon.spanish.Event.tagText(tokenSequence,vf,"ES-WIKI-EVENT")
-    lexicon.spanish.Film.tagText(tokenSequence,vf,"ES-WIKI-FILM")
-    lexicon.spanish.Business.tagText(tokenSequence,vf,"ES-WIKI-BUSINESS")
+    lexicon.spanish.Continents.tagText(tokenSequence,vf,"CONTINENT")
+    lexicon.spanish.Month.tagText(tokenSequence,vf,"MONTH")
+    lexicon.spanish.Day.tagText(tokenSequence,vf,"DAY")
+    lexicon.spanish.PersonFirst.tagText(tokenSequence,vf,"PERSON-FIRST")
+    lexicon.spanish.Person.tagText(tokenSequence,vf,"PERSON")
+    lexicon.spanish.Location.tagText(tokenSequence,vf,"LOCATION")
+    lexicon.spanish.Organization.tagText(tokenSequence,vf,"ORGANIZATION")
+    lexicon.spanish.Miscellaneous.tagText(tokenSequence,vf,"MISCELLANEOUS")
     
-    lexicon.spanish.Person.tagText(tokenSequence,vf,"ES-WIKI-PERSON")
-    lexicon.spanish.Location.tagText(tokenSequence,vf,"ES-WIKI-LOCATION")
-    lexicon.spanish.Organization.tagText(tokenSequence,vf,"ES-WIKI-ORG")
-    lexicon.spanish.LocationAndRedirect.tagText(tokenSequence,vf,"ES-WIKI-LOCATION-REDIRECT")
-    lexicon.spanish.PersonAndRedirect.tagText(tokenSequence,vf,"ES-WIKI-PERSON-REDIRECT")
-    lexicon.spanish.OrganizationAndRedirect.tagText(tokenSequence,vf,"ES-WIKI-ORG-REDIRECT")
+    lexicon.spanish.WikiBook.tagText(tokenSequence,vf,"WIKI-BOOK")
+    lexicon.spanish.WikiEvent.tagText(tokenSequence,vf,"WIKI-EVENT")
+    lexicon.spanish.WikiFilm.tagText(tokenSequence,vf,"WIKI-FILM")
+    lexicon.spanish.WikiBusiness.tagText(tokenSequence,vf,"WIKI-BUSINESS")
+    
+    lexicon.spanish.WikiPerson.tagText(tokenSequence,vf,"WIKI-PERSON")
+    lexicon.spanish.WikiLocation.tagText(tokenSequence,vf,"WIKI-LOCATION")
+    lexicon.spanish.WikiOrganization.tagText(tokenSequence,vf,"WIKI-ORG")
+    lexicon.spanish.WikiLocationAndRedirect.tagText(tokenSequence,vf,"WIKI-LOCATION-REDIRECT")
+    lexicon.spanish.WikiPersonAndRedirect.tagText(tokenSequence,vf,"WIKI-PERSON-REDIRECT")
+    lexicon.spanish.WikiOrganizationAndRedirect.tagText(tokenSequence,vf,"WIKI-ORG-REDIRECT")
 
   }
 

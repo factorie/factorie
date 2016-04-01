@@ -80,6 +80,7 @@ object LexiconsProvider {
     def lexiconRoot = "classpath"
     implicit def provide[L: ClassTag]: ModelProvider[L] = new ModelProvider[L] {
       private def url = if(useFullPath) ClasspathURL.fromDirectory[Lexicon](shortLexiconName[L]) else this.getClass.getResource("/" + shortLexiconName[L])
+      println(url)
       def coordinates: String = url.toString
       def provide: InputStream = url
     }
@@ -231,27 +232,32 @@ class StaticLexicons()(implicit lp:LexiconsProvider) {
   }
   
   object spanish {
+    
       object Continents extends Iesl.es.Continents()(lp.provide[Iesl.es.Continents])
       object Day extends Iesl.es.Day()(lp.provide[Iesl.es.Day])
       object Month extends Iesl.es.Month()(lp.provide[Iesl.es.Month])
       object PersonFirst extends Iesl.es.PersonFirst()(lp.provide[Iesl.es.PersonFirst])
+      object Location extends Iesl.es.Location()(lp.provide[Iesl.es.Location])
+      object Miscellaneous extends Iesl.es.Miscellaneous()(lp.provide[Iesl.es.Miscellaneous])
+      object Person extends Iesl.es.Person()(lp.provide[Iesl.es.Person])
+      object Organization extends Iesl.es.Organization()(lp.provide[Iesl.es.Organization])
       
-      object Book extends Wikipedia.es.Book()(lp.provide[Wikipedia.es.Book])
-      object Film extends Wikipedia.es.Film()(lp.provide[Wikipedia.es.Film])
-      object Event extends Wikipedia.es.Event()(lp.provide[Wikipedia.es.Event])
-      object Business extends Wikipedia.es.Business()(lp.provide[Wikipedia.es.Business])
+      object WikiBook extends Wikipedia.es.Book()(lp.provide[Wikipedia.es.Book])
+      object WikiFilm extends Wikipedia.es.Film()(lp.provide[Wikipedia.es.Film])
+      object WikiEvent extends Wikipedia.es.Event()(lp.provide[Wikipedia.es.Event])
+      object WikiBusiness extends Wikipedia.es.Business()(lp.provide[Wikipedia.es.Business])
       
-      object Location extends Wikipedia.es.Location()(lp.provide[Wikipedia.es.Location])
-      object LocationRedirect extends Wikipedia.es.LocationRedirect()(lp.provide[Wikipedia.es.LocationRedirect])
-      object LocationAndRedirect extends TrieUnionLexicon("es-location-and-redirect", Location, LocationRedirect)
+      object WikiLocation extends Wikipedia.es.Location()(lp.provide[Wikipedia.es.Location])
+      object WikiLocationRedirect extends Wikipedia.es.LocationRedirect()(lp.provide[Wikipedia.es.LocationRedirect])
+      object WikiLocationAndRedirect extends TrieUnionLexicon("es-location-and-redirect", WikiLocation, WikiLocationRedirect)
     
-      object Person extends Wikipedia.es.Person()(lp.provide[Wikipedia.es.Person])
-      object PersonRedirect extends Wikipedia.es.PersonRedirect()(lp.provide[Wikipedia.es.PersonRedirect])
-      object PersonAndRedirect extends TrieUnionLexicon("es-person-and-redirect", Person, PersonRedirect)
+      object WikiPerson extends Wikipedia.es.Person()(lp.provide[Wikipedia.es.Person])
+      object WikiPersonRedirect extends Wikipedia.es.PersonRedirect()(lp.provide[Wikipedia.es.PersonRedirect])
+      object WikiPersonAndRedirect extends TrieUnionLexicon("es-person-and-redirect", WikiPerson, WikiPersonRedirect)
  
-      object Organization extends Wikipedia.es.Organization()(lp.provide[Wikipedia.es.Organization])
-      object OrganizationRedirect extends Wikipedia.es.OrganizationRedirect()(lp.provide[Wikipedia.es.OrganizationRedirect])
-      object OrganizationAndRedirect extends TrieUnionLexicon("es-organization-and-redirect", Organization, OrganizationRedirect)
+      object WikiOrganization extends Wikipedia.es.Organization()(lp.provide[Wikipedia.es.Organization])
+      object WikiOrganizationRedirect extends Wikipedia.es.OrganizationRedirect()(lp.provide[Wikipedia.es.OrganizationRedirect])
+      object WikiOrganizationAndRedirect extends TrieUnionLexicon("es-organization-and-redirect", WikiOrganization, WikiOrganizationRedirect)
   }  
 
 }
