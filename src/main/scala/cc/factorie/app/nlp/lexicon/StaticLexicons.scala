@@ -44,7 +44,7 @@ object LexiconsProvider {
   }
 
   private def fullLexiconName[L:ClassTag] = lexiconNamePieces[L].mkString("/")
-  private def shortLexiconName[L:ClassTag] = lexiconNamePieces[L].takeRight(2).mkString("/")
+  private def shortLexiconName[L:ClassTag] = lexiconNamePieces[L].drop(5).mkString("/")
 
 
   def fromFile(f:File, useFullPath:Boolean = false):LexiconsProvider = new LexiconsProvider {
@@ -229,6 +229,30 @@ class StaticLexicons()(implicit lp:LexiconsProvider) {
     object SurnamePinyin extends Mandarin.SurnamePinyin()(lp.provide[Mandarin.SurnamePinyin])
     object GivenNamePinyin extends Mandarin.GivenNamePinyin()(lp.provide[Mandarin.GivenNamePinyin])
   }
+  
+  object spanish {
+      object Continents extends Iesl.es.Continents()(lp.provide[Iesl.es.Continents])
+      object Day extends Iesl.es.Day()(lp.provide[Iesl.es.Day])
+      object Month extends Iesl.es.Month()(lp.provide[Iesl.es.Month])
+      object PersonFirst extends Iesl.es.PersonFirst()(lp.provide[Iesl.es.PersonFirst])
+      
+      object Book extends Wikipedia.es.Book()(lp.provide[Wikipedia.es.Book])
+      object Film extends Wikipedia.es.Film()(lp.provide[Wikipedia.es.Film])
+      object Event extends Wikipedia.es.Event()(lp.provide[Wikipedia.es.Event])
+      object Business extends Wikipedia.es.Business()(lp.provide[Wikipedia.es.Business])
+      
+      object Location extends Wikipedia.es.Location()(lp.provide[Wikipedia.es.Location])
+      object LocationRedirect extends Wikipedia.es.LocationRedirect()(lp.provide[Wikipedia.es.LocationRedirect])
+      object LocationAndRedirect extends TrieUnionLexicon("es-location-and-redirect", Location, LocationRedirect)
+    
+      object Person extends Wikipedia.es.Person()(lp.provide[Wikipedia.es.Person])
+      object PersonRedirect extends Wikipedia.es.PersonRedirect()(lp.provide[Wikipedia.es.PersonRedirect])
+      object PersonAndRedirect extends TrieUnionLexicon("es-person-and-redirect", Person, PersonRedirect)
+ 
+      object Organization extends Wikipedia.es.Organization()(lp.provide[Wikipedia.es.Organization])
+      object OrganizationRedirect extends Wikipedia.es.OrganizationRedirect()(lp.provide[Wikipedia.es.OrganizationRedirect])
+      object OrganizationAndRedirect extends TrieUnionLexicon("es-organization-and-redirect", Organization, OrganizationRedirect)
+  }  
 
 }
 

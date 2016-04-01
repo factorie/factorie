@@ -48,6 +48,23 @@ class StaticLexiconFeatures(lexicon:StaticLexicons) extends NerLexiconFeatures {
     lexicon.wikipedia.LocationAndRedirect.toString()
     lexicon.wikipedia.PersonAndRedirect.toString()
     lexicon.wikipedia.OrganizationAndRedirect.toString()
+    
+    lexicon.spanish.Continents.toString()
+    lexicon.spanish.Month.toString()
+    lexicon.spanish.Day.toString()
+    lexicon.spanish.PersonFirst.toString()
+    lexicon.spanish.Book.toString()    
+    lexicon.spanish.Event.toString()    
+    lexicon.spanish.Business.toString()  
+    lexicon.spanish.Film.toString()
+    
+    lexicon.spanish.Person.toString()
+    lexicon.spanish.Location.toString()
+    lexicon.spanish.Organization.toString()
+    lexicon.spanish.LocationAndRedirect.toString()
+    lexicon.spanish.PersonAndRedirect.toString()
+    lexicon.spanish.OrganizationAndRedirect.toString()
+     
   }
 
   
@@ -91,6 +108,24 @@ class StaticLexiconFeatures(lexicon:StaticLexicons) extends NerLexiconFeatures {
     lexicon.wikipedia.LocationAndRedirect.tagText(tokenSequence,vf,"WIKI-LOCATION-REDIRECT")
     lexicon.wikipedia.PersonAndRedirect.tagText(tokenSequence,vf,"WIKI-PERSON-REDIRECT")
     lexicon.wikipedia.OrganizationAndRedirect.tagText(tokenSequence,vf,"WIKI-ORG-REDIRECT")
+
+    
+    lexicon.spanish.Continents.tagText(tokenSequence,vf,"ES-CONTINENT")
+    lexicon.spanish.Month.tagText(tokenSequence,vf,"ES-MONTH")
+    lexicon.spanish.Day.tagText(tokenSequence,vf,"ES-DAY")
+    lexicon.spanish.PersonFirst.tagText(tokenSequence,vf,"ES-PERSON-FIRST")
+    lexicon.spanish.Book.tagText(tokenSequence,vf,"ES-WIKI-BOOK")
+    lexicon.spanish.Event.tagText(tokenSequence,vf,"ES-WIKI-EVENT")
+    lexicon.spanish.Film.tagText(tokenSequence,vf,"ES-WIKI-FILM")
+    lexicon.spanish.Business.tagText(tokenSequence,vf,"ES-WIKI-BUSINESS")
+    
+    lexicon.spanish.Person.tagText(tokenSequence,vf,"ES-WIKI-PERSON")
+    lexicon.spanish.Location.tagText(tokenSequence,vf,"ES-WIKI-LOCATION")
+    lexicon.spanish.Organization.tagText(tokenSequence,vf,"ES-WIKI-ORG")
+    lexicon.spanish.LocationAndRedirect.tagText(tokenSequence,vf,"ES-WIKI-LOCATION-REDIRECT")
+    lexicon.spanish.PersonAndRedirect.tagText(tokenSequence,vf,"ES-WIKI-PERSON-REDIRECT")
+    lexicon.spanish.OrganizationAndRedirect.tagText(tokenSequence,vf,"ES-WIKI-ORG-REDIRECT")
+
   }
 
 }
