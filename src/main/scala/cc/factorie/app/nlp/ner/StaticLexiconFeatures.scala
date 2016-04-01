@@ -53,10 +53,15 @@ class StaticLexiconFeatures(lexicon:StaticLexicons) extends NerLexiconFeatures {
     lexicon.spanish.Month.toString()
     lexicon.spanish.Day.toString()
     lexicon.spanish.PersonFirst.toString()
+    lexicon.spanish.PersonLast.toString()
     lexicon.spanish.Person.toString()
+    lexicon.spanish.PersonHonorific.toString()
     lexicon.spanish.Location.toString()
     lexicon.spanish.Organization.toString()
     lexicon.spanish.Miscellaneous.toString()
+    lexicon.spanish.OrgSuffix.toString()
+    lexicon.spanish.Demonym.toString()
+
     
     lexicon.spanish.WikiBook.toString()    
     lexicon.spanish.WikiEvent.toString()    
@@ -119,10 +124,15 @@ class StaticLexiconFeatures(lexicon:StaticLexicons) extends NerLexiconFeatures {
     lexicon.spanish.Month.tagText(tokenSequence,vf,"MONTH")
     lexicon.spanish.Day.tagText(tokenSequence,vf,"DAY")
     lexicon.spanish.PersonFirst.tagText(tokenSequence,vf,"PERSON-FIRST")
+    lexicon.spanish.PersonLast.tagText(tokenSequence,vf,"PERSON-LAST")
     lexicon.spanish.Person.tagText(tokenSequence,vf,"PERSON")
     lexicon.spanish.Location.tagText(tokenSequence,vf,"LOCATION")
     lexicon.spanish.Organization.tagText(tokenSequence,vf,"ORGANIZATION")
     lexicon.spanish.Miscellaneous.tagText(tokenSequence,vf,"MISCELLANEOUS")
+    lexicon.spanish.PersonHonorific.tagText(tokenSequence,vf,"PERSON-HONORIFIC")
+    lexicon.spanish.OrgSuffix.tagText(tokenSequence,vf,"ORG-SUFFIX")
+    lexicon.spanish.Demonym.tagText(tokenSequence,vf,"DEMONYM")
+
     
     lexicon.spanish.WikiBook.tagText(tokenSequence,vf,"WIKI-BOOK")
     lexicon.spanish.WikiEvent.tagText(tokenSequence,vf,"WIKI-EVENT")
