@@ -312,6 +312,7 @@ class ChainNerOpts extends cc.factorie.util.CmdOptions with SharedNLPCmdOptions 
   val modelFile = new CmdOption("model-file", "", "STRING", "Filename of the serialized model that you want to load.")
   val useTagger = new CmdOption("use-tagger", "", "STRING", "Which tagger? (remove me later)")
   val lexicons = new LexiconsProviderCmdOption("lexicons")
+  val lang =      new CmdOption("language", "en", "STRING", "Lexicons language.")
 }
 
 
@@ -320,7 +321,7 @@ object ConllChainNerTrainer extends cc.factorie.util.HyperparameterMain {
     val opts = new ChainNerOpts
     implicit val random = new scala.util.Random(0)
     opts.parse(args)
-    val ner = new ConllChainNer()(ModelProvider.empty, new StaticLexiconFeatures(new StaticLexicons()(opts.lexicons.value)))
+    val ner = new ConllChainNer()(ModelProvider.empty, new StaticLexiconFeatures(new StaticLexicons()(opts.lexicons.value), opts.lang.value))
     if (opts.brownClusFile.wasInvoked) {
       println(s"Reading brown cluster file: ${opts.brownClusFile.value}")
       for (line <- scala.io.Source.fromFile(opts.brownClusFile.value).getLines()) {
