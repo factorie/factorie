@@ -663,7 +663,7 @@ object ConllStackedChainNerTester extends App {
   opts.parse(args)
   val ner =
     if(opts.modelDir.wasInvoked)
-      new ConllStackedChainNer(null: SkipGramEmbedding, opts.embeddingDim.value, opts.embeddingScale.value, opts.useOffsetEmbedding.value)(opts.modelDir.value.toURI.toURL, StaticLexiconFeatures())
+      new ConllStackedChainNer(null: SkipGramEmbedding, opts.embeddingDim.value, opts.embeddingScale.value, opts.useOffsetEmbedding.value)(opts.modelDir.value.toURI.toURL, StaticLexiconFeatures(opts.lang.value))
     else NoEmbeddingsConllStackedChainNer
 
   val testPortionToTake =  if(opts.testPortion.wasInvoked) opts.testPortion.value else 1.0
