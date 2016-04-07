@@ -34,12 +34,13 @@ If you'd like to add FACTORIE as a dependency in a Maven-managed project, simply
   <dependency>
     <groupId>cc.factorie</groupId>
     <artifactId>factorie_2.11</artifactId>
-    <version>1.1</version>
+    <version>1.2</version>
   </dependency>
 <dependencies>
 ```
 
-If you would like a version that is compatible with Scala 2.10 rather than 2.11, simply replace 2.11 with 2.10 above.
+Factorie is no longer compatible with Scala 2.10. If you would like a version that is compatible with Scala 2.10 rather than 2.11,
+replace 2.11 with 2.10 above and downgrade the version to 1.1.
 
 ## Checking out Source from GitHub
 
@@ -66,7 +67,7 @@ If you find you are running out of Java heap space or PermGen space, you may wan
 export MAVEN_OPTS="$MAVEN_OPTS -Xms2g -Xmx2g -XX:MaxPermSize=256m"
 ```
 
-This will tell Maven to run Java with 2GB heap space and up to 256MB PermGen space, which should be enough to compile FACTORIE.
+This will tell Maven to run Java with 2GB heap space and up to 256MB PermGen space (if using Java version < 1.8), which should be enough to compile FACTORIE.
 
 ## Running Test Suite
 
@@ -100,7 +101,7 @@ To use FACTORIE's pre-trained NLP models in a Maven project, you can add the all
 <dependency>
   <groupId>cc.factorie.app.nlp</groupId>
   <artifactId>all-models</artifactId>
-  <version>1.0.0</version>
+  <version>1.2</version>
 </dependency>
 ```
 
