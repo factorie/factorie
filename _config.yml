@@ -1,12 +1,12 @@
 name: FACTORIE
 markdown: redcarpet
-pygments: true
+highlighter: pygments
 
 author_sameer: "<a href='http://www.cs.umass.edu/~sameer'>Sameer Singh</a>"
 author_luke: "<a href='http://www.cs.umass.edu/~luke'>Luke Vilnis</a>"
-factorie_version: "1.0"
-factorie_source_url: "https://github.com/factorie/factorie/releases/download/factorie_2.11-1.1/factorie_2.11-1.1-sources.jar"
-factorie_executable_url: "https://github.com/factorie/factorie/releases/download/factorie_2.11-1.1/factorie_2.11-1.1.jar"
+factorie_version: "1.2"
+factorie_source_url: "https://github.com/factorie/factorie/releases/download/factorie_2.11-1.2/factorie_2.11-1.2-sources.jar"
+factorie_executable_url: "https://github.com/factorie/factorie/releases/download/factorie_2.11-1.1/factorie_2.11-1.2.jar"
 #baseurl: "http://factorie.cs.umass.edu"
 factorie_logo: "factorie-logo55.png"
 safe: true
