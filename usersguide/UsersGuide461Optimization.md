@@ -14,8 +14,8 @@ with a regularization term. Formally, these optimization problems take the form:
 
 `\[ \theta^* = \mathop{\arg\min}_\theta \sum_i \ell(x_i, y_i, \theta) + R(\theta) \]`
 
-Where `\[ \theta \]` is a parameter vector, `\[ \ell \]` is the per-example loss function,
-and `\[ R \]` is the regularizer. FACTORIE includes an optimization package specialized for
+Where `\( \theta \)` is a parameter vector, `\( \ell \)` is the per-example loss function,
+and `\( R \)` is the regularizer. FACTORIE includes an optimization package specialized for
 these problems. Learning problems can be solved in batch mode or online, sequentially or
 in parallel, and with many different choices of regularization and parameter update rules.
 
@@ -23,7 +23,7 @@ The main traits involved in the optimization package are as follows:
 
 ## Parameters and Weights
 
-In FACTORIE, the parameter vector `\[ \theta ]\` is represented by Weights and Parameters objects. A Weights object
+In FACTORIE, the parameter vector `\( \theta \)` is represented by Weights and Parameters objects. A Weights object
 defines a mutable slot containing a single parameter tensor. Since models often define multiple groups
 of parameters, corresponding to different types of factors or feature templates, anything
 which can be optimized in FACTORIE extends the Parameters trait, which serves as a container
@@ -51,7 +51,7 @@ optimizers swap these alternate tensor implementations into the model's Weights'
 
 In FACTORIE an Example is an object which can compute an objective function
 and its gradient (or a subgradient), at the level of a single piece of training data (corresponding to
-one of the `\[ \ell ]\` functions in the learning objective). FACTORIE defines Examples for
+one of the `\( \ell \)` functions in the learning objective). FACTORIE defines Examples for
 maximum-likelihood training of CRFs, structured perceptron, structured SVM,
 pseudolikelihood, pseudomax, generalized linear models, learning to rank,
 matrix completion, and many others.
