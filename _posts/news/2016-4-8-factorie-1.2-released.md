@@ -17,38 +17,32 @@ This is the official 1.2 release of Factorie. This version includes major rewrit
 New in version 1.2
 ---
 
-===Overall===
+* Overall
+    - Major rewrite of NLP pipeline
+    - Many miscellaneous improvements and fixes
 
-- Major rewrite of NLP pipeline
-- Many miscellaneous improvements and fixes
+* NLP
+    - Many performance and speed improvments improvements to NER
+    - Rewritten, ~2x faster dependency parser
+    - Rewritten hierarchical cross-document coreference
+    - Rewritten universal schema relation extraction model and epistemological database
+    - Faster tokenization with JFlex (50x faster, ~500k tokens/second on modest machine)
+    - Improvements to model, lexicon, and other resource finding and loading
+    - New name parser
 
-===NLP===
+* Linear Algebra
+    - Several bug fixes to sparse tensors
 
-- Many performance and speed improvments improvements to NER
-- Rewritten, ~2x faster dependency parser
-- Rewritten hierarchical cross-document coreference
-- Rewritten universal schema relation extraction model and epistemological database
-- Faster tokenization with JFlex (50x faster, ~500k tokens/second on modest machine)
-- Improvements to model, lexicon, and other resource finding and loading
-- New name parser
+* Learning
+    - Support for simple constraints in optimization (projected gradient)
+    - Support for different constraints, regularization, and optimizers over different feature template subsets
+    - Added support for grid-searching subsets when optimizing hyperparameters
+    - Bug fixes to Exponentiated Gradient
 
-===Linear Algebra===
+* Inference
+    - LiteChainModel class for simple chain CRFs
 
-- Several bug fixes to sparse tensors
-
-===Learning===
-
-- Support for simple constraints in optimization (projected gradient)
-- Support for different constraints, regularization, and optimizers over different feature template subsets
-- Added support for grid-searching subsets when optimizing hyperparameters
-- Bug fixes to Exponentiated Gradient
-
-===Inference===
-
-- LiteChainModel class for simple chain CRFs
-
-===Miscellaneous===
-
-- Improved unit- and integration-testing coverage
-- Improved serialization
+* Miscellaneous
+    - Improved unit- and integration-testing coverage
+    - Improved serialization
 
