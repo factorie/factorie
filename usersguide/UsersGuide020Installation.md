@@ -11,7 +11,7 @@ FACTORIE is known to run on Mac OSX, Linux, and Windows with Cygwin, and is expe
 
 ## Dependencies
 
-FACTORIE requires [Java](http://www.java.com/getjava/) >= 1.5 and [Apache Maven](http://maven.apache.org/) >= 3.0. Maven will install the correct versions of all other dependencies for you, including [Scala](http://www.scala-lang.org/).
+FACTORIE requires [Java](http://www.java.com/getjava/) >= 1.7 and [Apache Maven](http://maven.apache.org/) >= 3.0. Maven will install the correct versions of all other dependencies for you, including [Scala](http://www.scala-lang.org/).
 
 ## Downloading Pre-compiled JAR
 
@@ -27,10 +27,12 @@ If you'd like to add FACTORIE as a dependency in a Maven-manged project, simply 
   <dependency>
     <groupId>cc.factorie</groupId>
     <artifactId>factorie_2.11</artifactId>
-    <version>1.1</version>
+    <version>1.2</version>
   </dependency>
 <dependencies>
 ```
+
+Factorie is no longer compatible with Scala 2.10. If you would like a version that is compatible with Scala 2.10 rather than 2.11, replace 2.11 with 2.10 above and downgrade the FACTORIE version to 1.1.
 
 ## Checking out Source from GitHub
 
@@ -91,7 +93,7 @@ To use FACTORIE's pre-trained NLP models in a Maven project, you can add the all
 <dependency>
   <groupId>cc.factorie.app.nlp</groupId>
   <artifactId>all-models</artifactId>
-  <version>1.0.0</version>
+  <version>1.2</version>
 </dependency>
 ```
 
