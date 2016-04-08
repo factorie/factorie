@@ -58,7 +58,7 @@ optimizers swap these alternate tensor implementations into the model's Weights'
 
 In FACTORIE an Example is an object which can compute an objective function
 and its gradient (or a subgradient), at the level of a single piece of training data (corresponding to
-one of the `\( \ell ]\` functions in the learning objective). FACTORIE defines Examples for
+one of the `\( \ell )\` functions in the learning objective). FACTORIE defines Examples for
 maximum-likelihood training of CRFs, structured perceptron, structured SVM,
 pseudolikelihood, pseudomax, generalized linear models, learning to rank,
 matrix completion, and many others.
