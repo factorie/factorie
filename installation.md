@@ -67,7 +67,7 @@ This results in multiple files in the target directory, including `factorie-XX.X
 
 In the pom.xml file for your project, add the following in the repositories section:
 
-```xml
+~~~xml
 <repositories>
   ...
   <repository>
@@ -82,11 +82,11 @@ In the pom.xml file for your project, add the following in the repositories sect
     </releases>
   </repository>
 </repositories>
-```
+~~~
  
 Then add the following in the dependencies section:
 
-```xml
+~~~xml
     <dependencies>
       <dependency>
         <groupId>cc.factorie</groupId>
@@ -94,13 +94,13 @@ Then add the following in the dependencies section:
         <version>{{ site.factorie_version }}</version>
       </dependency>
     <dependencies>
-```
+~~~
 
 ### As an sbt Dependency
 
 In your `build.sbt` file, add the following:
 
-```
+~~~
 resolvers += "IESL Release" at "http://dev-iesl.cs.umass.edu/nexus/content/groups/public"
 libraryDependencies += "cc.factorie" % "factorie" % "{{ site.factorie_version }}"
-```
+~~~

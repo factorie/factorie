@@ -1,5 +1,4 @@
 name: FACTORIE
-markdown: redcarpet
 highlighter: pygments
 
 author_sameer: "<a href='http://www.cs.umass.edu/~sameer'>Sameer Singh</a>"

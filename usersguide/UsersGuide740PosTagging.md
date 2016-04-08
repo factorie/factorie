@@ -56,13 +56,13 @@ Then include the dependencies for FACTORIE and our pre-trained POS models, if yo
   <dependency>
     <groupId>cc.factorie</groupId>
     <artifactId>factorie</artifactId>
-    <version>1.0.0-RC1</version>
+    <version>1.2</version>
   </dependency>
 
   <dependency>
     <groupId>cc.factorie.app.nlp</groupId>
     <artifactId>all-models</artifactId>
-    <version>1.0-RC8</version>
+    <version>1.2</version>
   </dependency>
 <dependencies>
 ```
