@@ -1,6 +1,7 @@
 name: FACTORIE
-highlighter: pygments
+highlighter: rouge
 
+author_emma: "<a href='http://www.cics.umass.edu/~strubell'>Emma Strubell</a>"
 author_sameer: "<a href='http://www.cs.umass.edu/~sameer'>Sameer Singh</a>"
 author_luke: "<a href='http://www.cs.umass.edu/~luke'>Luke Vilnis</a>"
 factorie_version: "1.2"
