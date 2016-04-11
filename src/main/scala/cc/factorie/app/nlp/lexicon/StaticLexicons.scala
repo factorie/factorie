@@ -80,7 +80,6 @@ object LexiconsProvider {
     def lexiconRoot = "classpath"
     implicit def provide[L: ClassTag]: ModelProvider[L] = new ModelProvider[L] {
       private def url = if(useFullPath) ClasspathURL.fromDirectory[Lexicon](shortLexiconName[L]) else this.getClass.getResource("/" + shortLexiconName[L])
-      println(url)
       def coordinates: String = url.toString
       def provide: InputStream = url
     }
