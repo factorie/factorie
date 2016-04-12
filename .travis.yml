@@ -10,10 +10,12 @@
 #jdk:
 #    - oraclejdk8
 sudo: false
+language: java
 before_script:
     - echo "MAVEN_OPTS='-Xmx2469m'" > ~/.mavenrc
+
 script:
-    - travis_wait mvn clean install
+#    - travis_wait mvn clean install
     - ./sbt compile
 jdk:
     - oraclejdk8   
