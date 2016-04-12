@@ -13,7 +13,7 @@ sudo: false
 before_script:
     - echo "MAVEN_OPTS='-Xmx2469m'" > ~/.mavenrc
 script:
-    - mvn clean install
+    - travis_wait mvn clean install
     - ./sbt compile
 jdk:
     - oraclejdk8   
