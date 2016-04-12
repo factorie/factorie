@@ -10,10 +10,10 @@
 #jdk:
 #    - oraclejdk8
 sudo: false
+before_install:
+    - export MAVEN_SKIP_RC=true && export MAVEN_OPTS="-Xmx2469m -XX:MaxPermSize=512m"
+#    - echo "MAVEN_OPTS='-Xmx2469m'" > ~/.mavenrc
 language: java
-before_script:
-    - echo "MAVEN_OPTS='-Xmx2469m'" > ~/.mavenrc
-
 script:
 #    - travis_wait mvn clean install
     - ./sbt compile
