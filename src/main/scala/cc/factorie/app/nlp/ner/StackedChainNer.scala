@@ -519,7 +519,7 @@ abstract class StackedChainNer[L<:NerTag](labelDomain: CategoricalDomain[String]
 
     val trainLabels = trainDocuments.flatMap(_.tokens).map(_.attr[L with LabeledMutableDiscreteVar]) //.take(100)
     val testLabels = testDocuments.flatMap(_.tokens).map(_.attr[L with LabeledMutableDiscreteVar]) //.take(20)
-
+    
     val vars = for(td <- trainDocuments; sentence <- td.sentences if sentence.length > 1) yield sentence.tokens.map(_.attr[L with LabeledMutableDiscreteVar])
     val examples = vars.map(v => new model.ChainLikelihoodExample(v.toSeq))
     println("Training with " + examples.length + " examples")
@@ -527,7 +527,7 @@ abstract class StackedChainNer[L<:NerTag](labelDomain: CategoricalDomain[String]
     trainDocuments.foreach(process(_, useModel2=false))
     testDocuments.foreach(process(_, useModel2=false))
     printEvaluation(trainDocuments, testDocuments, "FINAL 1")
-
+ 
     (trainDocuments ++ testDocuments).foreach( _.tokens.map(token => token.attr += new ChainNer2Features(token)))
 
     for(document <- trainDocuments) initFeatures(document, (t:Token)=>t.attr[ChainNer2Features])
@@ -655,6 +655,7 @@ class StackedChainNerOpts extends CmdOptions with SharedNLPCmdOptions{
   val embeddingDim = new CmdOption("embeddingDim", 100, "INT", "embedding dimension")
   val embeddingScale = new CmdOption("embeddingScale", 10.0, "FLOAT", "The scale of the embeddings")
   val useOffsetEmbedding = new CmdOption("useOffsetEmbeddings", true, "BOOLEAN", "Whether to use offset embeddings")
+  val lang =      new CmdOption("language", "en", "STRING", "Lexicons language.")
 }
 
 object ConllStackedChainNerTester extends App {
@@ -662,7 +663,7 @@ object ConllStackedChainNerTester extends App {
   opts.parse(args)
   val ner =
     if(opts.modelDir.wasInvoked)
-      new ConllStackedChainNer(null: SkipGramEmbedding, opts.embeddingDim.value, opts.embeddingScale.value, opts.useOffsetEmbedding.value)(opts.modelDir.value.toURI.toURL, StaticLexiconFeatures())
+      new ConllStackedChainNer(null: SkipGramEmbedding, opts.embeddingDim.value, opts.embeddingScale.value, opts.useOffsetEmbedding.value)(opts.modelDir.value.toURI.toURL, StaticLexiconFeatures(opts.lang.value))
     else NoEmbeddingsConllStackedChainNer
 
   val testPortionToTake =  if(opts.testPortion.wasInvoked) opts.testPortion.value else 1.0
@@ -685,7 +686,7 @@ object ConllStackedChainNerTrainer extends HyperparameterMain {
       new SkipGramEmbedding(opts.embeddingDir.value, opts.embeddingDim.value)
     else
       null
-    val ner = new ConllStackedChainNer(skipgram: SkipGramEmbedding, opts.embeddingDim.value, opts.embeddingScale.value, opts.useOffsetEmbedding.value)(ModelProvider.empty, StaticLexiconFeatures())
+    val ner = new ConllStackedChainNer(skipgram: SkipGramEmbedding, opts.embeddingDim.value, opts.embeddingScale.value, opts.useOffsetEmbedding.value)(ModelProvider.empty, StaticLexiconFeatures(opts.lang.value))
 
     ner.aggregate = opts.aggregateTokens.wasInvoked
 
@@ -709,7 +710,6 @@ object ConllStackedChainNerTrainer extends HyperparameterMain {
 
     val trainDocs = trainDocsFull.take((trainDocsFull.length*trainPortionToTake).floor.toInt)
     val testDocs = testDocsFull.take((testDocsFull.length*testPortionToTake).floor.toInt)
-
 
     val result = ner.train(trainDocs,testDocs, opts.rate.value, opts.delta.value)
     if (opts.saveModel.value) {
