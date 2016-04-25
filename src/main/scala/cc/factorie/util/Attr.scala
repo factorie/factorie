@@ -13,8 +13,6 @@
 
 package cc.factorie.util
 
-import java.io._
-
 import scala.reflect.ClassTag
 
 // TODO Why insist on AnyRef?  Why not just Any?  This would make app.nlp.DocumentProcessor a little cleaner. -akm
@@ -169,20 +167,6 @@ trait Attr extends Serializable {
     }
    
     override def toString = values.mkString(" ")
-
-    @throws(classOf[IOException])
-    @throws(classOf[ClassNotFoundException])
-    private def writeObject(stream: ObjectOutputStream): Unit = {
-      stream.defaultWriteObject()
-      stream.writeObject(values)
-    }
-
-    @throws(classOf[IOException])
-    @throws(classOf[ClassNotFoundException])
-    private def readObject(stream: ObjectInputStream): Unit = {
-      stream.defaultReadObject()
-      stream.readObject().asInstanceOf[Seq[AnyRef]].foreach { value => attr += value }
-    }
 
   }
 
