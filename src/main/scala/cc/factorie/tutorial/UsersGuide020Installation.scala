@@ -1,4 +1,4 @@
-/* Copyright (C) 2008-2014 University of Massachusetts Amherst.
+/* Copyright (C) 2008-2016 University of Massachusetts Amherst.
    This file is part of "FACTORIE" (Factor graphs, Imperative, Extensible)
    http://factorie.cs.umass.edu, http://github.com/factorie
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -28,53 +28,54 @@ If you have the FACTORIE source, you can also run `mvn package`, which will gene
 
 If you'd like to add FACTORIE as a dependency in a Maven-managed project, simply add FACTORIE as a dependency in the dependencies section of your pom.xml:
 
-```xml
+~~~xml
 <dependencies>
   ...
   <dependency>
     <groupId>cc.factorie</groupId>
     <artifactId>factorie_2.11</artifactId>
-    <version>1.1</version>
+    <version>1.2</version>
   </dependency>
 <dependencies>
-```
+~~~
 
-If you would like a version that is compatible with Scala 2.10 rather than 2.11, simply replace 2.11 with 2.10 above.
+Factorie is no longer compatible with Scala 2.10. If you would like a version that is compatible with Scala 2.10 rather than 2.11,
+replace 2.11 with 2.10 above and downgrade the version to 1.1.
 
 ## Checking out Source from GitHub
 
 You can get the latest FACTORIE source code by cloning our repository on Github:
 
-```
+~~~
 git clone https://github.com/factorie/factorie.git
-```
+~~~
 
 ## Compiling from Source
 
 To compile FACTORIE, tell Maven to compile the project from the root directory. If you just cloned the git repository into your current directory, then the commands would be:
 
-```
+~~~
 cd factorie
 mvn compile
-```
+~~~
 
 This step may take several minutes because it must not only compile all of FACTORIE, but also download any dependencies, such as Scala. Maven will print many messages; no need to be concerned about them unless they start with [ERROR].
 
 If you find you are running out of Java heap space or PermGen space, you may want to add "-Xms2g -Xmx2g -XX:MaxPermSize=256m" to your MAVEN_OPTS environment variable before running Maven:
 
-```
+~~~
 export MAVEN_OPTS="$MAVEN_OPTS -Xms2g -Xmx2g -XX:MaxPermSize=256m"
-```
+~~~
 
-This will tell Maven to run Java with 2GB heap space and up to 256MB PermGen space, which should be enough to compile FACTORIE.
+This will tell Maven to run Java with 2GB heap space and up to 256MB PermGen space (if using Java version < 1.8), which should be enough to compile FACTORIE.
 
 ## Running Test Suite
 
 After compiling, you may want to run the unit tests. The following command will achieve this:
 
-```
+~~~
 mvn test
-```
+~~~
 
 If you are running the latest version from git, rather than a milestone release, then some tests may fail. If tests fail for a milestone release, please contact the mailing list: discuss@factorie.cs.umass.edu.
 
@@ -84,29 +85,29 @@ Next we recommend reading the [tutorials](tutorials.html), and looking at the ex
 
 The following command will generate a jar in the 'target' folder containing FACTORIE and all of its dependencies, including the Scala runtime:
 
-```
+~~~
 mvn -Dmaven.test.skip=true package -Pjar-with-dependencies
-```
+~~~
 
 To additionally include all of the pre-trained NLP models, execute the following:
 
-```
+~~~
 mvn -Dmaven.test.skip=true package -Pnlp-jar-with-dependencies
-```
+~~~
 
 To use FACTORIE's pre-trained NLP models in a Maven project, you can add the all-models dependency:
 
-```xml
+~~~xml
 <dependency>
   <groupId>cc.factorie.app.nlp</groupId>
   <artifactId>all-models</artifactId>
-  <version>1.0.0</version>
+  <version>1.2</version>
 </dependency>
-```
+~~~
 
 You will also need to add our FACTORIE repository in the repositories section of the project's pom.xml:
 
-```xml
+~~~xml
 <repositories>
   ...
   <repository>
@@ -121,7 +122,7 @@ You will also need to add our FACTORIE repository in the repositories section of
     </releases>
   </repository>
 </repositories>
-```
+~~~
 
 ## Eclipse and IntelliJ IDEA Setup
 

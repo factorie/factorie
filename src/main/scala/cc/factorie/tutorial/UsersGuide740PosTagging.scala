@@ -1,4 +1,4 @@
-/* Copyright (C) 2008-2014 University of Massachusetts Amherst.
+/* Copyright (C) 2008-2016 University of Massachusetts Amherst.
    This file is part of "FACTORIE" (Factor graphs, Imperative, Extensible)
    http://factorie.cs.umass.edu, http://github.com/factorie
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -63,13 +63,13 @@ Then include the dependencies for FACTORIE and our pre-trained POS models, if yo
   <dependency>
     <groupId>cc.factorie</groupId>
     <artifactId>factorie</artifactId>
-    <version>1.0.0-RC1</version>
+    <version>1.2</version>
   </dependency>
 
   <dependency>
     <groupId>cc.factorie.app.nlp</groupId>
     <artifactId>all-models</artifactId>
-    <version>1.0-RC8</version>
+    <version>1.2</version>
   </dependency>
 <dependencies>
 ```

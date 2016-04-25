@@ -1,4 +1,4 @@
-/* Copyright (C) 2008-2014 University of Massachusetts Amherst.
+/* Copyright (C) 2008-2016 University of Massachusetts Amherst.
    This file is part of "FACTORIE" (Factor graphs, Imperative, Extensible)
    http://factorie.cs.umass.edu, http://github.com/factorie
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -10,6 +10,7 @@
    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
    See the License for the specific language governing permissions and
    limitations under the License. */
+
 package cc.factorie.optimize
 
 import cc.factorie._

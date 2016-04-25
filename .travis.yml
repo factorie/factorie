@@ -10,10 +10,13 @@
 #jdk:
 #    - oraclejdk8
 sudo: false
-before_script:
-    - echo "MAVEN_OPTS='-Xmx2469m'" > ~/.mavenrc
+before_install:
+    - export MAVEN_SKIP_RC=true && export MAVEN_OPTS="-Xmx2469m -XX:MaxPermSize=512m"
+#    - echo "MAVEN_OPTS='-Xmx2469m'" > ~/.mavenrc
+#language: java
 script:
-    - mvn clean install
+    - mvn install -DskipTests=true
+    - mvn -Dmaven.javadoc.skip=true test
     - ./sbt compile
 jdk:
     - oraclejdk8   

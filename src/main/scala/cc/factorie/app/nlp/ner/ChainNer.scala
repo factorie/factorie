@@ -1,3 +1,15 @@
+/* Copyright (C) 2008-2016 University of Massachusetts Amherst.
+   This file is part of "FACTORIE" (Factor graphs, Imperative, Extensible)
+   http://factorie.cs.umass.edu, http://github.com/factorie
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+    http://www.apache.org/licenses/LICENSE-2.0
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License. */
 package cc.factorie.app.nlp.ner
 
 import java.io._
@@ -312,6 +324,7 @@ class ChainNerOpts extends cc.factorie.util.CmdOptions with SharedNLPCmdOptions 
   val modelFile = new CmdOption("model-file", "", "STRING", "Filename of the serialized model that you want to load.")
   val useTagger = new CmdOption("use-tagger", "", "STRING", "Which tagger? (remove me later)")
   val lexicons = new LexiconsProviderCmdOption("lexicons")
+  val lang =      new CmdOption("language", "en", "STRING", "Lexicons language.")
 }
 
 
@@ -320,7 +333,7 @@ object ConllChainNerTrainer extends cc.factorie.util.HyperparameterMain {
     val opts = new ChainNerOpts
     implicit val random = new scala.util.Random(0)
     opts.parse(args)
-    val ner = new ConllChainNer()(ModelProvider.empty, new StaticLexiconFeatures(new StaticLexicons()(opts.lexicons.value)))
+    val ner = new ConllChainNer()(ModelProvider.empty, new StaticLexiconFeatures(new StaticLexicons()(opts.lexicons.value), opts.lang.value))
     if (opts.brownClusFile.wasInvoked) {
       println(s"Reading brown cluster file: ${opts.brownClusFile.value}")
       for (line <- scala.io.Source.fromFile(opts.brownClusFile.value).getLines()) {

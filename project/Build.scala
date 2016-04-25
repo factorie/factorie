@@ -7,7 +7,7 @@ import AssemblyKeys._
 object Versions{
   val scalaMajorVersion = "2.11"
   val scalaMinorVersion = "8"
-  val factorieVersion = "1.2-SNAPSHOT"
+  val factorieVersion = "1.3-SNAPSHOT"
 }
 
 object FactorieBuild extends Build {
