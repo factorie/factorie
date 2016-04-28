@@ -3,7 +3,7 @@
 # Get the full pathname of the 'factorie' source directory
 factoriedir=`dirname $0`
 factoriedir=`dirname $factoriedir`
-FACTORIE_VERSION=$(grep -E $'<version>([0-9]+\.[0-9][A-Z\-]+)</version>' "$factoriedir/pom.xml" | sed -e 's_.*<version>\(.*\)</version>.*_\1_g' | head -1)
+FACTORIE_VERSION=$(grep -E $'<version>([0-9]+\.[0-9][A-Z\-]*)</version>' "$factoriedir/pom.xml" | sed -e 's_.*<version>\(.*\)</version>.*_\1_g' | head -1)
 cp=$factoriedir/src/main/resources:$factoriedir/target/classes
 
 ## The following hack will enable jline command-line editing in bin/fac --inter.
