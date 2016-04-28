@@ -3,7 +3,7 @@
 # Get the full pathname of the 'factorie' source directory
 factoriedir=`dirname $0`
 factoriedir=`dirname $factoriedir`
-
+FACTORIE_VERSION=$(grep -E $'<version>([0-9]+\.[0-9][A-Z\-]*)</version>' "$factoriedir/pom.xml" | sed -e 's_.*<version>\(.*\)</version>.*_\1_g' | head -1)
 cp=$factoriedir/src/main/resources:$factoriedir/target/classes
 
 ## The following hack will enable jline command-line editing in bin/fac --inter.
@@ -18,8 +18,8 @@ if [ -e $factorienlpdir ] ; then
   cp=$cp:$factorienlpdir/src/main/resources:$factorienlpdir/target/classes
 fi 
 
-factoriejar=$factoriedir/target/factorie_2.11-1.2-jar-with-dependencies.jar
-factorienlpjar=$factoriedir/target/factorie_2.11-1.2-nlp-jar-with-dependencies.jar
+factoriejar=$factoriedir/target/factorie_2.11-$FACTORIE_VERSION-jar-with-dependencies.jar
+factorienlpjar=$factoriedir/target/factorie_2.11-$FACTORIE_VERSION-nlp-jar-with-dependencies.jar
 
 if [ -e $factorienlpjar ] ; then
   cp=$cp:$factorienlpjar
