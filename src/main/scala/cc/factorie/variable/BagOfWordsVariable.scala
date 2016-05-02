@@ -1,14 +1,33 @@
+/* Copyright (C) 2008-2016 University of Massachusetts Amherst.
+   This file is part of "FACTORIE" (Factor graphs, Imperative, Extensible)
+   http://factorie.cs.umass.edu, http://github.com/factorie
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+    http://www.apache.org/licenses/LICENSE-2.0
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License. */
 package cc.factorie.variable
 
-import scala.collection.mutable.{LinkedHashMap, HashMap}
+import scala.collection.generic.CanBuildFrom
+import scala.collection.mutable
+import scala.collection.mutable.LinkedHashMap
 
 /**
  * @author John Sullivan
  */
-class BagOfWords(initialWords: Iterable[String] = null, initialBag: Map[String, Double] = null) {
+@SerialVersionUID(1)
+class BagOfWords(initialWords: Iterable[String] = null, initialBag: Map[String, Double] = null) extends Serializable{
 
   def longest = _bag.keysIterator.toSeq.sortBy(_.length).lastOption.getOrElse("")
   def topWord = _bag.toSeq.sortBy(_._2).lastOption.map(_._1).getOrElse("")
+
+  def topBag(w:Int) = _bag.toSeq.sortBy(-_._2).take(w)
+  def topWords(w:Int) = topBag(w).map(_._1)
+
 
   var variable: BagOfWordsVariable = null
   protected var _l2Norm = 0.0
@@ -81,6 +100,9 @@ class BagOfWords(initialWords: Iterable[String] = null, initialBag: Map[String, 
   }
   def removeBag(that: BagOfWords) = for ((k, v) <- that.iterator) this -=(k, v)
   def contains(other:BagOfWords) = this._bag.keySet.intersect(other._bag.keySet).size > 0
+
+  def l2Normalize = _bag.mapValues(_ / l2Norm).toMap
+  def l1Normalize = _bag.mapValues(_ / l2Norm).toMap
 }
 
 class BagOfWordsVariable(initialWords: Iterable[String] = Nil, initialMap: Map[String, Double] = null) extends Var with Iterable[(String, Double)] {
@@ -94,6 +116,7 @@ class BagOfWordsVariable(initialWords: Iterable[String] = Nil, initialMap: Map[S
     result.variable = this
     result
   }
+  def immutableMap:scala.collection.immutable.Map[String, Double] = _members.asHashMap.toMap
   def members: BagOfWords = _members
   def iterator = _members.iterator
   override def size = _members.size
@@ -175,4 +198,43 @@ class BagOfWordsVariable(initialWords: Iterable[String] = Nil, initialMap: Map[S
     def undo() = _members.addBag(removed)
     override def toString = "BagOfWordsVariableRemoveBagDiff of " + removed + " from " + BagOfWordsVariable.this
   }
+}
+
+object BagOfWordsVariable {
+  implicit object IterStringDoubleBagBuilder extends CanBuildFrom[Iterable[(String, Double)], (String, Double), BagOfWordsVariable] {
+    def apply(from: Iterable[(String, Double)]):mutable.Builder[(String, Double), BagOfWordsVariable] = apply()
+
+    def apply() =
+      new mutable.Builder[(String, Double), BagOfWordsVariable] {
+        private val bag = new BagOfWordsVariable()
+        def +=(elem: (String, Double)) = {
+          bag.+=(elem._1, elem._2)
+          this
+        }
+
+        def result() = bag
+
+        def clear() {bag.clear()}
+      }
+  }
+  implicit object MapBagBuilder extends CanBuildFrom[Map[String, Double], (String, Double), BagOfWordsVariable] {
+    def apply(from: Map[String, Double]) = IterStringDoubleBagBuilder(from)
+
+    def apply() = IterStringDoubleBagBuilder()
+  }
+  
+  implicit object IterStringBagBuilder extends CanBuildFrom[Iterable[String], String, BagOfWordsVariable] {
+    def apply(from: Iterable[String]) = apply()
+
+    def apply() = new mutable.Builder[String, BagOfWordsVariable] {
+      private val bag = new BagOfWordsVariable
+      def +=(elem: String): this.type = {bag += elem; this}
+
+      def result() = bag
+
+      def clear() {bag.clear()}
+    }
+  }
+
+  def toBagOfWords[A](a:A)(implicit cbf:CanBuildFrom[A, _, BagOfWordsVariable]):BagOfWordsVariable = cbf(a).result()
 }

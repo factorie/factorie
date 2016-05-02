@@ -1,4 +1,4 @@
-/* Copyright (C) 2008-2014 University of Massachusetts Amherst.
+/* Copyright (C) 2008-2016 University of Massachusetts Amherst.
    This file is part of "FACTORIE" (Factor graphs, Imperative, Extensible)
    http://factorie.cs.umass.edu, http://github.com/factorie
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,8 +14,8 @@
 package cc.factorie.directed
 
 import cc.factorie.infer._
-import cc.factorie.variable.{Var, DiscreteVar, DiscreteVariable}
 import cc.factorie.model.Model
+import cc.factorie.variable.{DiscreteVar, DiscreteVariable, Var}
 
 /** The expectation-maximization method of inference.
     maximizing is the collection of variables that will be maximized.   

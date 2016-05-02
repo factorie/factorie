@@ -1,10 +1,22 @@
+/* Copyright (C) 2008-2016 University of Massachusetts Amherst.
+   This file is part of "FACTORIE" (Factor graphs, Imperative, Extensible)
+   http://factorie.cs.umass.edu, http://github.com/factorie
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+    http://www.apache.org/licenses/LICENSE-2.0
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License. */
 package cc.factorie.app.bib.hcoref
 
-import cc.factorie.util.{EvaluatableClustering, DefaultCmdOptions}
 import cc.factorie.app.nlp.hcoref._
-import com.mongodb.{MongoClient, DB}
-import cc.factorie.variable.{DiffList, Var}
-import scala.io.Source
+import cc.factorie.util.{DefaultCmdOptions, EvaluatableClustering}
+import cc.factorie.variable.DiffList
+import com.mongodb.MongoClient
+
 import scala.util.Random
 
 /**
@@ -39,7 +51,8 @@ object AuthorCoref {
       with CanopyPairGenerator[AuthorVars]
       with NoSplitMoveGenerator[AuthorVars]
       with DebugCoref[AuthorVars]
-      with TrainingObjective[AuthorVars] {
+      with TrainingObjective[AuthorVars]
+      with PrintlnLogger {
       def newInstance(implicit d: DiffList) = new Node[AuthorVars](new AuthorVars())
 
       val autoStopThreshold = 10000
@@ -57,9 +70,9 @@ object AuthorCoref {
       with CanopyPairGenerator[AuthorVars]
       with NoSplitMoveGenerator[AuthorVars]
       //with DebugDiffListMoveGenerator[AuthorVars]
-      with DebugCoref[AuthorVars] {
+      with DebugCoref[AuthorVars]
+      with PrintlnLogger{
       val autoStopThreshold = 10000
-      val logger = Logger.default
 
       def outerGetBagSize(n: Node[AuthorVars]) = n.variables.firstNames.size
 
@@ -91,7 +104,8 @@ object AuthorCoref {
       with CanopyPairGenerator[AuthorVars]
       with NoSplitMoveGenerator[AuthorVars]
       with DebugCoref[AuthorVars]
-      with TrainingObjective[AuthorVars] {
+      with TrainingObjective[AuthorVars]
+      with PrintlnLogger {
       def newInstance(implicit d: DiffList) = new Node[AuthorVars](new AuthorVars())
 
       val autoStopThreshold = 10000

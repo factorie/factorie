@@ -1,12 +1,31 @@
+/* Copyright (C) 2008-2016 University of Massachusetts Amherst.
+   This file is part of "FACTORIE" (Factor graphs, Imperative, Extensible)
+   http://factorie.cs.umass.edu, http://github.com/factorie
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+    http://www.apache.org/licenses/LICENSE-2.0
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License. */
 package cc.factorie.app.nlp.phrase
 
-import cc.factorie.app.nlp._
-import scala.util.parsing.combinator.{ImplicitConversions, Parsers}
-import cc.factorie.app.nlp.pos.PennPosTag
-import scala.util.parsing.input.{Reader, Position}
 import java.util.GregorianCalendar
-import scala.collection.mutable.ArrayBuffer
+
+import cc.factorie._
+import cc.factorie.app.nlp._
 import cc.factorie.app.nlp.lemma.TokenLemma
+import cc.factorie.app.nlp.pos.PennPosTag
+
+import scala.collection.mutable.ArrayBuffer
+import scala.util.parsing.combinator.{ImplicitConversions, Parsers}
+import scala.util.parsing.input.{Position, Reader}
+import scala.language.implicitConversions
+
+/** A collection of Phrases that are noun phrases.  Typically used as an attribute of a Section or a Document. */
+class DatePhraseList(phrases: Iterable[DatePhrase]) extends PhraseList(phrases)
 
 /**
  * Finds and parses all kinds of dates in a document, Basic formats were taken from http://en.wikipedia.org/wiki/Calendar_date.
@@ -14,26 +33,30 @@ import cc.factorie.app.nlp.lemma.TokenLemma
  * Implementation is based on scalas Parsers Combinators
  * @author Dirk Weissenborn
  */
-object DatePhraseFinder extends DocumentAnnotator with Parsers with ImplicitConversions {
-  type Elem = Token
-
-  def prereqAttrs = List(classOf[TokenLemma])
-
-  def postAttrs: Iterable[Class[_]] = List()
-
-  implicit val err: (Elem) => String = _.lemmaString + "was unexpected!"
-
-  implicit def toInt(tokenAndInt: (Token, Int)) = tokenAndInt._2
-
-  implicit def toToken(tokenAndInt: (Token, Int)) = tokenAndInt._1
+object DatePhraseFinder extends DatePhraseFinder(true) {
 
   val monthToNr = "Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec".toLowerCase.split("\\|").zipWithIndex.toMap.mapValues(_ + 1)
   val weekDayNr = "Mon|Tue|Wed|Thu|Fri|Sat|Sun".toLowerCase.split("\\|").zipWithIndex.toMap
 
-  val nrToMonth = Array.ofDim[String](monthToNr.size);
+  val nrToMonth = Array.ofDim[String](monthToNr.size)
   monthToNr.foreach(el => nrToMonth(el._2 - 1) = el._1)
-  val nrToWeekDay = Array.ofDim[String](weekDayNr.size);
+  val nrToWeekDay = Array.ofDim[String](weekDayNr.size)
   weekDayNr.foreach(el => nrToWeekDay(el._2) = el._1)
+}
+
+class DatePhraseFinder(usePosTag:Boolean) extends DocumentAnnotator with Parsers with ImplicitConversions {
+  type Elem = Token
+
+  def prereqAttrs = Seq(classOf[TokenLemma]) ++ when(usePosTag, classOf[PennPosTag])
+
+  def postAttrs = Seq(classOf[DatePhraseList])
+
+  implicit val err: (Elem) => String = _.lemmaString + "was unexpected!"
+
+  implicit def toInt(tokenAndInt: (Token, Int)):Int = tokenAndInt._2
+
+  implicit def toToken(tokenAndInt: (Token, Int)):Token = tokenAndInt._1
+
 
   val dayOfMonthRegex = "([1-3]0|[0-3]?1(st)?|[0-2]?(2(nd)?|3(rd)?|[4-9](th)?))"
   val monthAbbrRegex: String = "(Jan|Feb|Mar|Apr|Jun|Jul|Aug|Sep|Sept|Oct|Nov|Dec)\\.?"
@@ -49,7 +72,7 @@ object DatePhraseFinder extends DocumentAnnotator with Parsers with ImplicitConv
 
   val weekDayAbbr: Parser[Token] = acceptIf(_.string.toLowerCase.matches("(Mon|Tue|Tues|Wed|Thu|Thurs|Fri)\\.?".toLowerCase))(err)
   val weekDay: Parser[(Token, Int)] = (weekDayAbbr | acceptIf(_.string.toLowerCase.matches("Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday".toLowerCase))(err)) ^^ {
-    case weekDayToken => (weekDayToken, weekDayNr(weekDayToken.string.take(3).toLowerCase))
+    case weekDayToken => (weekDayToken, DatePhraseFinder.weekDayNr(weekDayToken.string.take(3).toLowerCase))
   }
 
   val temporalPreps: Parser[Token] = hasLemma("in|from|to|until|since")
@@ -71,8 +94,8 @@ object DatePhraseFinder extends DocumentAnnotator with Parsers with ImplicitConv
   val simpleSep = hasString("[\\-/]")
 
 
-  val yearOnly = (temporalPreps | hasLemma("year")) ~> year <~ acceptIf(!_.attr[PennPosTag].isNoun)(err) ^^ { case y => new DatePhrase(y._1, year = y)}
-  val onlyMonth: Parser[(Token, Int)] = (monthParser | monthAbbr) ^^ { case monthToken => (monthToken, monthToNr(monthToken.string.substring(0, 3).toLowerCase))}
+  val yearOnly = (temporalPreps | hasLemma("year")) ~> year <~ acceptIf(t => !when(usePosTag, t.attr[PennPosTag].isNoun).getOrElse(t.isDigits))(err) ^^ { case y => new DatePhrase(y._1, year = y)}
+  val onlyMonth: Parser[(Token, Int)] = (monthParser | monthAbbr) ^^ { case monthToken => (monthToken, DatePhraseFinder.monthToNr(monthToken.string.substring(0, 3).toLowerCase))}
   val monthOnly: Parser[DatePhrase] = onlyMonth ^^ { case m => new DatePhrase(m._1, month = m._2)}
 
 
@@ -115,7 +138,7 @@ object DatePhraseFinder extends DocumentAnnotator with Parsers with ImplicitConv
     val split = if (mdToken.string.contains("-")) {
       val Array(a, b) = mdToken.string.split("-"); (a, b)
     } else mdToken.string.splitAt(mdToken.string.indexWhere(_.isDigit))
-    val m = monthToNr(split._1.substring(0, 3).toLowerCase)
+    val m = DatePhraseFinder.monthToNr(split._1.substring(0, 3).toLowerCase)
     val d = split._2.toInt
     new DatePhrase(y._1, length = l(y._1, wOpt.fold(mdToken)(_._2._1)), month = m, day = d, year = y, weekDay = w)
   }
@@ -123,7 +146,7 @@ object DatePhraseFinder extends DocumentAnnotator with Parsers with ImplicitConv
   //2003Nov9, 2003Nov09
   val yearMonthDayString = year ~ hasString(monthAbbrRegex + dayOfMonthRegex) ^^ { case y ~ mdToken =>
     val dStart = mdToken.string.indexWhere(_.isDigit)
-    val m = monthToNr(mdToken.string.substring(0, dStart).take(3).toLowerCase)
+    val m = DatePhraseFinder.monthToNr(mdToken.string.substring(0, dStart).take(3).toLowerCase)
     new DatePhrase(y._1, length = 2, year = y._2, month = m, day = mdToken.string.substring(dStart).toInt)
   }
 
@@ -149,7 +172,7 @@ object DatePhraseFinder extends DocumentAnnotator with Parsers with ImplicitConv
     val split = if (myToken.string.contains("-")) {
       val Array(a, b) = myToken.string.split("-"); (a, b)
     } else myToken.string.splitAt(myToken.string.indexWhere(_.isDigit))
-    val m = monthToNr(split._1.substring(0, 3).toLowerCase)
+    val m = DatePhraseFinder.monthToNr(split._1.substring(0, 3).toLowerCase)
     val y = split._2.toInt
     new DatePhrase(d._1, length = l(d._1, wOpt.fold(myToken)(_._2._1)), month = m, day = d._2, year = y, weekDay = w)
   }
@@ -158,7 +181,7 @@ object DatePhraseFinder extends DocumentAnnotator with Parsers with ImplicitConv
   val dayMonthYearString = monthDayNumber ~ hasString(dayOfMonthRegex + monthAbbrRegex + "[0-9]{4}") ^^ { case d ~ myToken =>
     val yStart = myToken.string.indexWhere(_.isDigit)
     val y = normalizeYear(myToken.string.substring(yStart).toInt)
-    val m = monthToNr(myToken.string.substring(0, yStart).take(3).toLowerCase)
+    val m = DatePhraseFinder.monthToNr(myToken.string.substring(0, yStart).take(3).toLowerCase)
     new DatePhrase(d, length = 2, year = y, month = m, day = d._2)
   }
 
@@ -181,34 +204,6 @@ object DatePhraseFinder extends DocumentAnnotator with Parsers with ImplicitConv
     override def rest: Reader[Token] = if (atEnd) reader(ts) else reader(ts.tail)
   }
 
-  def process(document: Document) = {
-    val mentions = parseAll(document.tokens)
-    document.attr += new DatePhraseList(mentions)
-    document
-  }
-
-
-  override def tokenAnnotationString(token: Token): String = token.document.attr[DatePhraseList].find(phrase => phrase.contains(token)).fold("")("Date: " + _.asInstanceOf[DatePhrase].toString())
-
-
-  /** A collection of Phrases that are noun phrases.  Typically used as an attribute of a Section or a Document. */
-  class DatePhraseList(phrases: Iterable[DatePhrase]) extends PhraseList(phrases)
-
-  class DatePhrase(startToken: Token, length: Int = 1, val day: Int = -1, val month: Int = -1, val year: Int = Int.MinValue, val weekDay: Int = -1)
-    extends Phrase(startToken.section, startToken.positionInSection, length, 0) {
-
-    def toJavaDate: java.util.Date = new GregorianCalendar(year, month, day).getTime
-
-    override def toString(): String = {
-      var s = ""
-      if (weekDay >= 0) s += nrToWeekDay(weekDay) + ", "
-      if (day >= 0) s += day + " "
-      if (month >= 0) s += nrToMonth(month - 1) + " "
-      if (year >= 0) s += year
-      s.trim
-    }
-  }
-
   def parseAll(tokens: Iterable[Token]) = {
     var r = reader(tokens)
     val mentions = ArrayBuffer[DatePhrase]()
@@ -225,4 +220,31 @@ object DatePhraseFinder extends DocumentAnnotator with Parsers with ImplicitConv
     mentions
   }
 
+  def process(document: Document) = {
+    val mentions = parseAll(document.tokens)
+    document.attr += new DatePhraseList(mentions)
+    document
+  }
+
+
+  override def tokenAnnotationString(token: Token): String = token.document.attr[DatePhraseList].find(phrase => phrase.contains(token)).fold("")("Date: " + _.asInstanceOf[DatePhrase].toString())
 }
+
+class DatePhrase(startToken: Token, length: Int = 1, val day: Int = -1, val month: Int = -1, val year: Int = Int.MinValue, val weekDay: Int = -1)
+  extends Phrase(startToken.section, startToken.positionInSection, length, 0) {
+
+  def toJavaDate: java.util.Date = new GregorianCalendar(year, month, day).getTime
+
+  override def toString: String = {
+    var s = ""
+    if (weekDay >= 0) s += DatePhraseFinder.nrToWeekDay(weekDay) + ", "
+    if (day >= 0) s += day + " "
+    if (month >= 0) s += DatePhraseFinder.nrToMonth(month - 1) + " "
+    if (year >= 0) s += year
+    s.trim
+  }
+
+  def toLocatedDate = LocatedDate(toJavaDate, this.document.name, characterOffsets._1, characterOffsets._2)
+}
+
+case class LocatedDate(date:java.util.Date, docId:String, startOffset:Int, endOffset:Int)

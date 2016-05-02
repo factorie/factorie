@@ -1,9 +1,23 @@
+/* Copyright (C) 2008-2016 University of Massachusetts Amherst.
+   This file is part of "FACTORIE" (Factor graphs, Imperative, Extensible)
+   http://factorie.cs.umass.edu, http://github.com/factorie
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+    http://www.apache.org/licenses/LICENSE-2.0
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License. */
 package cc.factorie.app.bib.hcoref
 
 import java.io.File
+
+import cc.factorie.util.{DefaultCmdOptions, VectorUtils}
+
+import scala.collection.JavaConverters._
 import scala.io.Source
-import cc.factorie.util.{VectorUtils, DefaultCmdOptions}
-import scala.collection.mutable
 
 /**
  * @author John Sullivan
@@ -12,7 +26,7 @@ trait Keystore {
   def dimensionality:Int
   def retrieve(key:String):Option[Array[Double]]
 
-  val missingKeys = mutable.HashMap[String, Int]().withDefaultValue(0)
+  val missingKeys = new java.util.concurrent.ConcurrentHashMap[String, Int]().asScala.withDefaultValue(0)
 
   import VectorUtils._
   def generateVector(keys:Iterable[String]):Array[Double] = keys.flatMap{ key =>

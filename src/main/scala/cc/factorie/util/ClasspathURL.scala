@@ -1,4 +1,4 @@
-/* Copyright (C) 2008-2014 University of Massachusetts Amherst.
+/* Copyright (C) 2008-2016 University of Massachusetts Amherst.
    This file is part of "FACTORIE" (Factor graphs, Imperative, Extensible)
    http://factorie.cs.umass.edu, http://github.com/factorie
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,10 +12,11 @@
    limitations under the License. */
 package cc.factorie.util
 import scala.language.existentials
-import scala.Error
 import scala.reflect.ClassTag
 
+@deprecated("See cc.factorie.util.ModelProvider", "10/05/15")
 object ClasspathURL {
+
   def fromDirectory[C](suffix:String)(implicit m: ClassTag[C]): java.net.URL = {
     Option(System.getProperty(m.runtimeClass.getName)) match {
       case Some(url) =>

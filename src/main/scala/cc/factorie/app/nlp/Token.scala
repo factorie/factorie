@@ -1,4 +1,4 @@
-/* Copyright (C) 2008-2014 University of Massachusetts Amherst.
+/* Copyright (C) 2008-2016 University of Massachusetts Amherst.
    This file is part of "FACTORIE" (Factor graphs, Imperative, Extensible)
    http://factorie.cs.umass.edu, http://github.com/factorie
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,10 +12,9 @@
    limitations under the License. */
 
 package cc.factorie.app.nlp
-import cc.factorie._
-import scala.collection.mutable.ArrayBuffer
-import cc.factorie.util.{Cubbie, Attr}
-import cc.factorie.variable.{StringVariable, ChainLink, CategoricalValue}
+import cc.factorie.util.{Attr, Cubbie}
+import cc.factorie.variable.{CategoricalValue, ChainLink, StringVariable}
+
 import scala.collection.mutable
 import cc.factorie.app.nlp.ner.BioConllNerTag
 
@@ -30,7 +29,8 @@ import cc.factorie.app.nlp.ner.BioConllNerTag
     Token constructors that include a tokenString automatically append the tokenString to the Document's string.
     @param stringStart The offset into the Document string of the first character of the Token.
     @param stringEnd The offset into the Document string of the character immediately after the last character of the Token. */
-class Token(val stringStart:Int, val stringEnd:Int) extends cc.factorie.app.chain.Observation[Token] with ChainLink[Token,Section] with DocumentSubstring with Attr {
+class Token(val stringStart:Int, val stringEnd:Int)
+  extends cc.factorie.app.chain.Observation[Token] with ChainLink[Token,Section] with DocumentSubstring with Attr with Serializable {
   assert(stringStart <= stringEnd)
 //  override def _setChainPosition(c:Section, p:Int): Unit = {
 //    super._setChainPosition(c, p)
@@ -157,6 +157,7 @@ class Token(val stringStart:Int, val stringEnd:Int) extends cc.factorie.app.chai
   /** Return true if the first character of the word is upper case. */
   def isCapitalized: Boolean = java.lang.Character.isUpperCase(string(0))
   def isPunctuation: Boolean = string.matches("\\p{Punct}+")
+  def isContraction: Boolean = string.contains("'") // todo this could probably be better
   /** Return true if any character of the word is lower case. */
   def containsLowerCase: Boolean = string.exists(c => java.lang.Character.isLowerCase(c))
   /** Return true if any character of the word is upper case. */

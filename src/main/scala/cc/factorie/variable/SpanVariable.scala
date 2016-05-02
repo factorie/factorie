@@ -1,4 +1,4 @@
-/* Copyright (C) 2008-2014 University of Massachusetts Amherst.
+/* Copyright (C) 2008-2016 University of Massachusetts Amherst.
    This file is part of "FACTORIE" (Factor graphs, Imperative, Extensible)
    http://factorie.cs.umass.edu, http://github.com/factorie
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,12 +13,10 @@
 
 package cc.factorie.variable
 
-import scala.collection.mutable.{ArrayBuffer, HashMap, HashSet, ListBuffer, FlatHashTable,DoubleLinkedList}
-import scala.reflect.ClassTag
-import scala.util.Random
-import scala.util.Sorting
-import cc.factorie.variable._
 import cc.factorie.util.ImmutableArrayIndexedSeq
+
+import scala.collection.mutable.ArrayBuffer
+import scala.reflect.ClassTag
 
 /** An immutable value indicating a subsequence of a Chain 
     (and also whether this span is to be considered present or "active" now).

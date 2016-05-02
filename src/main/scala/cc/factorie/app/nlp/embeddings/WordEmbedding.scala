@@ -1,4 +1,4 @@
-/* Copyright (C) 2008-2014 University of Massachusetts Amherst.
+/* Copyright (C) 2008-2016 University of Massachusetts Amherst.
    This file is part of "FACTORIE" (Factor graphs, Imperative, Extensible)
    http://factorie.cs.umass.edu, http://github.com/factorie
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,10 +12,9 @@
    limitations under the License. */
 package cc.factorie.app.nlp.embeddings
 
-import cc.factorie.util.ClasspathURL
-import cc.factorie.la
 import java.util.zip.GZIPInputStream
-import cc.factorie.app.nlp.embeddings
+
+import cc.factorie.la
 
 class WordEmbedding(val inputStreamFactory: () => java.io.InputStream, val dimensionSize: Int,numTake: Int = -1) extends scala.collection.mutable.LinkedHashMap[String,la.DenseTensor1] {
   def sourceFactory(): io.Source = io.Source.fromInputStream(new GZIPInputStream(inputStreamFactory()),"iso-8859-1")

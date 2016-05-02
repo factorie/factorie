@@ -1,4 +1,4 @@
-/* Copyright (C) 2008-2014 University of Massachusetts Amherst.
+/* Copyright (C) 2008-2016 University of Massachusetts Amherst.
    This file is part of "FACTORIE" (Factor graphs, Imperative, Extensible)
    http://factorie.cs.umass.edu, http://github.com/factorie
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,8 +14,8 @@
 
 
 package cc.factorie.la
-import cc.factorie._
 
+@deprecated("Not used anywhere", "Before 10/06/15")
 class ArrayFromTensors(theTensors:Seq[Tensor]) {
   //def this(theTemplates:Iterable[DotTemplate]) = this(theTemplates.map(_.weightsSet))
   val tensors = theTensors.toIndexedSeq // Save a copy, in case theVectors would be changed

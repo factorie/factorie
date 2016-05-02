@@ -1,4 +1,4 @@
-/* Copyright (C) 2008-2014 University of Massachusetts Amherst.
+/* Copyright (C) 2008-2016 University of Massachusetts Amherst.
    This file is part of "FACTORIE" (Factor graphs, Imperative, Extensible)
    http://factorie.cs.umass.edu, http://github.com/factorie
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,7 +12,7 @@
    limitations under the License. */
 
 package cc.factorie.la
-import cc.factorie.util._
+import cc.factorie.util.{IntSeq, RangeIntSeq, DoubleSeq, SingletonIntSeq, SparseDoubleSeq, IntArrayBuffer, DoubleSeqIterator, Outer2IntSeq, TruncatedArrayIntSeq, ArrayIntSeq}
 
 trait Tensor2 extends Tensor {
   def dim1: Int
@@ -39,9 +39,9 @@ trait Tensor2 extends Tensor {
     }
     ret
   }
-  def apply(i:Int, j:Int): Double = apply(i*dim2 + j)
+  def apply(i:Int, j:Int): Double = apply(singleIndex(i,j))
   def apply(i:Int): Double //= apply(i % dim1, i / dim2)
-  def update(i:Int, j:Int, v:Double): Unit = update(i*dim2 + j, v)
+  def update(i:Int, j:Int, v:Double): Unit = update(singleIndex(i,j), v)
   def +=(i:Int, j:Int, v:Double): Unit = +=(singleIndex(i, j), v)
 
   def *(t: Tensor1): Tensor1 = {
@@ -144,7 +144,15 @@ trait Tensor2 extends Tensor {
     (0 until dim1).map(n => apply(n, n)).sum
   }
   @inline final def length = dim1 * dim2
-  @inline final def singleIndex(i:Int, j:Int): Int = i*dim2 + j
+  @inline final def singleIndex(i:Int, j:Int): Int = {
+    if ((i < 0) || (j < 0)) {
+      throw new IndexOutOfBoundsException("Negative indices are not allowed, ("+i+","+j+") supplied.")
+    } else if ((i >= dim1) || (j >= dim2)) {
+      throw new IndexOutOfBoundsException("Indices ("+i+","+j+") are out of bounds for Tensor2("+dim1+","+dim2+")")
+    } else {
+      i*dim2 + j
+    }
+  }
   @inline final def multiIndex(i:Int): (Int, Int) = (i/dim2, i%dim2)
   @inline final def index1(i:Int): Int = i/dim2
   @inline final def index2(i:Int): Int = i%dim2

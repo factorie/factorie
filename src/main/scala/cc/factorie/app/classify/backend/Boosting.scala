@@ -1,4 +1,4 @@
-/* Copyright (C) 2008-2014 University of Massachusetts Amherst.
+/* Copyright (C) 2008-2016 University of Massachusetts Amherst.
    This file is part of "FACTORIE" (Factor graphs, Imperative, Extensible)
    http://factorie.cs.umass.edu, http://github.com/factorie
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,12 +12,12 @@
    limitations under the License. */
 package cc.factorie.app.classify.backend
 
+import cc.factorie.la.{DenseTensor1, Tensor1}
 import cc.factorie.maths.ArrayOps
-import cc.factorie.util.StoreFetchCubbie
-import cc.factorie.variable.{TensorVar, LabeledMutableDiscreteVar}
 import cc.factorie.model.Template2
-import cc.factorie.la.Tensor1
-import cc.factorie.la.DenseTensor1
+import cc.factorie.util.StoreFetchCubbie
+import cc.factorie.variable.{LabeledMutableDiscreteVar, TensorVar}
+
 import scala.reflect.ClassTag
 
 class BoostedBinaryClassifier(val weakClassifiers: Seq[(BinaryClassifier[Tensor1], Double)]) extends BinaryClassifier[Tensor1] {

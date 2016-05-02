@@ -1,4 +1,4 @@
-/* Copyright (C) 2008-2014 University of Massachusetts Amherst.
+/* Copyright (C) 2008-2016 University of Massachusetts Amherst.
    This file is part of "FACTORIE" (Factor graphs, Imperative, Extensible)
    http://factorie.cs.umass.edu, http://github.com/factorie
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,11 +14,10 @@
 
 
 package cc.factorie.optimize
-import cc.factorie._
-import cc.factorie.la._
-import scala.collection.mutable.ArrayBuffer
-import cc.factorie.util.FastLogging
 import cc.factorie.model.{WeightsMap, WeightsSet}
+import cc.factorie.util.FastLogging
+
+import scala.collection.mutable.ArrayBuffer
 
 // TODO What kind of regularization would be used with LBFGS other than L2?
 // If nothing, then incorporate it directly into LBFGS. -akm

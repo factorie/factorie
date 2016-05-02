@@ -1,4 +1,4 @@
-/* Copyright (C) 2008-2014 University of Massachusetts Amherst.
+/* Copyright (C) 2008-2016 University of Massachusetts Amherst.
    This file is part of "FACTORIE" (Factor graphs, Imperative, Extensible)
    http://factorie.cs.umass.edu, http://github.com/factorie
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,10 +12,11 @@
    limitations under the License. */
 package cc.factorie.app.nlp.wordnet
 
-import scala.collection.immutable.HashMap
-import scala.collection.mutable.ArrayBuffer
-import scala.collection.mutable
 import cc.factorie.util.ClasspathURL
+
+import scala.collection.immutable.HashMap
+import scala.collection.mutable
+import scala.collection.mutable.ArrayBuffer
 
 class WordNet(val inputStreamFactory: String=>java.io.InputStream) {
   def this(wordNetDir:java.io.File) = this((string:String) => new java.io.FileInputStream(new java.io.File(wordNetDir, string)))

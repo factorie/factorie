@@ -1,14 +1,21 @@
-/*
- * Copyright (c) 2013  University of Massachusetts Amherst
- * Licensed under the Apache License, Version 2.0
- * http://www.apache.org/licenses/LICENSE-2.0
- */
+/* Copyright (C) 2008-2016 University of Massachusetts Amherst.
+   This file is part of "FACTORIE" (Factor graphs, Imperative, Extensible)
+   http://factorie.cs.umass.edu, http://github.com/factorie
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+    http://www.apache.org/licenses/LICENSE-2.0
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License. */
 
 package cc.factorie.util.namejuggler
 
-import StringUtils._
-import scala.MatchError
-import annotation.tailrec
+import cc.factorie.util.namejuggler.StringUtils._
+
+import scala.annotation.tailrec
 
 
 /**
@@ -21,7 +28,7 @@ import annotation.tailrec
  */
 object PersonNameParser {
 
-  import PersonNameFormat._
+  import cc.factorie.util.namejuggler.PersonNameFormat._
 
   private val splitFirst = """^(.*?)[ ]+(.*)$""".r
 
@@ -65,7 +72,11 @@ object PersonNameParser {
     // Brock, Stuart, Ph.D., III, M.D.   we even accept this!?
 
     val tokensByCommas = s.split(",").map(_.trim)
-    if (tokensByCommas.length == 1) {
+    
+    // edge case where s == ",", returns None as the name string
+    if (tokensByCommas.length == 0)
+      (None, Set.empty, None)
+    else if (tokensByCommas.length == 1) {
       stripSuffixesNoCommas(tokensByCommas(0), containsLowerCase, false, findHasFirstName(tokensByCommas(0)))
     }
     else if (tokensByCommas.length == 2) {
@@ -276,6 +287,15 @@ object PersonNameParser {
      */
   }
 
+  def parseFullNameSafe(s: String): Option[PersonName] = {
+    try {
+      Some(parseFullName(s))
+    } catch {
+      case e: IllegalArgumentException =>
+        None
+    }
+  }
+  
   class PersonNameParsingException(s: String) extends Exception(s)
 
 

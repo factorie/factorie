@@ -1,4 +1,4 @@
-/* Copyright (C) 2008-2014 University of Massachusetts Amherst.
+/* Copyright (C) 2008-2016 University of Massachusetts Amherst.
    This file is part of "FACTORIE" (Factor graphs, Imperative, Extensible)
    http://factorie.cs.umass.edu, http://github.com/factorie
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,14 +12,15 @@
    limitations under the License. */
 package cc.factorie.app.nlp.pos
 
-import cc.factorie.app.nlp._
+import java.io._
+
 import cc.factorie.app.chain.ChainModel
 import cc.factorie.app.chain.Observations._
-import java.io._
-import java.util.{HashMap, HashSet}
-import cc.factorie.util.{HyperparameterMain, ClasspathURL, BinarySerializer}
+import cc.factorie.app.nlp._
 import cc.factorie.optimize.Trainer
-import cc.factorie.variable.{HammingObjective, BinaryFeatureVectorVariable, CategoricalVectorDomain, CategoricalVariable, LabeledVar, LabeledMutableDiscreteVar}
+import cc.factorie.util.{BinarySerializer, ClasspathURL, HyperparameterMain}
+import cc.factorie.variable.{BinaryFeatureVectorVariable, CategoricalVectorDomain, HammingObjective, LabeledMutableDiscreteVar, LabeledVar}
+
 import scala.reflect.ClassTag
 
 /** A linear-chain CRF part-of-speech tagger, doing inference by Viterbi.
@@ -108,7 +109,7 @@ abstract class ChainPosTagger[A<:PosTag](val tagConstructor:(Token)=>A)(implicit
   def initPOSFeatures(sentence: Sentence): Unit
 }
 
-class WSJChainPosTagger extends ChainPosTagger((t:Token) => new PennPosTag(t, 0)) {
+class WSJChainPosTagger extends ChainPosTagger((t:Token) => new PennPosTag(t, 0)) with Serializable {
   def this(url: java.net.URL) = {
     this()
     deserialize(url.openConnection().getInputStream)
@@ -144,7 +145,7 @@ class WSJChainPosTagger extends ChainPosTagger((t:Token) => new PennPosTag(t, 0)
 }
 object WSJChainPosTagger extends WSJChainPosTagger(ClasspathURL[WSJChainPosTagger](".factorie"))
 
-class OntonotesChainPosTagger extends ChainPosTagger((t:Token) => new PennPosTag(t, 0)) {
+class OntonotesChainPosTagger extends ChainPosTagger((t:Token) => new PennPosTag(t, 0)) with Serializable {
   def this(url: java.net.URL) = {
     this()
     deserialize(url.openConnection().getInputStream)
@@ -178,7 +179,7 @@ class OntonotesChainPosTagger extends ChainPosTagger((t:Token) => new PennPosTag
     addNeighboringFeatureConjunctions(sentence.tokens, (t: Token) => t.attr[PosFeatures], "W=[^@]*$", List(-2), List(-1), List(1), List(-2,-1), List(-1,0))
   }
 }
-object OntonotesChainPosTagger extends OntonotesChainPosTagger(ClasspathURL[OntonotesChainPosTagger](".factorie"))
+object OntonotesChainPosTagger extends OntonotesChainPosTagger(ClasspathURL[OntonotesChainPosTagger](".factorie")) with Serializable
 
 
 class ChainPosTrainer[A<:PosTag, B<:ChainPosTagger[A]](taggerConstructor: () => B, loadingMethod:(String) => Seq[Document])(implicit ct:ClassTag[A]) extends HyperparameterMain {
@@ -260,8 +261,8 @@ object ChainPosOptimizer {
     println("Best l1: " + opts.l1.value + " best l2: " + opts.l2.value)
     opts.saveModel.setValue(true)
     println("Running best configuration...")
-    import scala.concurrent.duration._
     import scala.concurrent.Await
+    import scala.concurrent.duration._
     Await.result(qs.execute(opts.values.flatMap(_.unParse).toArray), 5.hours)
     println("Done")
   }

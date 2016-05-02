@@ -1,4 +1,4 @@
-/* Copyright (C) 2008-2014 University of Massachusetts Amherst.
+/* Copyright (C) 2008-2016 University of Massachusetts Amherst.
    This file is part of "FACTORIE" (Factor graphs, Imperative, Extensible)
    http://factorie.cs.umass.edu, http://github.com/factorie
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -11,11 +11,12 @@
    See the License for the specific language governing permissions and
    limitations under the License. */
 package cc.factorie.app.nlp.embeddings
-import cc.factorie.la._
-import scala.util.Random
-import java.io.{FileReader, BufferedReader, FileInputStream, InputStreamReader}
-import java.nio.charset.Charset
+import java.io.{BufferedReader, FileInputStream, InputStreamReader}
 import java.util.zip.GZIPInputStream
+
+import cc.factorie.la._
+
+import scala.util.Random
 
 class FastWordReader(file: String, encoding: String = "UTF8") extends Iterator[String] {
   private var in = file.endsWith(".gz") match {
@@ -75,7 +76,7 @@ class FastLineReader(file: String, skipBytes: Long = 0, encoding: String = "UTF8
 }
 
 object TensorUtils {
-  val rng = new Random
+  val rng = new Random(5) // fix the seed
   def cosineDistance(x: Tensor1, y: Tensor1): Double = {
     val xnorm = x.twoNorm
     val ynorm = y.twoNorm

@@ -1,4 +1,4 @@
-/* Copyright (C) 2008-2014 University of Massachusetts Amherst.
+/* Copyright (C) 2008-2016 University of Massachusetts Amherst.
    This file is part of "FACTORIE" (Factor graphs, Imperative, Extensible)
    http://factorie.cs.umass.edu, http://github.com/factorie
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,10 +13,10 @@
 
 package cc.factorie.util
 
-import scala.util.Random
-import scala.util.Sorting
-import scala.reflect.ClassTag
 import scala.annotation.tailrec
+import scala.collection.mutable
+import scala.reflect.ClassTag
+import scala.util.{Random, Sorting}
 
 private class SplitIterator[A](t:Traversable[A], pred:(A => Boolean)) extends Iterator[Traversable[A]] {
   var _first:Traversable[A] = null
@@ -47,9 +47,6 @@ private class SplitIterator[A](t:Traversable[A], pred:(A => Boolean)) extends It
 final class TraversableExtras[A](val t: Traversable[A]) extends AnyVal {
 
   def split(pred:(A => Boolean)):Iterator[Traversable[A]] = new SplitIterator[A](t, pred)
-
-
-
 
 
   def pairs:List[(A, A)] = {
@@ -215,5 +212,17 @@ final class TraversableExtras[A](val t: Traversable[A]) extends AnyVal {
     sampleProportionally(t1 => if (extractor(t1) == Double.NegativeInfinity) Double.NegativeInfinity else math.exp(extractor(t1) - maxValue))(random)
   }
 
+  def sampleUniformlyWithoutReplacement(take:Int)(implicit random:Random): Seq[A] = {
+    val s2 = t.toSeq
+    if(take > s2.size) {
+      s2
+    } else {
+      val indices = new mutable.HashSet[Int]
+      while (indices.size < take || indices.size < t.size) {
+        indices += random.nextInt(t.size)
+      }
+      indices.toSeq map s2.apply
+    }
+  }
 
 }

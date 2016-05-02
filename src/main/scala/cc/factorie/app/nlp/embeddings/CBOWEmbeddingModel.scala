@@ -1,4 +1,4 @@
-/* Copyright (C) 2008-2014 University of Massachusetts Amherst.
+/* Copyright (C) 2008-2016 University of Massachusetts Amherst.
    This file is part of "FACTORIE" (Factor graphs, Imperative, Extensible)
    http://factorie.cs.umass.edu, http://github.com/factorie
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -11,15 +11,16 @@
    See the License for the specific language governing permissions and
    limitations under the License. */
 package cc.factorie.app.nlp.embeddings 
-import cc.factorie.util.DoubleAccumulator
 import cc.factorie.la.{DenseTensor1, WeightsMapAccumulator}
 import cc.factorie.optimize.Example
+import cc.factorie.util.DoubleAccumulator
+
 import scala.collection.mutable
 
 class CBOWNegSamplingEmbeddingModel(override val opts: EmbeddingOpts) extends WordEmbeddingModel(opts) {
   val negative = opts.negative.value
   val window = opts.window.value
-  val rng = new util.Random(5) // fix the speed; 
+  val rng = new util.Random(5) // fix the seed; 
   val sample = opts.sample.value.toDouble
   override def process(doc: String): Int = {
     // given a document, below line splits by space and converts each word to Int (by vocab.getId) and filters out words not in vocab

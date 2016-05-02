@@ -1,4 +1,4 @@
-/* Copyright (C) 2008-2014 University of Massachusetts Amherst.
+/* Copyright (C) 2008-2016 University of Massachusetts Amherst.
    This file is part of "FACTORIE" (Factor graphs, Imperative, Extensible)
    http://factorie.cs.umass.edu, http://github.com/factorie
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,10 +14,9 @@
 package cc.factorie.directed
 
 import cc.factorie._
-import cc.factorie.util.DoubleSeq
-import cc.factorie.variable.{MutableDoubleVar, DoubleVar, DiscreteVar, HashMapAssignment}
-import cc.factorie.model.Factor
 import cc.factorie.infer._
+import cc.factorie.model.Factor
+import cc.factorie.variable.{DiscreteVar, DoubleVar, HashMapAssignment, MutableDoubleVar}
 
 object Gaussian extends DirectedFamily3[DoubleVar,DoubleVar,DoubleVar] {
   self =>

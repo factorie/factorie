@@ -1,4 +1,4 @@
-/* Copyright (C) 2008-2014 University of Massachusetts Amherst.
+/* Copyright (C) 2008-2016 University of Massachusetts Amherst.
    This file is part of "FACTORIE" (Factor graphs, Imperative, Extensible)
    http://factorie.cs.umass.edu, http://github.com/factorie
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,13 +14,13 @@
 package cc.factorie.infer
 
 import cc.factorie.la._
-import scala.collection.mutable.ArrayBuffer
-import scala.collection.Set
-import cc.factorie.util.{DoubleSeq, RangeIntSeq, SparseDoubleSeq}
-import scala.collection.mutable
-import cc.factorie.variable._
-import cc.factorie.model._
 import cc.factorie.maths
+import cc.factorie.model._
+import cc.factorie.util.{DoubleSeq, RangeIntSeq, SparseDoubleSeq}
+import cc.factorie.variable._
+
+import scala.collection.{Set, mutable}
+import scala.collection.mutable.ArrayBuffer
 
 trait BPRing {
   def sum(a: Double, b: Double): Double

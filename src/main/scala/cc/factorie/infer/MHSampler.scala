@@ -1,4 +1,4 @@
-/* Copyright (C) 2008-2014 University of Massachusetts Amherst.
+/* Copyright (C) 2008-2016 University of Massachusetts Amherst.
    This file is part of "FACTORIE" (Factor graphs, Imperative, Extensible)
    http://factorie.cs.umass.edu, http://github.com/factorie
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,9 +13,9 @@
 
 package cc.factorie.infer
 
+import cc.factorie.model.Model
 import cc.factorie.util.Hooks0
 import cc.factorie.variable.DiffList
-import cc.factorie.model.Model
 
 /** A Metropolis-Hastings sampler.  
     The abstract method 'propose' should be defined to make a random proposal, putting changes in its implicit DiffList, 

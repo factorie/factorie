@@ -1,4 +1,4 @@
-/* Copyright (C) 2008-2014 University of Massachusetts Amherst.
+/* Copyright (C) 2008-2016 University of Massachusetts Amherst.
    This file is part of "FACTORIE" (Factor graphs, Imperative, Extensible)
    http://factorie.cs.umass.edu, http://github.com/factorie
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,12 +12,13 @@
    limitations under the License. */
 
 package cc
-import scala.util.Random
+import java.io.{PrintStream, ByteArrayOutputStream, BufferedReader}
+
 import cc.factorie.util._
+
 import scala.language.implicitConversions
-import cc.factorie.model.IterableSingleFactor
 import scala.reflect.runtime.universe._
-import java.io.BufferedReader
+import scala.util.{Success, Failure, Random}
 
 package object factorie extends CubbieConversions {
   var random = new Random(0)
@@ -31,15 +32,36 @@ package object factorie extends CubbieConversions {
     def toNotNull: Option[T] = Option(a)
   }
 
+  def when[A](cond:Boolean, a: => A):Option[A] = if(cond) Some(a) else None
+
   implicit def traversableExtras[A](t: Traversable[A]) = new cc.factorie.util.TraversableExtras[A](t)
   implicit def stringExtras(x:String) = new cc.factorie.util.StringExtras(x)
-  implicit def singleFactorIterable[F<:Factor](f:F): Iterable[F] = new IterableSingleFactor(f)
   implicit class IntPairExtras(val x:(Int, Int)) {
     def overlapsWith(y:(Int, Int)):Boolean = (x._1 >= y._1 && x._1 <= y._2) || (x._2 >= y._1 && x._2 <= y._2)
   }
 
   implicit class StringListExtras(s:Iterable[String]) {
     def toCountBag:Map[String, Double] = s.groupBy(identity).mapValues(_.size.toDouble)
+  }
+
+  implicit class WordBagExtras(m:Map[String, Double]) {
+    def longest = m.keysIterator.toSeq.sortBy(_.length).lastOption.getOrElse("")
+    def topWord = m.toSeq.sortBy(_._2).lastOption.map(_._1).getOrElse("")
+
+    def topBag(w:Int) = m.toSeq.sortBy(-_._2).take(w)
+    def topWords(w:Int) = topBag(w).map(_._1)
+
+  }
+
+  implicit class TryExtras[A](t:scala.util.Try[A]) {
+    def logError() = t match {
+      case Success(_) => None
+      case Failure(e) =>
+        val bs = new ByteArrayOutputStream()
+        val ps = new PrintStream(bs, true, "utf-8")
+        e.printStackTrace(ps)
+        Some(bs.toString("utf-8"))
+    }
   }
 
   implicit class BufferedReaderExtras(rdr:BufferedReader) {
@@ -60,6 +82,10 @@ package object factorie extends CubbieConversions {
 
       def hasNext = nextLine != null
     }
+  }
+
+  object sDouble {
+    def unapply(s:String) = s.toDoubleSafe
   }
 
   def assertStringEquals(expr:Any, str:String) = assert(expr.toString == str, "The string representation '" + expr.toString + "' does not match the expected value: '" + str +"'")

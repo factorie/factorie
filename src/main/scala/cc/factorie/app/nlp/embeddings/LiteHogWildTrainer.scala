@@ -1,4 +1,4 @@
-/* Copyright (C) 2008-2014 University of Massachusetts Amherst.
+/* Copyright (C) 2008-2016 University of Massachusetts Amherst.
    This file is part of "FACTORIE" (Factor graphs, Imperative, Extensible)
    http://factorie.cs.umass.edu, http://github.com/factorie
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -11,10 +11,10 @@
    See the License for the specific language governing permissions and
    limitations under the License. */
 package cc.factorie.app.nlp.embeddings
-import cc.factorie.optimize.{ GradientOptimizer, Trainer, Example }
 import cc.factorie.la.SmartGradientAccumulator
-import cc.factorie.util.{ LocalDoubleAccumulator, Threading }
 import cc.factorie.model.WeightsSet
+import cc.factorie.optimize.{Example, GradientOptimizer, Trainer}
+import cc.factorie.util.{LocalDoubleAccumulator, Threading}
 
 class LiteHogwildTrainer(val weightsSet: WeightsSet, val optimizer: GradientOptimizer, val nThreads: Int = Runtime.getRuntime.availableProcessors(), val maxIterations: Int = 3)
   extends Trainer {

@@ -1,4 +1,4 @@
-/* Copyright (C) 2008-2014 University of Massachusetts Amherst.
+/* Copyright (C) 2008-2016 University of Massachusetts Amherst.
    This file is part of "FACTORIE" (Factor graphs, Imperative, Extensible)
    http://factorie.cs.umass.edu, http://github.com/factorie
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -43,12 +43,12 @@ package cc.factorie.tutorial
 
 object TutorialParallelismAndHyperparameters extends App {
   import cc.factorie._
-  import cc.factorie.app.nlp.{ Document, Token }
   import cc.factorie.app.chain.ChainModel
-  import cc.factorie.app.nlp.segment.{ DeterministicSentenceSegmenter, DeterministicNormalizingTokenizer}
-  import cc.factorie.optimize.Trainer
-  import cc.factorie.variable.{ LabeledCategoricalVariable, BinaryFeatureVectorVariable, CategoricalVectorDomain, CategoricalDomain }
+  import cc.factorie.app.nlp.segment.{DeterministicNormalizingTokenizer, DeterministicSentenceSegmenter}
+  import cc.factorie.app.nlp.{Document, Token}
   import cc.factorie.infer.InferByBPChain
+  import cc.factorie.optimize.Trainer
+  import cc.factorie.variable.{BinaryFeatureVectorVariable, CategoricalDomain, CategoricalVectorDomain, LabeledCategoricalVariable}
   implicit val random = new scala.util.Random(0)
 
   val c = new CategoricalDomain[String]()
@@ -176,7 +176,7 @@ object TutorialParallelismAndHyperparameters extends App {
    * Once we have the command-line options we need to creat Hyperparameter objects,
    * which are templates for how each hyperparameter can take values.
    */
-  import cc.factorie.util.{ HyperParameter, SampleFromSeq, UniformDoubleSampler }
+  import cc.factorie.util.{HyperParameter, SampleFromSeq, UniformDoubleSampler}
   val d1 = new HyperParameter(opts.dummy1, new SampleFromSeq(Seq("A", "B", "C")))
   val d2 = new HyperParameter(opts.dummy2, new UniformDoubleSampler(0, 1))
   /*&
@@ -193,7 +193,6 @@ object TutorialParallelismAndHyperparameters extends App {
    * job in parallel in the same machine
    */
   import scala.concurrent.ExecutionContext.Implicits.global
-  import scala.concurrent.future
   val executor1 = (a: Array[String]) => Future { 1.0 }
   /*&
    * The HyperparameterSearcher polls the futures every once in a while to see when they

@@ -1,4 +1,4 @@
-/* Copyright (C) 2008-2014 University of Massachusetts Amherst.
+/* Copyright (C) 2008-2016 University of Massachusetts Amherst.
    This file is part of "FACTORIE" (Factor graphs, Imperative, Extensible)
    http://factorie.cs.umass.edu, http://github.com/factorie
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,7 +14,7 @@
 package cc.factorie.directed
 
 import cc.factorie._
-import cc.factorie.variable.{IntegerVar, DoubleVar}
+import cc.factorie.variable.{DoubleVar, IntegerVar}
 
 object Poisson extends DirectedFamily2[IntegerVar,DoubleVar] {
   case class Factor(override val _1:IntegerVar, override val _2:DoubleVar) extends super.Factor(_1, _2) {

@@ -1,4 +1,4 @@
-/* Copyright (C) 2008-2014 University of Massachusetts Amherst.
+/* Copyright (C) 2008-2016 University of Massachusetts Amherst.
    This file is part of "FACTORIE" (Factor graphs, Imperative, Extensible)
    http://factorie.cs.umass.edu, http://github.com/factorie
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,8 +12,7 @@
    limitations under the License. */
 
 package cc.factorie.la
-import cc.factorie._
-import cc.factorie.util._
+import cc.factorie.util.{SparseDoubleSeq, DoubleSeq, ArrayDoubleSeq, IntSeq, TruncatedArrayIntSeq, FastSorting}
 
 /** A sparse Tensor that stores an array of indices having non-zero values and an aligned sized array storing those values. */
 
@@ -131,7 +130,7 @@ trait ArraySparseIndexedTensor extends SparseIndexedTensor {
       case v:SingletonIndexedTensor => apply(v.singleIndex) * v.singleValue
       case v:ArraySparseIndexedTensor => {
         v._makeReadable()
-        val v1 = if (this.__npos < v.__npos) this else v
+        val v1 = if (this.__npos <= v.__npos) this else v
         val v2 = if (v.__npos < this.__npos) this else v
         var i = 0; var j = -1; var j2 = 0
         var result = 0.0

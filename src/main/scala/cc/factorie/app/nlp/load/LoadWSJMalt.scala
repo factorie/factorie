@@ -1,4 +1,4 @@
-/* Copyright (C) 2008-2014 University of Massachusetts Amherst.
+/* Copyright (C) 2008-2016 University of Massachusetts Amherst.
    This file is part of "FACTORIE" (Factor graphs, Imperative, Extensible)
    http://factorie.cs.umass.edu, http://github.com/factorie
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,14 +12,13 @@
    limitations under the License. */
 package cc.factorie.app.nlp.load
 
-import scala.io.Source
 import cc.factorie.app.nlp._
-import cc.factorie.app.nlp.pos.{LabeledPennPosTag, PennPosTag}
+import cc.factorie.app.nlp.lemma.TokenLemma
 import cc.factorie.app.nlp.ner._
 import cc.factorie.app.nlp.parse.ParseTree
-import cc.factorie.app.nlp.lemma.TokenLemma
+import cc.factorie.app.nlp.pos.LabeledPennPosTag
 
-import java.io.PrintWriter
+import scala.io.Source
 
 /* Loader for the OntoNotes 5 data
    @author Brian Martin, Andrew McCallum
@@ -41,18 +40,22 @@ import java.io.PrintWriter
   16  gold coreference
  */
 
-object LoadWSJMalt {
+object LoadWSJMalt extends Load {
   private def addDepInfo(s: Sentence, depInfoSeq: Seq[(Int,Int,String)]): Unit = {
     //assert(depInfoSeq.map(_._1) == Seq.tabulate(depInfoSeq.length)(i => i), "Token indices: "+depInfoSeq.map(_._1).mkString(" ")) // Assert that we have an entry for each token index, in order
     val tree = new ParseTree(s, depInfoSeq.map(_._2), depInfoSeq.map(_._3))
     s.attr += tree
   }
 
-  def fromLines(lines:Iterator[String], filename:String = "?UNKNOWN?", loadLemma:Int = AnnotationTypes.GOLD, loadPos:Int = AnnotationTypes.GOLD, loadParse:Int = AnnotationTypes.GOLD, loadNer:Boolean = true, nerBilou:Boolean = false): Seq[Document] = {
+  def fromSource(source: Source): Seq[Document] =
+    fromSource(source, filename="?UNKNOWN?", loadLemma=GoldLabel, loadPos=GoldLabel, loadParse=GoldLabel, loadNer=true, nerBilou=true)
+
+  def fromSource(source: Source, filename:String, loadLemma:AnnotationType, loadPos:AnnotationType = GoldLabel, loadParse:AnnotationType = GoldLabel, loadNer:Boolean = true, nerBilou:Boolean = false): Seq[Document] = {
+    val lines = source.getLines()
     val document: Document = new Document().setName("Ontonotes499/" + filename)
     document.annotators(classOf[Token]) = UnknownDocumentAnnotator.getClass // register that we have token boundaries
     document.annotators(classOf[Sentence]) = UnknownDocumentAnnotator.getClass // register that we have sentence boundaries
-    if (loadPos != AnnotationTypes.NONE) document.annotators(classOf[pos.PennPosTag]) = UnknownDocumentAnnotator.getClass // register that we have POS tags
+    if (loadPos != DoNotLoad) document.annotators(classOf[pos.PennPosTag]) = UnknownDocumentAnnotator.getClass // register that we have POS tags
     if (loadNer) if (nerBilou) document.annotators(classOf[ner.BilouOntonotesNerTag]) = UnknownDocumentAnnotator.getClass else document.annotators(classOf[ner.BioOntonotesNerTag]) = UnknownDocumentAnnotator.getClass
     var sentence: Sentence = new Sentence(document)
     var depInfoSeq = new collection.mutable.ArrayBuffer[(Int,Int,String)]
@@ -88,36 +91,37 @@ object LoadWSJMalt {
         
         document.appendString(" ")
         val token = new Token(sentence, word)
-        loadPos match{
-	      case AnnotationTypes.GOLD => {token.attr += new LabeledPennPosTag(token, if (goldPartOfSpeech == "XX") "PUNC" else goldPartOfSpeech)}
-	      case AnnotationTypes.AUTO => {token.attr += new LabeledPennPosTag(token, if (autoPartOfSpeech == "XX") "PUNC" else autoPartOfSpeech)}
-	      case AnnotationTypes.NONE => {/* do nothing */}
+        loadPos match {
+	      case GoldLabel => {token.attr += new LabeledPennPosTag(token, if (goldPartOfSpeech == "XX") "PUNC" else goldPartOfSpeech)}
+	      case AutoLabel => {token.attr += new LabeledPennPosTag(token, if (autoPartOfSpeech == "XX") "PUNC" else autoPartOfSpeech)}
+	      case DoNotLoad => {/* do nothing */}
         }
-        loadLemma match{
-	      case AnnotationTypes.GOLD => {token.attr += new TokenLemma(token, goldLemma)}
-	      case AnnotationTypes.AUTO => {token.attr += new TokenLemma(token, autoLemma)}
-	      case AnnotationTypes.NONE => {/* do nothing */}
+        loadLemma match {
+	      case GoldLabel => {token.attr += new TokenLemma(token, goldLemma)}
+	      case AutoLabel => {token.attr += new TokenLemma(token, autoLemma)}
+	      case DoNotLoad => {/* do nothing */}
         }
-        loadParse match{
-	      case AnnotationTypes.GOLD => {depInfoSeq.append((currTokenIdx, goldParentIdx, goldDepLabel))}
-	      case AnnotationTypes.AUTO => {depInfoSeq.append((currTokenIdx, autoParentIdx, autoDepLabel))}
-	      case AnnotationTypes.NONE => {/* do nothing */}
+        loadParse match {
+	      case GoldLabel => {depInfoSeq.append((currTokenIdx, goldParentIdx, goldDepLabel))}
+	      case AutoLabel => {depInfoSeq.append((currTokenIdx, autoParentIdx, autoDepLabel))}
+	      case DoNotLoad => {/* do nothing */}
         }
         if (loadNer) token.attr += (if (nerBilou) new LabeledBilouOntonotesNerTag(token, ner) else new LabeledBioOntonotesNerTag(token, ner))
       }
     }
-    if ((sentence != null) && (loadParse != AnnotationTypes.NONE)) addDepInfo(sentence, depInfoSeq)
+    if ((sentence != null) && (loadParse != DoNotLoad)) addDepInfo(sentence, depInfoSeq)
     if (nerBilou) convertBioBilou(document.asSection)
 
     println("Loaded 1 document with "+document.sentences.size+" sentences with "+document.asSection.length+" tokens total from file "+filename)
     Seq(document)
   }
 
-  def fromFilename(filename:String, loadLemma:Int = AnnotationTypes.GOLD, loadPos:Int = AnnotationTypes.GOLD, loadParse:Int = AnnotationTypes.GOLD, loadNer:Boolean = true, nerBilou:Boolean = false): Seq[Document] = {
-    fromLines(Source.fromFile(filename).getLines(), filename, loadLemma, loadPos, loadParse, loadNer, nerBilou)
-  }
+  def fromFilename(filename: String): Seq[Document] =
+    fromFilename(filename, loadLemma=GoldLabel, loadPos=GoldLabel, loadParse=GoldLabel, loadNer=true, nerBilou=true)
 
-  // TODO Don't we need convertIobBilou since CoNLL 2003 data is actually in IOB format? -akm
+  def fromFilename(filename:String, loadLemma:AnnotationType, loadPos:AnnotationType, loadParse:AnnotationType, loadNer:Boolean, nerBilou:Boolean): Seq[Document] =
+    fromSource(Source.fromFile(filename), filename, loadLemma, loadPos, loadParse, loadNer, nerBilou)
+
   def convertBioBilou(section:Section): Unit = {
     /** Return the string of the NER label, including the two letter (B- or I-) prefix. */
     def cat(token:Token): String = if (token eq null) "null" else token.attr[BilouOntonotesNerTag].categoryValue

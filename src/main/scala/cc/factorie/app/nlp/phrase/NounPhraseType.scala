@@ -1,4 +1,4 @@
-/* Copyright (C) 2008-2014 University of Massachusetts Amherst.
+/* Copyright (C) 2008-2016 University of Massachusetts Amherst.
    This file is part of "FACTORIE" (Factor graphs, Imperative, Extensible)
    http://factorie.cs.umass.edu, http://github.com/factorie
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,8 +12,8 @@
    limitations under the License. */
 
 package cc.factorie.app.nlp.phrase
-import cc.factorie.variable.{CategoricalVariable,CategoricalDomain}
 import cc.factorie.app.nlp.Token
+import cc.factorie.variable.{CategoricalDomain, CategoricalVariable}
 
 /** Categorical variable indicating whether the noun phrase is a pronoun, common noun phrase or proper noun phrase.
     (In earlier versions this was called "MentionType", but it really is an attribute of the Phrase.)

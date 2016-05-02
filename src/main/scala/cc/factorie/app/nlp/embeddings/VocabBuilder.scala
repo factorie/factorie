@@ -1,4 +1,4 @@
-/* Copyright (C) 2008-2014 University of Massachusetts Amherst.
+/* Copyright (C) 2008-2016 University of Massachusetts Amherst.
    This file is part of "FACTORIE" (Factor graphs, Imperative, Extensible)
    http://factorie.cs.umass.edu, http://github.com/factorie
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -11,13 +11,12 @@
    See the License for the specific language governing permissions and
    limitations under the License. */
 package cc.factorie.app.nlp.embeddings
-import cc.factorie.util.Threading
-import cc.factorie.app._
-import scala.collection.mutable.ArrayBuffer
-import scala.math
-import scala.util.{Sorting, Random}
+import java.io.{BufferedOutputStream, FileInputStream, FileOutputStream, OutputStreamWriter}
 import java.util.zip.{GZIPInputStream, GZIPOutputStream}
-import java.io.{OutputStreamWriter, BufferedOutputStream, FileInputStream, FileOutputStream}
+
+import cc.factorie.app._
+
+import scala.util.Random
 
 
 class VocabBuilder(vocab_hash_size: Int = 20e6.toInt, sampling_table_size: Int = 1e8.toInt, load_factor: Double = 0.7) {

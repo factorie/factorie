@@ -1,25 +1,35 @@
+/* Copyright (C) 2008-2016 University of Massachusetts Amherst.
+   This file is part of "FACTORIE" (Factor graphs, Imperative, Extensible)
+   http://factorie.cs.umass.edu, http://github.com/factorie
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+    http://www.apache.org/licenses/LICENSE-2.0
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License. */
 package cc.factorie.app.nlp.embedding
-import cc.factorie.variable.CategoricalDomain
-import cc.factorie.model._
-import cc.factorie.la._
-import cc.factorie.optimize._
-import cc.factorie.util.{IntArrayBuffer}
-import scala.util.Random
 import java.io._
-import cc.factorie.util.DoubleAccumulator
-import scala.collection.mutable.{ArrayOps,ArrayBuffer}
-import java.util.zip.GZIPOutputStream
 
-class CBOWOptions extends WindowWordEmbedderOptions {
+import cc.factorie.la._
+import cc.factorie.model._
+import cc.factorie.util.{DoubleAccumulator, IntArrayBuffer}
+
+import scala.collection.mutable.ArrayBuffer
+
+class CBOWOptions extends WindowWordEmbedderOptions with IncrementalVocabularyOptions {
   val margin = new CmdOption("margin", 0.1, "DOUBLE", "Margin for WSABIE training.")
   val loss = new CmdOption("loss", "wsabie", "STRING", "Loss function; options are wsabie and log.")
+  val browse = new CmdOption("browse", false, "true|false", "If true provide prompt for interatively browsing input embeddings.")
 }
 
 object CBOWExample {
   def apply(model:CBOW, wordIndices:Array[Int], centerPosition:Int, window:Int): Option[CBOWExample] = {
     val targetId = wordIndices(centerPosition)
     if (model.discard(targetId)) {     // Skip some of the most common target words
-      //println("CBOWExample skipping "+model.domain.category(array(target))+"  "+discardProb)
+      //println("CBOWExample skipping "+model.domain.category(targetId))
       return None
     }
     val context = new IntArrayBuffer(window*2)
@@ -133,16 +143,52 @@ class CBOW(override val opts:CBOWOptions) extends WordEmbedder(opts) {
 }
 
 
+/** A command-line interface to CBOW word embedding training and browsing.
+
+    Examples:
+
+    CBOW --vocabulary vocabulary.txt --vocab-min-count 200 --vocab-input enwiki-latest-pages-articles.xml.bz2
+    Do not train embeddings, but build a vocabulary of all words occurring 200 times or more in all of Wikipedia.
+    Store the results (vocabulary, and the number of occurrences of each word type) in the file "vocabulary.txt" 
+
+    CBOW --dims 100 --vocabulary vocabulary.txt --train-input enwiki-latest-pages-articles.xml.bz2 --max-documents 1000000 --parameters-output parameters.gz
+    Train on the first first 1 million articles of Wikipedia, using embedding vectors of size 100.
+    Use the vocabulary and counts from the file "vocabulary.txt"; skip all words not in this vocabulary.
+    The same embedding parameters will be used for both context (input) and target (output).
+    During training, every 10 million word training windows, write the input embeddings (in a simple textual format) to filenames such as "embeddings-0010m".
+    After training save input and output embeddings (in a compressed binary format) to the filename "parameters.gz".
+    
+    CBOW --dims 100 --vocabulary vocabulary.txt --parameters-load parameters.gz --browse
+    Load previously trained parameters from the file "parameters.gz".  
+    (It is your responsibility to specify the corresponding --vocabulary and --dims values that were used when these parameters were trained.)
+    Then provide an interact prompt for browsing embeddings.
+    At the prompt you can enter a word, and the list of words with nearest embeddings will be printed to the screen.
+
+    CBOW --dims 100 --incremental-vocab-max-size 500000 --incremental-vocab-min-count 50 --vocabulary vocabulary.txt --train-input enwiki-latest-pages-articles.xml.bz2 --max-documents 10000000   
+    Train on the first 1 million artcles of Wikipedia using embedding vectors of size 100, but do not build the vocabulary in advance.
+    Instead incrementally build the vocabulary during training: 
+    count new words; as soon as their count is >= 50, add them to the vocabulary give them an embedding and start learning the embedding on future words. 
+    After training, write the vocabulary to the file "vocabulary.txt".
+  
+  */
 object CBOW {
 
   def main(args:Array[String]): Unit = {
     val opts = new CBOWOptions
     opts.parse(args)
-    if (!opts.input.wasInvoked) { println("Option --input is required."); System.exit(-1) }
-    Vocabulary.opts.maxWikiPages.setValue(opts.maxWikiPages.value) // temporary kludge
-    val cbow = new CBOW(opts)
-    cbow.train(opts.input.value)
-    cbow.writeInputEmbeddings("embeddings.txt")
+    val cbow = if (opts.incrementalVocabMaxSize.wasInvoked) new CBOW(opts) with IncrementalVocabulary else new CBOW(opts)
+    if (opts.trainInput.wasInvoked) {
+      cbow.train(opts.trainInput.value.map(new File(_)))
+      cbow.writeInputEmbeddings("embeddings.txt")
+      if (opts.incrementalVocabMaxSize.wasInvoked) cbow.writeVocabulary(opts.vocabulary.value)
+    } else if (opts.vocabInput.wasInvoked) {
+      cbow.buildVocabulary(opts.vocabInput.value)
+    } else if (opts.browse.wasInvoked) {
+      cbow.browse()
+    } else {
+      println("Either option --train-input or --vocab-input or --browse is required.")
+      System.exit(-1)
+    }
     println("CBOW.main done.")
   }
   

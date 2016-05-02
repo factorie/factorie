@@ -1,4 +1,4 @@
-/* Copyright (C) 2008-2014 University of Massachusetts Amherst.
+/* Copyright (C) 2008-2016 University of Massachusetts Amherst.
    This file is part of "FACTORIE" (Factor graphs, Imperative, Extensible)
    http://factorie.cs.umass.edu, http://github.com/factorie
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,15 +12,15 @@
    limitations under the License. */
 package cc.factorie.app.nlp.coref
 
-import cc.factorie.app.nlp.phrase._
-import cc.factorie.optimize._
-import java.util.concurrent.ExecutorService
-import cc.factorie.variable.LabeledCategoricalVariable
-import cc.factorie.app.nlp.{Sentence, Token, Document}
-import cc.factorie.app.nlp.pos.PennPosTag
-import cc.factorie.app.nlp.phrase.ParseAndNerBasedPhraseFinder
 import java.io.DataInputStream
+import java.util.concurrent.ExecutorService
+
+import cc.factorie.app.nlp.phrase.{ParseAndNerBasedPhraseFinder, _}
+import cc.factorie.app.nlp.pos.PennPosTag
+import cc.factorie.app.nlp.{Document, Sentence}
+import cc.factorie.optimize._
 import cc.factorie.util.ClasspathURL
+import cc.factorie.variable.LabeledCategoricalVariable
 
 object NerStructuredCoref extends NerStructuredCoref{
   deserialize(new DataInputStream(ClasspathURL[NerStructuredCoref](".factorie").openConnection().getInputStream))

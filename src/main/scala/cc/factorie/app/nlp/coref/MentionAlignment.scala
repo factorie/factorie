@@ -1,4 +1,4 @@
-/* Copyright (C) 2008-2014 University of Massachusetts Amherst.
+/* Copyright (C) 2008-2016 University of Massachusetts Amherst.
    This file is part of "FACTORIE" (Factor graphs, Imperative, Extensible)
    http://factorie.cs.umass.edu, http://github.com/factorie
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,12 +12,13 @@
    limitations under the License. */
 package cc.factorie.app.nlp.coref
 
-import cc.factorie.app.nlp.wordnet.WordNet
-import scala.collection.mutable
 import cc.factorie.app.nlp._
+import cc.factorie.app.nlp.phrase.{NounPhraseEntityTypeLabeler, OntonotesPhraseEntityType, ParseAndNerBasedPhraseFinder, ParseBasedPhraseFinder}
 import cc.factorie.app.nlp.pos.PennPosTag
-import collection.mutable.ArrayBuffer
-import cc.factorie.app.nlp.phrase.{ParseBasedPhraseFinder, NounPhraseEntityTypeLabeler, OntonotesPhraseEntityType, ParseAndNerBasedPhraseFinder}
+import cc.factorie.app.nlp.wordnet.WordNet
+
+import scala.collection.mutable
+import scala.collection.mutable.ArrayBuffer
 
 /** Used for training with predicted mentions.
  * If the predicted mention is equal to or within some specified alignment width in options we add the true spans entity label if any

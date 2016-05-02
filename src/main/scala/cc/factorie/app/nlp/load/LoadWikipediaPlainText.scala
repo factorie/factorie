@@ -1,4 +1,4 @@
-/* Copyright (C) 2008-2014 University of Massachusetts Amherst.
+/* Copyright (C) 2008-2016 University of Massachusetts Amherst.
    This file is part of "FACTORIE" (Factor graphs, Imperative, Extensible)
    http://factorie.cs.umass.edu, http://github.com/factorie
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,15 +12,10 @@
    limitations under the License. */
 
 package cc.factorie.app.nlp.load
+import java.io.{File, _}
+
 import cc.factorie.app.nlp._
-import java.io.File
-import scala.util.matching.Regex
-import scala.io.Source
 import org.apache.commons.compress.compressors.CompressorStreamFactory
-import java.io._
-import info.bliki.wiki.filter.PlainTextConverter
-import info.bliki.wiki.model.WikiModel
-import scala.xml.{XML,Text,Elem}
 
 /** Create Documents from plain text files.
     By default create one Document per file.

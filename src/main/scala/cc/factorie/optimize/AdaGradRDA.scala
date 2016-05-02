@@ -1,4 +1,4 @@
-/* Copyright (C) 2008-2014 University of Massachusetts Amherst.
+/* Copyright (C) 2008-2016 University of Massachusetts Amherst.
    This file is part of "FACTORIE" (Factor graphs, Imperative, Extensible)
    http://factorie.cs.umass.edu, http://github.com/factorie
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,9 +13,9 @@
 package cc.factorie.optimize
 
 import cc.factorie._
-import la._
-import util._
+import cc.factorie.la._
 import cc.factorie.model.{WeightsMap, WeightsSet}
+import cc.factorie.util._
 
 /**
  * The AdaGrad regularized dual averaging algorithm from Duchi et al, Adaptive Subgradient Algorithms

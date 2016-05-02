@@ -1,4 +1,4 @@
-/* Copyright (C) 2008-2014 University of Massachusetts Amherst.
+/* Copyright (C) 2008-2016 University of Massachusetts Amherst.
    This file is part of "FACTORIE" (Factor graphs, Imperative, Extensible)
    http://factorie.cs.umass.edu, http://github.com/factorie
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,8 +12,7 @@
    limitations under the License. */
 
 package cc.factorie.la
-import cc.factorie._
-import cc.factorie.util._
+import cc.factorie.util.{IntSeq, SparseDoubleSeq, DoubleSeq, RangeIntSeq, DenseDoubleSeq, SingletonIntSeq, SeqIntSeq, DoubleSeqIterator}
 
 trait Tensor1 extends Tensor {
   tensor1 =>
@@ -214,6 +213,11 @@ trait SparseBinaryTensorLike1 extends Tensor1 with ArraySparseBinaryTensor { }
 class SparseBinaryTensor1(val dim1:Int) extends SparseBinaryTensorLike1 {
   def this(t:Tensor) = { this(t.length); throw new Error("Not yet implemented.") }
   override def blankCopy: SparseBinaryTensor1 = new SparseBinaryTensor1(dim1)
+  override def copy = {
+    val newT = new SparseBinaryTensor1(dim1)
+    this.foreachActiveElement((i, v) => newT(i) = v)
+    newT
+  }
 }
 class GrowableSparseBinaryTensor1(val sizeProxy:Iterable[Any]) extends SparseBinaryTensorLike1 {
   def dim1: Int = sizeProxy.size

@@ -1,4 +1,4 @@
-/* Copyright (C) 2008-2014 University of Massachusetts Amherst.
+/* Copyright (C) 2008-2016 University of Massachusetts Amherst.
    This file is part of "FACTORIE" (Factor graphs, Imperative, Extensible)
    http://factorie.cs.umass.edu, http://github.com/factorie
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -11,21 +11,23 @@
    See the License for the specific language governing permissions and
    limitations under the License. */
 package cc.factorie.app.nlp.pos
+import java.io._
+
 import cc.factorie._
+import cc.factorie.app.classify.backend.LinearMulticlassClassifier
 import cc.factorie.app.nlp._
 import cc.factorie.la._
-import cc.factorie.util._
-import java.io._
-import cc.factorie.variable.{MutableCategoricalVar, BinaryFeatureVectorVariable, CategoricalVectorDomain}
 import cc.factorie.optimize.Trainer
-import cc.factorie.app.classify.backend.LinearMulticlassClassifier
+import cc.factorie.util._
+import cc.factorie.variable.{BinaryFeatureVectorVariable, CategoricalVectorDomain}
 
 /** A part-of-speech tagger that predicts by greedily labeling each word in sequence.
     Although it does not use Viterbi, it is surprisingly accurate.  It is also fast.
     
     For the Viterbi-based part-of-speech tagger, see ChainPosTagger.  
     @author Andrew McCallum, */
-class ForwardPosTagger extends DocumentAnnotator {
+class ForwardPosTagger extends DocumentAnnotator with Serializable {
+  private val logger = Logger.getLogger(this.getClass.getName)
 
   // Different ways to load saved parameters
   def this(stream:InputStream) = { this(); deserialize(stream) }
@@ -422,8 +424,8 @@ class WSJForwardPosTagger(url:java.net.URL) extends ForwardPosTagger(url)
 object WSJForwardPosTagger extends WSJForwardPosTagger(cc.factorie.util.ClasspathURL[WSJForwardPosTagger](".factorie"))
 
 /** The default part-of-speech tagger, trained on all Ontonotes training data (including Wall Street Journal), with parameters loaded from resources in the classpath. */
-class OntonotesForwardPosTagger(url:java.net.URL) extends ForwardPosTagger(url)
-object OntonotesForwardPosTagger extends OntonotesForwardPosTagger(cc.factorie.util.ClasspathURL[OntonotesForwardPosTagger](".factorie"))
+class OntonotesForwardPosTagger(url:java.net.URL) extends ForwardPosTagger(url) with Serializable
+object OntonotesForwardPosTagger extends OntonotesForwardPosTagger(cc.factorie.util.ClasspathURL[OntonotesForwardPosTagger](".factorie")) with Serializable
 
 class ForwardPosOptions extends cc.factorie.util.DefaultCmdOptions with SharedNLPCmdOptions{
   val modelFile = new CmdOption("model", "", "FILENAME", "Filename for the model (saving a trained model or reading a running model.")
@@ -568,8 +570,8 @@ object ForwardPosOptimizer {
     println("Best l1: " + opts.l1.value + " best l2: " + opts.l2.value)
     opts.saveModel.setValue(true)
     println("Running best configuration...")
-    import scala.concurrent.duration._
     import scala.concurrent.Await
+    import scala.concurrent.duration._
     Await.result(qs.execute(opts.values.flatMap(_.unParse).toArray), 5.hours)
     println("Done")
   }

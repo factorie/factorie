@@ -1,4 +1,4 @@
-/* Copyright (C) 2008-2014 University of Massachusetts Amherst.
+/* Copyright (C) 2008-2016 University of Massachusetts Amherst.
    This file is part of "FACTORIE" (Factor graphs, Imperative, Extensible)
    http://factorie.cs.umass.edu, http://github.com/factorie
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,7 +12,7 @@
    limitations under the License. */
 package cc.factorie.optimize
 
-import cc.factorie.la.{Tensor, SparseIndexedTensor, DenseTensor}
+import cc.factorie.la.{DenseTensor, SparseIndexedTensor, Tensor}
 import cc.factorie.model.{WeightsMap, WeightsSet}
 
 // TODO this should really store weights in log-space, and have an unnormalized version
@@ -73,5 +73,49 @@ class ExponentiatedGradient(rate: Double = 1.0) extends GradientOptimizer {
   def isConverged: Boolean = false
   def reset(): Unit = {
     initialized = false
+  }
+}
+
+// NOTE: this includes an annealed learning rate schedule at rate 1/sqrt(k) -luke
+// This also uses sum-log-probs and so should have better numerical stability than the regular exponentiated gradient optimizer
+class DenseExponentiatedGradient(rate: Double = 1.0, annealRate: Boolean = true) extends GradientOptimizer {
+  var initialized = false
+  var iter = 0
+  def initializeWeights(weights: WeightsSet) =
+    if (!initialized) {
+      val len = weights.length * 1.0
+      weights.tensors.foreach(t => t := Array.fill(t.length)(1 / len)) // need to initialize it to lie on the simplex
+      initialized = true
+    } else
+      sys.error("already initialized")
+  def finalizeWeights(weights: WeightsSet) = { }
+
+  def step(weights: WeightsSet, gradient: WeightsMap, value: Double): Unit = {
+    if (!initialized) initializeWeights(weights)
+    iter += 1
+    val mult = if (annealRate) rate / math.sqrt(iter) else rate
+    for (template <- gradient.keys)
+      (weights(template), gradient(template)) match {
+        case (weights: Tensor, gradient: DenseTensor) =>
+          val wArr = weights.asArray
+          val gArr = gradient.asArray
+          val len = weights.length
+          var i = 0
+          while (i < len) {
+            wArr(i) = math.log(wArr(i)) + gArr(i) * mult
+            i += 1
+          }
+          val logZ = cc.factorie.maths.sumLogProbs(weights.asArray)
+          i = 0
+          while (i < len) {
+            wArr(i) = math.exp(wArr(i) - logZ)
+            i += 1
+          }
+      }
+  }
+  def isConverged: Boolean = false
+  def reset(): Unit = {
+    initialized = false
+    iter = 0
   }
 }

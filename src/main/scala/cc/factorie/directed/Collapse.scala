@@ -1,4 +1,4 @@
-/* Copyright (C) 2008-2014 University of Massachusetts Amherst.
+/* Copyright (C) 2008-2016 University of Massachusetts Amherst.
    This file is part of "FACTORIE" (Factor graphs, Imperative, Extensible)
    http://factorie.cs.umass.edu, http://github.com/factorie
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,10 +13,10 @@
 
 package cc.factorie.directed
 
+import cc.factorie.model.{Factor, Family}
+import cc.factorie.variable.{Var, _}
+
 import scala.collection.mutable.ArrayBuffer
-import cc.factorie.model.{Family, Factor}
-import cc.factorie.variable._
-import cc.factorie.variable.Var
 
 /* Contains various recipes that "collapse" variables
    by setting the value of variables to an internal state 

@@ -1,4 +1,4 @@
-/* Copyright (C) 2008-2014 University of Massachusetts Amherst.
+/* Copyright (C) 2008-2016 University of Massachusetts Amherst.
    This file is part of "FACTORIE" (Factor graphs, Imperative, Extensible)
    http://factorie.cs.umass.edu, http://github.com/factorie
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -18,10 +18,11 @@ import cc.factorie.variable.Span
 
 
 //import cc.factorie.app.nlp.coref.mention.{MentionEntityType, MentionList, Mention, Entity}
-import cc.factorie.app.nlp.coref._ //{Mention,Mention,MentionList,Entity}
-import cc.factorie.app.nlp.phrase.{OntonotesEntityType, Phrase, OntonotesPhraseEntityType}
-import scala.collection.mutable.{ListBuffer, ArrayBuffer, Map, Stack}
+import cc.factorie.app.nlp.coref._
+import cc.factorie.app.nlp.phrase.{OntonotesPhraseEntityType, Phrase}
+
 import scala.collection.mutable
+import scala.collection.mutable.{ArrayBuffer, Map}
 import scala.util.control.Breaks._
 
 class EntityKey(val name: String)

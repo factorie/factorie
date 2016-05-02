@@ -1,4 +1,4 @@
-/* Copyright (C) 2008-2014 University of Massachusetts Amherst.
+/* Copyright (C) 2008-2016 University of Massachusetts Amherst.
    This file is part of "FACTORIE" (Factor graphs, Imperative, Extensible)
    http://factorie.cs.umass.edu, http://github.com/factorie
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,8 +12,8 @@
    limitations under the License. */
 package cc.factorie.app.nlp.coref
 
-import cc.factorie.util.F1Evaluation
 import cc.factorie.app.nlp.TokenSpan
+import cc.factorie.util.F1Evaluation
 
 class CorefConllOutput {
   val macroMUC = new F1Evaluation

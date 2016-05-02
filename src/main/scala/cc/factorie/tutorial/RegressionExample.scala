@@ -1,4 +1,4 @@
-/* Copyright (C) 2008-2014 University of Massachusetts Amherst.
+/* Copyright (C) 2008-2016 University of Massachusetts Amherst.
    This file is part of "FACTORIE" (Factor graphs, Imperative, Extensible)
    http://factorie.cs.umass.edu, http://github.com/factorie
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,12 +14,12 @@ package cc.factorie.tutorial
 
 import java.io.File
 
-import collection.mutable
-import io.Source
-
 import cc.factorie.app.regress.LinearRegressionTrainer
 import cc.factorie.la.{DenseTensor1, Tensor1}
-import cc.factorie.variable.{TensorVariable, BinaryFeatureVectorVariable, DiffList, CategoricalVectorDomain}
+import cc.factorie.variable.{BinaryFeatureVectorVariable, CategoricalVectorDomain, DiffList, TensorVariable}
+
+import scala.collection.mutable
+import scala.io.Source
 
 /**
  * An example of Linear Regression.  Tries to predict the hash value

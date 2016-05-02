@@ -1,4 +1,4 @@
-/* Copyright (C) 2008-2014 University of Massachusetts Amherst.
+/* Copyright (C) 2008-2016 University of Massachusetts Amherst.
    This file is part of "FACTORIE" (Factor graphs, Imperative, Extensible)
    http://factorie.cs.umass.edu, http://github.com/factorie
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,18 +13,17 @@
 
 package cc.factorie.app.chain
 
-import cc.factorie.la
-import cc.factorie.maths
-import cc.factorie.la._
-import scala.collection.mutable.{ListBuffer, ArrayBuffer}
 import java.io._
-import cc.factorie.util.{DoubleAccumulator, BinarySerializer}
-import cc.factorie.variable._
-import scala.reflect.ClassTag
-import cc.factorie.la.{SparseIndexedTensor1, WeightsMapAccumulator}
+
+import cc.factorie.la.{SparseIndexedTensor1, WeightsMapAccumulator, _}
+import cc.factorie.{la, maths}
 import cc.factorie.model._
 import cc.factorie.optimize.Example
-import scala.Some
+import cc.factorie.util.{BinarySerializer, DoubleAccumulator}
+import cc.factorie.variable._
+
+import scala.collection.mutable.{ArrayBuffer, ListBuffer}
+import scala.reflect.ClassTag
 
 // TODO We should add the ability to explicitly permit and forbid label transitions
 // Was Label <: LabeledMutableDiscreteVar
@@ -59,6 +58,7 @@ class ChainModel[Label <: MutableDiscreteVar, Features <: CategoricalVectorVar[S
   var useObsMarkov = false
 
   def serialize(stream: OutputStream) {
+    import cc.factorie.util.CubbieConversions._
     val dstream = new DataOutputStream(new BufferedOutputStream(stream))
     BinarySerializer.serialize(featuresDomain, dstream)
     BinarySerializer.serialize(labelDomain, dstream)
@@ -67,6 +67,7 @@ class ChainModel[Label <: MutableDiscreteVar, Features <: CategoricalVectorVar[S
   }
 
   def deserialize(stream: InputStream) {
+    import cc.factorie.util.CubbieConversions._
     val dstream = new DataInputStream(new BufferedInputStream(stream))
     BinarySerializer.deserialize(featuresDomain, dstream)
     BinarySerializer.deserialize(labelDomain, dstream)
@@ -115,13 +116,25 @@ class ChainModel[Label <: MutableDiscreteVar, Features <: CategoricalVectorVar[S
   def maximize(vars: Seq[Label])(implicit d: DiffList): Unit = {
     if (vars.isEmpty) return
     val result = ChainHelper.viterbiFast(getCliqueValues(vars))
-    for (i <- 0 until vars.length) vars(i).set(result.mapValues(i))
+    val n = vars.length
+    var i = 0
+    while (i < n) {
+      vars(i).set(result.mapValues(i))
+      i += 1
+    }
   }
 
   def getMaximizedLabels(vars: Seq[Label])(implicit d: DiffList): Seq[Int] = {
     if (vars.isEmpty) return Seq()
     val result = ChainHelper.viterbiFast(getCliqueValues(vars))
-    for (i <- 0 until vars.length) yield result.mapValues(i)
+    val n = vars.length
+    val arr: Array[Int] = Array.fill(n)(0)
+    var i = 0
+    while (i < n) {
+      arr(i) = result.mapValues(i)
+      i += 1
+    }
+    arr.toSeq
   }
 
   def getHammingLossScores(varying: Seq[Label with LabeledMutableDiscreteVar]): Array[Tensor1] = {

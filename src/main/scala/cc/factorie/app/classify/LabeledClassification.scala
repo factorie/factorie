@@ -1,4 +1,4 @@
-/* Copyright (C) 2008-2014 University of Massachusetts Amherst.
+/* Copyright (C) 2008-2016 University of Massachusetts Amherst.
    This file is part of "FACTORIE" (Factor graphs, Imperative, Extensible)
    http://factorie.cs.umass.edu, http://github.com/factorie
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,12 +12,10 @@
    limitations under the License. */
 
 package cc.factorie.app.classify
-import cc.factorie.variable._
-import cc.factorie.infer._
+import cc.factorie.app.classify.backend.{MulticlassClassification, MulticlassClassifier}
+import cc.factorie.variable.{CategoricalDomain, LabeledDiscreteEvaluation, LabeledMutableDiscreteVar}
+
 import scala.collection.mutable.ArrayBuffer
-import cc.factorie.variable.{LabeledDiscreteEvaluation, LabeledMutableDiscreteVar, CategoricalDomain}
-import cc.factorie.la.Tensor1
-import cc.factorie.app.classify.backend.{MulticlassClassifier, MulticlassClassification}
 
 
 case class LabeledClassification[L](label: L, classification: MulticlassClassification)

@@ -1,4 +1,4 @@
-/* Copyright (C) 2008-2014 University of Massachusetts Amherst.
+/* Copyright (C) 2008-2016 University of Massachusetts Amherst.
    This file is part of "FACTORIE" (Factor graphs, Imperative, Extensible)
    http://factorie.cs.umass.edu, http://github.com/factorie
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,9 +14,9 @@ package cc.factorie.app.mf
 
 import cc.factorie._
 import cc.factorie.la.WeightsMapAccumulator
-import util.DoubleAccumulator
-import cc.factorie.variable.DiscreteDomain
 import cc.factorie.model.Parameters
+import cc.factorie.util.DoubleAccumulator
+import cc.factorie.variable.DiscreteDomain
 
 /**
  * User: apassos

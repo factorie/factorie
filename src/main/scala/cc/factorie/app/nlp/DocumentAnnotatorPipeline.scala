@@ -1,4 +1,4 @@
-/* Copyright (C) 2008-2014 University of Massachusetts Amherst.
+/* Copyright (C) 2008-2016 University of Massachusetts Amherst.
    This file is part of "FACTORIE" (Factor graphs, Imperative, Extensible)
    http://factorie.cs.umass.edu, http://github.com/factorie
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,7 +15,6 @@ package cc.factorie.app.nlp
 import cc.factorie.util.FastLogging
 
 import scala.reflect.ClassTag
-import cc.factorie.app.nlp.phrase.ParseAndNerBasedPhraseFinder
 
 /**User: apassos
  * Date: 8/7/13
@@ -75,11 +74,13 @@ object DocumentAnnotatorPipeline extends FastLogging  {
     classOf[ner.NerTag] -> (() => ner.ConllChainNer), // TODO Should there be a different default?
     classOf[ner.BilouConllNerTag] -> (() => ner.NoEmbeddingsConllStackedChainNer),
     classOf[ner.BilouOntonotesNerTag] -> (() => ner.NoEmbeddingsOntonotesStackedChainNer),
+    classOf[ner.ConllNerSpanBuffer] -> (() => ner.BilouConllNerChunkAnnotator),
+    classOf[ner.OntonotesNerSpanBuffer] -> (() => ner.BilouOntonotesNerChunkAnnotator),
     //classOf[coref.mention.NerMentionList] -> (() => coref.mention.NerAndPronounMentionFinder),
     //classOf[phrase.GenderLabel[coref.Mention]] -> (() => phrase.GenderLabeler[]),
     classOf[phrase.Gender] -> (() => phrase.MentionPhraseGenderLabeler),
     classOf[phrase.Number] -> (() => phrase.MentionPhraseNumberLabeler),
-    classOf[phrase.DatePhraseFinder.DatePhraseList] -> (() => phrase.DatePhraseFinder),
+    classOf[phrase.DatePhraseList] -> (() => phrase.DatePhraseFinder),
     classOf[coref.WithinDocCoref] -> (() => coref.NerForwardCoref),
     classOf[relation.RelationMentionList] -> (() => relation.ConllPatternBasedRelationFinder)
     //classOf[phrase.NumberLabel[phrase.NounPhrase]] -> (() => phrase.NounPhraseNumberLabeler),

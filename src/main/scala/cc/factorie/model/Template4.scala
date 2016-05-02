@@ -1,4 +1,4 @@
-/* Copyright (C) 2008-2014 University of Massachusetts Amherst.
+/* Copyright (C) 2008-2016 University of Massachusetts Amherst.
    This file is part of "FACTORIE" (Factor graphs, Imperative, Extensible)
    http://factorie.cs.umass.edu, http://github.com/factorie
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,16 +13,9 @@
 
 package cc.factorie.model
 
-import scala.collection.mutable.{ArrayBuffer, HashMap, HashSet, ListBuffer, FlatHashTable}
-import scala.util.{Random,Sorting}
-import scala.util.Random
-import scala.math
-import scala.util.Sorting
-import cc.factorie.la._
-import cc.factorie.util.Substitutions
-import java.io._
-import cc.factorie.variable.{TensorVar, Var, DiscreteVar}
 import cc.factorie.model
+import cc.factorie.variable.{DiscreteVar, TensorVar, Var}
+
 import scala.reflect.ClassTag
 
 abstract class Template4[N1<:Var,N2<:Var,N3<:Var,N4<:Var](implicit nm1:ClassTag[N1], nm2:ClassTag[N2], nm3:ClassTag[N3], nm4:ClassTag[N4]) extends Family4[N1,N2,N3,N4] with Template {

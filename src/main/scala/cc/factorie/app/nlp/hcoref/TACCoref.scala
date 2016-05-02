@@ -1,20 +1,34 @@
+/* Copyright (C) 2008-2016 University of Massachusetts Amherst.
+   This file is part of "FACTORIE" (Factor graphs, Imperative, Extensible)
+   http://factorie.cs.umass.edu, http://github.com/factorie
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+    http://www.apache.org/licenses/LICENSE-2.0
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License. */
 package cc.factorie.app.nlp.hcoref
 
 import java.io._
-import scala.io.Source
-import cc.factorie._
-import cc.factorie.util.{VectorUtils, EvaluatableClustering, NonValidatingXML}
-import cc.factorie.app.nlp._
-import cc.factorie.app.nlp.pos.OntonotesForwardPosTagger
-import cc.factorie.app.nlp.ner.NoEmbeddingsConllStackedChainNer
-import cc.factorie.app.nlp.coref.ParseForwardCoref
-import cc.factorie.app.nlp.parse.OntonotesTransitionBasedParser
-import scala.util.Random
-import cc.factorie.app.nlp.segment.{DeterministicNormalizingTokenizer, DeterministicSentenceSegmenter}
-import cc.factorie.app.nlp.phrase.Phrase
-import cc.factorie.variable.{DenseDoubleBagVariable, CategoricalDomain, BagOfWordsVariable}
 import java.util.zip.GZIPInputStream
+
+import cc.factorie._
+import cc.factorie.app.nlp._
+import cc.factorie.app.nlp.coref.ParseForwardCoref
+import cc.factorie.app.nlp.ner.NoEmbeddingsConllStackedChainNer
+import cc.factorie.app.nlp.parse.OntonotesTransitionBasedParser
+import cc.factorie.app.nlp.phrase.Phrase
+import cc.factorie.app.nlp.pos.OntonotesForwardPosTagger
+import cc.factorie.app.nlp.segment.{DeterministicNormalizingTokenizer, DeterministicSentenceSegmenter}
+import cc.factorie.util.{NonValidatingXML, VectorUtils}
+import cc.factorie.variable.{BagOfWordsVariable, CategoricalDomain, DenseDoubleBagVariable}
+
 import scala.collection.mutable.{ArrayBuffer, HashMap}
+import scala.io.Source
+import scala.util.Random
 
 /**
  * @author John Sullivan
@@ -144,7 +158,8 @@ object TACCoref {
       with CanopyPairGenerator[DenseDocEntityVars]
       with NoSplitMoveGenerator[DenseDocEntityVars]
       with DebugCoref[DenseDocEntityVars]
-      with TrainingObjective[DenseDocEntityVars] {
+      with TrainingObjective[DenseDocEntityVars]
+      with PrintlnLogger {
       def newInstance(implicit d: DiffList) = new Node[DenseDocEntityVars](new DenseDocEntityVars())
 
       val autoStopThreshold = 10000
@@ -158,7 +173,8 @@ object TACCoref {
       with CanopyPairGenerator[DenseDocEntityVars]
       with NoSplitMoveGenerator[DenseDocEntityVars]
       with DebugCoref[DenseDocEntityVars]
-      with TrainingObjective[DenseDocEntityVars] {
+      with TrainingObjective[DenseDocEntityVars]
+      with PrintlnLogger {
       def newInstance(implicit d: DiffList) = new Node[DenseDocEntityVars](new DenseDocEntityVars())
 
       val autoStopThreshold = 10000
@@ -495,7 +511,6 @@ class EmbeddingExample(val words:IndexedSeq[String],val space:EmbeddingSpace){
 }
 
 object Embeddings{
-  import VectorUtils._
   //val test = Seq("vldb","emnlp","icml","nips","icvpr","acl","relation extraction","database","knowledge base","entity","coreference","graphical model","approach","face","physics","machine learning","cryptography","graphics","networks","learning","amccallum","elearnedmiller","amoore","speytonjones","ablum","tmitchell","dkarger")
 
   def writeEmbedding(file:File,space:EmbeddingSpace){

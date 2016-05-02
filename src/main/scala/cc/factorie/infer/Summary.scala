@@ -1,4 +1,4 @@
-/* Copyright (C) 2008-2014 University of Massachusetts Amherst.
+/* Copyright (C) 2008-2016 University of Massachusetts Amherst.
    This file is part of "FACTORIE" (Factor graphs, Imperative, Extensible)
    http://factorie.cs.umass.edu, http://github.com/factorie
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,12 +13,9 @@
 
 package cc.factorie.infer
 
-import cc.factorie.directed._
-import cc.factorie.la.{DenseTensor1, Tensor, Outer1Tensor2}
-import cc.factorie
+import cc.factorie.la.{DenseTensor1, Tensor}
+import cc.factorie.model.{DotFamily, Factor, Family}
 import cc.factorie.variable._
-import cc.factorie.model.{DotFamily, Family, Factor}
-import scala.Some
 
 /** The result of inference: a collection of Marginal objects.
     @author Andrew McCallum */

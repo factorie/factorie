@@ -1,4 +1,4 @@
-/* Copyright (C) 2008-2014 University of Massachusetts Amherst.
+/* Copyright (C) 2008-2016 University of Massachusetts Amherst.
    This file is part of "FACTORIE" (Factor graphs, Imperative, Extensible)
    http://factorie.cs.umass.edu, http://github.com/factorie
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,18 +13,10 @@
 
 package cc.factorie.model
 
-import scala.collection.mutable.{ArrayBuffer, HashMap, HashSet, ListBuffer, FlatHashTable}
-import scala.util.{Random,Sorting}
-import scala.util.Random
-import scala.math
-import scala.util.Sorting
 import cc.factorie.la._
 import cc.factorie.variable._
 
-//import cc.factorie.util.Substitutions
-import java.io._
-
-/** A Factor with one neighboring variable 
+/** A Factor with one neighboring variable
     @author Andrew McCallum */
 abstract class Factor1[N1<:Var](val _1:N1) extends Factor {
   type NeighborType1 = N1

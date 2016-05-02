@@ -1,4 +1,4 @@
-/* Copyright (C) 2008-2014 University of Massachusetts Amherst.
+/* Copyright (C) 2008-2016 University of Massachusetts Amherst.
    This file is part of "FACTORIE" (Factor graphs, Imperative, Extensible)
    http://factorie.cs.umass.edu, http://github.com/factorie
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,10 +14,8 @@ package cc.factorie.app.regress
 
 import cc.factorie._
 import cc.factorie.la._
-import optimize._
-import java.io.File
-import util.DoubleAccumulator
-import cc.factorie.model.{Weights2, Weights1, WeightsSet, Parameters}
+import cc.factorie.model.{Parameters, Weights1, Weights2, WeightsSet}
+import cc.factorie.optimize._
 import cc.factorie.variable.TensorVar
 
 // Infrastructure for regression.  The architecture is somewhat parallel to app.classify. 

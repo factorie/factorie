@@ -1,4 +1,4 @@
-/* Copyright (C) 2008-2014 University of Massachusetts Amherst.
+/* Copyright (C) 2008-2016 University of Massachusetts Amherst.
    This file is part of "FACTORIE" (Factor graphs, Imperative, Extensible)
    http://factorie.cs.umass.edu, http://github.com/factorie
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,16 +12,18 @@
    limitations under the License. */
 package cc.factorie.app.nlp.parse
 
-import cc.factorie.app.nlp._
+import java.io._
+
 import cc.factorie._
+import cc.factorie.app.nlp._
 import cc.factorie.app.nlp.pos.PennPosTag
 import cc.factorie.la.{Tensor, WeightsMapAccumulator}
-import cc.factorie.util.{Threading, HyperparameterMain, ClasspathURL, DoubleAccumulator, FileUtils}
-import scala.collection.mutable.ArrayBuffer
-import java.io._
-import cc.factorie.variable.{TensorVar, HashFeatureVectorVariable, DiscreteDomain}
 import cc.factorie.model.Parameters
 import cc.factorie.optimize._
+import cc.factorie.util.{ClasspathURL, DoubleAccumulator, FileUtils, HyperparameterMain, Threading}
+import cc.factorie.variable.{DiscreteDomain, HashFeatureVectorVariable, TensorVar}
+
+import scala.collection.mutable.ArrayBuffer
 
 /** A graph-based projective dependency parser.
     @author Alexandre Passos */

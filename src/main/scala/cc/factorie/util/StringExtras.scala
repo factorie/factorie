@@ -1,4 +1,4 @@
-/* Copyright (C) 2008-2014 University of Massachusetts Amherst.
+/* Copyright (C) 2008-2016 University of Massachusetts Amherst.
    This file is part of "FACTORIE" (Factor graphs, Imperative, Extensible)
    http://factorie.cs.umass.edu, http://github.com/factorie
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,11 +14,13 @@
 
 package cc.factorie.util
 
+import scala.util.Try
+
 /** New functionality on String instances, available by implicit conversion in the cc.factorie.factorie package object. */
 class StringExtras(val s: String) extends AnyVal {
 
-  def toIntSafe: Option[Int] = try { Some(s.toInt) } catch { case _: Throwable => None }
-  def toDoubleSafe: Option[Double] = try { Some(s.toDouble) } catch { case _: Throwable => None }
+  def toIntSafe: Option[Int] = Try(s.toInt).toOption
+  def toDoubleSafe: Option[Double] = Try(s.toDouble).toOption
 
   def skipUntil(r:scala.util.matching.Regex): String = {
     r.findFirstMatchIn(s) match {

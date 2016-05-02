@@ -1,4 +1,4 @@
-/* Copyright (C) 2008-2014 University of Massachusetts Amherst.
+/* Copyright (C) 2008-2016 University of Massachusetts Amherst.
    This file is part of "FACTORIE" (Factor graphs, Imperative, Extensible)
    http://factorie.cs.umass.edu, http://github.com/factorie
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,10 +12,10 @@
    limitations under the License. */
 package cc.factorie.app.nlp.morph
 
-import collection.mutable
-import cc.factorie.app.nlp.wordnet.WordNet
 import cc.factorie.app.nlp.lexicon.Lexicon
 import cc.factorie.util.ClasspathURL
+
+import scala.collection.mutable
 
 /** A simple morphological analyzer, simply indicating if a noun is singular or plural.
     Obviously this supports very limited functionality. More will be added as needed.

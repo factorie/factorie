@@ -1,4 +1,4 @@
-/* Copyright (C) 2008-2014 University of Massachusetts Amherst.
+/* Copyright (C) 2008-2016 University of Massachusetts Amherst.
    This file is part of "FACTORIE" (Factor graphs, Imperative, Extensible)
    http://factorie.cs.umass.edu, http://github.com/factorie
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,17 +12,16 @@
    limitations under the License. */
 
 package cc.factorie.app.nlp.lexicon
-import cc.factorie._
+
+import cc.factorie.app.nlp.{Token, TokenSpan}
+import cc.factorie.app.nlp.lemma.{Lemmatizer, LowercaseLemmatizer}
 import cc.factorie.app.strings.StringSegmenter
-import cc.factorie.app.nlp.Token
-import cc.factorie.app.nlp.TokenSpan
-import cc.factorie.app.nlp.lemma.{Lemmatizer,LowercaseLemmatizer,NoopLemmatizer}
 import cc.factorie.variable.CategoricalVectorVar
-import scala.collection.mutable.{ListBuffer, ArrayBuffer, HashMap}
+
+import scala.collection.mutable.{ArrayBuffer, HashMap}
 import scala.io.Source
-import java.io.File
+import java.io.{InputStream, File}
 import cc.factorie.app.chain.Observation
-import scala.io.Codec.charset2codec
 
 /** The general interface to a lexicon.  Both WordLexicon and PhraseLexicon are subclasses.
     @author Andrew McCallum */
@@ -61,11 +60,13 @@ trait MutableLexicon extends Lexicon {
   /** Tokenize and lemmatize the input String and add it as a single entry to the Lexicon */
   def +=(phrase:String): Unit
   /** All a lines from the input Source to this lexicon.  Source is assumed to contain multiple newline-separated lexicon entries */
-  def ++=(source:Source): this.type = { for (line <- source.getLines()) { val phrase = line.trim; if (phrase.length > 0) MutableLexicon.this.+=(phrase) }; source.close(); this }
+  def ++=(source:Source): this.type = { for (line <- source.getLines()) { val phrase = line.trim; if (phrase.length > 0 && !phrase.startsWith("#")) MutableLexicon.this.+=(phrase) }; source.close(); this }
   /** All a lines from the input String to this lexicon.  String contains multiple newline-separated lexicon entries */
   def ++=(phrases:String): this.type = ++=(Source.fromString(phrases))
   /** All a lines from the input File to this lexicon.  File contains multiple newline-separated lexicon entries */
   def ++=(file:File, enc:String = "UTF-8"): this.type = ++=(Source.fromFile(file, enc))
+  /** Add all lines from the InputStream to this lexicon */
+  def ++=(is:InputStream): this.type = this.++=(Source.fromInputStream(is)(io.Codec.UTF8))
 }
 
 /** Support for constructing Lexicons
@@ -86,6 +87,7 @@ object Lexicon {
 /** A lexicon containing single words or multi-word phrases.
   * @author Kate Silverstein
   */
+@deprecated("Use TriePhraseLexicon instead", "Before 10/1/15")
 class PhraseLexicon(val name: String, val tokenizer: StringSegmenter = cc.factorie.app.strings.nonWhitespaceSegmenter, val lemmatizer: Lemmatizer = LowercaseLemmatizer) extends MutableLexicon {
   def this(file: File) = { this(file.toString, cc.factorie.app.strings.nonWhitespaceSegmenter, LowercaseLemmatizer); this.++=(Source.fromFile(file)(scala.io.Codec.UTF8))}
   val wordTree = new SuffixTree(false)
@@ -138,7 +140,7 @@ class UnionLexicon(val name: String, val members: PhraseLexicon*) extends Mutabl
   def contains[T<:Observation[T]](query: T): Boolean = members.exists(_.contains(query))
   def contains[T<:Observation[T]](query: Seq[T]): Boolean = members.exists(_.contains(query))
   def +=(s:String): Unit = {throw new Error("method not implemented for UnionLexicon")}
-  override def toString(): String = {
+  override def toString: String = {
     var st = "UNION { "
     members.foreach(st += _.toString()+" , ")
     st += " } "
@@ -151,106 +153,99 @@ class UnionLexicon(val name: String, val members: PhraseLexicon*) extends Mutabl
  * Use the tag text methods in preference to the other methods, which are preserved for compatibility.
  * The other methods have the same semantics as the PhraseLexicon, which return true iff the whole string is in the lexicon.
  */
-class TriePhraseLexicon(val name: String, val tokenizer: StringSegmenter = cc.factorie.app.strings.nonWhitespaceSegmenter, val lemmatizer: Lemmatizer = LowercaseLemmatizer) extends MutableLexicon {
-    val trie = new AhoCorasick(" ")
-
-    def +=(phrase:String): Unit = {
-        val words: Seq[String] = tokenizer(phrase).toSeq
-        trie += words.map(lemmatizer.lemmatize(_))
-    }
+class TriePhraseLexicon(val name: String, val tokenizer: StringSegmenter = cc.factorie.app.strings.nonWhitespaceSegmenter, val lemmatizer: Lemmatizer = LowercaseLemmatizer, val sep: String = " ") extends MutableLexicon {
+  val trie = new AhoCorasick(sep)
   
-    /** All a lines from the input Source to this lexicon.  Source is assumed to contain multiple newline-separated lexicon entries.
-     * Overriden to call setTransitions after reading the file.
-     */
-    override def ++=(source:Source): this.type = { for (line <- source.getLines()) { val phrase = line.trim; if (phrase.length > 0) TriePhraseLexicon.this.+=(phrase) }; trie.setTransitions(); source.close(); this }
-
-    def setTransitions() : Unit = { trie.setTransitions() }
-
-    /** Checks whether the lexicon contains this already-lemmatized/tokenized single word */
-    def containsLemmatizedWord(word: String): Boolean = { containsLemmatizedWords(List(word).toSeq) }
+  def +=(phrase:String): Unit = synchronized {
+    val words: Seq[String] = tokenizer(phrase).toSeq
+    trie += words.map(lemmatizer.lemmatize)
+  }
   
-    /** Checks whether the lexicon contains this already-lemmatized/tokenized phrase, where 'words' can either be
-     * single word or a multi-word expression. */
-    def containsLemmatizedWords(words: Seq[String]): Boolean = {
-        trie.findExactMention(words)
-    }
+  /** All a lines from the input Source to this lexicon.  Source is assumed to contain multiple newline-separated lexicon entries.
+   * Overriden to call setTransitions after reading the file.
+   */
+  override def ++=(source:Source): this.type = synchronized { for (line <- source.getLines()) { val phrase = line.trim; if (phrase.length > 0) TriePhraseLexicon.this.+=(phrase) }; trie.setTransitions(); source.close(); this }
   
-    /** Tokenizes and lemmatizes the string of each entry in 'query', then checks if the exact sequence is in the lexicon*/
-    def contains[T<:Observation[T]](query: Seq[T]): Boolean = {
-        val strings = query.map(_.string)
-        val tokenized = strings.flatMap(tokenizer(_))
-        val lemmatized = tokenized.map(lemmatizer.lemmatize(_)).toSeq
-        containsLemmatizedWords(lemmatized)
-    }
-  
-    /** Tokenizes and lemmatizes query.string, then checks if the exact sequence is in the lexicon */
-    def contains[T<:Observation[T]](query: T): Boolean = {
-        val tokenized = tokenizer(query.string).toSeq
-        val lemmatized = tokenized.map(lemmatizer.lemmatize(_))
-        containsLemmatizedWords(lemmatized)
-    }
-  
-    override def toString(): String = { "<PhraseLexicon with "+trie.size+" words>" }
+  def setTransitions() : Unit = synchronized { trie.setTransitions() }
 
-    /** Tags each token with the specified tag, if it is present in the lexicon */
-    def tagLemmatizedText(tokens : Seq[Token], featureFunc : (Token => CategoricalVectorVar[String]), tag : String) : Unit = {
-        trie.tagMentions(tokens,featureFunc,tag)
-    }
+  /** Checks whether the lexicon contains this already-lemmatized/tokenized single word */
+  def containsLemmatizedWord(word: String): Boolean = { containsLemmatizedWords(List(word).toSeq) }
+  
+  /** Checks whether the lexicon contains this already-lemmatized/tokenized phrase, where 'words' can either be
+   * single word or a multi-word expression. */
+  def containsLemmatizedWords(words: Seq[String]): Boolean = {
+    trie.findExactMention(words)
+  }
+  
+  /** Tokenizes and lemmatizes the string of each entry in 'query', then checks if the exact sequence is in the lexicon*/
+  def contains[T<:Observation[T]](query: Seq[T]): Boolean = {
+    val strings = query.map(_.string)
+    val tokenized = strings.flatMap(tokenizer(_))
+    val lemmatized = tokenized.map(lemmatizer.lemmatize(_)).toSeq
+    containsLemmatizedWords(lemmatized)
+  }
+  
+  /** Tokenizes and lemmatizes query.string, then checks if the exact sequence is in the lexicon */
+  def contains[T<:Observation[T]](query: T): Boolean = {
+    val tokenized = tokenizer(query.string).toSeq
+    val lemmatized = tokenized.map(lemmatizer.lemmatize(_))
+    containsLemmatizedWords(lemmatized)
+  }
+  
+  override def toString(): String = { "<PhraseLexicon with "+trie.size+" words>" }
+  
+  /** Tags each token with the specified tag, if it is present in the lexicon */
+  def tagLemmatizedText(tokens : Seq[Token], featureFunc : (Token => CategoricalVectorVar[String]), tag : String) : Unit = {
+    trie.tagMentions(tokens,featureFunc,tag)
+  }
 
-    /** Tags each token with the specified tag, if the lemmatized form is present in the lexicon */
-    def tagText(tokens : Seq[Token], featureFunc : (Token => CategoricalVectorVar[String]), tag : String) : Unit = {
-        trie.lemmatizeAndTagMentions(tokens,featureFunc,tag,lemmatizer)
-    }
+  /** Tags each token with the specified tag, if the lemmatized form is present in the lexicon */
+  def tagText(tokens : Seq[Token], featureFunc : (Token => CategoricalVectorVar[String]), tag : String) : Unit = {
+    trie.lemmatizeAndTagMentions(tokens,featureFunc,tag,lemmatizer)
+  }
+
+  /** Tags each token with the specified tag, if the lemmatized form is present in the lexicon */
+  def tagText(tokens : Seq[Token], featureFunc : (Token => CategoricalVectorVar[String]), tag : String, lemmaFunc : (Token => String)) : Unit = {
+    trie.tagMentions(tokens,featureFunc,tag,lemmaFunc)
+  }
 }
 
 /**
  * A union lexicon of multiple TriePhraseLexicons.
  * Has similar semantics to the TriePhraseLexicon.
  */
-class TrieUnionLexicon(val name: String, val members: TriePhraseLexicon*) extends MutableLexicon {
-    def tokenizer: StringSegmenter = members.head.tokenizer
-    def lemmatizer: Lemmatizer = members.head.lemmatizer
-    def containsLemmatizedWord(word: String): Boolean = members.exists(_.containsLemmatizedWord(word))
-    def containsLemmatizedWords(word: Seq[String]): Boolean = members.exists(_.containsLemmatizedWords(word))
-    def contains[T<:Observation[T]](query: T): Boolean = members.exists(_.contains(query))
-    def contains[T<:Observation[T]](query: Seq[T]): Boolean = members.exists(_.contains(query))
-    def +=(s:String): Unit = {throw new Error("TrieUnionLexicon is immutable. Append to the appropriate TriePhraseLexicon.")}
-    override def toString(): String = {
-        var st = "UNION { "
-        members.foreach(st += _.toString()+" , ")
-        st += " } "
-        st
-    }
-    
-    def tagLemmatizedText(tokens : Seq[Token], featureFunc : (Token => CategoricalVectorVar[String]), tag : String) : Unit = {
-        members.map(_.tagLemmatizedText(tokens,featureFunc,tag))
-    }
-    
-    def tagText(tokens : Seq[Token], featureFunc : (Token => CategoricalVectorVar[String]), tag : String) : Unit = {
-        members.map(_.tagText(tokens,featureFunc,tag))
-    }
-}
-
-/** Support for constructing Lexicons, which automatically will determine if a WordLexicon will suffice or a PhraseLexicon is required.
-    @author Andrew McCallum */
-object OldLexicon {
-  def fromSource(name:String, source:Source, tokenizer:StringSegmenter = cc.factorie.app.strings.nonWhitespaceSegmenter, lemmatizer:Lemmatizer = LowercaseLemmatizer): Lexicon = {
-    var result: MutableLexicon = new ChainWordLexicon(name, tokenizer, lemmatizer)
-    try { result ++= source } catch { case e:MultiWordException => {
-      result = new ChainPhraseLexicon(name, tokenizer, lemmatizer)
-      result ++= source.reset
-      source.close()
-    } }
-    result
+class TrieUnionLexicon[L <: TriePhraseLexicon](val name: String, val members: L*) extends MutableLexicon {
+  def tokenizer: StringSegmenter = members.head.tokenizer
+  def lemmatizer: Lemmatizer = members.head.lemmatizer
+  def containsLemmatizedWord(word: String): Boolean = members.exists(_.containsLemmatizedWord(word))
+  def containsLemmatizedWords(word: Seq[String]): Boolean = members.exists(_.containsLemmatizedWords(word))
+  def contains[T<:Observation[T]](query: T): Boolean = members.exists(_.contains(query))
+  def contains[T<:Observation[T]](query: Seq[T]): Boolean = members.exists(_.contains(query))
+  def +=(s:String): Unit = {throw new Error("TrieUnionLexicon is immutable. Append to the appropriate TriePhraseLexicon.")}
+  override def toString(): String = {
+    var st = "UNION { "
+    members.foreach(st += _.toString()+" , ")
+    st += " } "
+    st
   }
-  def fromFilename(filename:String, tokenizer:StringSegmenter = cc.factorie.app.strings.nonWhitespaceSegmenter, lemmatizer:Lemmatizer = LowercaseLemmatizer): Lexicon = 
-    fromSource(filename, Source.fromFile(new File(filename))(scala.io.Codec.UTF8))
-  def fromResource(resourceFilename:String, tokenizer:StringSegmenter = cc.factorie.app.strings.nonWhitespaceSegmenter, lemmatizer:Lemmatizer = LowercaseLemmatizer): Lexicon =
-    fromSource(resourceFilename, io.Source.fromInputStream(getClass.getResourceAsStream(resourceFilename)))
+  
+  def tagLemmatizedText(tokens : Seq[Token], featureFunc : (Token => CategoricalVectorVar[String]), tag : String) : Unit = {
+    members.map(_.tagLemmatizedText(tokens,featureFunc,tag))
+  }
+  
+  def tagText(tokens : Seq[Token], featureFunc : (Token => CategoricalVectorVar[String]), tag : String) : Unit = {
+    members.map(_.tagText(tokens,featureFunc,tag))
+  }
+
+  /** Tags each token with the specified tag, if the lemmatized form is present in the lexicon */
+  def tagText(tokens : Seq[Token], featureFunc : (Token => CategoricalVectorVar[String]), tag : String, lemmaFunc : (Token => String)) : Unit = {
+    members.map(_.tagText(tokens,featureFunc,tag,lemmaFunc))
+  }
 }
 
 /** A union of multiple lexicons.  Answer "contains" queries with true, if any of the member Lexicons contain the query.
     @author Andrew McCallum */
+@deprecated("Use TriePhraseLexicon instead", "Before 10/1/15")
 class ChainUnionLexicon(val name: String, val members:Lexicon*) extends Lexicon {
   def tokenizer: StringSegmenter = members.head.tokenizer
   def lemmatizer: Lemmatizer = members.head.lemmatizer
@@ -263,6 +258,7 @@ class ChainUnionLexicon(val name: String, val members:Lexicon*) extends Lexicon 
 /** A Lexicon that can only hold single-word lexicon entries, but which is efficient for this case.
     with methods to check whether a String or Token (or more generally a cc.factorie.app.chain.Observation) is in the list.
     @author Andrew McCallum */
+@deprecated("Use TriePhraseLexicon instead", "Before 10/1/15")
 class ChainWordLexicon(val name:String, val tokenizer:StringSegmenter = cc.factorie.app.strings.nonWhitespaceSegmenter, val lemmatizer:Lemmatizer = LowercaseLemmatizer) extends MutableLexicon {
   val contents = new scala.collection.mutable.HashSet[String]
   def +=(phrase:String): Unit = {
@@ -280,6 +276,7 @@ class MultiWordException(msg:String) extends Exception(msg)
 
 /** A list of words or phrases, with methods to check whether a String, Seq[String], or Token (or more generally a cc.factorie.app.chain.Observation) is in the list.
     @author Andrew McCallum */
+@deprecated("Use TriePhraseLexicon instead", "Before 10/1/15")
 class ChainPhraseLexicon(val name:String, val tokenizer:StringSegmenter = cc.factorie.app.strings.nonWhitespaceSegmenter, val lemmatizer:Lemmatizer = LowercaseLemmatizer) extends MutableLexicon {
   // The next two constructors are there just to support legacy usage, and should ultimately be removed.
   /** Populate lexicon from file, with one entry per line, consisting of space-separated tokens. */

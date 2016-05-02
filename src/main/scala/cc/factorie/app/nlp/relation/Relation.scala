@@ -1,16 +1,30 @@
+/* Copyright (C) 2008-2016 University of Massachusetts Amherst.
+   This file is part of "FACTORIE" (Factor graphs, Imperative, Extensible)
+   http://factorie.cs.umass.edu, http://github.com/factorie
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+    http://www.apache.org/licenses/LICENSE-2.0
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License. */
 package cc.factorie.app.nlp.relation
 
-import scala.io.Source
-import cc.factorie.app.nlp.{TokenSpan, Token, DocumentAnnotatorPipeline, Document}
-import cc.factorie.app.nlp.pos.OntonotesForwardPosTagger
+import java.io.FileInputStream
+
+import cc.factorie.app.nlp.coref.ParseForwardCoref
+import cc.factorie.app.nlp.load.LoadOWPL
 import cc.factorie.app.nlp.ner.{NerTag, NoEmbeddingsConllStackedChainNer}
 import cc.factorie.app.nlp.parse.OntonotesTransitionBasedParser
-import cc.factorie.app.nlp.coref.ParseForwardCoref
-import java.io.FileInputStream
-import cc.factorie.app.nlp.load.LoadOWPL
-import cc.factorie.variable.{CategoricalVariable, CategoricalDomain, MutableCategoricalVar}
-import scala.collection.mutable
 import cc.factorie.app.nlp.phrase.Phrase
+import cc.factorie.app.nlp.pos.OntonotesForwardPosTagger
+import cc.factorie.app.nlp.{Document, DocumentAnnotatorPipeline, Token, TokenSpan}
+import cc.factorie.variable.{CategoricalDomain, MutableCategoricalVar}
+
+import scala.collection.mutable
+import scala.io.Source
 
 /**
  * @author John Sullivan

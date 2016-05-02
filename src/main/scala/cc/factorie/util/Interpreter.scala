@@ -1,4 +1,4 @@
-/* Copyright (C) 2008-2014 University of Massachusetts Amherst.
+/* Copyright (C) 2008-2016 University of Massachusetts Amherst.
    This file is part of "FACTORIE" (Factor graphs, Imperative, Extensible)
    http://factorie.cs.umass.edu, http://github.com/factorie
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,6 +15,7 @@ package cc.factorie.util
 
 /** The scala REPL available through an object main.
     Runs each of the command-line args as a scala command, then drops into an interpreter prompt. */
+@deprecated("Not used anywhere", "Before 10/06/15")
 object Interpreter {
   def main(args:Array[String]): Unit = {
     val settings = new scala.tools.nsc.Settings

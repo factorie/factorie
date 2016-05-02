@@ -1,4 +1,4 @@
-/* Copyright (C) 2008-2014 University of Massachusetts Amherst.
+/* Copyright (C) 2008-2016 University of Massachusetts Amherst.
    This file is part of "FACTORIE" (Factor graphs, Imperative, Extensible)
    http://factorie.cs.umass.edu, http://github.com/factorie
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,11 +13,11 @@
 
 package cc.factorie.variable
 
-import cc.factorie.util.Attr
 import cc.factorie._
 import cc.factorie.model.TupleTemplateWithStatistics2
+import cc.factorie.util.Attr
+
 import scala.reflect._
-import scala.reflect.runtime.universe._
 
 // Naming explanation:
 // Variables in "aimer/target" pairs, used for labeled data for training.
@@ -293,7 +293,7 @@ class LabeledDiscreteEvaluation[C](val domain: DiscreteDomain) {
     require(label.domain eq domain)
     _size += 1
     val trueIndex = label.target.intValue
-    for (targetIndex <- 0 until domain.size) {
+    for (targetIndex <- domain.indices) {
       if (targetIndex == trueIndex) {
         if (trueIndex == predIndex)
           _tp(targetIndex) += 1

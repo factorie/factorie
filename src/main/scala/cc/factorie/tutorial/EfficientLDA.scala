@@ -1,4 +1,4 @@
-/* Copyright (C) 2008-2014 University of Massachusetts Amherst.
+/* Copyright (C) 2008-2016 University of Massachusetts Amherst.
    This file is part of "FACTORIE" (Factor graphs, Imperative, Extensible)
    http://factorie.cs.umass.edu, http://github.com/factorie
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -11,13 +11,15 @@
    See the License for the specific language governing permissions and
    limitations under the License. */
 package cc.factorie.tutorial
-import scala.collection.mutable.ArrayBuffer
 import java.io.File
-import cc.factorie.app.strings.Stopwords
+
+import cc.factorie.app.nlp.lexicon.StopWords
 import cc.factorie.app.strings.alphaSegmenter
 import cc.factorie.app.topics.lda.SparseLDAInferencer
 import cc.factorie.directed._
 import cc.factorie.variable._
+
+import scala.collection.mutable.ArrayBuffer
 
 /**
  * LDA example using the SparseLDAInferencer, very efficient.
@@ -52,7 +54,8 @@ object EfficientLDA {
       else List("comp.graphics", "comp.os.ms-windows.misc", "comp.sys.ibm.pc.hardware", "comp.sys.mac.hardware").map("/Users/mccallum/research/data/text/20_newsgroups/"+_)
     val phis = Mixture(numTopics)(ProportionsVariable.growableDense(WordDomain) ~ Dirichlet(beta))
     val documents = new ArrayBuffer[Document]
-    val stopwords = new Stopwords; stopwords += "rainbownum"
+    val stopwords = StopWords
+    stopwords += "rainbownum"
     for (directory <- directories) {
       for (file <- new File(directory).listFiles; if file.isFile) {
         val theta = ProportionsVariable.sortedSparseCounts(numTopics) ~ Dirichlet(alphas)

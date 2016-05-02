@@ -1,4 +1,4 @@
-/* Copyright (C) 2008-2014 University of Massachusetts Amherst.
+/* Copyright (C) 2008-2016 University of Massachusetts Amherst.
    This file is part of "FACTORIE" (Factor graphs, Imperative, Extensible)
    http://factorie.cs.umass.edu, http://github.com/factorie
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -23,7 +23,8 @@ import cc.factorie.app.nlp.pos.PennPosTag
     The annotation ParseTree is stored on a Sentence.
     Unlike other TokenSpans, constructing a Sentence automatically add it to its Sections.
     @author Andrew McCallum */
-class Sentence(sec:Section, initialStart:Int, initialLength:Int) extends TokenSpan(sec, initialStart, initialLength) {
+class Sentence(sec:Section, initialStart:Int, initialLength:Int)
+  extends TokenSpan(sec, initialStart, initialLength) with Serializable {
   /** Construct a new 0-length Sentence that begins just past the current last token of the Section, and add it to the Section automatically.
       This constructor is typically used when reading labeled training data one token at a time, where we need Sentence and Token objects. */
   def this(sec:Section) = this(sec, sec.length, 0)

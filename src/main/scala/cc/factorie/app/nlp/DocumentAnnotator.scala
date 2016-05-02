@@ -1,4 +1,4 @@
-/* Copyright (C) 2008-2014 University of Massachusetts Amherst.
+/* Copyright (C) 2008-2016 University of Massachusetts Amherst.
    This file is part of "FACTORIE" (Factor graphs, Imperative, Extensible)
    http://factorie.cs.umass.edu, http://github.com/factorie
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -67,10 +67,22 @@ class CheckingDocumentAnnotator[Anno](implicit ct:ClassTag[Anno]) extends Docume
 }
 
 class CompoundDocumentAnnotator(val annos:Seq[DocumentAnnotator]) extends DocumentAnnotator {
+  // for java compat
+  def this(annoArr:Array[DocumentAnnotator]) = this(annoArr.toSeq)
   def tokenAnnotationString(token: Token) = annos.map(anno => Option(anno.tokenAnnotationString(token))).mkString("\t")
 
   lazy val prereqAttrs = annos.flatMap(_.prereqAttrs).toSet diff postAttrs
   lazy val postAttrs = annos.flatMap(_.postAttrs).toSet
 
-  def process(document: Document) = annos.foldLeft(document){case (doc, anno) => anno process doc}
+  def process(document: Document) = {
+    // left fold, but faster, thanks scala
+    var doc = document
+    val iter = annos.iterator
+    while(iter.hasNext) {
+      val anno = iter.next()
+      //println(s"annotating document ${doc.name} with ${anno.getClass.getName}")
+      doc = anno.process(doc)
+    }
+    doc
+  }
 }

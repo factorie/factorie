@@ -1,4 +1,4 @@
-/* Copyright (C) 2008-2014 University of Massachusetts Amherst.
+/* Copyright (C) 2008-2016 University of Massachusetts Amherst.
    This file is part of "FACTORIE" (Factor graphs, Imperative, Extensible)
    http://factorie.cs.umass.edu, http://github.com/factorie
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,8 +15,9 @@
 
 package cc.factorie
 
-import scala.language.implicitConversions
 import cc.factorie.variable.MutableVar
+
+import scala.language.implicitConversions
 
 package object directed {
   /** Create a new DirectedFactor, make it the "parent" generating factor for this variable,

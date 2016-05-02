@@ -1,4 +1,4 @@
-/* Copyright (C) 2008-2014 University of Massachusetts Amherst.
+/* Copyright (C) 2008-2016 University of Massachusetts Amherst.
    This file is part of "FACTORIE" (Factor graphs, Imperative, Extensible)
    http://factorie.cs.umass.edu, http://github.com/factorie
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,11 +13,10 @@
 
 package cc.factorie.variable
 
+import cc.factorie.util.Cubbie
+import cc.factorie.{util, variable}
+
 import scala.collection.mutable
-import java.io._
-import java.util.zip.{GZIPOutputStream, GZIPInputStream}
-import cc.factorie.util.{JavaHashMap, Cubbie}
-import cc.factorie.{variable, util}
 
 // For single categorical values
 
@@ -129,11 +128,11 @@ class CategoricalDomain[C] extends DiscreteDomain(0) with IndexedSeq[Categorical
     if (gatherCounts && i != -1) incrementCount(i)
     i
   }
-  /** Return the integer associated with the category, 
-      and also (whether or not 'gatherCounts' is true') 
+  /** Return the integer associated with the category,
+      and also (whether or not 'gatherCounts' is true')
       increment by 'count' the number of times this Domain says the category has been seen.
       If the category is not already in this CategoricalDomain and 'frozen' is false,
-      and 'mazSize' will not be exceeded,
+      and 'maxSize' will not be exceeded,
       then add the category to this CategoricalDomain.
       This method is thread-safe so that multiple threads may read and index data simultaneously. */
   def indexWithCount(category:C, count:Int): Int = {
@@ -141,16 +140,22 @@ class CategoricalDomain[C] extends DiscreteDomain(0) with IndexedSeq[Categorical
     this synchronized { _increment(i, count) }
     i
   }
-  /** Like index, but throw an exception if the category is not already there. */
+  /** Like indexOnly, but throw an exception if the category is not already there. */
   def getIndex(category:C): Int = lock.withReadLock({
-    (if(_indices.containsKey(category)) _indices.get(category) else throw new Error("Category not present; use index() to cause the creation of a new value.")).intValue
+    val v = __indices.get(category)
+    if (v ne null) v.intValue else throw new Error("Category not present; use index() to cause the creation of a new value.")
+  })
+  /** Like indexOnly, but return -1 if the category is not already there. */
+  def indexOrNegativeOne(category:C): Int = lock.withReadLock({
+    val v = __indices.get(category)
+    if (v eq null) -1 else { v.intValue }
   })
   override def freeze(): Unit = {
     _frozen = true
   }
 
-  def +=(x:C) : Unit = this.value(x)
-  def ++=(xs:Traversable[C]) : Unit = xs.foreach(this.index(_))
+  def +=(x:C) : Unit = this.index(x)
+  def ++=(xs:Traversable[C]) : Unit = xs.foreach(this += _)
   /** Wipe the domain, its elements, indices and counts clean */
   def clear(): Unit = { _frozen = false; _elements.clear(); lock.withWriteLock { _indices.clear(); _clear() } }
   // Separate argument types preserves return collection type

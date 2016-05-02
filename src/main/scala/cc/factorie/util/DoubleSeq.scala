@@ -1,4 +1,4 @@
-/* Copyright (C) 2008-2014 University of Massachusetts Amherst.
+/* Copyright (C) 2008-2016 University of Massachusetts Amherst.
    This file is part of "FACTORIE" (Factor graphs, Imperative, Extensible)
    http://factorie.cs.umass.edu, http://github.com/factorie
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -259,9 +259,9 @@ trait SparseDoubleSeq extends DoubleSeq {
   def containsNaN: Boolean = { foreachActiveElement((i,v) => if (v != v) return true); false }
   def sampleIndex(normalizer:Double)(implicit r:Random): Int = {
     assert(normalizer > 0.0, "normalizer = "+normalizer)
-    var b = 0.0; val s = r.nextDouble * normalizer
-    foreachActiveElement((i,v) => { assert(v >= 0.0); if (b > s) return i - 1; b += v })
-    length - 1
+    var li = 0; var b = 0.0; val s = r.nextDouble * normalizer
+    foreachActiveElement((i,v) => { assert(v >= 0.0); if (b > s) return li; b += v; li = i })
+    li
   }
   /** Assumes that the values are already normalized to sum to 1. */
   override def entropy: Double = {

@@ -1,4 +1,4 @@
-/* Copyright (C) 2008-2014 University of Massachusetts Amherst.
+/* Copyright (C) 2008-2016 University of Massachusetts Amherst.
    This file is part of "FACTORIE" (Factor graphs, Imperative, Extensible)
    http://factorie.cs.umass.edu, http://github.com/factorie
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -11,14 +11,14 @@
    See the License for the specific language governing permissions and
    limitations under the License. */
 package cc.factorie.app.nlp.load
-import cc.factorie.app.nlp._
-
-import segment._
-
-import xml.{XML, NodeSeq}
 import java.io.File
+
+import cc.factorie.app.nlp._
 import cc.factorie.app.nlp.coref.Mention
 import cc.factorie.app.nlp.phrase.Phrase
+import cc.factorie.app.nlp.segment._
+
+import scala.xml.{NodeSeq, XML}
 
 // TODO: consider moving this info into variables.
 case class ACEEntityIdentifiers(eId: String, eType: String, eSubtype: String, eClass: String)

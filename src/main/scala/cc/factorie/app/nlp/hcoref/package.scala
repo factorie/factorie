@@ -1,4 +1,4 @@
-/* Copyright (C) 2008-2014 University of Massachusetts Amherst.
+/* Copyright (C) 2008-2016 University of Massachusetts Amherst.
    This file is part of "FACTORIE" (Factor graphs, Imperative, Extensible)
    http://factorie.cs.umass.edu, http://github.com/factorie
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -27,6 +27,11 @@ package object hcoref {
         node.alterParent(None)(null)
       }
     }
+  }
+
+  implicit class MentionListUtils[Vars <: NodeVariables[Vars]](val ments:Iterable[Node[Vars]]) extends AnyVal {
+    def roots = ments.map(_.root).toSet.toSeq
+    def nonMentionRoots = ments.map(_.root).filterNot(_.isMention).toSet.toSeq
   }
 
   implicit class NodeListGroundTruthUtils[Vars <: NodeVariables[Vars] with GroundTruth](val nodes:Iterable[Node[Vars]]) {

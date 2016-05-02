@@ -1,4 +1,4 @@
-/* Copyright (C) 2008-2014 University of Massachusetts Amherst.
+/* Copyright (C) 2008-2016 University of Massachusetts Amherst.
    This file is part of "FACTORIE" (Factor graphs, Imperative, Extensible)
    http://factorie.cs.umass.edu, http://github.com/factorie
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,10 +15,10 @@
 
 package cc.factorie.optimize
 import cc.factorie._
-import cc.factorie.la._
-import util.DoubleAccumulator
-import cc.factorie.model.{WeightsSet, Parameters, Model, DotFamily}
 import cc.factorie.infer.ProposalSampler
+import cc.factorie.la._
+import cc.factorie.model.{DotFamily, Model, Parameters, WeightsSet}
+import cc.factorie.util.DoubleAccumulator
 
 /** Provides a gradient that encourages the model.score to rank its best proposal the same as the objective.score would, with a margin.
     @author Andrew McCallum */

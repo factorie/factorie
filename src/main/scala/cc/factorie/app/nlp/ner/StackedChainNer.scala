@@ -1,4 +1,4 @@
-/* Copyright (C) 2008-2014 University of Massachusetts Amherst.
+/* Copyright (C) 2008-2016 University of Massachusetts Amherst.
    This file is part of "FACTORIE" (Factor graphs, Imperative, Extensible)
    http://factorie.cs.umass.edu, http://github.com/factorie
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,22 +12,28 @@
    limitations under the License. */
 
 package cc.factorie.app.nlp.ner
-import cc.factorie._
-import app.strings._
-import cc.factorie.util.{ClasspathURL, CmdOptions, HyperparameterMain, BinarySerializer}
-import cc.factorie.app.nlp._
-import cc.factorie.app.chain._
-import scala.io._
+
+import cc.factorie.app.nlp.lemma.{LowercaseTokenLemma, LowercaseLemmatizer}
+import cc.factorie.app.nlp.lexicon.{LexiconsProvider, StaticLexicons}
+import cc.factorie.util._
 import java.io._
-import scala.math.round
-import scala.collection.mutable.ListBuffer
+
+import cc.factorie._
+import cc.factorie.app.chain._
+import cc.factorie.app.nlp._
 import cc.factorie.app.nlp.embeddings._
+import cc.factorie.app.strings._
 import cc.factorie.model.DotFamilyWithStatistics2
-import cc.factorie.optimize.{ParameterAveraging, AdaGrad}
+import cc.factorie.optimize.{AdaGrad, ParameterAveraging}
+import cc.factorie.util.{BinarySerializer, CmdOptions, HyperparameterMain, JavaHashMap}
 import cc.factorie.variable._
 import cc.factorie.optimize.Trainer
 import cc.factorie.la.WeightsMapAccumulator
-import scala.reflect.ClassTag
+import scala.reflect.{ClassTag, classTag}
+
+import scala.collection.mutable.ListBuffer
+import scala.io._
+import scala.math.round
 
 
 class TokenSequence[T<:NerTag](token: Token)(implicit m: ClassTag[T]) extends collection.mutable.ArrayBuffer[Token] {
@@ -36,28 +42,26 @@ class TokenSequence[T<:NerTag](token: Token)(implicit m: ClassTag[T]) extends co
   def key = this.mkString("-")
 }
 
-abstract class StackedChainNer[S <: NerSpan, L<:NerTag](labelDomain: CategoricalDomain[String],
-                                                        newLabel: (Token, String) => L,
-                                                        labelToToken: L => Token,
-                                                        embeddingMap: SkipGramEmbedding,
-                                                        embeddingDim: Int,
-                                                        scale: Double,
-                                                        useOffsetEmbedding: Boolean,
-                                                        url: java.net.URL=null)(implicit m: ClassTag[L], s:ClassTag[S]) extends NerAnnotator[S, L] {
+abstract class StackedChainNer[L<:NerTag](labelDomain: CategoricalDomain[String],
+                                 newLabel: (Token, String) => L,
+                                 labelToToken: L => Token,
+                                 embeddingMap: SkipGramEmbedding,
+                                 embeddingDim: Int,
+                                 scale: Double,
+                                 useOffsetEmbedding: Boolean,
+                                 modelIs: InputStream=null,
+                                 nerLexiconFeatures: NerLexiconFeatures)(implicit m: ClassTag[L]) extends DocumentAnnotator with Serializable {
+
+  val FEATURE_PREFIX_REGEX = "^[^@]*$".r
+  val ALPHA_REGEX = "[A-Za-z]+".r
+
   object NERModelOpts {
     val argsList = new scala.collection.mutable.HashMap[String, String]()
     argsList += ("scale" -> scale.toString)
     argsList += ("embeddingDim" -> embeddingDim.toString)
   }
 
-  object Demonyms extends lexicon.PhraseLexicon("iesl/demonyms") {
-    for (line <- io.Source.fromInputStream(lexicon.ClasspathResourceLexicons.getClass.getResourceAsStream("iesl/demonyms.txt")).getLines()) {
-      val fields = line.trim.split(" ?\t ?") // TODO The currently checked in version has extra spaces in it; when this is fixed, use simply: ('\t')
-      for (phrase <- fields.drop(1)) this += phrase
-    }
-  }
-
-  def annotateTokens(document: Document) =
+  def process(document:Document) =
     if(document.tokenCount > 0) {
       if (!document.tokens.head.attr.contains(m.runtimeClass))
         document.tokens.map(token => token.attr += newLabel(token, "O"))
@@ -72,12 +76,19 @@ abstract class StackedChainNer[S <: NerSpan, L<:NerTag](labelDomain: Categorical
         initSecondaryFeatures(document)
       }
       process(document,useModel2 = true)
+      for (token <- document.tokens) {
+        token.attr.remove[ChainNerFeatures]
+        token.attr.remove[ChainNer2Features]
+      }
       document
     } else {
       document
     }
 
   def prereqAttrs = Seq(classOf[Sentence])
+  val postAttrs = Seq(m.runtimeClass)
+
+  def tokenAnnotationString(token: Token) = token.attr[NerTag].categoryValue
 
   object ChainNer2FeaturesDomain extends CategoricalVectorDomain[String]
   class ChainNer2Features(val token:Token) extends BinaryFeatureVectorVariable[String] {
@@ -112,7 +123,7 @@ abstract class StackedChainNer[S <: NerSpan, L<:NerTag](labelDomain: Categorical
     override def factors(variables:Iterable[Var]): Iterable[Factor] = {
       val result = new ListBuffer[Factor]
       variables match {
-        case labels: Iterable[L] if variables.forall(v => m.runtimeClass.isAssignableFrom(v.getClass)) =>
+        case labels: Iterable[L] if variables.forall(v => classTag[L].runtimeClass.isAssignableFrom(v.getClass)) =>
           var prevLabel: L = null.asInstanceOf[L]
           for (label <- labels) {
             result += bias.Factor(label)
@@ -142,9 +153,9 @@ abstract class StackedChainNer[S <: NerSpan, L<:NerTag](labelDomain: Categorical
         val scores = obsWeights.leftMultiply(labelToFeatures(varying(i)).value.asInstanceOf[Tensor1]).asInstanceOf[DenseTensor1]
         scores += biasScores
         if (embeddingMap != null) {
-          if (embeddingMap.contains(labelToToken(varying(i)).string)) scores += embedding.weights.value * (embeddingMap(labelToToken(varying(i)).string))
-          if (i >= 1 && embeddingMap.contains(labelToToken(varying(i-1)).string)) scores += embeddingPrev.weights.value * (embeddingMap(labelToToken(varying(i-1)).string))
-          if (i < varying.length-1 && embeddingMap.contains(labelToToken(varying(i+1)).string)) scores += embeddingNext.weights.value * (embeddingMap(labelToToken(varying(i+1)).string))
+          if (embeddingMap.contains(labelToToken(varying(i)).string)) scores += embedding.weights.value * embeddingMap(labelToToken(varying(i)).string)
+          if (i >= 1 && embeddingMap.contains(labelToToken(varying(i-1)).string)) scores += embeddingPrev.weights.value * embeddingMap(labelToToken(varying(i-1)).string)
+          if (i < varying.length-1 && embeddingMap.contains(labelToToken(varying(i+1)).string)) scores += embeddingNext.weights.value * embeddingMap(labelToToken(varying(i+1)).string)
         }
         a(i) = scores
         i += 1
@@ -160,13 +171,14 @@ abstract class StackedChainNer[S <: NerSpan, L<:NerTag](labelDomain: Categorical
       }
     }
   }
+
   val model = new StackedChainNereModel[ChainNerFeatures](ChainNerFeaturesDomain, l => labelToToken(l).attr[ChainNerFeatures], labelToToken, t => t.attr[L])
   val model2 = new StackedChainNereModel[ChainNer2Features](ChainNer2FeaturesDomain, l => labelToToken(l).attr[ChainNer2Features], labelToToken, t => t.attr[L])
 
   val objective = cc.factorie.variable.HammingObjective //new HammingTemplate[LabeledMutableDiscreteVar]()
 
-  if (url != null) {
-    deSerialize(url.openConnection.getInputStream)
+  if (modelIs != null) {
+    deSerialize(modelIs)
     // freeze!
     ChainNerFeaturesDomain.freeze()
     ChainNer2FeaturesDomain.freeze()
@@ -207,23 +219,18 @@ abstract class StackedChainNer[S <: NerSpan, L<:NerTag](labelDomain: Categorical
   var bP = false
   var ss = 10.0
 
-  def prevWindowNum(t:Token, n:Int): IndexedSeq[(Int,Token)] = t.prevWindow(n).map(x => (t.prevWindow(n).indexOf(x),x)).toIndexedSeq
-  def nextWindowNum(t:Token, n:Int): IndexedSeq[(Int,Token)] = t.nextWindow(n).map(x => (t.nextWindow(n).indexOf(x),x)).toIndexedSeq
-
-  def prefix( prefixSize : Int, cluster : String ) : String = if(cluster.size > prefixSize) cluster.substring(0, prefixSize) else cluster
+  def prefix( prefixSize : Int, cluster : String ) : String = if(cluster.length > prefixSize) cluster.substring(0, prefixSize) else cluster
 
   def addContextFeatures[A<:Observation[A]](t : Token, from : Token, vf:Token=>CategoricalVectorVar[String]) : Unit = {
-    vf(t) ++= prevWindowNum(from,2).map(t2 => "CONTEXT="+simplifyDigits(t2._2.string).toLowerCase + "@-" + t2._1)
-    vf(t) ++= nextWindowNum(from, 2).map(t2 => "CONTEXT="+simplifyDigits(t2._2.string).toLowerCase + "@" + t2._1)
-    for(t2 <- prevWindowNum(from,2)) {
-      if(clusters.contains(t2._2.string)) {
-        vf(t) += ("CONTEXTPATH="+prefix(4, clusters(t2._2.string)) + ("@-" + t2._1.toString))
-      }
+    val prevWindow = from.prevWindow(2).zipWithIndex
+    val nextWindow = from.nextWindow(2).zipWithIndex
+    vf(t) ++= prevWindow.map { case (t2, idx) =>
+      if (clusters.contains(t2.string)) vf(t) += ("CONTEXTPATH="+prefix(4, clusters(t2.string)) + ("@-" + idx.toString))
+      "CONTEXT="+simplifyDigits(t2.string).toLowerCase + "@-" + idx
     }
-
-    for(t2 <- nextWindowNum(from, 2)) {
-      if(clusters.contains(t2._2.string))
-        vf(t) += ("CONTEXTPATH="+prefix(4, clusters(t2._2.string)) + ("@" + t2._1.toString))
+    vf(t) ++= nextWindow.map { case (t2, idx) =>
+      if (clusters.contains(t2.string)) vf(t) += ("CONTEXTPATH="+prefix(4, clusters(t2.string)) + ("@" + idx.toString))
+      "CONTEXT="+simplifyDigits(t2.string).toLowerCase + "@" + idx
     }
   }
 
@@ -246,52 +253,27 @@ abstract class StackedChainNer[S <: NerSpan, L<:NerTag](labelDomain: Categorical
     }
   }
 
+
+//  val bos: BufferedOutputStream = new BufferedOutputStream(new FileOutputStream("features.txt"), 10000)
+//  val out: PrintStream = new PrintStream(bos, true)
+//
+//  for (token <- document.tokens) {
+//      val features: ChainNerFeatures = token.attr[ChainNerFeatures]
+//      if(features != null && features.activeCategories.size > 0) {
+//        val feats: Seq[String] = features.activeCategories.sortWith(_ < _) 
+//        out.println(document.name+":"+token.position+"="+feats.mkString(", "))
+//      }
+//  }
+
+  
   def initFeatures(document:Document, vf:Token=>CategoricalVectorVar[String]): Unit = {
     count=count+1
-    val tokenSequence = document.tokens.toSeq
-    /* This now does a lot of lemmatizing. It might be worth adding an extra
-     * method to the lookup which pulls out the lemmatized form and creates it 
-     * using the lexicon's lemmatizer if it isn't there.
-     */
-    lexicon.iesl.Month.tagText(tokenSequence,vf,"MONTH")
-    lexicon.iesl.Day.tagText(tokenSequence,vf,"DAY")
-
-    lexicon.iesl.PersonFirst.tagText(tokenSequence,vf,"PERSON-FIRST")
-    lexicon.iesl.PersonFirstHigh.tagText(tokenSequence,vf,"PERSON-FIRST-HIGH")
-    lexicon.iesl.PersonFirstHighest.tagText(tokenSequence,vf,"PERSON-FIRST-HIGHEST")
-    lexicon.iesl.PersonFirstMedium.tagText(tokenSequence,vf,"PERSON-FIRST-MEDIUM")
-
-    lexicon.iesl.PersonLast.tagText(tokenSequence,vf,"PERSON-LAST")
-    lexicon.iesl.PersonLastHigh.tagText(tokenSequence,vf,"PERSON-LAST-HIGH")
-    lexicon.iesl.PersonLastHighest.tagText(tokenSequence,vf,"PERSON-LAST-HIGHEST")
-    lexicon.iesl.PersonLastMedium.tagText(tokenSequence,vf,"PERSON-LAST-MEDIUM")
-
-    lexicon.iesl.PersonHonorific.tagText(tokenSequence,vf,"PERSON-HONORIFIC")
-
-    lexicon.iesl.Company.tagText(tokenSequence,vf, "COMPANY")
-    lexicon.iesl.JobTitle.tagText(tokenSequence,vf, "JOB-TITLE")
-    lexicon.iesl.OrgSuffix.tagText(tokenSequence,vf, "ORG-SUFFIX")
-
-    lexicon.iesl.Country.tagText(tokenSequence,vf, "COUNTRY")
-    lexicon.iesl.City.tagText(tokenSequence,vf, "CITY")
-    lexicon.iesl.PlaceSuffix.tagText(tokenSequence,vf, "PLACE-SUFFIX")
-    lexicon.iesl.USState.tagText(tokenSequence,vf, "USSTATE")
-    lexicon.iesl.Continents.tagText(tokenSequence,vf, "CONTINENT")
-
-    lexicon.wikipedia.Person.tagText(tokenSequence,vf, "WIKI-PERSON")
-    lexicon.wikipedia.Event.tagText(tokenSequence,vf, "WIKI-EVENT")
-    lexicon.wikipedia.Location.tagText(tokenSequence,vf, "WIKI-LOCATION")
-    lexicon.wikipedia.Organization.tagText(tokenSequence,vf, "WIKI-ORG")
-    lexicon.wikipedia.ManMadeThing.tagText(tokenSequence,vf, "MANMADE")
-    lexicon.iesl.Demonym.tagText(tokenSequence,vf, "DEMONYM")
-
-    lexicon.wikipedia.Book.tagText(tokenSequence,vf, "WIKI-BOOK")
-    lexicon.wikipedia.Business.tagText(tokenSequence,vf, "WIKI-BUSINESS")
-    lexicon.wikipedia.Film.tagText(tokenSequence,vf, "WIKI-FILM")
-
-    lexicon.wikipedia.LocationAndRedirect.tagText(tokenSequence,vf, "WIKI-LOCATION-REDIRECT")
-    lexicon.wikipedia.PersonAndRedirect.tagText(tokenSequence,vf, "WIKI-PERSON-REDIRECT")
-    lexicon.wikipedia.OrganizationAndRedirect.tagText(tokenSequence,vf, "WIKI-ORG-REDIRECT")
+    val tokenSequence = document.tokens.toIndexedSeq
+    //One pass of lemmatising, this should be the same lemmatiser as the one used to construct the lexicon.
+    LowercaseLemmatizer.process(document)
+    
+    nerLexiconFeatures.addLexiconFeatures(tokenSequence, vf)
+    
 
     import cc.factorie.app.strings.simplifyDigits
     for (token <- document.tokens) {
@@ -305,20 +287,51 @@ abstract class StackedChainNer[S <: NerSpan, L<:NerTag](labelDomain: Categorical
       if (word.length > 5) { features += "P="+cc.factorie.app.strings.prefix(word, 4); features += "S="+cc.factorie.app.strings.suffix(word, 4) }
       if (token.isPunctuation) features += "PUNCTUATION"
 
-      if (clusters.size > 0 && clusters.contains(rawWord)) {
+      if (clusters.nonEmpty && clusters.contains(rawWord)) {
         features += "CLUS="+prefix(4,clusters(rawWord))
         features += "CLUS="+prefix(6,clusters(rawWord))
         features += "CLUS="+prefix(10,clusters(rawWord))
         features += "CLUS="+prefix(20,clusters(rawWord))
       }
     }
-    for (sentence <- document.sentences) cc.factorie.app.chain.Observations.addNeighboringFeatureConjunctions(sentence.tokens, vf, "^[^@]*$", List(0), List(1), List(2), List(-1), List(-2))
-    // Add features for character n-grams between sizes 2 and 5
-    document.tokens.foreach(t => if (t.string.matches("[A-Za-z]+")) vf(t) ++= t.charNGrams(2,5).map(n => "NGRAM="+n))
-    // Add features from window of 4 words before and after
-    document.tokens.foreach(t => vf(t) ++= t.prevWindow(4).map(t2 => "PREVWINDOW="+simplifyDigits(t2.string).toLowerCase))
-    document.tokens.foreach(t => vf(t) ++= t.nextWindow(4).map(t2 => "NEXTWINDOW="+simplifyDigits(t2.string).toLowerCase))
+
+    for (sentence <- document.sentences) {
+      cc.factorie.app.chain.Observations.addNeighboringFeatures(sentence.tokens,vf,FEATURE_PREFIX_REGEX,-2,2)
+    }
+
+    val tokenBuffer = new CircularBuffer[CategoricalVectorVar[String]](4)
+    val stringBuffer = new CircularBuffer[String](4)
+    // This is a separate iteration as combining them would be semantically different due to addNeighbouringFeatures().
+    for (token <- document.tokens) {
+      val tokenStr = token.string
+      val tokenFeatures = vf(token)
+      if (ALPHA_REGEX.findFirstIn(tokenStr).nonEmpty) {
+        tokenFeatures ++= token.charNGrams(2,5).map(n => "NGRAM="+n)
+      }
+
+      val simpleLowerStr = simplifyDigits(tokenStr).toLowerCase()
+      val nextStr = "NEXTWINDOW="+simpleLowerStr
+
+      // Add features from window of 4 words before and after
+      var i = 0
+      while (i < 4) {
+        val curTok = tokenBuffer(i)
+        if (curTok != null) {
+          curTok += nextStr // add next window feature to the token history
+        }
+        val prevStr = stringBuffer(i)
+        if (prevStr != null) {
+          tokenFeatures += prevStr // add previous window feature to the current token
+        }
+        i += 1
+      }
+      tokenBuffer += vf(token)
+      stringBuffer += "PREVWINDOW="+simpleLowerStr
+    }
+
     if(aggregate) document.tokens.foreach( aggregateContext(_, vf) )
+    
+
   }
 
   def mode(list : List[String]) : String = {
@@ -371,22 +384,25 @@ abstract class StackedChainNer[S <: NerSpan, L<:NerTag](labelDomain: Categorical
   }
 
   def initSecondaryFeatures(document:Document, extraFeatures : Boolean = false): Unit = {
-    document.tokens.foreach(t => t.attr[ChainNer2Features] ++= prevWindowNum(t,2).map(t2 => "PREVLABEL" + t2._1 + "="+t2._2.attr[L].categoryValue))
-    document.tokens.foreach(t => t.attr[ChainNer2Features] ++= prevWindowNum(t,1).map(t2 => "PREVLABELCON="+t2._2.attr[L].categoryValue+"&"+t.string))
+
     for(t <- document.tokens) {
-      if(t.sentenceHasPrev) {
-        t.attr[ChainNer2Features] ++= prevWindowNum(t,2).map(t2 => "PREVLABELLCON="+t.sentencePrev.attr[L].categoryValue+"&"+t2._2.string)
-        t.attr[ChainNer2Features] ++= nextWindowNum(t,2).map(t2 => "PREVLABELLCON="+t.sentencePrev.attr[L].categoryValue+"&"+t2._2.string)
+      val tokenPrevWindow = t.prevWindow(2)
+      t.attr[ChainNer2Features] ++= tokenPrevWindow.zipWithIndex.map(t2 => "PREVLABEL" + t2._2 + "="+t2._1.attr[L].categoryValue)
+      if (t.hasPrev) {
+        t.attr[ChainNer2Features] += "PREVLABELCON=" + t.prev.attr[L].categoryValue + "&" + t.string
+      }
+      if (t.sentenceHasPrev) {
+        t.attr[ChainNer2Features] ++= tokenPrevWindow.map(t2 => "PREVLABELLCON=" + t.sentencePrev.attr[L].categoryValue + "&" + t2.string)
+        t.attr[ChainNer2Features] ++= t.nextWindow(2).map(t2 => "PREVLABELLCON=" + t.sentencePrev.attr[L].categoryValue + "&" + t2.string)
       }
     }
 
-    val sequences = getSequences(document)
-    val tokenToLabelMap = new scala.collection.mutable.HashMap[String, List[String]]
-    val extendedPrediction = new scala.collection.mutable.HashMap[String, List[String]]
-    val sequenceToLabelMap = new scala.collection.mutable.HashMap[String, List[String]]
-    val subsequencesToLabelMap = new scala.collection.mutable.HashMap[String, List[String]]
-
     if(extraFeatures) {
+      val sequences = getSequences(document)
+      val tokenToLabelMap = JavaHashMap[String,List[String]]()
+      val sequenceToLabelMap = JavaHashMap[String,List[String]]()
+      val subsequencesToLabelMap = JavaHashMap[String,List[String]]()
+
       for (token <- document.tokens) {
         if(tokenToLabelMap.contains(token.string))
           tokenToLabelMap(token.string) = tokenToLabelMap(token.string) ++ List(token.attr[L].categoryValue)
@@ -425,30 +441,40 @@ abstract class StackedChainNer[S <: NerSpan, L<:NerTag](labelDomain: Categorical
         }
       }
     }
+
+    val extendedPrediction = JavaHashMap[String, collection.mutable.Map[String,Int]]()
+    val surfaceFormCount = JavaHashMap[String,Int]()
     for(token <- document.tokens) {
-      if(extendedPrediction.contains(token.string))
-        labelDomain.categories.map(str => token.attr[ChainNer2Features] += str + "=" + history(extendedPrediction(token.string), str) )
-      if(extendedPrediction.contains(token.string))
-        extendedPrediction(token.string) = extendedPrediction(token.string) ++ List(token.attr[L].categoryValue)
-      else
-        extendedPrediction(token.string) = List(token.attr[L].categoryValue)
+      val tokenStr = token.string
+      if(extendedPrediction.contains(tokenStr)) {
+        labelDomain.categories.foreach(str => token.attr[ChainNer2Features] += str + "=" + history(extendedPrediction(token.string).getOrElse(str,0), surfaceFormCount.getOrElse(tokenStr,0)) )
+        val map = extendedPrediction(tokenStr)
+        val count = map.getOrElse(token.attr[L].categoryValue,0) + 1
+        map.put(token.attr[L].categoryValue,count)
+        surfaceFormCount.put(tokenStr,surfaceFormCount.getOrElse(tokenStr,0) + 1)
+      } else {
+        val map = JavaHashMap[String,Int]()
+        map.put(token.attr[L].categoryValue,1)
+        extendedPrediction.put(tokenStr,map)
+        surfaceFormCount.put(tokenStr,1)
+      }
     }
 
-    for(token <- document.tokens) {
-      val rawWord = token.string
-      if(token.hasPrev && clusters.size > 0) {
-        if(clusters.contains(rawWord))
-          token.attr[ChainNer2Features] ++= List(4,6,10,20).map("BROWNCON="+token.prev.attr[L].categoryValue + "&" + prefix(_,clusters(rawWord)))
-        if(token.hasNext) {
-          var nextRawWord = token.next.string
-          if(clusters.contains(nextRawWord))
-            token.attr[ChainNer2Features] ++= List(4,6,10,20).map("BROWNCON="+token.prev.attr[L].categoryValue + "&" + prefix(_,clusters(nextRawWord)))
-          if(token.next.hasNext && clusters.contains(token.next.next.string)) {
-            nextRawWord = token.next.next.string
-            token.attr[ChainNer2Features] ++= List(4,6,10,20).map("BROWNCON="+token.prev.attr[L].categoryValue + "&" + prefix(_,clusters(nextRawWord)))
-          }
-        }
+    if (clusters.nonEmpty) {
+      for(token <- document.tokens) {
+        val rawWord = token.string
         if(token.hasPrev) {
+          if(clusters.contains(rawWord))
+            token.attr[ChainNer2Features] ++= List(4,6,10,20).map("BROWNCON="+token.prev.attr[L].categoryValue + "&" + prefix(_,clusters(rawWord)))
+          if(token.hasNext) {
+            var nextRawWord = token.next.string
+            if(clusters.contains(nextRawWord))
+              token.attr[ChainNer2Features] ++= List(4,6,10,20).map("BROWNCON="+token.prev.attr[L].categoryValue + "&" + prefix(_,clusters(nextRawWord)))
+            if(token.next.hasNext && clusters.contains(token.next.next.string)) {
+              nextRawWord = token.next.next.string
+              token.attr[ChainNer2Features] ++= List(4,6,10,20).map("BROWNCON="+token.prev.attr[L].categoryValue + "&" + prefix(_,clusters(nextRawWord)))
+            }
+          }
           var prevRawWord = token.prev.string
           if(clusters.contains(prevRawWord))
             token.attr[ChainNer2Features] ++= List(4,6,10,20).map("BROWNCON="+token.prev.attr[L].categoryValue + "&" + prefix(_,clusters(prevRawWord)))
@@ -470,6 +496,10 @@ abstract class StackedChainNer[S <: NerSpan, L<:NerTag](labelDomain: Categorical
     (round( 10.0 * ((list.count(_ == category).toDouble / list.length.toDouble)/3)) / 10.0).toString
   }
 
+  def history(count : Int, total : Int) : String = {
+    (round( 10.0 * ((count.toDouble / total)/3.0)) / 10.0).toString
+  }
+
   def train(trainDocuments: Seq[Document],testDocuments: Seq[Document], rate: Double, delta: Double): Double = {
     implicit val random = new scala.util.Random(0)
     // Read in the data
@@ -484,12 +514,12 @@ abstract class StackedChainNer[S <: NerSpan, L<:NerTag](labelDomain: Categorical
     println("Initializing testing features")
     testDocuments.foreach(initFeatures(_,(t:Token)=>t.attr[ChainNerFeatures]))
 
-    if (embeddingMap != null) println("StackedChainNer #tokens with no embedding %d/%d".format(trainDocuments.map(_.tokens.filter(t => !embeddingMap.contains(t.string))).flatten.size, trainDocuments.map(_.tokens.size).sum))
-    println("StackedChainNer #tokens with no brown clusters assigned %d/%d".format(trainDocuments.map(_.tokens.filter(t => !clusters.contains(t.string))).flatten.size, trainDocuments.map(_.tokens.size).sum))
+    if (embeddingMap != null) println("StackedChainNer #tokens with no embedding %d/%d".format(trainDocuments.flatMap(_.tokens.filter(t => !embeddingMap.contains(t.string))).size, trainDocuments.map(_.tokens.size).sum))
+    println("StackedChainNer #tokens with no brown clusters assigned %d/%d".format(trainDocuments.flatMap(_.tokens.filter(t => !clusters.contains(t.string))).size, trainDocuments.map(_.tokens.size).sum))
 
-    val trainLabels = trainDocuments.map(_.tokens).flatten.map(_.attr[L with LabeledMutableDiscreteVar]) //.take(100)
-    val testLabels = testDocuments.map(_.tokens).flatten.map(_.attr[L with LabeledMutableDiscreteVar]) //.take(20)
-
+    val trainLabels = trainDocuments.flatMap(_.tokens).map(_.attr[L with LabeledMutableDiscreteVar]) //.take(100)
+    val testLabels = testDocuments.flatMap(_.tokens).map(_.attr[L with LabeledMutableDiscreteVar]) //.take(20)
+    
     val vars = for(td <- trainDocuments; sentence <- td.sentences if sentence.length > 1) yield sentence.tokens.map(_.attr[L with LabeledMutableDiscreteVar])
     val examples = vars.map(v => new model.ChainLikelihoodExample(v.toSeq))
     println("Training with " + examples.length + " examples")
@@ -497,12 +527,15 @@ abstract class StackedChainNer[S <: NerSpan, L<:NerTag](labelDomain: Categorical
     trainDocuments.foreach(process(_, useModel2=false))
     testDocuments.foreach(process(_, useModel2=false))
     printEvaluation(trainDocuments, testDocuments, "FINAL 1")
-
+ 
     (trainDocuments ++ testDocuments).foreach( _.tokens.map(token => token.attr += new ChainNer2Features(token)))
 
-    for(document <- trainDocuments ++ testDocuments) initFeatures(document, (t:Token)=>t.attr[ChainNer2Features])
-    for(document <- trainDocuments ++ testDocuments) initSecondaryFeatures(document)
+    for(document <- trainDocuments) initFeatures(document, (t:Token)=>t.attr[ChainNer2Features])
+    for(document <- trainDocuments) initSecondaryFeatures(document)
     ChainNer2FeaturesDomain.freeze()
+      
+    for(document <- testDocuments) initFeatures(document, (t:Token)=>t.attr[ChainNer2Features])
+    for(document <- testDocuments) initSecondaryFeatures(document)
     //println(trainDocuments(3).tokens.map(token => token.nerTag.target.categoryValue + " "+token.string+" "+token.attr[ChainNer2Features].toString).mkString("\n"))
     //println("Example Test Token features")
     //println(testDocuments(1).tokens.map(token => token.nerTag.baseCategoryValue+" "+token.string+" "+token.attr[ChainNer2Features].toString).mkString("\n"))
@@ -529,8 +562,8 @@ abstract class StackedChainNer[S <: NerSpan, L<:NerTag](labelDomain: Categorical
       tokenTotal += doc.tokenCount
     })
     val totalTime = System.currentTimeMillis() - t0
-    var sentencesPerSecond = (sentenceTotal / totalTime) * 1000.0
-    var tokensPerSecond = (tokenTotal / totalTime) * 1000.0
+    val sentencesPerSecond = (sentenceTotal / totalTime) * 1000.0
+    val tokensPerSecond = (tokenTotal / totalTime) * 1000.0
     (sentencesPerSecond, tokensPerSecond, segmentEvaluation.f1)
   }
 
@@ -558,47 +591,58 @@ abstract class StackedChainNer[S <: NerSpan, L<:NerTag](labelDomain: Categorical
     println(segmentEvaluation)
     segmentEvaluation.f1
   }
+
   def process(document:Document, useModel2 : Boolean): Unit = {
     if (document.tokenCount == 0) return
-    for(sentence <- document.sentences if sentence.tokens.size > 0) {
+    for(sentence <- document.sentences if sentence.tokens.nonEmpty) {
       val vars = sentence.tokens.map(_.attr[L]).toSeq
       (if (useModel2) model2 else model).maximize(vars)(null)
     }
   }
 }
 
-
-
 class ConllStackedChainNer(embeddingMap: SkipGramEmbedding,
                            embeddingDim: Int,
                            scale: Double,
-                           useOffsetEmbedding: Boolean,
-                           url: java.net.URL=null) extends StackedChainNer[ConllNerSpan, BilouConllNerTag](BilouConllNerDomain, (t, s) => new BilouConllNerTag(t, s), l => l.token, embeddingMap, embeddingDim, scale, useOffsetEmbedding, url) {
-  def newSpan(sec: Section, start: Int, length: Int, category: String) = new ConllNerSpan(sec, start, length, category)
+                           useOffsetEmbedding: Boolean)(implicit mp:ModelProvider[ConllStackedChainNer], nerLexiconFeatures:NerLexiconFeatures)
+  extends StackedChainNer[BilouConllNerTag](
+    BilouConllNerDomain,
+    (t, s) => new BilouConllNerTag(t, s),
+    l => l.token,
+    embeddingMap,
+    embeddingDim,
+    scale,
+    useOffsetEmbedding,
+    mp.provide, nerLexiconFeatures)
 
-  def newBuffer = new ConllNerSpanBuffer
-}
 //object ConllStackedChainNer extends ConllStackedChainNer(SkipGramEmbedding, 100, 1.0, true, ClasspathURL[ConllStackedChainNer](".factorie"))
-class NoEmbeddingsConllStackedChainNer(url:java.net.URL) extends ConllStackedChainNer(null, 0, 0.0, false, url)
-object NoEmbeddingsConllStackedChainNer extends NoEmbeddingsConllStackedChainNer(ClasspathURL[NoEmbeddingsConllStackedChainNer](".factorie"))
+class NoEmbeddingsConllStackedChainNer()(implicit mp:ModelProvider[NoEmbeddingsConllStackedChainNer], nerLexiconFeatures:NerLexiconFeatures) extends ConllStackedChainNer(null, 0, 0.0, false)(mp, nerLexiconFeatures) with Serializable
+object NoEmbeddingsConllStackedChainNer extends NoEmbeddingsConllStackedChainNer()(ModelProvider.classpath(), StaticLexiconFeatures()) with Serializable
 
 class OntonotesStackedChainNer(embeddingMap: SkipGramEmbedding,
                                embeddingDim: Int,
                                scale: Double,
-                               useOffsetEmbedding: Boolean,
-                               url: java.net.URL=null) extends StackedChainNer[OntonotesNerSpan, BilouOntonotesNerTag](BilouOntonotesNerDomain, (t, s) => new BilouOntonotesNerTag(t, s), l => l.token, embeddingMap, embeddingDim, scale, useOffsetEmbedding, url) {
+                               useOffsetEmbedding: Boolean)(implicit mp:ModelProvider[OntonotesStackedChainNer], nerLexiconFeatures:NerLexiconFeatures)
+  extends StackedChainNer[BilouOntonotesNerTag](
+    BilouOntonotesNerDomain,
+    (t, s) => new BilouOntonotesNerTag(t, s),
+    l => l.token,
+    embeddingMap,
+    embeddingDim,
+    scale,
+    useOffsetEmbedding,
+    mp.provide, nerLexiconFeatures)
 
-  def newSpan(sec: Section, start: Int, length: Int, category: String) = new OntonotesNerSpan(sec, start, length, category)
-  def newBuffer = new OntonotesNerSpanBuffer
-}
+class NoEmbeddingsOntonotesStackedChainNer()(implicit mp:ModelProvider[NoEmbeddingsOntonotesStackedChainNer], nerLexiconFeatures: NerLexiconFeatures) extends OntonotesStackedChainNer(null, 0, 0.0, false)(mp, nerLexiconFeatures) with Serializable
+object NoEmbeddingsOntonotesStackedChainNer extends NoEmbeddingsOntonotesStackedChainNer()(ModelProvider.classpath(), StaticLexiconFeatures()) with Serializable
 
-class NoEmbeddingsOntonotesStackedChainNer(url:java.net.URL) extends OntonotesStackedChainNer(null, 0, 0.0, false, url)
-object NoEmbeddingsOntonotesStackedChainNer extends NoEmbeddingsOntonotesStackedChainNer(ClasspathURL[NoEmbeddingsOntonotesStackedChainNer](".factorie"))
 
 class StackedChainNerOpts extends CmdOptions with SharedNLPCmdOptions{
   val trainFile =     new CmdOption("train", "eng.train", "FILE", "CoNLL formatted training file.")
   val testFile  =     new CmdOption("test",  "eng.testb", "FILE", "CoNLL formatted test file.")
-  val modelDir =      new CmdOption("model", "StackedNER.factorie", "FILE", "File for saving or loading model.")
+  val dataLoader  =   new CmdOption("data-loader", "conll2003", "STRING", "Data loader for this format.")
+  val encoding =      new CmdOption("encoding", "UTF-8", "STRING", "Encoding of input files.")
+  val modelDir =      new CmdOption[File]("model", new File("StackedNER.factorie"), "FILE", "File for saving or loading model.")
   val runXmlDir =     new CmdOption("run-xml", "xml", "DIR", "Directory for reading NYTimes XML data on which to run saved model.")
   val brownClusFile = new CmdOption("brown", "", "FILE", "File containing brown clusters.")
   val aggregateTokens = new CmdOption("aggregate", true, "BOOLEAN", "Turn on context aggregation feature.")
@@ -606,12 +650,31 @@ class StackedChainNerOpts extends CmdOptions with SharedNLPCmdOptions{
   val delta =  new CmdOption("delta", 0.066, "DOUBLE", "Learning delta")
   val saveModel = new CmdOption("save-model", false, "BOOLEAN", "Whether to save the model")
   val runOnlyHere = new CmdOption("runOnlyHere", false, "BOOLEAN", "Run Experiments only on this machine")
-  val dataLoader  =   new CmdOption("data-loader", "conll2003", "STRING", "Data loader for this format.")
-  val encoding =      new CmdOption("encoding", "UTF-8", "STRING", "Encoding of input files.")
   val dataDir = new CmdOption("data", "/home/vineet/canvas/embeddings/data/conll2003/", "STRING", "CONLL data path")
+  val embeddingDir = new CmdOption("embeddingDir", "", "STRING", "location of embedding file")
   val embeddingDim = new CmdOption("embeddingDim", 100, "INT", "embedding dimension")
   val embeddingScale = new CmdOption("embeddingScale", 10.0, "FLOAT", "The scale of the embeddings")
   val useOffsetEmbedding = new CmdOption("useOffsetEmbeddings", true, "BOOLEAN", "Whether to use offset embeddings")
+  val lang =      new CmdOption("language", "en", "STRING", "Lexicons language.")
+}
+
+object ConllStackedChainNerTester extends App {
+  val opts = new StackedChainNerOpts
+  opts.parse(args)
+  val ner =
+    if(opts.modelDir.wasInvoked)
+      new ConllStackedChainNer(null: SkipGramEmbedding, opts.embeddingDim.value, opts.embeddingScale.value, opts.useOffsetEmbedding.value)(opts.modelDir.value.toURI.toURL, StaticLexiconFeatures(opts.lang.value))
+    else NoEmbeddingsConllStackedChainNer
+
+  val testPortionToTake =  if(opts.testPortion.wasInvoked) opts.testPortion.value else 1.0
+  val dataLoader = opts.dataLoader.value match {
+    case "conll2003" => load.LoadConll2003(BILOU=true)
+    case "conll2002" => load.LoadConll2002(BILOU=true)
+  }
+  val testDocsFull =  dataLoader.fromFilename(opts.testFile.value, encoding = opts.encoding.value)
+  val testDocs = testDocsFull.take((testDocsFull.length*testPortionToTake).floor.toInt)
+  
+  println(ner.test(testDocs))
 }
 
 object ConllStackedChainNerTrainer extends HyperparameterMain {
@@ -619,7 +682,11 @@ object ConllStackedChainNerTrainer extends HyperparameterMain {
     // Parse command-line
     val opts = new StackedChainNerOpts
     opts.parse(args)
-    val ner = new ConllStackedChainNer(null: SkipGramEmbedding, opts.embeddingDim.value, opts.embeddingScale.value, opts.useOffsetEmbedding.value)
+    val skipgram = if (opts.embeddingDir.wasInvoked)
+      new SkipGramEmbedding(opts.embeddingDir.value, opts.embeddingDim.value)
+    else
+      null
+    val ner = new ConllStackedChainNer(skipgram: SkipGramEmbedding, opts.embeddingDim.value, opts.embeddingScale.value, opts.useOffsetEmbedding.value)(ModelProvider.empty, StaticLexiconFeatures(opts.lang.value))
 
     ner.aggregate = opts.aggregateTokens.wasInvoked
 
@@ -631,8 +698,9 @@ object ConllStackedChainNerTrainer extends HyperparameterMain {
       }
     }
 
-    val trainPortionToTake = if(opts.trainPortion.wasInvoked) opts.trainPortion.value.toDouble  else 1.0
-    val testPortionToTake =  if(opts.testPortion.wasInvoked) opts.testPortion.value.toDouble  else 1.0
+    val trainPortionToTake = if(opts.trainPortion.wasInvoked) opts.trainPortion.value else 1.0
+    val testPortionToTake =  if(opts.testPortion.wasInvoked) opts.testPortion.value else 1.0
+    
     val dataLoader = opts.dataLoader.value match {
       case "conll2003" => load.LoadConll2003(BILOU = true)
       case "conll2002" => load.LoadConll2002(BILOU = true)
@@ -643,7 +711,6 @@ object ConllStackedChainNerTrainer extends HyperparameterMain {
     val trainDocs = trainDocsFull.take((trainDocsFull.length*trainPortionToTake).floor.toInt)
     val testDocs = testDocsFull.take((testDocsFull.length*testPortionToTake).floor.toInt)
 
-
     val result = ner.train(trainDocs,testDocs, opts.rate.value, opts.delta.value)
     if (opts.saveModel.value) {
       ner.serialize(new FileOutputStream(opts.modelDir.value))
@@ -653,23 +720,6 @@ object ConllStackedChainNerTrainer extends HyperparameterMain {
 
     result
   }
-}
-
-
-object ConllStackedChainNerTester extends App {
-  val opts = new StackedChainNerOpts
-  opts.parse(args)
-  val ner = new ConllStackedChainNer(null: SkipGramEmbedding, opts.embeddingDim.value, opts.embeddingScale.value, opts.useOffsetEmbedding.value)
-  val testPortionToTake = if (opts.testPortion.wasInvoked) opts.testPortion.value.toDouble else 1.0
-  val dataLoader = opts.dataLoader.value match {
-    case "conll2003" => load.LoadConll2003(BILOU = true)
-    case "conll2002" => load.LoadConll2002(BILOU = true)
-  }
-  val testDocsFull = dataLoader.fromFilename(opts.testFile.value, encoding = opts.encoding.value)
-  val testDocs = testDocsFull.take((testDocsFull.length * testPortionToTake).floor.toInt)
-
-  ner.deSerialize(new FileInputStream(opts.modelDir.value))
-  println(ner.test(testDocs))
 }
 
 object ConllStackedChainNerOptimizer {
@@ -700,8 +750,8 @@ object ConllStackedChainNerOptimizer {
       println("Got results: " + result.mkString(" "))
       opts.saveModel.setValue(true)
       println("Running best configuration...")
-      import scala.concurrent.duration._
       import scala.concurrent.Await
+      import scala.concurrent.duration._
       Await.result(qs.execute(opts.values.flatMap(_.unParse).toArray), 5.hours)
       println("Done")
     }

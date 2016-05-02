@@ -1,4 +1,4 @@
-/* Copyright (C) 2008-2014 University of Massachusetts Amherst.
+/* Copyright (C) 2008-2016 University of Massachusetts Amherst.
    This file is part of "FACTORIE" (Factor graphs, Imperative, Extensible)
    http://factorie.cs.umass.edu, http://github.com/factorie
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -23,8 +23,8 @@ package cc.factorie.tutorial
 object TutorialFactors extends App {
   import cc.factorie._
   import cc.factorie.la._
-  import cc.factorie.variable._
   import cc.factorie.model._
+  import cc.factorie.variable._
 
     // First we'll create some variables for us as Factor neighbors. 
     val v1 = new IntegerVariable(1)
@@ -116,7 +116,7 @@ object TutorialFactors extends App {
     // The default statistics are a Tuple containing the values of the neighbors.
     // However the known return type is Any, so it must be cast to use.
     // (This lack of typing is because we want the method to be flexibly override-able in subclasses.)
-    if (s2.asInstanceOf[(Int, Double)]._2 == 4.4)
+    if (s2c.asInstanceOf[(Int, Double)]._2 == 4.4)
       println("The second factor's second value is 4.4")
     assertDoubleEquals(8.8, s2.asInstanceOf[(Int, Double)]._2, 0.01)
 

@@ -1,4 +1,4 @@
-/* Copyright (C) 2008-2014 University of Massachusetts Amherst.
+/* Copyright (C) 2008-2016 University of Massachusetts Amherst.
    This file is part of "FACTORIE" (Factor graphs, Imperative, Extensible)
    http://factorie.cs.umass.edu, http://github.com/factorie
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -26,7 +26,7 @@ class NaiveBayes(var evidenceSmoothingMass: Double = 1.0) extends MulticlassClas
     // Incorporate smoothing, with simple +m smoothing
     for (li <- 0 until numLabels; fi <- 0 until numFeatures) evid(li).masses += (fi, evidenceSmoothingMass)
     // Incorporate evidence
-    for (i <- 0 until labels.length; label = labels(i); feature = features(i); w = weights(i)) {
+    for (i <- labels.indices; label = labels(i); feature = features(i); w = weights(i)) {
       feature.foreachActiveElement((featureIndex, featureValue) => {
         evid(label).masses += (featureIndex, w*featureValue)
       })
@@ -34,7 +34,7 @@ class NaiveBayes(var evidenceSmoothingMass: Double = 1.0) extends MulticlassClas
     // Put results into the model templates
     val evWeightsValue = classifier.weights.value
     for (li <- 0 until numLabels; fi <- 0 until numFeatures)
-      evWeightsValue(li * numFeatures + fi) = math.log(evid(li).apply(fi))
+      evWeightsValue(fi, li) = math.log(evid(li).apply(fi))
   }
   def newModel(featureSize: Int, labelSize: Int) = new LinearMulticlassClassifier(labelSize, featureSize)
 }

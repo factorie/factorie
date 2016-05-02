@@ -1,4 +1,4 @@
-/* Copyright (C) 2008-2014 University of Massachusetts Amherst.
+/* Copyright (C) 2008-2016 University of Massachusetts Amherst.
    This file is part of "FACTORIE" (Factor graphs, Imperative, Extensible)
    http://factorie.cs.umass.edu, http://github.com/factorie
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,13 +12,15 @@
    limitations under the License. */
 package cc.factorie.app.topics.lda
 
-import scala.collection.mutable.{ArrayBuffer}
 import java.io.File
-import cc.factorie.app.strings.Stopwords
-import cc.factorie.app.strings.alphaSegmenter
 import java.util.Date
+
+import cc.factorie.app.nlp.lexicon.StopWords
+import cc.factorie.app.strings.alphaSegmenter
 import cc.factorie.directed._
 import cc.factorie.variable._
+
+import scala.collection.mutable.ArrayBuffer
 
 // An implementation of Topics-over-Time [Wang, McCallum, KDD 2006]
 // TODO Not yet finished; needs the appropriate CollapsedGibbsSampler handler
@@ -54,7 +56,7 @@ object TopicsOverTime {
         val doc = new Document(file.toString)
         doc.date = file.lastModified
         doc.theta = ProportionsVariable.dense(numTopics) ~ Dirichlet(alphas)
-        for (word <- alphaSegmenter(file).map(_.toLowerCase).filter(!Stopwords.contains(_))) {
+        for (word <- alphaSegmenter(file).map(_.toLowerCase).filter(!StopWords.contains(_))) {
           val z = new Z :~ Discrete(doc.theta)
           val w = new Word(word)
           CategoricalMixture.newFactor(w, phis, z)

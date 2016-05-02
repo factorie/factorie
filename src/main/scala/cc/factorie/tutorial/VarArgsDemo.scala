@@ -1,4 +1,4 @@
-/* Copyright (C) 2008-2014 University of Massachusetts Amherst.
+/* Copyright (C) 2008-2016 University of Massachusetts Amherst.
    This file is part of "FACTORIE" (Factor graphs, Imperative, Extensible)
    http://factorie.cs.umass.edu, http://github.com/factorie
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,9 +15,10 @@
 
 package cc.factorie.tutorial
 import cc.factorie._
+import cc.factorie.model.{DotTemplate2, Parameters, TemplateModel}
+import cc.factorie.variable.{DiscreteDomain, DiscreteVariable, Var, Vars}
+
 import scala.collection.mutable.ArrayBuffer
-import cc.factorie.variable.{Var, DiscreteVariable, DiscreteDomain, Vars}
-import cc.factorie.model.{Parameters, DotTemplate2, TemplateModel}
 
 /** Demonstrate how to create a factor that has a varying number of neighbors. */
 object VarArgsDemo {

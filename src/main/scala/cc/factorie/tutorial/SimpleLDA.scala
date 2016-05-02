@@ -1,4 +1,4 @@
-/* Copyright (C) 2008-2014 University of Massachusetts Amherst.
+/* Copyright (C) 2008-2016 University of Massachusetts Amherst.
    This file is part of "FACTORIE" (Factor graphs, Imperative, Extensible)
    http://factorie.cs.umass.edu, http://github.com/factorie
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,12 +13,14 @@
 
 
 package cc.factorie.tutorial
-import scala.collection.mutable.ArrayBuffer
 import java.io.File
-import cc.factorie.app.strings.Stopwords
+
+import cc.factorie.app.nlp.lexicon.StopWords
 import cc.factorie.app.strings.alphaSegmenter
 import cc.factorie.directed._
 import cc.factorie.variable._
+
+import scala.collection.mutable.ArrayBuffer
 
 /**
  * LDA example using collapsed gibbs sampling; very flexible.
@@ -48,7 +50,7 @@ object SimpleLDA {
     for (directory <- directories) {
       for (file <- new File(directory).listFiles; if file.isFile) {
         val theta = ProportionsVariable.dense(numTopics) ~ Dirichlet(alphas)
-        val tokens = alphaSegmenter(file).map(_.toLowerCase).filter(!Stopwords.contains(_)).toSeq
+        val tokens = alphaSegmenter(file).map(_.toLowerCase).filter(!StopWords.contains(_)).toSeq
         val zs = new Zs(tokens.length) :~ PlatedDiscrete(theta)
         documents += new Document(file.toString, theta, tokens) ~ PlatedCategoricalMixture(phis, zs)
       }

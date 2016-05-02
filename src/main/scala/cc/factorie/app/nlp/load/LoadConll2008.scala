@@ -1,4 +1,4 @@
-/* Copyright (C) 2008-2014 University of Massachusetts Amherst.
+/* Copyright (C) 2008-2016 University of Massachusetts Amherst.
    This file is part of "FACTORIE" (Factor graphs, Imperative, Extensible)
    http://factorie.cs.umass.edu, http://github.com/factorie
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,16 +13,15 @@
 
 package cc.factorie.app.nlp.load
 
+import java.io.PrintWriter
+
 import cc.factorie.app.nlp._
+import cc.factorie.app.nlp.lemma.TokenLemma
+import cc.factorie.app.nlp.parse.ParseTree
+import cc.factorie.app.nlp.pos.{LabeledSpanishPosTag, PennPosTag, PosTag}
 import cc.factorie.util.FastLogging
 
-
 import scala.io.Source
-import cc.factorie.app.nlp.pos.{LabeledSpanishPosTag, PosTag, PennPosTag, SpanishPosTag}
-import cc.factorie.app.nlp.parse.ParseTree
-import cc.factorie.app.nlp.lemma.TokenLemma
-
-import java.io.PrintWriter
 
 /*
  * Loader for the CoNLL 2008 closed-track shared task data.
@@ -61,7 +60,7 @@ abstract class LoadConll2008(val posType: Class[_]) extends Load with FastLoggin
     fromSource(Source.fromFile(filename))
   }
 
-  override def fromSource(source: Source): Seq[Document] = {
+  def fromSource(source: Source): Seq[Document] = {
     val document: Document = new Document
     document.annotators(classOf[Token]) = UnknownDocumentAnnotator.getClass // register that we have token boundaries
     document.annotators(classOf[Sentence]) = UnknownDocumentAnnotator.getClass // register that we have sentence boundaries

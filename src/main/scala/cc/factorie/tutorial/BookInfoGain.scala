@@ -1,4 +1,4 @@
-/* Copyright (C) 2008-2014 University of Massachusetts Amherst.
+/* Copyright (C) 2008-2016 University of Massachusetts Amherst.
    This file is part of "FACTORIE" (Factor graphs, Imperative, Extensible)
    http://factorie.cs.umass.edu, http://github.com/factorie
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -11,12 +11,14 @@
    See the License for the specific language governing permissions and
    limitations under the License. */
 package cc.factorie.tutorial
-import scala.io.Source
 import java.io.File
+
 import cc.factorie._
-import app.classify
-import cc.factorie.variable.{LabeledCategoricalVariable, BinaryFeatureVectorVariable, CategoricalVectorDomain, CategoricalDomain}
+import cc.factorie.app.classify
 import cc.factorie.app.classify.backend.OnlineLinearMulticlassTrainer
+import cc.factorie.variable.{BinaryFeatureVectorVariable, CategoricalDomain, CategoricalVectorDomain, LabeledCategoricalVariable}
+
+import scala.io.Source
 
 /** Demonstration of calculating class-word information gain where data coming from book-length */
 object BookInfoGain {
@@ -44,7 +46,10 @@ object BookInfoGain {
     for (filename <- args) {
       val bookFile = new File(filename)
       if (!bookFile.exists) throw new IllegalArgumentException("Directory " + filename + " does not exist.")
-      "\\w+".r.findAllIn(Source.fromFile(bookFile).mkString).toSeq.grouped(500).foreach(words => docLabels += new Document(bookFile.getName, words.filter(!cc.factorie.app.strings.Stopwords.contains(_))).label)
+      "\\w+".r.findAllIn(Source.fromFile(bookFile).mkString)
+        .toSeq
+        .grouped(500)
+        .foreach(words => docLabels += new Document(bookFile.getName, words.filter(!cc.factorie.app.nlp.lexicon.StopWords.contains(_))).label)
     }
 
     val infogains = new classify.InfoGain(docLabels, (l: Label) => l.document)

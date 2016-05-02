@@ -1,4 +1,4 @@
-/* Copyright (C) 2008-2014 University of Massachusetts Amherst.
+/* Copyright (C) 2008-2016 University of Massachusetts Amherst.
    This file is part of "FACTORIE" (Factor graphs, Imperative, Extensible)
    http://factorie.cs.umass.edu, http://github.com/factorie
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,8 +12,8 @@
    limitations under the License. */
 
 package cc.factorie.la
-import cc.factorie._
-import cc.factorie.util._
+import cc.factorie.maths
+import cc.factorie.util.{DenseDoubleSeq, IntSeq, RangeIntSeq, DoubleSeq}
 
 trait DenseTensor extends Tensor with TensorWithMutableDefaultValue with DenseDoubleSeq with Serializable {
   protected def _initialArray: Array[Double] = new Array[Double](length)

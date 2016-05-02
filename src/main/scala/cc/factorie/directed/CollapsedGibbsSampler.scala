@@ -1,4 +1,4 @@
-/* Copyright (C) 2008-2014 University of Massachusetts Amherst.
+/* Copyright (C) 2008-2016 University of Massachusetts Amherst.
    This file is part of "FACTORIE" (Factor graphs, Imperative, Extensible)
    http://factorie.cs.umass.edu, http://github.com/factorie
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,10 +14,10 @@
 package cc.factorie.directed
 
 import cc.factorie.infer._
-import cc.factorie._
-import scala.collection.mutable.{HashMap, HashSet, ArrayBuffer}
-import cc.factorie.variable._
 import cc.factorie.model.Factor
+import cc.factorie.variable._
+
+import scala.collection.mutable.{ArrayBuffer, HashMap, HashSet}
 
 /** A GibbsSampler that can also collapse some Parameters. */
 class CollapsedGibbsSampler(collapse:Iterable[Var], val model:DirectedModel)(implicit val random: scala.util.Random) extends Sampler[Iterable[MutableVar]] {

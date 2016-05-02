@@ -1,4 +1,4 @@
-/* Copyright (C) 2008-2014 University of Massachusetts Amherst.
+/* Copyright (C) 2008-2016 University of Massachusetts Amherst.
    This file is part of "FACTORIE" (Factor graphs, Imperative, Extensible)
    http://factorie.cs.umass.edu, http://github.com/factorie
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,10 +12,12 @@
    limitations under the License. */
 package cc.factorie.app.nlp.coref
 
-import cc.factorie.la.{SparseTensor, GrowableSparseBinaryTensor1}
-import cc.factorie.variable.{LabeledCategoricalVariable, BinaryFeatureVectorVariable}
+import cc.factorie.app.nlp.lexicon.{LexiconsProvider, StaticLexicons}
+import cc.factorie.app.nlp.Token
+import cc.factorie.la.{GrowableSparseBinaryTensor1, SparseTensor}
+import cc.factorie.variable.{BinaryFeatureVectorVariable, LabeledCategoricalVariable}
+
 import scala.collection.mutable
-import cc.factorie.app.nlp.{Token}
 
 /** Contains two possible mention sets:
  *    Lexical & Conventional
@@ -36,6 +38,10 @@ class MentionPairFeatures(val model: CorefModel, val mention1:Mention, val menti
     t.sizeHint(sizeBoundary)
     set(t)(null)
   }
+
+  // todo fix this
+  @deprecated("This exists to preserve prior behavior, it should be a constructor argument", "10/5/15")
+  val lexicon = new StaticLexicons()(LexiconsProvider.classpath())
 
   def domain = model.MentionPairFeaturesDomain
   override def skipNonCategories = true
@@ -98,8 +104,8 @@ class MentionPairFeatures(val model: CorefModel, val mention1:Mention, val menti
   lazy val mergeableAllFeatures = mergeableFeatures
 
   def computeConventionalFeatures() {
-    val m1 = if(mention1.attr[MentionCharacteristics] eq null){ mention1.attr += new MentionCharacteristics(mention1); mention1.attr[MentionCharacteristics]} else mention1.attr[MentionCharacteristics]
-    val m2 = if(mention2.attr[MentionCharacteristics] eq null){ mention2.attr += new MentionCharacteristics(mention2); mention2.attr[MentionCharacteristics]} else mention2.attr[MentionCharacteristics]
+    val m1 = if(mention1.attr[MentionCharacteristics] eq null){ mention1.attr += new MentionCharacteristics(mention1, lexicon); mention1.attr[MentionCharacteristics]} else mention1.attr[MentionCharacteristics]
+    val m2 = if(mention2.attr[MentionCharacteristics] eq null){ mention2.attr += new MentionCharacteristics(mention2, lexicon); mention2.attr[MentionCharacteristics]} else mention2.attr[MentionCharacteristics]
     if (basicFeatureCalculated) return
 
     addMergeableFeature("BIAS")
@@ -143,7 +149,7 @@ class MentionPairFeatures(val model: CorefModel, val mention1:Mention, val menti
     addMergeableFeature("etm" + CorefFeatures.entityTypeMatch(mention1,mention2))
     addMergeableFeature("lhp" + CorefFeatures.headWordsCross(mention1, mention2, model))
     if (mention1.phrase.sentence == mention2.phrase.sentence) addMergeableFeature("ss") // false values of this feature are not included in Roth's system
-    CorefFeatures.matchingTokensRelations(mention1, mention2).foreach(r => addMergeableFeature("apr" + r))
+    CorefFeatures.matchingTokensRelations(mention1, mention2, lexicon).foreach(r => addMergeableFeature("apr" + r))
 
     if (mention1.phrase.head.string.toLowerCase == mention2.phrase.head.string.toLowerCase)
       addMergeableFeature("bM")
@@ -174,8 +180,8 @@ class MentionPairFeatures(val model: CorefModel, val mention1:Mention, val menti
   }
 
   def computeLexicalFeatures(): Unit = {
-    val m1 = if(mention1.attr[MentionCharacteristics] eq null){ mention1.attr += new MentionCharacteristics(mention1); mention1.attr[MentionCharacteristics]} else mention1.attr[MentionCharacteristics]
-    val m2 = if(mention2.attr[MentionCharacteristics] eq null){ mention2.attr += new MentionCharacteristics(mention2); mention2.attr[MentionCharacteristics]} else mention2.attr[MentionCharacteristics]
+    val m1 = if(mention1.attr[MentionCharacteristics] eq null){ mention1.attr += new MentionCharacteristics(mention1, lexicon); mention1.attr[MentionCharacteristics]} else mention1.attr[MentionCharacteristics]
+    val m2 = if(mention2.attr[MentionCharacteristics] eq null){ mention2.attr += new MentionCharacteristics(mention2, lexicon); mention2.attr[MentionCharacteristics]} else mention2.attr[MentionCharacteristics]
     if (basicFeatureCalculated) return
 
     features += "Bias" //+ currMention.mType

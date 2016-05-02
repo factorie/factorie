@@ -1,4 +1,4 @@
-/* Copyright (C) 2008-2014 University of Massachusetts Amherst.
+/* Copyright (C) 2008-2016 University of Massachusetts Amherst.
    This file is part of "FACTORIE" (Factor graphs, Imperative, Extensible)
    http://factorie.cs.umass.edu, http://github.com/factorie
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -11,18 +11,20 @@
    See the License for the specific language governing permissions and
    limitations under the License. */
 package cc.factorie.app.nlp.embeddings
-import cc.factorie.model.{ Parameters, Weights }
-import cc.factorie.optimize.{ Trainer, AdaGradRDA }
+import java.io.{BufferedOutputStream, File, FileInputStream, FileOutputStream, OutputStreamWriter}
+import java.util.zip.{GZIPInputStream, GZIPOutputStream}
+
 import cc.factorie.la.DenseTensor1
+import cc.factorie.model.{Parameters, Weights}
+import cc.factorie.optimize.AdaGradRDA
 import cc.factorie.util.Threading
-import java.io.{ File, PrintWriter, OutputStreamWriter, FileOutputStream, FileInputStream, BufferedOutputStream }
-import java.util.zip.{ GZIPOutputStream, GZIPInputStream }
 
 abstract class WordEmbeddingModel(val opts: EmbeddingOpts) extends Parameters {
 
   // Algo related
   val D = opts.dimension.value // default value is 200
-  var V: Int = 0 // vocab size. Will computed in buildVocab() section 
+  var V: Int = 0 // vocab size. Will computed in buildVocab() section
+  protected val numIterations = opts.numIterations.value // default value is 1
   protected val threads = opts.threads.value //  default value is 12
   protected val adaGradDelta = opts.delta.value // default value is 0.1
   protected val adaGradRate = opts.rate.value //  default value is 0.025 
@@ -88,7 +90,10 @@ abstract class WordEmbeddingModel(val opts: EmbeddingOpts) extends Parameters {
     trainer = new LiteHogwildTrainer(weightsSet = this.parameters, optimizer = optimizer, nThreads = threads, maxIterations = Int.MaxValue)
     val threadIds = (0 until threads).map(i => i)
     val fileLen = new File(corpus).length
-    Threading.parForeach(threadIds, threads)(threadId => workerThread(threadId, fileLen))
+    (1 to numIterations).foreach { iteration =>
+      println(s"Beginning Training Iteration $iteration")
+      Threading.parForeach(threadIds, threads)(threadId => workerThread(threadId, fileLen))
+    }
     println("Done learning embeddings. ")
     //store()
   }

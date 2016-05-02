@@ -1,4 +1,4 @@
-/* Copyright (C) 2008-2014 University of Massachusetts Amherst.
+/* Copyright (C) 2008-2016 University of Massachusetts Amherst.
    This file is part of "FACTORIE" (Factor graphs, Imperative, Extensible)
    http://factorie.cs.umass.edu, http://github.com/factorie
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,7 +14,26 @@ package cc.factorie.app.nlp.lexicon
 import cc.factorie.app.nlp.lemma._
 import cc.factorie.app.strings._
 
-object StopWords extends PhraseLexicon("StopWords", nonWhitespaceClassesSegmenter, LowercaseLemmatizer) {
+class CustomStopWords extends TriePhraseLexicon("CustomStopWords", nonWhitespaceClassesSegmenter, LowercaseLemmatizer) {
+  def this(filename: String) = {
+    this()
+    this ++= scala.io.Source.fromFile(filename)
+  }
+  def this(words: Seq[String]) = {
+    this()
+    words.foreach { w => this += w }
+  }
+}
+
+object CustomStopWords {
+  def apply(filename: String) = new CustomStopWords(filename)
+}
+
+object StopWords extends TriePhraseLexicon("StopWords", nonWhitespaceClassesSegmenter, LowercaseLemmatizer) {
+  def addFromFilename(filename: String): Unit = {
+    this ++= scala.io.Source.fromFile(filename)
+  }
+
   this ++= 
 """a
 able

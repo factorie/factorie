@@ -1,4 +1,4 @@
-/* Copyright (C) 2008-2014 University of Massachusetts Amherst.
+/* Copyright (C) 2008-2016 University of Massachusetts Amherst.
    This file is part of "FACTORIE" (Factor graphs, Imperative, Extensible)
    http://factorie.cs.umass.edu, http://github.com/factorie
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,7 +13,8 @@
 package cc.factorie.db.mongo
 
 import cc.factorie.util.Cubbie
-import com.mongodb.{MongoClient, Mongo}
+import com.mongodb.MongoClient
+
 import scala.reflect.classTag
 
 /**
@@ -22,7 +23,6 @@ import scala.reflect.classTag
 object CubbieMongoTest {
 
   import MongoCubbieImplicits._
-  import MongoCubbieConverter._
 
   def main(args: Array[String]) {
 

@@ -1,4 +1,4 @@
-/* Copyright (C) 2008-2014 University of Massachusetts Amherst.
+/* Copyright (C) 2008-2016 University of Massachusetts Amherst.
    This file is part of "FACTORIE" (Factor graphs, Imperative, Extensible)
    http://factorie.cs.umass.edu, http://github.com/factorie
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,9 +14,7 @@ package cc.factorie.app.nlp.segment
 
 import java.io.StringReader
 
-import cc.factorie.app.nlp.{TokenString, Document, DocumentAnnotator, Token}
-
-import scala.reflect.ClassTag
+import cc.factorie.app.nlp.{Document, DocumentAnnotator, Token}
 
 /* Attr representing whether this token is an SGML tag, used when tokenizeSgml = true */
 case object IsSgmlTag
@@ -173,7 +171,7 @@ object DeterministicNormalizingTokenizer extends DeterministicLexerTokenizer(
 //    println("Tokenizing...")
     val doc = new Document(string)
     val t0 = System.currentTimeMillis()
-    DeterministicNormalizingHtmlTokenizer.process(doc)
+    DeterministicNormalizingTokenizer.process(doc)
     val time = System.currentTimeMillis()-t0
     println(s"Processed ${doc.tokenCount} tokens in ${time}ms (${doc.tokenCount.toDouble/time*1000} tokens/second)")
     println(doc.tokens.map(_.string).mkString("\n"))

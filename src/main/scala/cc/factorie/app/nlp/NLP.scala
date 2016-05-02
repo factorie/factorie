@@ -1,4 +1,4 @@
-/* Copyright (C) 2008-2014 University of Massachusetts Amherst.
+/* Copyright (C) 2008-2016 University of Massachusetts Amherst.
    This file is part of "FACTORIE" (Factor graphs, Imperative, Extensible)
    http://factorie.cs.umass.edu, http://github.com/factorie
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,9 +13,15 @@
 package cc.factorie.app.nlp
 
 import java.io._
-import cc.factorie.app.nlp.parse._
-import java.net.{ServerSocket,Socket,SocketException}
+import java.net.{ServerSocket, Socket, SocketException}
+
 import cc.factorie.app.nlp.coref.MentionList
+import cc.factorie.app.nlp.lexicon.{LexiconsProvider, StaticLexicons}
+import cc.factorie.app.nlp.ner.{ConllStackedChainNer, NoEmbeddingsConllStackedChainNer, OntonotesChainNer, ConllChainNer}
+import cc.factorie.app.nlp.parse._
+import cc.factorie.util.{ModelProvider, ModelProviderCmdOptions}
+
+import cc.factorie.app.nlp.ner.StaticLexiconFeatures
 
 /** A command-line driver for DocumentAnnotators.
     Launch on the command-line, specifying which NLP pipeline steps you want, 
@@ -27,12 +33,13 @@ object NLP {
   //val interpreter = new scala.tools.nsc.IMain
   def main(args:Array[String]): Unit = {
     val t0 = System.currentTimeMillis()
-    object opts extends cc.factorie.util.DefaultCmdOptions {
+    object opts extends cc.factorie.util.DefaultCmdOptions with ModelProviderCmdOptions {
       val socket = new CmdOption("socket", 3228, "SOCKETNUM", "On which socket number NLP server should listen.")
       val encoding = new CmdOption("encoding", "UTF-8", "ENCODING", "Character encoding for reading document text, such as UTF-8")
       val logFile = new CmdOption("log", "-", "FILENAME", "Send logging messages to this filename.")
       // TODO All these options should be replaced by something that will interpret object construction code. -akm
-      val token = new CmdOption("token", null, "", "Segment Document into Tokens (but not Sentences) and normalize") { override def invoke() = annotators += cc.factorie.app.nlp.segment.DeterministicNormalizingTokenizer }
+      val token = new CmdOption("token", null, "", "Segment Document into Tokens (but not Sentences, and do not normalize)") { override def invoke() = annotators += cc.factorie.app.nlp.segment.DeterministicTokenizer }
+      val tokenNorm = new CmdOption("token-norm", null, "", "Segment Document into Tokens (but not Sentences) and normalize") { override def invoke() = annotators += cc.factorie.app.nlp.segment.DeterministicNormalizingTokenizer }
       val sentence = new CmdOption("sentence", null, "", "Segment pre-tokenized Document into Sentences by simpler regex") { override def invoke() = annotators += cc.factorie.app.nlp.segment.DeterministicSentenceSegmenter }
 //      val tnorm = new CmdOption("tnorm", null, "", "Normalize token strings") { override def invoke() = annotators += cc.factorie.app.nlp.segment.PlainTokenNormalizer }
       val wsjForwardPos = new CmdOption[String]("wsj-forward-pos", null, "URL", "Annotate Penn-Treebank-style POS with model trained on WSJ") { override def invoke() = { if (value ne null) System.setProperty(classOf[pos.WSJForwardPosTagger].getName, value); annotators += cc.factorie.app.nlp.pos.WSJForwardPosTagger } }
@@ -44,9 +51,26 @@ object NLP {
       //val mention3 = new CmdOption("ner-mention", null, "", "Annotate noun mention boundaries using NER tagger and pronoun patterns.") { override def invoke() = annotators += cc.factorie.app.nlp.coref.mention.NerAndPronounMentionFinder }
 
       // named entity recognition
-      val conllchainner = new CmdOption[String]("conll-chain-ner", null, "URL", "Annotate CoNLL-2003 NER") { override def invoke() = { if (value ne null) System.setProperty(classOf[ner.ConllChainNer].getName, value); annotators += cc.factorie.app.nlp.ner.ConllChainNer } }
-      val basicontonotesner = new CmdOption[String]("ontonotes-chain-ner", null, "URL", "Annotate Ontonotes NER")  { override def invoke() = { if (value ne null) System.setProperty(classOf[ner.OntonotesChainNer].getName, value); annotators += cc.factorie.app.nlp.ner.OntonotesChainNer} }
-      val noembeddingsconllstackedchainner = new CmdOption[String]("stacked-chain-ner-noembeddings", null, "URL", "Annotate Conll NER using a stacked chain model that doesn't use embeddings")  { override def invoke() = { if (value ne null) System.setProperty(classOf[ner.NoEmbeddingsConllStackedChainNer].getName, value); annotators += cc.factorie.app.nlp.ner.NoEmbeddingsConllStackedChainNer } }
+
+      val conllchainner = new CmdOption[String]("conll-chain-ner", null, "URL", "Annotate CoNLL-2003 NER") {
+        override def invoke() {
+          val mp = if(value ne null) ModelProvider.provide[ConllChainNer, File](new File(value)) else ModelProvider.classpath[ConllChainNer]()
+          annotators += new ConllChainNer()(mp, StaticLexiconFeatures())
+        }
+      }
+      val basicontonotesner = new CmdOption[String]("ontonotes-chain-ner", null, "URL", "Annotate Ontonotes NER") {
+        override def invoke(): Unit = {
+          val mp = if(value ne null) ModelProvider.provide[OntonotesChainNer, File](new File(value)) else ModelProvider.classpath[OntonotesChainNer]()
+          annotators += new OntonotesChainNer()(mp, StaticLexiconFeatures())
+        }
+      }
+
+      val noembeddingsconllstackedchainner = new CmdOption[String]("stacked-chain-ner-noembeddings", null, "URL", "Annotate Conll NER using a stacked chain model that doesn't use embeddings")  {
+        override def invoke() = {
+          val mp = if (value ne null) ModelProvider.provide[ner.NoEmbeddingsConllStackedChainNer, File](new File(value)) else ModelProvider.classpath[ner.NoEmbeddingsConllStackedChainNer]()
+          annotators += new ConllStackedChainNer(null, 0, 0.0, false)(mp, StaticLexiconFeatures())
+        }
+      }
 
       // parsers
       //val parser1 = new CmdOption("parser1", ClasspathURL[DepParser1](".factorie").toString, "URL", "Annotate dependency parse with a simple shift-reduce transition-based model.") { override def invoke = { System.setProperty(classOf[DepParser1].getName, value); annotators += cc.factorie.app.nlp.parse.DepParser1 } }

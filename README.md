@@ -94,7 +94,7 @@ will run 100 iterations of a sparse collapsed Gibbs sampling on all the document
 You can also train a document classifier. Assume that "sportsdir" and "politicsdir" are each directories that  contain plan text files in the categories sports and politics. Typing
 
 ```
-$ bin/fac classify --read-text-dirs sportsdir politicsdir --write-classifier mymodel.factorie
+$ bin/fac classify --read-text-dirs sportsdir,politicsdir --write-classifier mymodel.factorie
 ```
 
 will train a log-linear by maximum likelihood (MaxEnt) and save it in the file "mymodel.factorie".

@@ -1,11 +1,22 @@
 # Building this way is a workaround required due to a bug in Travis
 # wherein MAVEN_OPTS are not actually set unless /etc/mavenrc is
 # removed first, see https://github.com/travis-ci/travis-ci/issues/1689
+#script:
+#    - sudo cat /proc/meminfo
+#    - sudo rm /etc/mavenrc
+#    - export MAVEN_OPTS="-Xmx2469m -XX:MaxPermSize=512m"
+#    - mvn clean install
+#    - ./sbt compile
+#jdk:
+#    - oraclejdk8
+sudo: false
+before_install:
+    - export MAVEN_SKIP_RC=true && export MAVEN_OPTS="-Xmx2469m -XX:MaxPermSize=512m"
+#    - echo "MAVEN_OPTS='-Xmx2469m'" > ~/.mavenrc
+#language: java
 script:
-    - sudo cat /proc/meminfo
-    - sudo rm /etc/mavenrc
-    - export MAVEN_OPTS="-Xmx2469m -XX:MaxPermSize=512m"
-    - mvn clean install
+    - mvn install -DskipTests=true
+    - mvn -Dmaven.javadoc.skip=true test
+    - ./sbt compile
 jdk:
-    - oraclejdk8
-    - oraclejdk7
+    - oraclejdk8   

@@ -1,4 +1,4 @@
-/* Copyright (C) 2008-2014 University of Massachusetts Amherst.
+/* Copyright (C) 2008-2016 University of Massachusetts Amherst.
    This file is part of "FACTORIE" (Factor graphs, Imperative, Extensible)
    http://factorie.cs.umass.edu, http://github.com/factorie
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -20,7 +20,7 @@
 package cc.factorie.tutorial
 object TutorialDomain extends App {
   import cc.factorie._
-  import cc.factorie.variable.{ DoubleDomain, DoubleVariable, DiscreteDomain, DiffList }
+  import cc.factorie.variable.{DiffList, DiscreteDomain, DoubleDomain, DoubleVariable}
   /*&
    * In FACTORIE every Variable has a Domain that specifies the range of values the Variable can take.
    * Domains have a type member 'Value' which indicates the type of these values.

@@ -1,4 +1,4 @@
-/* Copyright (C) 2008-2014 University of Massachusetts Amherst.
+/* Copyright (C) 2008-2016 University of Massachusetts Amherst.
    This file is part of "FACTORIE" (Factor graphs, Imperative, Extensible)
    http://factorie.cs.umass.edu, http://github.com/factorie
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,9 +13,10 @@
 package cc.factorie.infer
 
 import cc.factorie.la.DenseTensor1
-import scala.collection.mutable.ArrayBuffer
+import cc.factorie.model.{Factor, Model}
 import cc.factorie.variable._
-import cc.factorie.model.{Model, Factor}
+
+import scala.collection.mutable.ArrayBuffer
 
 /**
  * User: apassos

@@ -1,4 +1,4 @@
-/* Copyright (C) 2008-2014 University of Massachusetts Amherst.
+/* Copyright (C) 2008-2016 University of Massachusetts Amherst.
    This file is part of "FACTORIE" (Factor graphs, Imperative, Extensible)
    http://factorie.cs.umass.edu, http://github.com/factorie
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,6 +15,7 @@ package cc.factorie.util
 
 /** A trait for objects that can provide type-matched substitutions of one object for another.
     @author Andrew McCallum */
+@deprecated("Not used anywhere", "Before 10/06/15")
 trait Substitutions {
   /** Given an object, return a substitute of the same type. 
       The returned value may be the original argument itself.

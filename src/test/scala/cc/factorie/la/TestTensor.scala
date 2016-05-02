@@ -1,4 +1,4 @@
-/* Copyright (C) 2008-2014 University of Massachusetts Amherst.
+/* Copyright (C) 2008-2016 University of Massachusetts Amherst.
    This file is part of "FACTORIE" (Factor graphs, Imperative, Extensible)
    http://factorie.cs.umass.edu, http://github.com/factorie
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,12 +13,12 @@
 package cc.factorie.la
 
 import cc.factorie._
-import cc.factorie.la._
-import scala.util.Random
-import org.junit._
-import org.junit.Assert._
 import cc.factorie.util.FastSorting
-import languageFeature.postfixOps
+import org.junit.Assert._
+import org.junit._
+
+import scala.languageFeature.postfixOps
+import scala.util.Random
 
 class TestTensor extends cc.factorie.util.FastLogging {
 

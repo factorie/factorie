@@ -1,4 +1,4 @@
-/* Copyright (C) 2008-2014 University of Massachusetts Amherst.
+/* Copyright (C) 2008-2016 University of Massachusetts Amherst.
    This file is part of "FACTORIE" (Factor graphs, Imperative, Extensible)
    http://factorie.cs.umass.edu, http://github.com/factorie
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,13 +13,9 @@
 
 package cc.factorie.infer
 
-import cc.factorie.directed._
-import cc.factorie.la.WeightsMapAccumulator
-import cc.factorie.util.DoubleAccumulator
-import cc.factorie.optimize.Example
-import cc.factorie.variable.{DenseProportions1, Proportions1, Var, DiscreteVariable}
-import cc.factorie.model.Model
 import cc.factorie.maths
+import cc.factorie.model.Model
+import cc.factorie.variable.{DenseProportions1, DiscreteVariable, Proportions1, Var}
 
 // Inference naming conventions:
 

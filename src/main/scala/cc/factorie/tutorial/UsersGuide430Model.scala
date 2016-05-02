@@ -1,4 +1,4 @@
-/* Copyright (C) 2008-2014 University of Massachusetts Amherst.
+/* Copyright (C) 2008-2016 University of Massachusetts Amherst.
    This file is part of "FACTORIE" (Factor graphs, Imperative, Extensible)
    http://factorie.cs.umass.edu, http://github.com/factorie
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -27,10 +27,9 @@ import cc.factorie
 import cc.factorie.model.ConstantWeights2
 
 object TutorialModel extends App {
-  import cc.factorie._
   import cc.factorie.la._
+  import cc.factorie.model.{DotFactorWithStatistics2, ItemizedModel}
   import cc.factorie.variable.BooleanVariable
-  import cc.factorie.model.{ ItemizedModel, DotFactorWithStatistics2 }
 
   /*& Let's start by creating some Variables and Factor classes. **/
   val outputs: Seq[BooleanVariable] = for (i <- 0 until 10) yield new BooleanVariable

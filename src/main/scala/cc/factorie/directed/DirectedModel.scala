@@ -1,4 +1,4 @@
-/* Copyright (C) 2008-2014 University of Massachusetts Amherst.
+/* Copyright (C) 2008-2016 University of Massachusetts Amherst.
    This file is part of "FACTORIE" (Factor graphs, Imperative, Extensible)
    http://factorie.cs.umass.edu, http://github.com/factorie
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,11 +12,10 @@
    limitations under the License. */
 package cc.factorie.directed
 
-import cc.factorie._
-import scala.collection.mutable.{ArrayBuffer, HashMap}
+import cc.factorie.model.{Factor, Model}
+import cc.factorie.variable.{DiffList, MutableVar, Var, VarWithDeterministicValue}
 
-import cc.factorie.variable.{MutableVar, VarWithDeterministicValue, Var, DiffList}
-import cc.factorie.model.{Model, Factor}
+import scala.collection.mutable.{ArrayBuffer, HashMap}
 
 trait DirectedModel extends Model {
   def getParentFactor(v:Var): Option[DirectedFactor]

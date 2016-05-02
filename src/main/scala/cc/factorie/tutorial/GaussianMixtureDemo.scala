@@ -1,4 +1,4 @@
-/* Copyright (C) 2008-2014 University of Massachusetts Amherst.
+/* Copyright (C) 2008-2016 University of Massachusetts Amherst.
    This file is part of "FACTORIE" (Factor graphs, Imperative, Extensible)
    http://factorie.cs.umass.edu, http://github.com/factorie
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,12 +14,11 @@
 package cc.factorie.tutorial
 
 import cc.factorie._
+import cc.factorie.directed.DirectedTypeHelpers.{MutableTensorVarTensor1, MutableTensorVarTensor2}
 import cc.factorie.directed._
-import cc.factorie.la.{DenseTensor2, Tensor2, DenseTensor1, Tensor1}
-import cc.factorie.directed._
-import cc.factorie.variable._
 import cc.factorie.infer.InferByMeanField
-import cc.factorie.directed.DirectedTypeHelpers.{MutableTensorVarTensor2, MutableTensorVarTensor1}
+import cc.factorie.la.{DenseTensor1, DenseTensor2, Tensor1, Tensor2}
+import cc.factorie.variable._
 
 
 object GaussianMixtureDemo {

@@ -1,3 +1,15 @@
+/* Copyright (C) 2008-2016 University of Massachusetts Amherst.
+   This file is part of "FACTORIE" (Factor graphs, Imperative, Extensible)
+   http://factorie.cs.umass.edu, http://github.com/factorie
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+    http://www.apache.org/licenses/LICENSE-2.0
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License. */
 package cc.factorie.app.nlp.hcoref
 
 import cc.factorie.infer.SettingsSampler
@@ -17,12 +29,23 @@ trait NoSplitMoveGenerator[Vars <: NodeVariables[Vars]] extends MoveGenerator[Va
     if(e1.root != e2.root) {
       if(e1.isMention && e1.isRoot && e2.isMention && e2.isRoot) {
         moves += new MergeUp[Vars](e1, e2)({d => newInstance(d)})
+      } else if(e1.isMention && e2.isMention) {
+        if(e1.parent != null) {
+          moves += new MergeLeft[Vars](e1.parent, e2)
+        }
+        if(e2.parent != null) {
+          moves += new MergeLeft[Vars](e2.parent, e1)
+        }
       } else {
         while (e1 != null) {
-          if(e1.mentionCountVar.value >= e2.mentionCountVar.value) {
+          if(e1.mentionCountVar.value >= e2.mentionCountVar.value && !e1.isMention) {
             moves += new MergeLeft[Vars](e1, e2)
           } else {
-            moves += new MergeLeft[Vars](e2, e1)
+            if(e2.isMention) { // we should only be here if e2 has a parent
+              moves += new MergeLeft[Vars](e2.parent, e1)
+            } else {
+              moves += new MergeLeft[Vars](e2, e1)
+            }
           }
           e1 = e1.getParent.getOrElse(null.asInstanceOf[Node[Vars]])
         }

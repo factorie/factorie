@@ -1,4 +1,4 @@
-/* Copyright (C) 2008-2014 University of Massachusetts Amherst.
+/* Copyright (C) 2008-2016 University of Massachusetts Amherst.
    This file is part of "FACTORIE" (Factor graphs, Imperative, Extensible)
    http://factorie.cs.umass.edu, http://github.com/factorie
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,14 +13,15 @@
 package cc.factorie.optimize
 
 import cc.factorie._
-import org.junit.Test
-import org.junit.Assert._
-import scala.util.Random
-import cc.factorie.la._
-import cc.factorie.util.LocalDoubleAccumulator
-import cc.factorie.variable.{LabeledCategoricalVariable, BinaryFeatureVectorVariable, CategoricalVectorDomain, CategoricalDomain}
-import cc.factorie.model.{Parameters, DotTemplateWithStatistics2, DotTemplateWithStatistics1, TemplateModel}
 import cc.factorie.infer.InferByBPTree
+import cc.factorie.la._
+import cc.factorie.model.{DotTemplateWithStatistics1, DotTemplateWithStatistics2, Parameters, TemplateModel}
+import cc.factorie.util.LocalDoubleAccumulator
+import cc.factorie.variable.{BinaryFeatureVectorVariable, CategoricalDomain, CategoricalVectorDomain, LabeledCategoricalVariable}
+import org.junit.Assert._
+import org.junit.Test
+
+import scala.util.Random
 
 /**
  * @author sameer

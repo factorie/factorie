@@ -1,4 +1,4 @@
-/* Copyright (C) 2008-2014 University of Massachusetts Amherst.
+/* Copyright (C) 2008-2016 University of Massachusetts Amherst.
    This file is part of "FACTORIE" (Factor graphs, Imperative, Extensible)
    http://factorie.cs.umass.edu, http://github.com/factorie
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,8 +14,6 @@ package cc.factorie.app.nlp.coref
 
 import cc.factorie.app.nlp._
 import cc.factorie.app.nlp.pos.PennPosTag
-import cc.factorie.app.nlp.ner.NerTag
-import cc.factorie.app.nlp.phrase.Phrase
 
 /** A dead-simple deterministic coreference system that operates only on named entities
     and resolves coreference only by exact string match. */

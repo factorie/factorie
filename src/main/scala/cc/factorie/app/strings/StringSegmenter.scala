@@ -1,4 +1,4 @@
-/* Copyright (C) 2008-2014 University of Massachusetts Amherst.
+/* Copyright (C) 2008-2016 University of Massachusetts Amherst.
    This file is part of "FACTORIE" (Factor graphs, Imperative, Extensible)
    http://factorie.cs.umass.edu, http://github.com/factorie
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,9 +12,8 @@
    limitations under the License. */
 
 package cc.factorie.app.strings
+import java.io.{InputStream, Reader}
 import java.text.BreakIterator
-import java.io.Reader
-import java.io.InputStream
 
 trait StringSegmentIterator extends Iterator[String] {
   def start: Int
@@ -28,7 +27,7 @@ trait StringSegmenter {
   def apply(reader:Reader): StringSegmentIterator = apply(cc.factorie.app.strings.readerToString(reader))
 }
 
-class RegexSegmenter(val regex:scala.util.matching.Regex) extends StringSegmenter {
+class RegexSegmenter(val regex:scala.util.matching.Regex) extends StringSegmenter with Serializable{
   def apply(s:String): StringSegmentIterator = new StringSegmentIterator {
     val matchIterator: scala.util.matching.Regex.MatchIterator = regex.findAllIn(s)
     def hasNext = matchIterator.hasNext
@@ -73,7 +72,7 @@ class BreakIteratorSegmenter(val bi:BreakIterator) extends StringSegmenter {
 object alphaSegmenter extends RegexSegmenter("\\p{Alpha}+".r)
 object wordSegmenter extends RegexSegmenter("\\w+".r)
 object wordClassesSegmenter extends RegexSegmenter("\\p{Alpha}+|\\p{Digit}+".r)
-object nonWhitespaceSegmenter extends RegexSegmenter("\\S+".r)
+object nonWhitespaceSegmenter extends RegexSegmenter("\\S+".r) 
 object nonWhitespaceClassesSegmenter extends RegexSegmenter("\\p{Alpha}+|\\p{Digit}+|\\p{Punct}".r)
 object foreignWordSegmenter extends RegexSegmenter("[\\p{L}\\p{P}]*\\p{L}".r)
 object urlSegmenter extends RegexSegmenter("\\b(https?|ftp|file)://[-A-Z0-9+&@#/%?=~_|!:,.;]*[-A-Z0-9+&@#/%=~_|]".r)

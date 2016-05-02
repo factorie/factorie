@@ -1,4 +1,4 @@
-/* Copyright (C) 2008-2014 University of Massachusetts Amherst.
+/* Copyright (C) 2008-2016 University of Massachusetts Amherst.
    This file is part of "FACTORIE" (Factor graphs, Imperative, Extensible)
    http://factorie.cs.umass.edu, http://github.com/factorie
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -28,12 +28,23 @@ trait DefaultMoveGenerator[Vars <: NodeVariables[Vars]]  extends MoveGenerator[V
     if(e1.root != e2.root) {
       if(e1.isMention && e1.isRoot && e2.isMention && e2.isRoot) {
         moves += new MergeUp[Vars](e1, e2)({d => newInstance(d)})
+      } else if(e1.isMention && e2.isMention) {
+        if(e1.parent != null) {
+          moves += new MergeLeft[Vars](e1.parent, e2)
+        }
+        if(e2.parent != null) {
+          moves += new MergeLeft[Vars](e2.parent, e1)
+        }
       } else {
         while (e1 != null) {
-          if(e1.mentionCountVar.value >= e2.mentionCountVar.value) {
+          if(e1.mentionCountVar.value >= e2.mentionCountVar.value && !e1.isMention) {
             moves += new MergeLeft[Vars](e1, e2)
           } else {
-            moves += new MergeLeft[Vars](e2, e1)
+            if(e2.isMention) { // we should only be here if e2 has a parent
+              moves += new MergeLeft[Vars](e2.parent, e1)
+            } else {
+              moves += new MergeLeft[Vars](e2, e1)
+            }
           }
           e1 = e1.getParent.getOrElse(null.asInstanceOf[Node[Vars]])
         }

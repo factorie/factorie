@@ -1,4 +1,4 @@
-/* Copyright (C) 2008-2014 University of Massachusetts Amherst.
+/* Copyright (C) 2008-2016 University of Massachusetts Amherst.
    This file is part of "FACTORIE" (Factor graphs, Imperative, Extensible)
    http://factorie.cs.umass.edu, http://github.com/factorie
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,18 +12,15 @@
    limitations under the License. */
 package cc.factorie.db.mongo
 
-import org.bson.BSONObject
-import scala.collection.JavaConversions._
+import cc.factorie.util.{ArrayDoubleSeq, ArrayIntSeq, Cubbie, DoubleSeq, IntSeq}
 import com.mongodb._
+import org.bson.BSONObject
 import org.bson.types.BasicBSONList
-import cc.factorie.util.{DoubleSeq, IntSeq, Cubbie, ArrayIntSeq, ArrayDoubleSeq}
-import collection.{Map => GenericMap, mutable, JavaConversions}
+
+import scala.collection.JavaConversions._
 import scala.collection.mutable.ArrayBuffer
-import scala._
-import scala.Predef._
-import scala.Some
+import scala.collection.{JavaConversions, Map => GenericMap, mutable}
 import scala.language.implicitConversions
-import java.nio.{ByteBuffer, IntBuffer}
 import scala.reflect.ClassTag
 
 

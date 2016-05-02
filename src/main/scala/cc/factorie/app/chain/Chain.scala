@@ -1,4 +1,4 @@
-/* Copyright (C) 2008-2014 University of Massachusetts Amherst.
+/* Copyright (C) 2008-2016 University of Massachusetts Amherst.
    This file is part of "FACTORIE" (Factor graphs, Imperative, Extensible)
    http://factorie.cs.umass.edu, http://github.com/factorie
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,15 +13,17 @@
 
 package cc.factorie.app.chain
 
-import java.io.{FileWriter, BufferedWriter, FileInputStream, FileOutputStream}
-import scala.util.Random
+import java.io.{BufferedWriter, FileInputStream, FileOutputStream, FileWriter}
+
 import cc.factorie._
+import cc.factorie.infer.MaximizeByBPChain
+import cc.factorie.la.{GrowableSparseBinaryTensor1, GrowableSparseTensor1}
 import cc.factorie.optimize.OnlineTrainer
 import cc.factorie.util.DefaultCmdOptions
 import cc.factorie.variable._
+
 import scala.io.Source
-import cc.factorie.infer.MaximizeByBPChain
-import cc.factorie.la.{GrowableSparseBinaryTensor1, GrowableSparseTensor1}
+import scala.util.Random
 
 object Chain {
 

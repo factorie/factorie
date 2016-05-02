@@ -1,4 +1,4 @@
-/* Copyright (C) 2008-2014 University of Massachusetts Amherst.
+/* Copyright (C) 2008-2016 University of Massachusetts Amherst.
    This file is part of "FACTORIE" (Factor graphs, Imperative, Extensible)
    http://factorie.cs.umass.edu, http://github.com/factorie
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,16 +13,9 @@
 
 package cc.factorie.model
 
-import scala.collection.mutable.{ArrayBuffer, HashMap, HashSet, ListBuffer, FlatHashTable}
-import scala.util.{Random,Sorting}
-import scala.util.Random
-import scala.math
-import scala.util.Sorting
-import cc.factorie.la._
-import cc.factorie.util.Substitutions
-import java.io._
-import cc.factorie.variable.{TensorVar, Var, VectorVar, DiscreteVar}
 import cc.factorie.model
+import cc.factorie.variable.{DiscreteVar, TensorVar, Var, VectorVar}
+
 import scala.reflect.ClassTag
 
 abstract class Template3[N1<:Var,N2<:Var,N3<:Var](implicit nm1:ClassTag[N1], nm2:ClassTag[N2], nm3:ClassTag[N3]) extends Family3[N1,N2,N3] with Template {
@@ -54,10 +47,18 @@ abstract class Template3[N1<:Var,N2<:Var,N3<:Var](implicit nm1:ClassTag[N1], nm2
 
   def limitDiscreteValuesAsIn(vars:Iterable[DiscreteVar]): Unit = 
     for (v <- vars; factor <- factors(v)) factor.asInstanceOf[model.Factor] match {
-      case factor:Factor3[VectorVar @unchecked,VectorVar @unchecked,VectorVar @unchecked] => (factor._1.isInstanceOf[DiscreteVar], factor._2.isInstanceOf[DiscreteVar], factor._2.isInstanceOf[DiscreteVar]) match {  // TODO No need to check types every time. -akm
-        case (true, true, true) => getLimitedDiscreteValues123(factor).+=(factor._1.asInstanceOf[DiscreteVar].intValue, factor._2.asInstanceOf[DiscreteVar].intValue, factor._3.asInstanceOf[DiscreteVar].intValue)
-        case (true, true, false) => getLimitedDiscreteValues12(factor).+=(factor._1.asInstanceOf[DiscreteVar].intValue, factor._2.asInstanceOf[DiscreteVar].intValue)
-        case (true, false, false) => getLimitedDiscreteValues1(factor).+=(factor._1.asInstanceOf[DiscreteVar].intValue)
+      case factor:Factor3[VectorVar @unchecked,VectorVar @unchecked,VectorVar @unchecked] =>
+        (classOf[DiscreteVar].isAssignableFrom(neighborClass1), classOf[DiscreteVar].isAssignableFrom(neighborClass2), classOf[DiscreteVar].isAssignableFrom(neighborClass3)) match {
+//        (factor._1.isInstanceOf[DiscreteVar], factor._2.isInstanceOf[DiscreteVar], factor._3.isInstanceOf[DiscreteVar]) match {  // TODO No need to check types every time. -akm
+        case (true, true, true) =>
+          getLimitedDiscreteValues123(factor).+=(factor._1.asInstanceOf[DiscreteVar].intValue, factor._2.asInstanceOf[DiscreteVar].intValue, factor._3.asInstanceOf[DiscreteVar].intValue)
+          getLimitedDiscreteValues12(factor).+=(factor._1.asInstanceOf[DiscreteVar].intValue, factor._2.asInstanceOf[DiscreteVar].intValue)
+          getLimitedDiscreteValues1(factor).+=(factor._1.asInstanceOf[DiscreteVar].intValue)
+        case (true, true, false) =>
+          getLimitedDiscreteValues12(factor).+=(factor._1.asInstanceOf[DiscreteVar].intValue, factor._2.asInstanceOf[DiscreteVar].intValue)
+          getLimitedDiscreteValues1(factor).+=(factor._1.asInstanceOf[DiscreteVar].intValue)
+        case (true, false, false) =>
+          getLimitedDiscreteValues1(factor).+=(factor._1.asInstanceOf[DiscreteVar].intValue)
         case (false, false, false) => {}
         case _ => throw new Error("Combination of DiscreteVar not yet implemented.")
       } 

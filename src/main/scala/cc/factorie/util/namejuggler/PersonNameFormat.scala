@@ -1,18 +1,28 @@
-/*
- * Copyright (c) 2013  University of Massachusetts Amherst
- * Licensed under the Apache License, Version 2.0
- * http://www.apache.org/licenses/LICENSE-2.0
- */
+/* Copyright (C) 2008-2016 University of Massachusetts Amherst.
+   This file is part of "FACTORIE" (Factor graphs, Imperative, Extensible)
+   http://factorie.cs.umass.edu, http://github.com/factorie
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+    http://www.apache.org/licenses/LICENSE-2.0
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License. */
 
 package cc.factorie.util.namejuggler
 
-import StringUtils._
-import cc.factorie.app.nlp.lexicon.iesl.{PersonFirstHighest, PersonFirstHigh}
+import cc.factorie.util.ModelProvider
 import cc.factorie.app.nlp.lexicon.TrieUnionLexicon
+import cc.factorie.app.nlp.lexicon.iesl.{PersonFirstHigh, PersonFirstHighest}
+import cc.factorie.util.namejuggler.StringUtils._
 
 object PersonNameFormat {
 
-  private lazy val nameLexicon = new TrieUnionLexicon("first names", PersonFirstHighest, PersonFirstHigh)
+  //todo fix this
+  @deprecated("The classpath based provider here is unsafe, it should be moved to the constructor", "10/05/15")
+  private lazy val nameLexicon = new TrieUnionLexicon("first names", new PersonFirstHighest()(ModelProvider.classpath()), new PersonFirstHigh()(ModelProvider.classpath()))
 
   // http://notes.ericwillis.com/2009/11/common-name-prefixes-titles-and-honorifics/
   // ** add map from expanded versions, e.g. Professor, Senator, etc.

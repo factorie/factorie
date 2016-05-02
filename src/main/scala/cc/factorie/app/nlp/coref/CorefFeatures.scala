@@ -1,4 +1,4 @@
-/* Copyright (C) 2008-2014 University of Massachusetts Amherst.
+/* Copyright (C) 2008-2016 University of Massachusetts Amherst.
    This file is part of "FACTORIE" (Factor graphs, Imperative, Extensible)
    http://factorie.cs.umass.edu, http://github.com/factorie
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,16 +13,15 @@
 
 package cc.factorie.app.nlp.coref
 
-import cc.factorie.app.nlp.phrase._
-import cc.factorie.app.nlp.wordnet.WordNet
-import cc.factorie.app.strings.Stopwords
-import scala.collection.mutable
-import cc.factorie.app.nlp.phrase.{Number, Gender}
+import cc.factorie.app.nlp.lexicon.{StopWords, StaticLexicons}
 import cc.factorie.app.nlp.ner.OntonotesEntityTypeDomain
+import cc.factorie.app.nlp.phrase.{Gender, Number, _}
+import cc.factorie.app.nlp.wordnet.WordNet
+
+import scala.collection.mutable
 
 /** Various lazily-evaluated cached characteristics of a Mention, typically attached to a Mention as an attr. */
-class MentionCharacteristics(val mention: Mention) {
-  import cc.factorie.app.nlp.lexicon
+class MentionCharacteristics(val mention: Mention, lexicon:StaticLexicons) {
   // TODO These should be cleaned up and made more efficient -akm
   lazy val isPRO = CorefFeatures.posTagsSet.contains(mention.phrase.headToken.posTag.categoryValue)
   lazy val isProper = CorefFeatures.properSet.contains(mention.phrase.headToken.posTag.categoryValue)
@@ -72,7 +71,7 @@ class MentionCharacteristics(val mention: Mention) {
         Set.empty
       else {
         val alt1 = mention.phrase.value.map(_.string.trim).filter(_.exists(_.isLetter)) // tokens that have at least one letter character
-        val alt2 = alt1.filterNot(t => Stopwords.contains(t.toLowerCase)) // alt1 tokens excluding stop words
+        val alt2 = alt1.filterNot(t => StopWords.contains(t.toLowerCase)) // alt1 tokens excluding stop words
         val alt3 = alt1.filter(_.head.isUpper) // alt1 tokens that are capitalized
         val alt4 = alt2.filter(_.head.isUpper)
         Seq(alt1, alt2, alt3, alt4).map(_.map(_.head).mkString.toLowerCase).toSet
@@ -141,8 +140,7 @@ object CorefFeatures {
       "Mismatch"
   }
 
-  def matchingTokensRelations(m1:Mention, m2:Mention) = {
-    import cc.factorie.app.nlp.lexicon
+  def matchingTokensRelations(m1:Mention, m2:Mention, lexicon:StaticLexicons) = {
     val set = new mutable.HashSet[String]()
     val m1c = m1.attr[MentionCharacteristics]
     val m2c = m2.attr[MentionCharacteristics]

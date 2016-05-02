@@ -1,4 +1,4 @@
-/* Copyright (C) 2008-2014 University of Massachusetts Amherst.
+/* Copyright (C) 2008-2016 University of Massachusetts Amherst.
    This file is part of "FACTORIE" (Factor graphs, Imperative, Extensible)
    http://factorie.cs.umass.edu, http://github.com/factorie
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,8 +12,6 @@
    limitations under the License. */
 package cc.factorie.optimize
 
-import cc.factorie._
-import cc.factorie.la._
 import cc.factorie.model.{WeightsMap, WeightsSet}
 
 /** Base trait for optimizers that update weights according to a gradient.
@@ -50,9 +48,60 @@ trait GradientOptimizer {
 
 /** Include L2 regularization (Gaussian with given scalar as the spherical covariance) in the gradient and value. */
 trait L2Regularization extends GradientOptimizer {
-  var variance: Double = 1.0
+  var variance: Double = 10.0
   abstract override def step(weights: WeightsSet, gradient: WeightsMap, value: Double) {
     gradient += (weights, -1 / variance)
     super.step(weights, gradient, value - 0.5 / variance * (weights dot weights))
   }
+}
+
+/** "Weight decay" is L2 regularization that only affects the the non-sparse parts of the gradient (as in neural networks).
+  * NOTE: we ignore the contribution of the L2 regularizer to the value, since anti-derivative of "weight decay" depends on statistics of stochastic gradients.
+  * For optimizers that use line search, the gradient is not sparse or stochastic, so use L2Regularization trait.
+  * */
+trait WeightDecay extends GradientOptimizer {
+  def lambda: Double
+  abstract override def step(weights: WeightsSet, gradient: WeightsMap, value: Double): Unit = {
+    for (k <- gradient.keys) gradient(k) += (weights(k), -lambda)
+    super.step(weights, gradient, value)
+  }
+}
+
+/** "Weight decay" is L2 regularization that only affects the the non-sparse parts of the gradient (as in neural networks). This one mixes into GradientStep.
+  * NOTE: we ignore the contribution of the L2 regularizer to the function value, since GradientStep does not use it.
+  * */
+trait WeightDecayStep extends GradientStep {
+  def lambda: Double
+  abstract override def doGradStep(weights: WeightsSet, gradient: WeightsMap, value: Double): Unit = {
+    for (k <- gradient.keys) gradient(k) += (weights(k), -lambda)
+    super.step(weights, gradient, value)
+  }
+}
+
+/** Synchronize on individual Weights template objects for better parallelism in e.g. embedding models */
+trait SynchronizedWeights extends GradientOptimizer {
+  abstract override def step(weights: WeightsSet, gradient: WeightsMap, value: Double): Unit = {
+    for ((k, v) <- gradient.toSeq) k.synchronized {
+      val gradForWeight = new WeightsMap(_.newBlankTensor)
+      gradForWeight(k) = v
+      super.step(weights, gradForWeight, value)
+    }
+  }
+  abstract override def initializeWeights(weights: WeightsSet): Unit = this.synchronized { super.initializeWeights(weights) }
+  abstract override def reset(): Unit = this.synchronized { super.reset() }
+  abstract override def finalizeWeights(weights: WeightsSet): Unit = this.synchronized { super.finalizeWeights(weights) }
+}
+
+/** Synchronize on individual Weights template objects for better parallelism in e.g. embedding models (this one mixes into GradientStep.) */
+trait SynchronizedWeightsStep extends GradientStep {
+  abstract override def doGradStep(weights: WeightsSet, gradient: WeightsMap, value: Double): Unit = {
+    for ((k, v) <- gradient.toSeq) k.synchronized {
+      val gradForWeight = new WeightsMap(_.newBlankTensor)
+      gradForWeight(k) = v
+      super.step(weights, gradForWeight, value)
+    }
+  }
+  override def initializeWeights(weights: WeightsSet): Unit = this.synchronized { super.initializeWeights(weights) }
+  override def reset(): Unit = this.synchronized { super.reset() }
+  override def finalizeWeights(weights: WeightsSet): Unit = this.synchronized { super.finalizeWeights(weights) }
 }

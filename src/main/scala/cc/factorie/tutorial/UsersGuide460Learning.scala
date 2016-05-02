@@ -1,4 +1,4 @@
-/* Copyright (C) 2008-2014 University of Massachusetts Amherst.
+/* Copyright (C) 2008-2016 University of Massachusetts Amherst.
    This file is part of "FACTORIE" (Factor graphs, Imperative, Extensible)
    http://factorie.cs.umass.edu, http://github.com/factorie
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -23,11 +23,11 @@
 package cc.factorie.tutorial
 object TutorialLearning extends App {
   import cc.factorie._
-  import variable._
-  import cc.factorie.app.nlp._
   import cc.factorie.app.chain._
-  import cc.factorie.optimize.{ SynchronizedOptimizerOnlineTrainer, Trainer, SampleRankTrainer }
-  import cc.factorie.infer.{ GibbsSampler, InferByBPChain }
+  import cc.factorie.app.nlp._
+  import cc.factorie.infer.{GibbsSampler, InferByBPChain}
+  import cc.factorie.optimize.{SampleRankTrainer, SynchronizedOptimizerOnlineTrainer, Trainer}
+  import variable._
 
   implicit val random = new scala.util.Random(0)
 

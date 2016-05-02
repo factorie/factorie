@@ -1,4 +1,4 @@
-/* Copyright (C) 2008-2014 University of Massachusetts Amherst.
+/* Copyright (C) 2008-2016 University of Massachusetts Amherst.
    This file is part of "FACTORIE" (Factor graphs, Imperative, Extensible)
    http://factorie.cs.umass.edu, http://github.com/factorie
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -71,6 +71,19 @@ class SetVariable[A]() extends SetVar[A] /*with VarAndValueGenericDomain[SetVari
   final def -=(x:A): Unit = remove(x)(null)
   final def ++=(xs:Iterable[A]): Unit = xs.foreach(add(_)(null))
   final def --=(xs:Iterable[A]): Unit = xs.foreach(remove(_)(null))
+  final def ++(other:SetVariable[A])(implicit d:DiffList): SetVariable[A] = {
+    val res = new SetVariable[A]
+    res addAll this.value
+    res addAll other.value
+    res
+  }
+  final def --(other:SetVariable[A])(implicit d:DiffList): SetVariable[A] = {
+    val res = new SetVariable[A]
+    res addAll this.value
+    res removeAll other.value
+    res
+  }
+
   case class SetVariableAddDiff(added: A) extends Diff {
     def variable: SetVariable[A] = SetVariable.this
     def redo() = _members += added //if (_members.contains(added)) throw new Error else

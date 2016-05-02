@@ -1,4 +1,4 @@
-/* Copyright (C) 2008-2014 University of Massachusetts Amherst.
+/* Copyright (C) 2008-2016 University of Massachusetts Amherst.
    This file is part of "FACTORIE" (Factor graphs, Imperative, Extensible)
    http://factorie.cs.umass.edu, http://github.com/factorie
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -11,10 +11,10 @@
    See the License for the specific language governing permissions and
    limitations under the License. */
 package cc.factorie.app.topics.lda
-import cc.factorie._
-import scala.collection.mutable.ArrayBuffer
 import cc.factorie.directed._
-import cc.factorie.variable.{MassesVariable, CategoricalSeqDomain}
+import cc.factorie.variable.{CategoricalSeqDomain, MassesVariable}
+
+import scala.collection.mutable.ArrayBuffer
 
 // Unfinished model similar to Labeled-LDA.
 
@@ -59,7 +59,11 @@ object TaggedLDA {
       for (file <- new java.io.File(directory).listFiles; if file.isFile) {
         print("."); Console.flush()
         val text = scala.io.Source.fromFile(file).mkString
-        val doc = new TaggedDocument(WordSeqDomain, file.toString, tokenizer(text).map(_.toLowerCase).filter(!cc.factorie.app.strings.Stopwords.contains(_)).toIndexedSeq)
+        val doc = new TaggedDocument(
+          WordSeqDomain,
+          file.toString,
+          tokenizer(text).map(_.toLowerCase).filter(!cc.factorie.app.nlp.lexicon.StopWords.contains(_)).toIndexedSeq
+        )
         lda.addDocument(doc, random)
         for (tag <- tags) if (tag.matches(text)) {
           doc.tags += tag

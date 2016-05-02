@@ -1,4 +1,4 @@
-/* Copyright (C) 2008-2014 University of Massachusetts Amherst.
+/* Copyright (C) 2008-2016 University of Massachusetts Amherst.
    This file is part of "FACTORIE" (Factor graphs, Imperative, Extensible)
    http://factorie.cs.umass.edu, http://github.com/factorie
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -10,23 +10,22 @@
    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
    See the License for the specific language governing permissions and
    limitations under the License. */
+
 package cc.factorie.directed
 
-import cc.factorie._
+import cc.factorie.infer._
 import cc.factorie.la._
 import cc.factorie.maths
-import scala.util.Random
-import org.jblas.DoubleMatrix
 import cc.factorie.variable._
-import scala.Some
-import cc.factorie.infer._
-import scala.Some
+import org.jblas.DoubleMatrix
+
+import scala.util.Random
 
 object DirectedTypeHelpers {
   type MutableTensorVarTensor1 = MutableTensorVar { type Value = Tensor1 }
   type MutableTensorVarTensor2 = MutableTensorVar { type Value = Tensor2 }
 }
-import DirectedTypeHelpers._
+import cc.factorie.directed.DirectedTypeHelpers._
 
 object MultivariateGaussian extends DirectedFamily3[MutableTensorVarTensor1, MutableTensorVarTensor1, MutableTensorVarTensor2] {
   self =>

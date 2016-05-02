@@ -1,4 +1,4 @@
-/* Copyright (C) 2008-2014 University of Massachusetts Amherst.
+/* Copyright (C) 2008-2016 University of Massachusetts Amherst.
    This file is part of "FACTORIE" (Factor graphs, Imperative, Extensible)
    http://factorie.cs.umass.edu, http://github.com/factorie
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,10 +14,11 @@
 
 
 package cc.factorie.util
-import scala.reflect.ClassTag
-import scala.collection.mutable.{HashMap,HashSet,ArrayBuffer}
-import cc.factorie._
-import scala.reflect.runtime.universe._
+
+import java.io.File
+
+import scala.collection.mutable
+import scala.reflect.runtime.universe.{TypeTag, typeOf}
 
 /** Concrete version is implemented as an inner class of @see CmdOptions.
     @author Andrew McCallum */
@@ -37,8 +38,9 @@ trait CmdOption[T] {
   def unParse: Seq[String] = {
     if (hasValue)
       value match {
-        case a: Seq[_] => Seq(f"--$name%s") ++ a.map(_.toString)
+        case a: Seq[_] => Seq(f"--$name%s=${a.mkString(",")}")
         case "" => Seq()
+        case f:File => Seq(s"--$name=${f.getAbsolutePath}")
         case a: Any => Seq(f"--$name%s=${value.toString}%s")
       }
 
@@ -67,7 +69,7 @@ trait CmdOption[T] {
     @author Andrew McCallum
  */
 class CmdOptions {
-  private val opts = new HashMap[String,cc.factorie.util.CmdOption[_]]
+  protected val opts = new mutable.HashMap[String,cc.factorie.util.CmdOption[_]]
   def apply(key: String) = opts(key)
   def get(key:String) = opts.get(key)
   def size = opts.size
@@ -95,7 +97,7 @@ class CmdOptions {
     sb.toString
   }
   /** The arguments that were unqualified by dashed options. */
-  private val _remaining = new ArrayBuffer[String]
+  private val _remaining = new mutable.ArrayBuffer[String]
   def remaining: Seq[String] = _remaining
   /** Parse sequence of command-line arguments. */
   def parse(args:Seq[String]): Unit = {
@@ -133,7 +135,7 @@ class CmdOptions {
   }
 
   /** get options as a Seq[String] e.g. Seq("--l1=value", "--l2=value"...) **/
-  def unParse: Seq[String] = values.toSeq.map(_.unParse).flatten
+  def unParse: Seq[String] = values.toSeq.flatMap(_.unParse)
 
   class CmdOption[T:TypeTag](val name:String, val defaultValue:T, val valueName:String, val helpMsg:String, val required:Boolean, val shortName:Char) extends cc.factorie.util.CmdOption[T] {
     def this(name:String, defaultValue:T, valueName:String, helpMsg:String) = this(name, defaultValue, valueName, helpMsg, false, name.head)
@@ -170,15 +172,15 @@ class CmdOptions {
        if (newIndex < args.length && !(args(newIndex).startsWith("-") && args(newIndex).length > 1)) newIndex = parseValue(args, newIndex)
        else if (valueType =:= typeOf[Boolean]) setValue(true.asInstanceOf[T]) // for CmdOption[Boolean], invoking with no value arg defaults to true
        // ...otherwise the value will just remain the defaultValue
-       invoke
+       invoke()
        invokedCount += 1
        newIndex
      } else if (args(index).startsWith("--"+name+"=")) {
        // support --file=foo
        // modified on 1/21/2012 to support --file=foo=bar --brian
-       val rightOfEq = args(index).drop(name.size + 3)
+       val rightOfEq = args(index).drop(name.length + 3)
        parseValue(List(rightOfEq), 0)
-       invoke
+       invoke()
        invokedCount += 1
        index + 1
      } else index
@@ -205,7 +207,9 @@ class CmdOptions {
         case t if t =:= typeOf[List[String]] => processList(identity).asInstanceOf[T]
         case t if t =:= typeOf[List[Int]] => processList(_.toInt).asInstanceOf[T]
         case t if t =:= typeOf[List[Double]] => processList(_.toDouble).asInstanceOf[T]
+        case t if t =:= typeOf[List[File]] => processList(FileUtils.fromString).asInstanceOf[T]
         case t if t =:= typeOf[Char] => args(index).head.asInstanceOf[T]
+        case t if t =:= typeOf[File] => FileUtils.fromString(args(index)).asInstanceOf[T]
         case t if t =:= typeOf[String] => args(index).asInstanceOf[T]
         case t if t =:= typeOf[Short] => args(index).toShort.asInstanceOf[T]
         case t if t =:= typeOf[Int] => args(index).toInt.asInstanceOf[T]
@@ -219,26 +223,27 @@ class CmdOptions {
       nextIndex
     }
   }
+  override def toString: String = unParse.mkString("\n")
 }
 
 /** Default CmdOption collection that should be included in most CmdOptions. */
 trait DefaultCmdOptions extends CmdOptions {
   new CmdOption("help", "", "STRING", "Print this help message.") {
-    override def invoke = {
+    override def invoke() {
       DefaultCmdOptions.this.values.foreach(o => println(o.helpMsg))
       System.exit(0)
     }
   }
   new CmdOption("version", "", "STRING",  "Print version numbers.") {
     override def invoke {
-      throw new Error("Not yet implemented.") // TODO How to manage version strings?
-      //println("FACTORIE version "+factorieVersionString)
-      // TODO How do I print the Scala and JVM version numbers?
+      println("java version " + sys.props("java.version"))
+      println("scala version " + util.Properties.versionNumberString)
+      println("FACTORIE version " + "1.2-SNAPSHOT") //TODO obviously this is wrong
       System.exit(0)
     }
   }
   new CmdOption("config", "", "FILE", "Read command option values from a file") {
-    override def invoke {
+    override def invoke() {
       if (this.value != "") {
         import scala.io.Source
         val contents = Source.fromFile(new java.io.File(this.value)).mkString

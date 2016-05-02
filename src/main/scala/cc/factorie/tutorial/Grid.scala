@@ -1,4 +1,4 @@
-/* Copyright (C) 2008-2014 University of Massachusetts Amherst.
+/* Copyright (C) 2008-2016 University of Massachusetts Amherst.
    This file is part of "FACTORIE" (Factor graphs, Imperative, Extensible)
    http://factorie.cs.umass.edu, http://github.com/factorie
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,11 +12,12 @@
    limitations under the License. */
 package cc.factorie.tutorial
 
-import collection.mutable.{Buffer, ArrayBuffer}
 import cc.factorie._
-import cc.factorie.variable.{HammingTemplate, LabeledCategoricalVariable, DoubleVariable, BooleanDomain}
-import cc.factorie.model.{TupleTemplateWithStatistics2, CombinedModel}
-import cc.factorie.infer.{VariableSettingsSampler, SamplingMaximizer}
+import cc.factorie.infer.{SamplingMaximizer, VariableSettingsSampler}
+import cc.factorie.model.{CombinedModel, TupleTemplateWithStatistics2}
+import cc.factorie.variable.{BooleanDomain, DoubleVariable, HammingTemplate, LabeledCategoricalVariable}
+
+import scala.collection.mutable.{ArrayBuffer, Buffer}
 
 //import bp.{InferencerBPWorker, InferencerBP, MaxProductLattice, LatticeBP}
 

@@ -1,4 +1,4 @@
-/* Copyright (C) 2008-2014 University of Massachusetts Amherst.
+/* Copyright (C) 2008-2016 University of Massachusetts Amherst.
    This file is part of "FACTORIE" (Factor graphs, Imperative, Extensible)
    http://factorie.cs.umass.edu, http://github.com/factorie
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,9 +16,9 @@ import cc.factorie._
 import cc.factorie.app.nlp._
 import cc.factorie.app.nlp.phrase._
 import cc.factorie.app.nlp.pos.PennPosDomain
-import cc.factorie.util.{Attr,UniqueId,ImmutableArrayIndexedSeq,EvaluatableClustering}
+import cc.factorie.util.{Attr, EvaluatableClustering, ImmutableArrayIndexedSeq, UniqueId}
 import cc.factorie.variable._
-import cc.factorie._
+
 import scala.collection.mutable.ArrayBuffer
 
 /** Either a mention, entity or sub-entity in an coreference or entity resolution model.

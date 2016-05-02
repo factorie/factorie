@@ -1,4 +1,4 @@
-/* Copyright (C) 2008-2014 University of Massachusetts Amherst.
+/* Copyright (C) 2008-2016 University of Massachusetts Amherst.
    This file is part of "FACTORIE" (Factor graphs, Imperative, Extensible)
    http://factorie.cs.umass.edu, http://github.com/factorie
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,11 +12,11 @@
    limitations under the License. */
 
 package cc.factorie.app.classify
-import cc.factorie.variable._
-import cc.factorie.infer._
-import cc.factorie.la.{WeightsMapAccumulator, Tensor1, SingletonBinaryTensor1}
-import cc.factorie.optimize._
 import cc.factorie.app.classify.backend._
+import cc.factorie.infer._
+import cc.factorie.la.{SingletonBinaryTensor1, Tensor1}
+import cc.factorie.optimize._
+import cc.factorie.variable._
 
 /** A record of the result of applying a Classifier to a variable. */
 class Classification[V<:DiscreteVar](val _1:V, score:Tensor1) extends MulticlassClassification(score) with DiscreteMarginal1[V] {
@@ -156,13 +156,14 @@ class DecisionTreeClassifier[L<:DiscreteVar,F<:VectorVar](val tree:DTree, val la
   def predict(features: Tensor1) = DTree.score(features, tree)
 }
 
-class ID3DecisionTreeClassifier(implicit random: scala.util.Random) extends VectorClassifierTrainer {
+class DecisionTreeClassifierTrainer(treeTrainer: DecisionTreeTrainer)(implicit random: scala.util.Random) extends VectorClassifierTrainer {
   def train[L<:LabeledDiscreteVar,F<:VectorVar](labels:Iterable[L], l2f:L=>F): DecisionTreeClassifier[L,F] = {
     val labelSize = labels.head.domain.size
     val instances = labels.toSeq.map(label => DecisionTreeTrainer.Instance(l2f(label).value, new SingletonBinaryTensor1(labelSize, label.target.intValue), 1.0))
-    val treeTrainer = new ID3DecisionTreeTrainer // TODO We could make this a flexible choice later. -akm
     val dtree = treeTrainer.train(instances)
     new DecisionTreeClassifier(dtree, l2f)
   }
 }
 
+class ID3DecisionTreeClassifier(implicit random: scala.util.Random) extends DecisionTreeClassifierTrainer(new ID3DecisionTreeTrainer)
+class C45DecisionTreeClassifier(implicit random: scala.util.Random) extends DecisionTreeClassifierTrainer(new C45DecisionTreeTrainer)

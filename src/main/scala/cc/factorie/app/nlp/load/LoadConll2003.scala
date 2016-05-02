@@ -1,4 +1,4 @@
-/* Copyright (C) 2008-2014 University of Massachusetts Amherst.
+/* Copyright (C) 2008-2016 University of Massachusetts Amherst.
    This file is part of "FACTORIE" (Factor graphs, Imperative, Extensible)
    http://factorie.cs.umass.edu, http://github.com/factorie
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,15 +12,11 @@
    limitations under the License. */
 
 package cc.factorie.app.nlp.load
-import cc.factorie.app.nlp._
-
+import cc.factorie.app.nlp.{Document, Sentence, Token, UnknownDocumentAnnotator, _}
 import cc.factorie.app.nlp.ner._
-import collection.mutable.ArrayBuffer
 import cc.factorie.util.FastLogging
-import cc.factorie.app.nlp.Document
-import cc.factorie.app.nlp.Sentence
-import cc.factorie.app.nlp.Token
-import cc.factorie.app.nlp.UnknownDocumentAnnotator
+
+import scala.collection.mutable.ArrayBuffer
 
 /** Load a sequence of CoNLL 2003 documents.
   *
@@ -56,21 +52,26 @@ case class LoadConll2003(BILOU:Boolean = false, verbose:Boolean = false) extends
     var document = new Document("").setName("CoNLL2003-"+documents.length)
     var sentence = new Sentence(document)
     for (line <- source.getLines()) {
-      if (line.length < 2) { // Sentence boundary
-        document.appendString("\n")
-        sentence = new Sentence(document)
-      } else if (line.startsWith("-DOCSTART-")) { // Found a new document
+      if (line.trim == "") { // Sentence boundary
+        if(sentence.nonEmpty) {
+          // only make a new sentence if the old one wasn't empty
+          document.appendString("\n")
+          sentence = new Sentence(document)
+        }
+      }else if (line.startsWith("-DOCSTART-")) { // Found a new document
         // If the current document isn't empty, add it to the list
         if (document.tokenCount > 0) {
+          if(document.sentences.last.isEmpty) document.asSection -= document.sentences.last
           document.asSection.chainFreeze()
           documents += document
+          document = new Document().setName("CoNLL2003-" + documents.length)
+          document.annotators(classOf[Token]) = UnknownDocumentAnnotator.getClass // register that we have token boundaries
+          document.annotators(classOf[Sentence]) = UnknownDocumentAnnotator.getClass // register that we have sentence boundaries
+          document.annotators(classOf[pos.PennPosTag]) = UnknownDocumentAnnotator.getClass // register that we have POS tags
+          document.annotators(classOf[LabeledBioConllNerTag]) = UnknownDocumentAnnotator.getClass // register that we have IOB NER tags
+          if (BILOU) document.annotators(classOf[LabeledBilouConllNerTag]) = UnknownDocumentAnnotator.getClass // register that we have BILOU NER tags
+          sentence = new Sentence(document)
         }
-        document = new Document().setName("CoNLL2003-" + documents.length)
-        document.annotators(classOf[Token]) = UnknownDocumentAnnotator.getClass // register that we have token boundaries
-        document.annotators(classOf[Sentence]) = UnknownDocumentAnnotator.getClass // register that we have sentence boundaries
-        document.annotators(classOf[pos.PennPosTag]) = UnknownDocumentAnnotator.getClass // register that we have POS tags
-        document.annotators(classOf[LabeledBioConllNerTag]) = UnknownDocumentAnnotator.getClass // register that we have IOB NER tags
-        if (BILOU) document.annotators(classOf[LabeledBilouConllNerTag]) = UnknownDocumentAnnotator.getClass // register that we have BILOU NER tags
       } else {
         val fields = line.split(' ')
         assert(fields.length == 4)
@@ -84,7 +85,11 @@ case class LoadConll2003(BILOU:Boolean = false, verbose:Boolean = false) extends
       }
     }
     // Take care of last document that may have been accumulated
-    if (document.tokenCount > 0) documents += document
+    if (document.tokenCount > 0){
+        if(document.sentences.last.isEmpty) document.asSection -= document.sentences.last
+        document.asSection.chainFreeze()
+        documents += document
+      }
     if (BILOU) convertToBILOU(documents)
     if (verbose) logger.info("Loaded "+documents.length+" documents with "+documents.map(_.sentences.size).sum+" sentences with "+documents.map(_.tokens.size).sum+" tokens total")
     documents

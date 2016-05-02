@@ -1,4 +1,4 @@
-/* Copyright (C) 2008-2014 University of Massachusetts Amherst.
+/* Copyright (C) 2008-2016 University of Massachusetts Amherst.
    This file is part of "FACTORIE" (Factor graphs, Imperative, Extensible)
    http://factorie.cs.umass.edu, http://github.com/factorie
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,13 +12,14 @@
    limitations under the License. */
 package cc.factorie.app.nlp.hcoref
 
-import cc.factorie.db.mongo.{LazyCubbieConverter, MongoCubbieCollection, MutableCubbieCollection}
 import cc.factorie.db.mongo.MongoCubbieImplicits._
-import scala.collection.mutable
-import com.mongodb.DB
-import scala.reflect.ClassTag
+import cc.factorie.db.mongo.{LazyCubbieConverter, MongoCubbieCollection, MutableCubbieCollection}
 import cc.factorie.util.{ArrayDoubleSeq, Cubbie}
-import cc.factorie.variable.{DenseDoubleBagVariable, Var, BagOfWordsVariable}
+import cc.factorie.variable.{BagOfWordsVariable, DenseDoubleBagVariable, Var}
+import com.mongodb.DB
+
+import scala.collection.mutable
+import scala.reflect.ClassTag
 
 /**
  * User: escher

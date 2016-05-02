@@ -1,4 +1,4 @@
-/* Copyright (C) 2008-2014 University of Massachusetts Amherst.
+/* Copyright (C) 2008-2016 University of Massachusetts Amherst.
    This file is part of "FACTORIE" (Factor graphs, Imperative, Extensible)
    http://factorie.cs.umass.edu, http://github.com/factorie
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,10 +13,11 @@
 
 package cc.factorie.variable
 
+import cc.factorie.infer.{DiscreteSummary1, Maximize, SimpleDiscreteMarginal1, Summary}
 import cc.factorie.la._
-import scala.util.Random
 import cc.factorie.model._
-import cc.factorie.infer.{Maximize, DiscreteSummary1, SimpleDiscreteMarginal1, Summary}
+
+import scala.util.Random
 
 /** A single discrete variable whose values are associated with indices 0..N-1.
     @author Andrew McCallum */

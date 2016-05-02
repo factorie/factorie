@@ -1,4 +1,4 @@
-/* Copyright (C) 2008-2014 University of Massachusetts Amherst.
+/* Copyright (C) 2008-2016 University of Massachusetts Amherst.
    This file is part of "FACTORIE" (Factor graphs, Imperative, Extensible)
    http://factorie.cs.umass.edu, http://github.com/factorie
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,10 +13,9 @@
 
 package cc.factorie.util
 
-import collection.mutable
-import util.parsing.json.JSON
 import cc.factorie.la.Tensor
-import java.nio.{DoubleBuffer, ByteBuffer}
+
+import scala.collection.mutable
 import scala.reflect._
 
 /**
@@ -412,8 +411,19 @@ class Cubbie {
   case class TensorSlot(name: String) extends PrimitiveSlot[Tensor]
 
   // These are specially handled in cc.factorie.db.mongo.MongoCubbieCollection
-  case class IntSeqSlot(name:String) extends PrimitiveSlot[IntSeq]
-  case class DoubleSeqSlot(name:String) extends PrimitiveSlot[DoubleSeq]
+  case class IntSeqSlot(name:String) extends PrimitiveSlot[IntSeq] {
+    override def value = _map(name) match {
+      case s: Seq[Any] if s.isEmpty => new IntArrayBuffer()
+      case x: Any => x.asInstanceOf[IntSeq]
+    }
+  }
+  
+  case class DoubleSeqSlot(name:String) extends PrimitiveSlot[DoubleSeq] {
+    override def value = _map(name) match {
+      case s: Seq[Any] if s.isEmpty => new DoubleArrayBuffer()
+      case x: Any => x.asInstanceOf[DoubleSeq]
+    }
+  }
 
 
   /** This allows any type to be stored in a slot.  But note that BSON and JSON only support the above restricted set of types.

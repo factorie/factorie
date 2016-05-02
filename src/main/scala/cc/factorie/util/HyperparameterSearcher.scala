@@ -1,4 +1,4 @@
-/* Copyright (C) 2008-2014 University of Massachusetts Amherst.
+/* Copyright (C) 2008-2016 University of Massachusetts Amherst.
    This file is part of "FACTORIE" (Factor graphs, Imperative, Extensible)
    http://factorie.cs.umass.edu, http://github.com/factorie
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,11 +12,13 @@
    limitations under the License. */
 package cc.factorie.util
 
-import scala.util.Random
-import scala.concurrent._
-import java.text.SimpleDateFormat
 import java.io.{FileOutputStream, OutputStreamWriter}
+import java.text.SimpleDateFormat
+
 import cc.factorie.variable.Proportions
+
+import scala.concurrent._
+import scala.util.Random
 
 /**
  * User: apassos
@@ -247,7 +249,6 @@ abstract class JobQueueExecutor(memory: Int, className: String, cores: Int = 1) 
     val as = serializeArgs(args)
     import scala.concurrent.ExecutionContext.Implicits.global
     Future {
-      import sys.process._
       val thisPrefix = s"$prefix/job-$thisId"
       val outFile = thisPrefix+"-out"
       val jvmCommand = s"java -Xmx${memory}g -classpath '$classpath' cc.factorie.util.QSubExecutor --className=$className  '--classArgs=$as' --outFile=$outFile"
@@ -281,7 +282,7 @@ abstract class JobQueueExecutor(memory: Int, className: String, cores: Int = 1) 
  */
 class QSubExecutor(memory: Int, className: String, cores: Int = 1) extends JobQueueExecutor(memory, className, cores) {
   import sys.process._
-  def runJob(script: String, logFile: String) { s"qsub -pe blake $cores -sync y -l mem_token=${memory}G -cwd -j y -o $logFile -S /bin/sh $script".!! }
+  def runJob(script: String, logFile: String) { s"qsub -pe blake $cores -sync y -l mem_token=${memory}G -l mem_free=${memory}G -cwd -j y -o $logFile -S /bin/sh $script".!! }
 }
 
 /**

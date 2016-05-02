@@ -1,4 +1,4 @@
-/* Copyright (C) 2008-2014 University of Massachusetts Amherst.
+/* Copyright (C) 2008-2016 University of Massachusetts Amherst.
    This file is part of "FACTORIE" (Factor graphs, Imperative, Extensible)
    http://factorie.cs.umass.edu, http://github.com/factorie
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -17,6 +17,8 @@ import cc.factorie.app.nlp._
 import cc.factorie.util.Attr
 import cc.factorie.app.nlp.pos.{PennPosTag, PennPosDomain}
 import cc.factorie.app.nlp.parse.ParseTreeLabelDomain
+import cc.factorie.app.nlp.pos.{PennPosDomain, PennPosTag}
+import cc.factorie.util.Attr
 
 /** A Phrase is a TokenSpan that has a head token.
     If offsetToHeadToken is unspecified, then it will be set automatically using HeadTokenOffset.apply. */

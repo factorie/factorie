@@ -1,4 +1,4 @@
-/* Copyright (C) 2008-2014 University of Massachusetts Amherst.
+/* Copyright (C) 2008-2016 University of Massachusetts Amherst.
    This file is part of "FACTORIE" (Factor graphs, Imperative, Extensible)
    http://factorie.cs.umass.edu, http://github.com/factorie
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -17,6 +17,21 @@ import java.io.File
 object FileUtils extends FileUtils
 
 class FileUtils {
+
+  /**
+   * Tries to convert a string to a readable, writable file, failing otherwise
+   */
+  def fromString(s:String):File = {
+    val f = new File(s)
+    /*
+    if(f.exists() && f.canRead && f.canWrite) {
+      f
+    } else {
+      throw new IllegalArgumentException("%s cannot be resolved to a readable, writable file".format(s))
+    }
+    */
+    f
+  }
 
   /**
    * Returns a list of the file names of files with the given ending under the given directory

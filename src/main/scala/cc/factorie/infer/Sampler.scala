@@ -1,4 +1,4 @@
-/* Copyright (C) 2008-2014 University of Massachusetts Amherst.
+/* Copyright (C) 2008-2016 University of Massachusetts Amherst.
    This file is part of "FACTORIE" (Factor graphs, Imperative, Extensible)
    http://factorie.cs.umass.edu, http://github.com/factorie
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,13 +15,13 @@
 
 package cc.factorie.infer
 
-import scala.collection.mutable.{ArrayBuffer,PriorityQueue}
-import cc.factorie.util.{Hooks0,Hooks1}
-import cc.factorie.la.Tensor
-import cc.factorie.variable._
 import cc.factorie._
-import scala.Some
-import cc.factorie.model.{Model, DotFamily, Factor}
+import cc.factorie.la.Tensor
+import cc.factorie.model.{DotFamily, Factor, Model}
+import cc.factorie.util.{Hooks0, Hooks1}
+import cc.factorie.variable._
+
+import scala.collection.mutable.{ArrayBuffer, PriorityQueue}
 
 // How to think about Proposals and MCMC:
 // Variables know their own range of values.  This needs to be coded on a per-variable basis

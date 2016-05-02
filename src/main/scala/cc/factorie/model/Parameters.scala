@@ -1,4 +1,4 @@
-/* Copyright (C) 2008-2014 University of Massachusetts Amherst.
+/* Copyright (C) 2008-2016 University of Massachusetts Amherst.
    This file is part of "FACTORIE" (Factor graphs, Imperative, Extensible)
    http://factorie.cs.umass.edu, http://github.com/factorie
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,10 +12,11 @@
    limitations under the License. */
 package cc.factorie.model
 
-import cc.factorie.la._
-import scala.collection.mutable
-import cc.factorie.variable.TensorVar
 import cc.factorie._
+import cc.factorie.la._
+import cc.factorie.variable.TensorVar
+
+import scala.collection.mutable
 
 /** An object with a "parameters" method, which returns a WeightsSet holding the multiple Tensors that make up the parameters.
     This trait also provides methods called "Weights" which create new Weights objects that are automatically added to the parameters WeightsSet.
@@ -35,6 +36,8 @@ trait Parameters {
 class WeightsSet extends TensorSet {
   self =>
   private val _keys = mutable.ArrayBuffer[Weights]()
+
+  def append(key: Weights): Unit = _keys.append(key)
 
   def keys: Seq[Weights] = _keys
   def tensors: Seq[Tensor] = keys.map(_.value)
@@ -81,6 +84,13 @@ class WeightsSet extends TensorSet {
     dt += weights.value
     weights.set(dt)
   }
+
+  def filter(pred: Weights => Boolean): WeightsSet = {
+    val ret = new WeightsSet
+    for (k <- keys; if pred(k))
+      ret.append(k)
+    ret
+  }
 }
 
 /** A TensorSet in which the Tensors are not stored in the Weights objects, but in a map inside this object.
@@ -100,6 +110,12 @@ class WeightsMap(defaultTensor: Weights => Tensor) extends TensorSet {
     c
   }
   override def -(other: TensorSet) = { val newT = copy; newT += (other, -1); newT }
+  def filter(pred: Weights => Boolean): WeightsMap = {
+    val ret = new WeightsMap(_.newBlankTensor)
+    for ((k, v) <- toSeq; if pred(k))
+      ret(k) = v
+    ret
+  }
 }
 
 /** A collection of Tensors each associated with a Weights key. */

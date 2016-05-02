@@ -1,4 +1,4 @@
-/* Copyright (C) 2008-2014 University of Massachusetts Amherst.
+/* Copyright (C) 2008-2016 University of Massachusetts Amherst.
    This file is part of "FACTORIE" (Factor graphs, Imperative, Extensible)
    http://factorie.cs.umass.edu, http://github.com/factorie
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,10 +12,11 @@
    limitations under the License. */
 
 package cc.factorie.app.chain
-import collection.mutable
-import io.{BufferedSource, Source}
-import cc.factorie.app.nlp.{TokenSpan, Sentence, Document, Token}
-import collection.mutable.ArrayBuffer
+import cc.factorie.app.nlp.{Token, TokenSpan}
+
+import scala.collection.mutable
+import scala.collection.mutable.ArrayBuffer
+import scala.io.BufferedSource
 
 /** Methods of retrieving the lexicons that a token in a document (using the window around the token) or a span matches into
   * returns the lexicons names, and the location the token matches into the lexicon (like B-label, I-label, U-label, or L-label)
