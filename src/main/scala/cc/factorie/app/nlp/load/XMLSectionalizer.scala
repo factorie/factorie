@@ -32,6 +32,7 @@ class UnusableText(tokens:Iterable[Token]) extends TACSection(tokens)
 /** A document annotator that creates [[UsableText]] sections for texts within boundaryToken that
   * are not within excludeTokens. Everything else goes in [[UnusableText]] sections. */
 class XMLSectionalizer(boundaryToken:String, excludeTokens:Set[String]) extends DocumentAnnotator {
+//  println("Testing the sectionalizer")
   sealed trait State
   case object Usable extends State
   case object Unusable extends State
@@ -62,6 +63,7 @@ class XMLSectionalizer(boundaryToken:String, excludeTokens:Set[String]) extends 
           sectionBuffer += new UnusableText(tokenBuffer)
           tokenBuffer.clear()
           stateStack push Usable
+//          println("token:"+t + "\t" + "accepted open tag" + "\tUnusable" )
         case (acceptedCloseTag(tag), Usable) if tagStack.headOption == Some(tag.asInstanceOf[String]) =>
           tagStack.pop()
           if(tokenBuffer.nonEmpty) {
@@ -70,32 +72,44 @@ class XMLSectionalizer(boundaryToken:String, excludeTokens:Set[String]) extends 
           }
           stateStack.pop()
           tokenBuffer += t
+//          println("token:"+t + "\t" + "accepted close tag" + "\tUsable" )
         case (excludedOpenTag(tag), Usable) =>
           if(tokenBuffer.nonEmpty) {
-            sectionBuffer += new UsableText(tokenBuffer)
+            // NOTE (Ajay, Melisa - 5/3/2016) : To filter out the following tags in text <P> , </P>, =(FOTOS)=
+            sectionBuffer += new UsableText(tokenBuffer.filter(x => !(x.string.contentEquals("<P>") ||
+                                                                      x.string.contentEquals("</P>") ||
+                                                                      x.string.contentEquals("=(FOTOS)=")) ))
             tokenBuffer.clear()
           }
           tokenBuffer += t
           stateStack push Unusable
+//          println("token:"+t + "\t" + "excluded open tag" + "\tUsable" )
         case (excludedOpenTag(tag), Unusable) =>
           tokenBuffer += t
           stateStack push Unusable
+//          println("token:"+t + "\t" + "excluded open tag" + "\tUnusable" )
         case (excludedCloseTag(tag), Unusable) if tagStack.headOption == Some(tag.asInstanceOf[String]) =>
           tagStack.pop()
           sectionBuffer += new UnusableText(tokenBuffer)
           tokenBuffer.clear()
           stateStack.pop()
+//          println("token:"+t + "\t" + "excluded close tag" + "\tUnusable" )
         case (acceptedCloseTag(tag), Unusable) =>
           // we are in this state because we found an excluded open tag without a corresponding close tag.
           // In that event we just read in everything as usable text
           if(tokenBuffer.nonEmpty) {
-            sectionBuffer += new UsableText(tokenBuffer)
+            // NOTE: (Ajay, Melisa - 5/3/2016) To filter out the following tags in text <P> , </P>, =(FOTOS)=
+            sectionBuffer += new UsableText(tokenBuffer.filter(x => !(x.string.contentEquals("<P>") ||
+                                                                      x.string.contentEquals("</P>") ||
+                                                                      x.string.contentEquals("=(FOTOS)=")) ))
             tokenBuffer.clear()
           }
           tokenBuffer += t
           stateStack.pop()
+//          println("token:"+t + "\t" + "accepted close tag" + "\tUnusable" )
         case _ =>
           tokenBuffer += t
+//          println("token:"+t + "\t" + " In the token buffer")
       }
     }
     document.clearSections()
@@ -106,7 +120,8 @@ class XMLSectionalizer(boundaryToken:String, excludeTokens:Set[String]) extends 
 
 object WebTextSectionalizer extends XMLSectionalizer("post", Set("postdate", "poster", "quote"))
 object ForumPostSectionalizer extends XMLSectionalizer("post", Set("quote"))
-object NewswireSectionalizer extends XMLSectionalizer("text", Set.empty[String])
+//NOTE (Ajay, Melisa - 5/3/2016): Before the Set.empty[String] matched the <P> ... </P> inside the <Text> ..  </Text> , see excludedOpenTag above. So all content between <P> and </P> were excluded
+object NewswireSectionalizer extends XMLSectionalizer("text", Set("p")) //Set.empty[String])
 
 object TACSectionalizer extends DocumentAnnotator {
   def tokenAnnotationString(token: Token) = null
