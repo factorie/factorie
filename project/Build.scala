@@ -42,7 +42,7 @@ object FactorieBuild extends Build {
       version := Versions.factorieVersion,
       scalaVersion := s"${Versions.scalaMajorVersion}.${Versions.scalaMinorVersion}",
       // no verbose deprecation warnings, octal escapes in jflex file are too many
-      scalacOptions := Seq("-unchecked", "-encoding", "utf8"),
+      scalacOptions := Seq("-Xmax-classfile-name", "100", "-unchecked", "-encoding", "utf8"),
       resolvers ++= resolutionRepos,
       libraryDependencies ++= Seq(
         CompileDependencies.mongodb,

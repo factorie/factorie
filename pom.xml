@@ -20,7 +20,7 @@ limitations under the License.
   <description>FACTORIE is a toolkit for deployable probabilistic modeling, implemented as a software library in Scala. It provides its users with a succinct language for creating relational factor graphs, estimating parameters and performing inference.</description>
   <url>http://factorie.cs.umass.edu</url>
   <groupId>cc.factorie</groupId>
-  <artifactId>factorie_${scala.majorVersion}</artifactId>
+  <artifactId>factorie_2.11</artifactId>
   <version>1.3-SNAPSHOT</version>
   <packaging>jar</packaging>
   <inceptionYear>2009</inceptionYear>
@@ -277,6 +277,10 @@ limitations under the License.
             <recompileMode>incremental</recompileMode>
             <useZincServer>false</useZincServer>
             <scalaVersion>${scala.majorVersion}${scala.minorVersion}</scalaVersion>
+            <args>
+              <arg>-Xmax-classfile-name</arg>
+              <arg>100</arg>
+            </args>
           </configuration>
         </plugin>
 
@@ -367,7 +371,7 @@ limitations under the License.
               </executions>
               <configuration>
                 <instructions>
-                  <Bundle-SymbolicName>${pom.groupId}</Bundle-SymbolicName>
+                  <Bundle-SymbolicName>${project.groupId}</Bundle-SymbolicName>
                   <Import-Package>
                     scala,
                     scala.collection,
