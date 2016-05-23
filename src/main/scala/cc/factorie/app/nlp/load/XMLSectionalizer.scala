@@ -48,6 +48,7 @@ class XMLSectionalizer(boundaryToken:String, excludeTokens:Set[String]) extends 
   val prereqAttrs = Seq(classOf[Token])
   val postAttrs = Seq(classOf[TACSection])
 
+  val excludeTags = Array("<P>", "</P>", "=(FOTOS)=")
 
   def process(document:Document) = {
     val tagStack = mutable.Stack[String]()
@@ -76,9 +77,7 @@ class XMLSectionalizer(boundaryToken:String, excludeTokens:Set[String]) extends 
         case (excludedOpenTag(tag), Usable) =>
           if(tokenBuffer.nonEmpty) {
             // NOTE (Ajay, Melisa - 5/3/2016) : To filter out the following tags in text <P> , </P>, =(FOTOS)=
-            sectionBuffer += new UsableText(tokenBuffer.filter(x => !(x.string.contentEquals("<P>") ||
-                                                                      x.string.contentEquals("</P>") ||
-                                                                      x.string.contentEquals("=(FOTOS)=")) ))
+            sectionBuffer += new UsableText(tokenBuffer.filterNot(x =>(excludeTags.contains(x)) ))
             tokenBuffer.clear()
           }
           tokenBuffer += t
@@ -99,9 +98,7 @@ class XMLSectionalizer(boundaryToken:String, excludeTokens:Set[String]) extends 
           // In that event we just read in everything as usable text
           if(tokenBuffer.nonEmpty) {
             // NOTE: (Ajay, Melisa - 5/3/2016) To filter out the following tags in text <P> , </P>, =(FOTOS)=
-            sectionBuffer += new UsableText(tokenBuffer.filter(x => !(x.string.contentEquals("<P>") ||
-                                                                      x.string.contentEquals("</P>") ||
-                                                                      x.string.contentEquals("=(FOTOS)=")) ))
+            sectionBuffer += new UsableText(tokenBuffer.filterNot(x => (excludeTags.contains(x)) ))
             tokenBuffer.clear()
           }
           tokenBuffer += t
@@ -121,7 +118,7 @@ class XMLSectionalizer(boundaryToken:String, excludeTokens:Set[String]) extends 
 object WebTextSectionalizer extends XMLSectionalizer("post", Set("postdate", "poster", "quote"))
 object ForumPostSectionalizer extends XMLSectionalizer("post", Set("quote"))
 //NOTE (Ajay, Melisa - 5/3/2016): Before the Set.empty[String] matched the <P> ... </P> inside the <Text> ..  </Text> , see excludedOpenTag above. So all content between <P> and </P> were excluded
-object NewswireSectionalizer extends XMLSectionalizer("text", Set("p")) //Set.empty[String])
+object NewswireSectionalizer extends XMLSectionalizer("text", Set.empty[String])
 
 object TACSectionalizer extends DocumentAnnotator {
   def tokenAnnotationString(token: Token) = null
