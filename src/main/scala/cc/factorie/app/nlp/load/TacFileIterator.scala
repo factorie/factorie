@@ -25,16 +25,20 @@ object TACDocTypes {
   case object Newswire extends TACDocumentType {val toIndex = 0}
   case object DiscussionForum extends TACDocumentType {val toIndex = 1}
   case object WebDocument extends TACDocumentType {val toIndex = 2}
+  case object Broadcast extends TACDocumentType {val toIndex = 3}
 
   object TACDocumentType {
     def fromFilePath(f:File):TACDocumentType = {
-      val path = f.getAbsolutePath.toLowerCase
-      if(path.contains("discussion_forums") || path.contains("mpdf")) {
+      // get all the individual components of a path and match against these instead of in the entire string
+      val path = f.getAbsoluteFile.toPath.iterator().asScala.map(_.toFile.getName.toLowerCase).toSet[String]
+      if(path.contains("discussion_forums") || path.contains("mpdf") || path.contains("discussion_forum")) {
         DiscussionForum
       } else if(path.contains("newswire") || path.contains("nw")) {
         Newswire
-      } else if(path.contains("web")) {
+      } else if(path.contains("web") || path.contains("wb")) {
         WebDocument
+      } else if (path.contains("bc")) {
+        Broadcast
       } else {
         throw new Exception("Unable to assign document at path %s to a document type".format(path))
       }
@@ -44,6 +48,7 @@ object TACDocTypes {
       case 0 => Newswire
       case 1 => DiscussionForum
       case 2 => WebDocument
+      case 3 => Broadcast
       case otw =>
         throw new Exception("Unable to assign index %s to a document type".format(otw))
     }
@@ -60,9 +65,9 @@ case class DocStringWithId(id:String, docString:String, sourceFilename:String, d
 }
 
 /**
- * The base class for splitting up tac files. Reads an iterator of lines of a tac
- * file an returns an iterator of document strings with their names.
- */
+  * The base class for splitting up tac files. Reads an iterator of lines of a tac
+  * file an returns an iterator of document strings with their names.
+  */
 class TacStringIterator(lines:Iterator[String], filename:String="", typeIdx:Option[Int]=None) extends Iterator[DocStringWithId] {
   private val docEndString = """</doc>"""
   private val webDocStartString = """<DOC>"""
