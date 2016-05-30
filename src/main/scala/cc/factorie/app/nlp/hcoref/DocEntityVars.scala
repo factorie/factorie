@@ -13,7 +13,7 @@
 package cc.factorie.app.nlp.hcoref
 
 import cc.factorie.app.nlp.coref.WithinDocEntity
-import cc.factorie.variable.{BagOfWordsVariable, DenseDoubleBagVariable, DiffList}
+import cc.factorie.variable.{NoopDiff, BagOfWordsVariable, DenseDoubleBagVariable, DiffList}
 
 /**
  * @author John Sullivan
@@ -33,6 +33,7 @@ class DocEntityVars(val names:BagOfWordsVariable, val context:BagOfWordsVariable
     this.mention.remove(other.mention.value)(d)
     this.number.remove(other.number.value)(d)
     this.truth.remove(other.truth.value)(d)
+    if (d ne null) d += NoopDiff(this) // I believe this is necessary because some templates have the EntityVars as its neighbor, but not the bags of words
   }
 
 
@@ -43,6 +44,7 @@ class DocEntityVars(val names:BagOfWordsVariable, val context:BagOfWordsVariable
     this.mention.add(other.mention.value)(d)
     this.number.add(other.number.value)(d)
     this.truth.add(other.truth.value)(d)
+    if (d ne null) d += NoopDiff(this) // I believe this is necessary because some templates have the EntityVars as its neighbor, but not the bags of words
   }
 
   def --(other: DocEntityVars)(implicit d: DiffList) = new DocEntityVars(this.names -- other.names, this.context -- other.context, this.nerType -- other.nerType, this.mention -- other.mention, this.number -- other.number, this.truth -- other.truth)
@@ -66,6 +68,7 @@ class DenseDocEntityVars(val names:BagOfWordsVariable, val context:BagOfWordsVar
     this.contextVec.remove(other.contextVec.value)(d)
     this.number.remove(other.number.value)(d)
     this.truth.remove(other.truth.value)(d)
+    if (d ne null) d += NoopDiff(this) // I believe this is necessary because some templates have the EntityVars as its neighbor, but not the bags of words
   }
 
 
@@ -76,6 +79,7 @@ class DenseDocEntityVars(val names:BagOfWordsVariable, val context:BagOfWordsVar
     this.contextVec.add(other.contextVec.value)(d)
     this.number.add(other.number.value)(d)
     this.truth.add(other.truth.value)(d)
+    if (d ne null) d += NoopDiff(this) // I believe this is necessary because some templates have the EntityVars as its neighbor, but not the bags of words
   }
 
   def --(other: DenseDocEntityVars)(implicit d: DiffList) = new DenseDocEntityVars(this.names -- other.names, this.context -- other.context, this.nerType -- other.nerType, this.contextVec -- other.contextVec, this.number -- other.number, this.truth -- other.truth)
