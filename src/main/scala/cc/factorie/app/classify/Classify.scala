@@ -254,8 +254,14 @@ object Classify {
       val cubbie = new LinearMulticlassClassifierCubbie
       BinarySerializer.deserialize(cubbie, classifierFile)
       val classifier = cubbie.fetch
-      val classifications = labels.map(l => classifier.classification(l.features.value))
+      val classifications = labels.map(l => (l, classifier.classification(l.features.value)))
       for (cl <- labels) println(cl)
+      if(opts.writeClassifications.wasInvoked) {
+        val writer = new PrintWriter(new File(opts.writeClassifications.value), "UTF-8")
+        for ((l, cl) <- classifications)  writer.write (l.features.instanceName + "," + LabelDomain(cl.bestLabelIndex) + "\r\n")
+        writer.close
+        println("opts.writeClassifications: " + opts.writeClassifications.value)
+      }
       if (opts.writeInstances.wasInvoked) {
         val instancesFile = new File(opts.writeInstances.value)
         instancesFile.createNewFile()

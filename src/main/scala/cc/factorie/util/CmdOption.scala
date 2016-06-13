@@ -230,7 +230,7 @@ class CmdOptions {
 trait DefaultCmdOptions extends CmdOptions {
   new CmdOption("help", "", "STRING", "Print this help message.") {
     override def invoke() {
-      DefaultCmdOptions.this.values.foreach(o => println(o.helpMsg))
+      DefaultCmdOptions.this.values.foreach(o => printf("%-30s%s%n", "--" + o.name, o.helpMsg))
       System.exit(0)
     }
   }
