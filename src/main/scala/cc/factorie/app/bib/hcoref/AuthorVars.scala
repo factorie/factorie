@@ -13,7 +13,7 @@
 package cc.factorie.app.bib.hcoref
 
 import cc.factorie.app.nlp.hcoref.{GroundTruth, NodeVariables, SingularCanopy}
-import cc.factorie.variable.{BagOfWordsVariable, DenseDoubleBagVariable, DiffList}
+import cc.factorie.variable.{NoopDiff, BagOfWordsVariable, DenseDoubleBagVariable, DiffList}
 
 /**
  * @author John Sullivan
@@ -42,6 +42,7 @@ class AuthorVars(val firstNames:BagOfWordsVariable,
     this.coAuthors remove other.coAuthors.value
     this.keywords remove other.keywords.value
     this.truth remove other.truth.value
+    if (d ne null) d += NoopDiff(this) // because EntityNameTemplate (and others) have AuthorVars as its neighbor, but doesn't have the bags of words as neighbors
   }
 
   def ++=(other: AuthorVars)(implicit d: DiffList) {
@@ -52,6 +53,7 @@ class AuthorVars(val firstNames:BagOfWordsVariable,
     this.coAuthors add other.coAuthors.value
     this.keywords add other.keywords.value
     this.truth add other.truth.value
+    if (d ne null) d += NoopDiff(this) // because EntityNameTemplate (and others) have AuthorVars as its neighbor, but doesn't have the bags of words as neighbors
   }
 
   def --(other: AuthorVars)(implicit d: DiffList) = new AuthorVars(firstNames = this.firstNames -- other.firstNames,
