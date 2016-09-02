@@ -78,60 +78,58 @@ package object strings {
   }
 
   
-    def simplifyDigits(s: String): String = {
-	    if(s == null || s.length() == 0) {
-	        return s
-	    }
-	    
-	    if(isYear(s)) {
-	        return "<YEAR>";
-	    }
-        
-	    if(isNumber(s)) {
-	        return "<NUM>";
-	    }
-	    
-	    replaceDigits2(s);
-	}
+  def simplifyDigits(s: String): String = {
+    if(s == null || s.length() == 0) {
+	    s
+	  }
+    else if(isYear(s)) {
+      "<YEAR>"
+	  }
+    else if(isNumber(s)) {
+	    "<NUM>"
+	  }
+    else {
+      replaceDigits2(s)
+    }
+  }
 
   
 	//looking for 4 digit year beginning with 19 or 20
-	def isYear(s: String): Boolean = {
-      //is string 4 characters?
-	    if(s.length() == 4) {
-            //does it begin with 19 or 20?
-            if((s.charAt(0) == '1' && s.charAt(1) == '9') ||
-               (s.charAt(0) == '2' && s.charAt(1) == '0')){
-                //are the last two characters digits?
-                if(Character.isDigit(s.charAt(2)) && Character.isDigit(s.charAt(3))) {
-                    return true;
-                }
-            }
+  def isYear(s: String): Boolean = {
+    //is string 4 characters?
+    if(s.length() == 4) {
+      //does it begin with 19 or 20?
+      if((s.charAt(0) == '1' && s.charAt(1) == '9') || (s.charAt(0) == '2' && s.charAt(1) == '0')) {
+        //are the last two characters digits?
+        if(Character.isDigit(s.charAt(2)) && Character.isDigit(s.charAt(3))) {
+          return true
         }
-        return false;
-	}
+      }
+    }
+    false
+  }
 
-	def isNumber(s: String): Boolean = {
-        for(i <- 0 until s.length()) {
-            if(!Character.isDigit(s.charAt(i))){
-                return false;
-            }
-        }
-        return true;
+  def isNumber(s: String): Boolean = {
+    for(i <- 0 until s.length()) {
+      if(!Character.isDigit(s.charAt(i))){
+        return false
+      }
+    }
+    true
 	}
 	
-	def replaceDigits2(s: String): String = {
-	    val c1: Array[Char] = s.toCharArray()
-	    val c2: Array[Char] = new Array[Char](c1.length)
-      for(i <- 0 until s.length()) {
-          if(Character.isDigit(c1(i))) {
-	            c2(i) = '#'
-	        } else {
-	            c2(i) = c1(i)
-	        }
-	    }
-	    new String(c2)
-	 }
+  def replaceDigits2(s: String): String = {
+    val c1: Array[Char] = s.toCharArray()
+    val c2: Array[Char] = new Array[Char](c1.length)
+    for(i <- 0 until s.length()) {
+      if(Character.isDigit(c1(i))) {
+        c2(i) = '#'
+      } else {
+        c2(i) = c1(i)
+      }
+    }
+    new String(c2)
+  }
 
   
   /** Implements Levenshtein Distance, with specific operation costs to go from this String to String s2. */
