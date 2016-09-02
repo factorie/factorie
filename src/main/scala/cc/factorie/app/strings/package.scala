@@ -81,13 +81,13 @@ package object strings {
   def simplifyDigits(s: String): String = {
     if(s == null || s.length() == 0) {
 	    s
-	  }
+    }
     else if(isYear(s)) {
       "<YEAR>"
-	  }
+    }
     else if(isNumber(s)) {
 	    "<NUM>"
-	  }
+    }
     else {
       replaceDigits2(s)
     }
