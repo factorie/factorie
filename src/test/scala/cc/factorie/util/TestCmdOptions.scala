@@ -107,4 +107,18 @@ class TestCmdOptions extends FlatSpec with Matchers {
     opts parse s"--files=${tmps.map(_.getAbsolutePath).mkString(",")}".split(" ")
     assert(opts.files.value.zip(tmps).forall{case (a, b) => a.getAbsolutePath == b.getAbsolutePath})
   }
+
+  it should "parse string maps" in {
+    val target = Map("foo" -> "bar", "baz" -> "quux")
+    val opts1 = new CmdOptions {
+      val strMap = new CmdOption[Map[String, String]]("string-map", Map.empty, "", "")
+    }
+    opts1 parse "--string-map foo:bar baz:quux".split(" ")
+    assert(target == opts1.strMap.value)
+    val opts2 = new CmdOptions {
+      val strMap = new CmdOption[Map[String, String]]("string-map", Map.empty, "", "")
+    }
+    opts2 parse "--string-map=foo:bar,baz:quux".split(" ")
+    assert(target == opts2.strMap.value)
+  }
 }

@@ -208,6 +208,10 @@ class CmdOptions {
         case t if t =:= typeOf[List[Int]] => processList(_.toInt).asInstanceOf[T]
         case t if t =:= typeOf[List[Double]] => processList(_.toDouble).asInstanceOf[T]
         case t if t =:= typeOf[List[File]] => processList(FileUtils.fromString).asInstanceOf[T]
+        case t if t =:= typeOf[Map[String, String]] => processList(identity).map{ itm =>
+          val Array(k, v) = itm.split(":")
+          k -> v
+        }.toMap.asInstanceOf[T]
         case t if t =:= typeOf[Char] => args(index).head.asInstanceOf[T]
         case t if t =:= typeOf[File] => FileUtils.fromString(args(index)).asInstanceOf[T]
         case t if t =:= typeOf[String] => args(index).asInstanceOf[T]
