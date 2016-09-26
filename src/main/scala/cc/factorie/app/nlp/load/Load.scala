@@ -13,17 +13,21 @@
 
 package cc.factorie.app.nlp.load
 import cc.factorie.app.nlp._
+import cc.factorie.util.ISAble
+
+import scala.io.Source
 
 /** The interface common to objects that create Documents from a data source,
     such as plain text files, labeled data from Ontonotes, etc. 
     @author Andrew McCallum */
 trait Load {
   // TODO Consider making this Iterator[Document] instead of Seq[Document]; then LoadWikipediaPlainText could inherit this. -akm
-  def fromSource(source:io.Source): Seq[Document]
-  def fromString(string:String): Seq[Document] = fromSource(io.Source.fromString(string))
-  def fromStream(stream:java.io.InputStream, encoding:String = "UTF-8"): Seq[Document] = fromSource(io.Source.fromInputStream(stream, encoding))
-  def fromFile(file:java.io.File, encoding:String = "UTF-8"): Seq[Document] = fromSource(io.Source.fromFile(file, encoding))
+  def fromSource(source:Source): Seq[Document]
+  def fromString(string:String): Seq[Document] = fromSource(Source.fromString(string))
+  def fromStream(stream:java.io.InputStream, encoding:String = "UTF-8"): Seq[Document] = fromSource(Source.fromInputStream(stream, encoding))
+  def fromFile(file:java.io.File, encoding:String = "UTF-8"): Seq[Document] = fromSource(Source.fromFile(file, encoding))
   def fromFilename(filename:String, encoding:String = "UTF-8"): Seq[Document] = fromFile(new java.io.File(filename), encoding)
+  def fromISAble[A](a:A)(implicit conv:ISAble[A]) = fromStream(conv(a))
 }
 
 /** The interface common to objects that create Documents from the files in a directory.

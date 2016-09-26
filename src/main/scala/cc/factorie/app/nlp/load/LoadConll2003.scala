@@ -17,6 +17,7 @@ import cc.factorie.app.nlp.ner._
 import cc.factorie.util.FastLogging
 
 import scala.collection.mutable.ArrayBuffer
+import scala.io.Source
 
 /** Load a sequence of CoNLL 2003 documents.
   *
@@ -46,7 +47,7 @@ case class LoadConll2003(BILOU:Boolean = false, verbose:Boolean = false) extends
 
   val conllToPennMap = Map("\"" -> "''", "(" -> "-LRB-", ")" -> "-RRB-", "NN|SYM" -> "NN")
 
-  def fromSource(source:io.Source): Seq[Document] = {
+  def fromSource(source:Source): Seq[Document] = {
     import scala.collection.mutable.ArrayBuffer
     val documents = new ArrayBuffer[Document]
     var document = new Document("").setName("CoNLL2003-"+documents.length)
@@ -58,7 +59,7 @@ case class LoadConll2003(BILOU:Boolean = false, verbose:Boolean = false) extends
           document.appendString("\n")
           sentence = new Sentence(document)
         }
-      }else if (line.startsWith("-DOCSTART-")) { // Found a new document
+      } else if (line.startsWith("-DOCSTART-")) { // Found a new document
         // If the current document isn't empty, add it to the list
         if (document.tokenCount > 0) {
           if(document.sentences.last.isEmpty) document.asSection -= document.sentences.last
@@ -80,7 +81,9 @@ case class LoadConll2003(BILOU:Boolean = false, verbose:Boolean = false) extends
         val ner = fields(3).stripLineEnd
         if (sentence.length > 0) document.appendString(" ")
         val token = new Token(sentence, word)
-        token.attr += new LabeledBioConllNerTag(token, ner)
+        val bioLabel = new LabeledBioConllNerTag(token, ner)
+        token.attr += bioLabel
+
         token.attr += new cc.factorie.app.nlp.pos.PennPosTag(token, partOfSpeech)
       }
     }
