@@ -120,6 +120,7 @@ object Document {
       else doc.appendCategory(w)
       if (doc.length == wordCountMax) break()
     }}
+    reader.close()
     doc.trimCapacity
     /*if (allWords.contains("logistic")) {
       println("Document allWords "+allWords.mkString(" "))
