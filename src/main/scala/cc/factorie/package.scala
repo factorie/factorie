@@ -15,6 +15,7 @@ package cc
 import java.io.{PrintStream, ByteArrayOutputStream, BufferedReader}
 
 import cc.factorie.util._
+import cc.factorie.variable.BagOfWords
 
 import scala.language.implicitConversions
 import scala.reflect.runtime.universe._
@@ -50,6 +51,8 @@ package object factorie extends CubbieConversions {
 
     def topBag(w:Int) = m.toSeq.sortBy(-_._2).take(w)
     def topWords(w:Int) = topBag(w).map(_._1)
+
+    def toBagOfWords = new BagOfWords(null, m)
 
   }
 
