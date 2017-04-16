@@ -57,7 +57,7 @@ To accomplish the same with sbt, type
 $ ./sbt -J-Xmx2G with-nlp-resources:assembly
 
 ```
-##Try out a simple example
+## Try out a simple example
 
 To get an idea what a simple FACTORIE program might look like, open one of the class files in the tutorial package
 ```
