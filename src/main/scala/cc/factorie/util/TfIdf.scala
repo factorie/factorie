@@ -13,8 +13,11 @@
 package cc.factorie.util
 
 import java.io.{BufferedReader, BufferedWriter, FileReader, FileWriter}
+import java.{util => ju}
+import java.{lang => jl}
 
 import cc.factorie._
+import scala.collection.JavaConverters._
 
 /**
  * Created by johnsullivan on 6/5/15.
@@ -41,9 +44,18 @@ trait TfIdf extends Idf {
 
   def tfidf(term: Term, document: Document, idfCounts: IdfCounts) = tf(term, document) * idf(term, idfCounts)
 
-  def docTfIdf(document: Document, idfCounts: IdfCounts) = document.map { case (term, count) =>
+  def docTfIdf(document: Document, idfCounts: IdfCounts): Map[String, Double] = document.map { case (term, count) =>
       term -> tfidf(term, document, idfCounts)
   }
+}
+
+trait JavaTfIdf extends TfIdf {
+  this: Tf with Idf =>
+  def jIdfCounts(c:ju.List[ju.Map[String, jl.Double]]):ju.Map[String, jl.Double] =
+    idfCounts(c.asScala.map(m => m.asScala.mapValues(_.doubleValue).toMap)).map{case (k, v) => k -> new jl.Double(v)}.asJava
+
+  def jDocTfIdf(document:ju.Map[String, jl.Double], idfCounts:ju.Map[String, jl.Double]): ju.Map[String, jl.Double] =
+    docTfIdf(document.asScala.mapValues(_.doubleValue).toMap, idfCounts.asScala.mapValues(_.doubleValue).toMap).mapValues(d => new jl.Double(d)).asJava
 }
 
 trait Tf {
