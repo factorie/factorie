@@ -20,16 +20,16 @@ limitations under the License.
   <description>FACTORIE is a toolkit for deployable probabilistic modeling, implemented as a software library in Scala. It provides its users with a succinct language for creating relational factor graphs, estimating parameters and performing inference.</description>
   <url>http://factorie.cs.umass.edu</url>
   <groupId>cc.factorie</groupId>
-  <artifactId>factorie_2.11</artifactId>
+  <artifactId>factorie_2.12</artifactId>
   <version>1.3-SNAPSHOT</version>
   <packaging>jar</packaging>
   <inceptionYear>2009</inceptionYear>
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <scala.majorVersion>2.11</scala.majorVersion>
-    <scala.minorVersion>.8</scala.minorVersion>
-    <scalatest.version>2.2.5</scalatest.version>
+    <scala.majorVersion>2.12</scala.majorVersion>
+    <scala.minorVersion>.4</scala.minorVersion>
+    <scalatest.version>3.0.4</scalatest.version>
     <junit.version>4.10</junit.version>
   </properties>
 
@@ -106,6 +106,11 @@ limitations under the License.
       <artifactId>scala-compiler</artifactId>
       <version>${scala.majorVersion}${scala.minorVersion}</version>
     </dependency>
+    <dependency>
+      <groupId>org.scala-lang.modules</groupId>
+      <artifactId>scala-parser-combinators_${scala.majorVersion}</artifactId>
+      <version>1.0.6</version>
+    </dependency>
 
     <dependency>
       <groupId>junit</groupId>
@@ -152,12 +157,12 @@ limitations under the License.
     <dependency>
       <groupId>org.json4s</groupId>
       <artifactId>json4s-core_${scala.majorVersion}</artifactId>
-      <version>3.2.9</version>
+      <version>3.5.3</version>
     </dependency>
     <dependency>
       <groupId>org.json4s</groupId>
       <artifactId>json4s-jackson_${scala.majorVersion}</artifactId>
-      <version>3.2.9</version>
+      <version>3.5.3</version>
     </dependency>
 
     <dependency>
@@ -264,7 +269,7 @@ limitations under the License.
       <plugin>
         <groupId>net.alchim31.maven</groupId>
         <artifactId>scala-maven-plugin</artifactId>
-        <version>3.2.1</version>
+        <version>3.3.1</version>
         <executions>
           <execution>
             <goals>
@@ -619,7 +624,7 @@ limitations under the License.
               <plugin>
                 <groupId>net.alchim31.maven</groupId>
                 <artifactId>scala-maven-plugin</artifactId>
-                <version>3.2.0</version>
+                <version>3.3.1</version>
                 <executions>
                   <execution>
                     <goals>

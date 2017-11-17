@@ -416,60 +416,60 @@ Success on file: "%s" """ format name))
     }
     """, print = true)
 
-    expectResult(NameParser.stringToNames("Graca, Jo\\~ao"))(List(Name("Jo\\~ao", "", "Graca", "")))
+    assertResult(NameParser.stringToNames("Graca, Jo\\~ao"))(List(Name("Jo\\~ao", "", "Graca", "")))
 
-    expectResult(NameParser.stringToNames("Ludwig von Beethoven"))(List(Name("Ludwig", "von", "Beethoven", "")))
-    expectResult(NameParser.stringToNames("von Beethoven, Ludwig"))(List(Name("Ludwig", "von", "Beethoven", "")))
-    expectResult(NameParser.stringToNames("Jones, Jr., John-Paul"))(List(Name("John Paul", "", "Jones", "Jr.")))
-    expectResult(NameParser.stringToNames("John Paul Jones"))(List(Name("John Paul", "", "Jones", "")))
+    assertResult(NameParser.stringToNames("Ludwig von Beethoven"))(List(Name("Ludwig", "von", "Beethoven", "")))
+    assertResult(NameParser.stringToNames("von Beethoven, Ludwig"))(List(Name("Ludwig", "von", "Beethoven", "")))
+    assertResult(NameParser.stringToNames("Jones, Jr., John-Paul"))(List(Name("John Paul", "", "Jones", "Jr.")))
+    assertResult(NameParser.stringToNames("John Paul Jones"))(List(Name("John Paul", "", "Jones", "")))
 
-    expectResult(NameParser.stringToNames("John Paul Jones and Jones, John Paul"))(
+    assertResult(NameParser.stringToNames("John Paul Jones and Jones, John Paul"))(
       List(Name("John Paul", "", "Jones", ""), Name("John Paul", "", "Jones", "")))
-    expectResult(NameParser.stringToNames("John Paul Jones and Ludwig von Beethoven"))(
+    assertResult(NameParser.stringToNames("John Paul Jones and Ludwig von Beethoven"))(
       List(Name("John Paul", "", "Jones", ""), Name("Ludwig", "von", "Beethoven", "")))
 
-    expectResult(NameParser.stringToNames("Charles Louis Xavier Joseph de la Vallee Poussin"))(
+    assertResult(NameParser.stringToNames("Charles Louis Xavier Joseph de la Vallee Poussin"))(
       List(Name("Charles Louis Xavier Joseph", "de la", "Vallee Poussin", "")))
 
-    expectResult(NameParser.stringToNames("{Barnes} {and} {Noble} {Inc.}"))(List(Name("Barnes", "and", "Noble Inc.", "")))
+    assertResult(NameParser.stringToNames("{Barnes} {and} {Noble} {Inc.}"))(List(Name("Barnes", "and", "Noble Inc.", "")))
 
-    expectResult(NameParser.stringToNames("Ralph Alpher and Bethe, Hans and George Gamow"))(
+    assertResult(NameParser.stringToNames("Ralph Alpher and Bethe, Hans and George Gamow"))(
       List(Name("Ralph", "", "Alpher", ""), Name("Hans", "", "Bethe", ""), Name("George", "", "Gamow", "")))
-    expectResult(NameParser.stringToNames("K.S.Narendra"))(List(Name("K. S.", "", "Narendra", "")))
+    assertResult(NameParser.stringToNames("K.S.Narendra"))(List(Name("K. S.", "", "Narendra", "")))
 
-    expectResult(NameParser.stringToNames("{\\e'}cole"))(List(Name("", "", "{\\e'}cole", "")))
+    assertResult(NameParser.stringToNames("{\\e'}cole"))(List(Name("", "", "{\\e'}cole", "")))
 
-    expectResult(NameParser.stringToNames("John-Paul Jones and Bill Thompson"))(
+    assertResult(NameParser.stringToNames("John-Paul Jones and Bill Thompson"))(
       List(Name("John Paul", "", "Jones", ""), Name("Bill", "", "Thompson", "")))
 
-    expectResult(NameParser.stringToNames("{\\e'}col{\\e'}"))(List(Name("", "", "{\\e'}col{\\e'}", "")))
+    assertResult(NameParser.stringToNames("{\\e'}col{\\e'}"))(List(Name("", "", "{\\e'}col{\\e'}", "")))
 
-    expectResult(NameParser.stringToNames("{hey ho lotsa stu\\}ff}"))(List(Name("", "", "hey ho lotsa stu\\}ff", "")))
-    expectResult(NameParser.stringToNames("{Jean} {de la Fontaine du} {Bois Joli}"))(List(Name("Jean", "de la Fontaine du", "Bois Joli", "")))
-    expectResult(NameParser.stringToNames("Jean de la Fontaine du Bois Joli"))(List(Name("Jean", "de la Fontaine du", "Bois Joli", "")))
+    assertResult(NameParser.stringToNames("{hey ho lotsa stu\\}ff}"))(List(Name("", "", "hey ho lotsa stu\\}ff", "")))
+    assertResult(NameParser.stringToNames("{Jean} {de la Fontaine du} {Bois Joli}"))(List(Name("Jean", "de la Fontaine du", "Bois Joli", "")))
+    assertResult(NameParser.stringToNames("Jean de la Fontaine du Bois Joli"))(List(Name("Jean", "de la Fontaine du", "Bois Joli", "")))
 
     val clx1 = NameParser.stringToNames("Charles Louis Xavier Joseph de la Vall{\\'e}e Poussin").head
-    expectResult(clx1)(Name("Charles Louis Xavier Joseph", "de la", "Vall{\\'e}e Poussin", ""))
+    assertResult(clx1)(Name("Charles Louis Xavier Joseph", "de la", "Vall{\\'e}e Poussin", ""))
     val clx2 = Dom.stringToDom("@thing{asdf, author = \"Charles Louis Xavier Joseph de la Vall{\\'e}e Poussin\"}")
       .right.get.entries.head._2.authors.get.head
-    expectResult(clx2)(Name("Charles Louis Xavier Joseph", "de la", "Vall{\\'e}e Poussin", ""))
+    assertResult(clx2)(Name("Charles Louis Xavier Joseph", "de la", "Vall{\\'e}e Poussin", ""))
     val clx3 = Dom.stringToDom("@thing{asdf, author = {Charles Louis Xavier Joseph de la Vall{\\'e}e Poussin}}")
       .right.get.entries.head._2.authors.get.head
-    expectResult(clx3)(Name("Charles Louis Xavier Joseph", "de la", "Vall{\\'e}e Poussin", ""))
+    assertResult(clx3)(Name("Charles Louis Xavier Joseph", "de la", "Vall{\\'e}e Poussin", ""))
 
     assert(clx1 == clx2 && clx2 == clx3, (clx1, clx2, clx3))
 
     val ksn1 = NameParser.stringToNames("K.S.Narendra").head
-    expectResult(ksn1)(Name("K. S.", "", "Narendra", ""))
+    assertResult(ksn1)(Name("K. S.", "", "Narendra", ""))
     val ksn2 = Dom.stringToDom("@thing{asdf, author = \"K.S.Narendra\"}")
       .right.get.entries.head._2.authors.get.head
-    expectResult(ksn2)(Name("K. S.", "", "Narendra", ""))
+    assertResult(ksn2)(Name("K. S.", "", "Narendra", ""))
     val ksn3 = Dom.stringToDom("@thing{asdf, author = {K.S.Narendra}}")
       .right.get.entries.head._2.authors.get.head
-    expectResult(ksn3)(Name("K. S.", "", "Narendra", ""))
+    assertResult(ksn3)(Name("K. S.", "", "Narendra", ""))
     val ksn4 = Dom.stringToDom("@thing{asdf, author = {K.S.Narendra and Hugh Jass}}")
       .right.get.entries.head._2.authors.get.head
-    expectResult(ksn4)(Name("K. S.", "", "Narendra", ""))
+    assertResult(ksn4)(Name("K. S.", "", "Narendra", ""))
 
     assert(ksn1 == ksn2 && ksn2 == ksn3 && ksn3 == ksn4, (ksn1, ksn2, ksn3, ksn4))
 

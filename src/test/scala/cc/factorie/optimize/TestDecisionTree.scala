@@ -95,10 +95,11 @@ class TestDecisionTree extends JUnitSuite {
     def calcAccuracy(c: MulticlassClassifier[Tensor1]): Double =
       testFeatures.map(i => c.classification(i).bestLabelIndex)
         .zip(testLabels).count(i => i._1 == i._2).toDouble/testLabels.length
-    val evaluate = (c: MulticlassClassifier[Tensor1]) => {
+    val evaluate1 = (c: MulticlassClassifier[Tensor1]) => {
       val accuracy = calcAccuracy(c)
       println(f"Test accuracy: $accuracy%1.4f")
       assert(accuracy > 0.66)
+      ()
     }
     val evaluate2 = (c1: MulticlassClassifier[Tensor1], c2: MulticlassClassifier[Tensor1]) => {
       val accuracy1 = calcAccuracy(c1)
@@ -108,7 +109,7 @@ class TestDecisionTree extends JUnitSuite {
     }
 
     for (trainer <- trainers)
-      trainer.simpleTrain(2, 100, trainLabels, trainFeatures, trainSet.map(_ => 1.0), evaluate)
+      trainer.simpleTrain(2, 100, trainLabels, trainFeatures, trainSet.map(_ => 1.0), evaluate1)
 
     // confirm i can serialize dec trees
     val file = java.io.File.createTempFile("FactorieTestFile", "serialize-randomforest").getAbsolutePath
