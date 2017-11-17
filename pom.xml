@@ -279,8 +279,6 @@ limitations under the License.
           </execution>
         </executions>
         <configuration>
-          <recompileMode>incremental</recompileMode>
-          <useZincServer>false</useZincServer>
           <scalaVersion>${scala.majorVersion}${scala.minorVersion}</scalaVersion>
           <args>
             <arg>-Xmax-classfile-name</arg>
@@ -635,8 +633,6 @@ limitations under the License.
                   </execution>
                 </executions>
                 <configuration>
-                  <recompileMode>incremental</recompileMode>
-                  <useZincServer>false</useZincServer>
                   <scalaVersion>${scala.majorVersion}${scala.minorVersion}</scalaVersion>
                 </configuration>
               </plugin>
