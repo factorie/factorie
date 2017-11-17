@@ -12,15 +12,11 @@
    limitations under the License. */
 package cc.factorie.optimize
 
-import java.io._
-import java.util.zip.GZIPInputStream
-
 import cc.factorie._
 import cc.factorie.la._
-import cc.factorie.variable.HashFeatureVectorVariable
 
-import scala.collection.mutable.ArrayBuffer
 import scala.util.Random
+import cc.factorie.app.nlp.load.LoadSVMLight
 
 /**
  * The Proximal Stochastic Dual Coordinate Ascent method for l1/l2 regularized learning from
@@ -31,6 +27,11 @@ import scala.util.Random
  *
  * Label "ys" should be -1 or 1
  *
+ * WARNING:
+ * This code is very preliminary and not integrated in well with the factorie variable or optimization API,
+ * taking raw tensors and int labels, as well as not supporting weightsmaps or anything other than binary
+ * classification. As such, you probably shouldn't use it unless you want to learn a linear SVM with l1/l2
+ * regularization to provable optimality very quickly for some reason.
  */
 class SDCA(
   xs: Seq[Tensor], ys: Seq[Int],
@@ -49,6 +50,7 @@ class SDCA(
   // dual iterate
   val vs: Array[Double] = new Array[Double](dim)
   // TODO: this should be a Array[Dual], with some method of combining xs with them to get WeightsMap, so we can learn e.g. multiclass or CRF
+  // these will have the same shape as Prediction
   // dual variables
   val alphas: Array[Double] = new Array[Double](numExamples)
 
@@ -188,7 +190,7 @@ class SDCA(
         })
     }
   }
-  def buildWeights() = Array.tabulate(dim)(i => weight(i))
+  def buildWeights(): Array[Double] = Array.tabulate(dim)(i => weight(i))
   def predict(x: Tensor): Double = x.foldActiveElements(0.0, (i, v, acc) => acc + weight(i) * v)
   def weight(i: Int): Double = (1.0 / l2) * ISTAHelper.truncate(vs(i), l1)
   def vDotW(): Double = {
@@ -216,13 +218,16 @@ object UnivariateDualUpdate {
 
   class SmoothHingeBinaryDualUpdate(val gamma: Double = 1.0, val margin: Double = 1.0, val posCost: Double = 1.0, val negCost: Double = 1.0)
     extends UnivariateDualUpdate[Int] {
-    val objective = OptimizableObjectives.smoothHingeBinary(gamma, margin, posCost, negCost)
-    // TODO: this doesn't take margin or cost into account, and always projects to [0,1] rather than looking at label
+    val objective: OptimizableObjectives.SmoothHingeBinary = OptimizableObjectives.smoothHingeBinary(gamma, margin, posCost, negCost)
+    // TODO: this doesn't take custom margin into account, and always projects to [0,1] rather than looking at label
+    // This is fine as long as your SDCA code also does the sign-switching automatically, which ours does, but should
+    // be changed if we add more complicated applications than binary classification
     def updateDual(oldAlpha: Double, l2: Double, feats: Tensor, pred: Double, label: Int): Double = {
+      val cost = if (label == 1) posCost else negCost
       val u = (1 - pred * label - gamma * oldAlpha) / (feats.twoNormSquared / l2 + gamma) + oldAlpha
-      math.max(0, math.min(1, u))
+      math.max(0, math.min(cost, u))
     }
-    // TODO: this doesn't take label into account
+    // TODO: this doesn't take label into account. See above note.
     def dualValueAndGradient(alpha: Double, label: Int): (Double, Double) = {
       val cost = if (label == 1) posCost else negCost
       val value = alpha * margin - gamma / (2 * cost) * alpha * alpha
@@ -231,15 +236,15 @@ object UnivariateDualUpdate {
     }
     def projectDual(alpha: Double, label: Int): Double = {
       val cost = if (label == 1) posCost else negCost
-      if (label == 1) math.min(0, math.max(-cost, alpha))
-      else math.min(cost, math.max(0, alpha))
+      if (label == 1) math.max(0, math.min(cost, alpha))
+      else math.min(-cost, math.max(0, alpha))
     }
   }
 }
 
 object RCV1DemoSDCA {
   def main(args: Array[String]): Unit = {
-    implicit val rng = new scala.util.Random(1)
+    implicit val rng: Random = new scala.util.Random(1)
 
     val hashDomainSize = 1 << 22
 
@@ -247,8 +252,8 @@ object RCV1DemoSDCA {
     val rcv1TrainPath = rcv1Path + "/" + "rcv1.train.txt.gz"
     val rcv1TestPath = rcv1Path + "/" + "rcv1.test.txt.gz"
 
-    val trainInstances = SVMLightHelpers.loadSVMLight(rcv1TrainPath, hashDomainSize).shuffle
-    val testInstances = SVMLightHelpers.loadSVMLight(rcv1TestPath, hashDomainSize)
+    val trainInstances = LoadSVMLight.loadSVMLight(rcv1TrainPath, hashDomainSize).shuffle
+    val testInstances = LoadSVMLight.loadSVMLight(rcv1TestPath, hashDomainSize)
 
     def evaluate(arr: Array[Double]): Unit = {
       val weights = new DenseTensor1(arr)
@@ -265,39 +270,5 @@ object RCV1DemoSDCA {
     val sdca = new SDCA(trainInstances.map(_._1), trainInstances.map(t => if (t._2 == 0) -1 else 1), UnivariateDualUpdate.smoothHingeBinaryDualUpdate(), evaluate = Some(evaluate))
 
     sdca.learn()
-  }
-
-  object SVMLightHelpers {
-    val svmLightSeparatorRegex = """\s|:""".r
-    def loadSVMLight[T](file: String, hashDomainSize: Int): Seq[(SparseIndexedTensor1, Int)] = {
-      val source = readFile(new java.io.File(file), gzip = true)
-      val instances = ArrayBuffer[(SparseIndexedTensor1, Int)]()
-      var lineNum = 0
-      var line = null: String
-      while ( {line = source.readLine(); line != null /*&& lineNum < 1000*/}) {
-        lineNum += 1
-        val fields = svmLightSeparatorRegex.split(line)
-        val label = fields(0)
-        val instance = new SparseIndexedTensor1(hashDomainSize)
-        var i = 1
-        val len = fields.length
-        while (i < len) {
-          val idx = fields(i).toInt
-          val value = fields(i + 1).toDouble
-          val bits = idx
-          val hashIdx = HashFeatureVectorVariable.index(bits, hashDomainSize)
-          val hashSign = HashFeatureVectorVariable.sign(bits)
-          instance +=(hashIdx, value * hashSign)
-          i += 2
-        }
-        instance._makeReadable()
-        instances += ((instance, if (label.toInt == -1) 0 else 1))
-      }
-      instances
-    }
-    def readFile(file: File, gzip: Boolean = false): BufferedReader = {
-      val fileStream = new BufferedInputStream(new FileInputStream(file))
-      new BufferedReader(new InputStreamReader(if (gzip) new GZIPInputStream(fileStream) else fileStream))
-    }
   }
 }
