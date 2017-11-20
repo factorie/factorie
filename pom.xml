@@ -28,7 +28,7 @@ limitations under the License.
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <scala.majorVersion>2.11</scala.majorVersion>
-    <scala.minorVersion>.8</scala.minorVersion>
+    <scala.minorVersion>.11</scala.minorVersion>
     <scalatest.version>2.2.5</scalatest.version>
     <junit.version>4.10</junit.version>
   </properties>
