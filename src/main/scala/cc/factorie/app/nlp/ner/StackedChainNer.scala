@@ -617,7 +617,7 @@ class ConllStackedChainNer(embeddingMap: SkipGramEmbedding,
 
 //object ConllStackedChainNer extends ConllStackedChainNer(SkipGramEmbedding, 100, 1.0, true, ClasspathURL[ConllStackedChainNer](".factorie"))
 class NoEmbeddingsConllStackedChainNer()(implicit mp:ModelProvider[NoEmbeddingsConllStackedChainNer], nerLexiconFeatures:NerLexiconFeatures) extends ConllStackedChainNer(null, 0, 0.0, false)(mp, nerLexiconFeatures) with Serializable
-object NoEmbeddingsConllStackedChainNer extends NoEmbeddingsConllStackedChainNer()(ModelProvider.classpath(), StaticLexiconFeatures()) with Serializable
+object NoEmbeddingsConllStackedChainNer extends NoEmbeddingsConllStackedChainNer()(ModelProvider.classpath[NoEmbeddingsConllStackedChainNer](), StaticLexiconFeatures()) with Serializable
 
 class OntonotesStackedChainNer(embeddingMap: SkipGramEmbedding,
                                embeddingDim: Int,
@@ -634,7 +634,7 @@ class OntonotesStackedChainNer(embeddingMap: SkipGramEmbedding,
     mp.provide, nerLexiconFeatures)
 
 class NoEmbeddingsOntonotesStackedChainNer()(implicit mp:ModelProvider[NoEmbeddingsOntonotesStackedChainNer], nerLexiconFeatures: NerLexiconFeatures) extends OntonotesStackedChainNer(null, 0, 0.0, false)(mp, nerLexiconFeatures) with Serializable
-object NoEmbeddingsOntonotesStackedChainNer extends NoEmbeddingsOntonotesStackedChainNer()(ModelProvider.classpath(), StaticLexiconFeatures()) with Serializable
+object NoEmbeddingsOntonotesStackedChainNer extends NoEmbeddingsOntonotesStackedChainNer()(ModelProvider.classpath[NoEmbeddingsOntonotesStackedChainNer](), StaticLexiconFeatures()) with Serializable
 
 
 class StackedChainNerOpts extends CmdOptions with SharedNLPCmdOptions{
