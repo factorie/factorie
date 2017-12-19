@@ -21,7 +21,14 @@ import cc.factorie.la._
  * @tparam Output The type of the output/label: is it integer or real-valued or tensor-valued?
  */
 trait OptimizableObjective[Prediction, Output] {
+  /**
+   * Compute value and gradient for a given prediction and label.
+   */
   def valueAndGradient(prediction: Prediction, label: Output): (Double, Prediction)
+  /**
+   * Lipschitz constant of gradient. Strong smoothness parameter -- bounds largest eigenvalue of Hessian.
+   */
+  def smoothness: Double = Double.PositiveInfinity
 }
 
 trait UnivariateOptimizableObjective[Output] extends OptimizableObjective[Double, Output]
@@ -178,6 +185,21 @@ object OptimizableObjectives {
     }
   }
 
+  class HingeSqBinary(val margin: Double = 1.0, val posCost: Double = 1.0, val negCost: Double = 1.0)
+    extends UnivariateOptimizableObjective[Int] {
+    def valueAndGradient(score: Double, label: Int): (Double, Double) = {
+      val cost = if (label == 1.0) negCost else posCost
+      val prediction = score * label
+      if (prediction >= margin)
+        (0.0, 0.0)
+      else {
+        val value = -cost * (prediction - margin) * (prediction - margin)
+        val grad = -2 * label * cost * (prediction - margin)
+        (value, grad)
+      }
+    }
+  }
+
   class SquaredUnivariate extends UnivariateOptimizableObjective[Double] {
     def valueAndGradient(prediction: Double, label: Double): (Double, Double) =
       (-0.5 * (prediction - label) * (prediction - label), label - prediction)
@@ -272,7 +294,16 @@ object OptimizableObjectives {
    * @return An objective function
    */
   def smoothHingeBinary(gamma: Double = 1.0, margin: Double = 1.0, posCost: Double = 1.0, negCost: Double = 1.0) = new SmoothHingeBinary(gamma, margin, posCost, negCost)
-  
+
+  /**
+   * A squared hinge objective for binary classification which can have different costs for type 1 and type 2 errors and adjustable margin.
+   * @param margin The number that you need to predict above to achieve the maximum objective score.
+   * @param posCost The cost of predicting positive when the label is negative.
+   * @param negCost The cost of predicting negative when the label is positive.
+   * @return An objective function
+   */
+  def hingeSqBinary(margin: Double = 1.0, posCost: Double = 1.0, negCost: Double = 1.0) = new HingeSqBinary(margin, posCost, negCost)
+
   /**
    * Log objective for binary classification
    */
